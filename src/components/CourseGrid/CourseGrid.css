@@ -1,0 +1,26 @@
+/* src/components/CourseGrid/CourseGrid.css */
+.course-grid-container {
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.grid-title {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-color)
+}
+
+.grid-subtitle {
+  font-size: 1.1rem;
+  color: #666;
+  margin-bottom: 2rem;
+  color: var(--text-color-light);
+  max-width: 600px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 1.5rem;
+}

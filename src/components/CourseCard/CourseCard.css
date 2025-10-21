@@ -1,0 +1,57 @@
+/* src/component/CourseCard/CourseCard.css */
+
+.course-card {
+  background-color: var(--white-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.course-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+
+.course-card h3 {
+  font-size: 1.5rem;
+  color: var(--primary-color); /* Áp dụng màu xanh chủ đạo */
+  margin-bottom: 1rem;
+  border-bottom: 3px solid var(--secondary-color); /* Dùng màu cam để tạo điểm nhấn */
+  padding-bottom: 0.5rem;
+  display: inline-block;
+}
+
+.course-card ul {
+  list-style: none;
+}
+
+.course-card ul li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px dashed var(--border-color);
+}
+
+.course-card ul li:last-child {
+  border-bottom: none;
+}
+
+.course-card ul li a {
+  font-weight: 500;
+  color: var(--text-color);
+  transition: color 0.2s;
+}
+
+.course-card ul li a:hover {
+  color: var(--primary-color);
+}
+
+.course-card ul li span {
+  color: var(--primary-color);
+  font-size: 0.9rem;
+  cursor: pointer;
+  font-weight: 500;
+}

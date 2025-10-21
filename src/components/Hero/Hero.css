@@ -1,0 +1,13 @@
+/* src/components/Hero/Hero.css */
+.hero-section {
+  margin-top: 1.5rem; /* Giữ lại margin-top để tạo khoảng cách với header */
+  margin-bottom: 1.5rem; /* Giữ lại margin-bottom */
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.hero-section img {
+  width: 100%;
+  display: block;
+}
