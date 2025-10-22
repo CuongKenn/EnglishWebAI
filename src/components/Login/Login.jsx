@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom'; 
 import './Login.css';
 
 const Login = () => {
@@ -87,10 +88,7 @@ const Login = () => {
     // Navigate to forgot password page
   };
 
-  const handleNavigateToRegister = () => {
-    console.log('Navigate to register');
-    // Navigate to register page
-  };
+  
 
   return (
     <div className={`space-login-container ${isLoaded ? 'loaded' : ''}`}>
@@ -289,7 +287,7 @@ const Login = () => {
 
             {/* Register Link */}
             <div className="register-link">
-              Don't have an account? <button type="button" onClick={handleNavigateToRegister}>Sign up now</button>
+              Don't have an account? <Link to="/register" className="signup-now-link">Sign up now</Link>
             </div>
           </div>
         </div>
