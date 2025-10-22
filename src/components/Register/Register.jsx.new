@@ -60,14 +60,14 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-   // Kiểm tra mật khẩu và mật khẩu xác nhận có khớp hay không
+    // Kiểm tra mật khẩu và mật khẩu xác nhận có khớp hay không
     if (formData.password !== formData.confirmPassword) {
       alert('Passwords do not match!');
       return;
     }
 
     // Kiểm tra các trường đã được điền đầy đủ chưa
-    if (!formData.name || !formData.phone || !formData.password || !formData.confirmPassword) {
+    if (!formData.name || !formData.phone || !formData.email || !formData.password || !formData.confirmPassword) {
       alert('Please fill in all fields!');
       return;
     }
@@ -81,12 +81,12 @@ const Register = () => {
       const response = await axios.post('http://127.0.0.1:8000/api/users/register/', {
         username: formData.name,
         phone: formData.phone,
-        email: formData.email,    // Gửi email
+        email: formData.email,
         password: formData.password,
-        confirmPassword: formData.confirmPassword, // Gửi confirmPassword
-      }); 
+        confirmPassword: formData.confirmPassword,
+      });
 
-       if (response.status === 201) {
+      if (response.status === 201) {
         alert('Registration successful!');
         navigate('/login'); // Chuyển tới trang đăng nhập sau khi đăng ký thành công
       }
