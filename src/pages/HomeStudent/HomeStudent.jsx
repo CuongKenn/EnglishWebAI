@@ -1,8 +1,8 @@
 import React from 'react';
 import './HomeStudent.css'; // <-- THÊM DÒNG NÀY
-import Header from '../../components/Header/Header';
-import Hero from '../../components/Hero/Hero';
-import CourseGrid from '../../components/CourseGrid/CourseGrid';
+import Header from '../../components/Home/Header/Header';
+import Hero from '../../components/Home/Hero/Hero';
+import CourseGrid from '../../components/Home/CourseGrid/CourseGrid';
 
 const HomeStudent = () => {
   return (

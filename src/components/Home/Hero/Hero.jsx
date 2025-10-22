@@ -1,6 +1,6 @@
 import React from 'react';
 import './Hero.css';
-import bannerImage from '../../assets/banner.png'; // Nhớ thêm ảnh vào thư mục assets
+import bannerImage from '../../../assets/banner.png'; // Thêm một cấp ../
 
 const Hero = () => {
   return (
