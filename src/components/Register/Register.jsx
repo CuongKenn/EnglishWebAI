@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './Register.css';
 
 const Register = () => {
@@ -13,6 +14,7 @@ const Register = () => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [stars, setStars] = useState([]);
   const [meteors, setMeteors] = useState([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Load animation
@@ -89,8 +91,7 @@ const Register = () => {
   };
 
   const handleNavigateToLogin = () => {
-    console.log('Navigate to login');
-    // Navigate to login page
+    navigate('/login'); // Chuyển đến trang login
   };
 
   return (
@@ -346,3 +347,4 @@ const Register = () => {
 };
 
 export default Register;
+  
