@@ -1,6 +1,7 @@
 // src/component/Header/Header.jsx
 
 import React, { useState, useEffect } from 'react'; 
+import { Link } from 'react-router-dom';
 import './Header.css';
 
 const Header = () => {
@@ -39,21 +40,19 @@ const Header = () => {
           <input type="text" placeholder="Tìm kiếm bài học, bài tập, mã lớp, mã khóa học..." />
           <button>Tìm Kiếm</button>
         </div>
-        <div className="auth-buttons">
-          <button className="login-btn">Đăng nhập</button>
-          <button className="register-btn">Đăng ký</button>
+          <div className="auth-buttons">
+          <Link to="/login" className="login-btn">Đăng nhập</Link>
+          <Link to="/register" className="register-btn">Đăng ký</Link>
         </div>
       </div>
       <nav className="header-nav">
         <ul>
-          <li><a href="#">HỌC BÀI</a></li>
-          <li><a href="#">HỎI BÀI</a></li>
-          <li><a href="#">KIỂM TRA</a></li>
-          <li><a href="#">ĐGNL</a></li>
-          <li><a href="#">THI ĐẤU</a></li>
-          <li><a href="#">THƯ VIỆN SỐ</a></li>
-          <li><a href="#">BÀI VIẾT</a></li>
-          <li><a href="#">TRỢ GIÚP</a></li>
+          <li><a href="#">THAM GIA LỚP HỌC</a></li>
+          <li><a href="#">HỎI LIỆU CƠ BẢN</a></li>
+          <li><a href="#">LÀM BÀI TẬP</a></li>
+          <li><a href="#">XEM LẠI KẾT QUẢ</a></li>
+          <li><a href="#">THẢO LUẬN/HỎI ĐÁP</a></li>
+          <li><a href="#">THEO DÕI TIẾN ĐỘ HỌC CÁ NHÂN</a></li>
         </ul>
       </nav>
     </header>

@@ -4,7 +4,6 @@ import './Register.css';
 const Register = () => {
   const [formData, setFormData] = useState({
     name: '',
-    email: '',
     phone: '',
     password: '',
     confirmPassword: ''
@@ -199,24 +198,7 @@ const Register = () => {
                 />
               </div>
 
-              {/* Email */}
-              <div className="input-container">
-                <div className="input-icon">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-                    <polyline points="22,6 12,13 2,6"></polyline>
-                  </svg>
-                </div>
-                <input
-                  type="email"
-                  name="email"
-                  placeholder="Email address"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  className="space-input"
-                />
-              </div>
+              
 
               {/* Phone Number */}
               <div className="input-container">

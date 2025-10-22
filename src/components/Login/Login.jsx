@@ -3,7 +3,7 @@ import './Login.css';
 
 const Login = () => {
   const [formData, setFormData] = useState({
-    email: '',
+    username :'',
     password: ''
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -175,7 +175,7 @@ const Login = () => {
         <div className="form-wrapper">
           <div className="form-content">
             <h2 className="form-title">SIGN IN</h2>
-            <p className="form-subtitle">Sign in with email address</p>
+            <p className="form-subtitle"></p>
 
             <form onSubmit={handleSubmit} className="space-form">
               {/* Email Input */}
@@ -187,9 +187,9 @@ const Login = () => {
                   </svg>
                 </div>
                 <input
-                  type="email"
-                  name="email"
-                  placeholder="Email address"
+                  type="username"
+                  name="username"
+                  placeholder="Ussername"
                   value={formData.email}
                   onChange={handleInputChange}
                   required
