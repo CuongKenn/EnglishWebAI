@@ -1,7 +1,10 @@
 import React from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import './NewsEvents.css';
 
 const NewsEvents = () => {
+  const navigate = useNavigate();
+  
   const news = [
     {
       id: 1,
@@ -52,7 +55,12 @@ const NewsEvents = () => {
 
       <div className="news-grid">
         {news.map((item) => (
-          <div key={item.id} className={`news-card news-card-${item.type}`}>
+          <div 
+            key={item.id} 
+            className={`news-card news-card-${item.type}`}
+            onClick={() => navigate('/news')}
+            style={{ cursor: 'pointer' }}
+          >
             <div className="news-icon">
               <span>{item.icon}</span>
             </div>
@@ -76,10 +84,12 @@ const NewsEvents = () => {
       </div>
 
       <div className="view-all-container">
-        <button className="view-all-large-btn">
-          <span>Xem tất cả tin tức</span>
-          <i className="fas fa-arrow-right"></i>
-        </button>
+        <Link to="/news">
+          <button className="view-all-large-btn">
+            <span>Xem tất cả tin tức</span>
+            <i className="fas fa-arrow-right"></i>
+          </button>
+        </Link>
       </div>
     </section>
   );

@@ -16,6 +16,15 @@
   padding: 0 1rem;
 }
 
+/* Animations */
+.fade-in {
+  animation: fadeIn 0.8s ease-out;
+}
+
+.slide-up {
+  animation: slideUp 0.8s ease-out;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .home-student-page main {

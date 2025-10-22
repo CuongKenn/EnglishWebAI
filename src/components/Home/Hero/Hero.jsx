@@ -41,19 +41,12 @@ const Hero = () => {
           </div>
         </div>
         <div className="hero-visual">
-          <div className="floating-card card-1">
-            <i className="fas fa-brain"></i>
-            <span>AI Learning</span>
+          <div className="planet-container">
+            <div className="main-planet"></div>
+            <div className="small-planet planet-sm-1"></div>
+            <div className="small-planet planet-sm-2"></div>
+            <div className="small-planet planet-sm-3"></div>
           </div>
-          <div className="floating-card card-2">
-            <i className="fas fa-book-reader"></i>
-            <span>Interactive</span>
-          </div>
-          <div className="floating-card card-3">
-            <i className="fas fa-chart-line"></i>
-            <span>Progress Track</span>
-          </div>
-          <div className="hero-circle"></div>
         </div>
       </div>
     </div>

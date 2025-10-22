@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import './QAForum.css';
 
 const QAForum = () => {
@@ -110,10 +111,12 @@ const QAForum = () => {
       </div>
 
       <div className="view-all-container">
-        <button className="view-all-large-btn">
-          <span>Xem tất cả câu hỏi</span>
-          <i className="fas fa-arrow-right"></i>
-        </button>
+        <Link to="/discussion">
+          <button className="view-all-large-btn">
+            <span>Xem tất cả câu hỏi</span>
+            <i className="fas fa-arrow-right"></i>
+          </button>
+        </Link>
       </div>
     </section>
   );
