@@ -1,10 +1,25 @@
-/* src/pages/HomeStudent/HomeStudent.css */
+/* src/pages/HomeStudent/HomeStudent.css - Neon Dark Theme */
+
+.home-student-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-primary);
+}
 
 .home-student-page main {
-  /* Đây là phần thân chính chứa banner và lưới khóa học */
+  flex: 1;
   width: 90%;
   max-width: 1200px;
   margin-left: auto;
   margin-right: auto;
-  /* Giờ đây, toàn bộ nội dung chính sẽ được căn giữa và có chiều rộng tối đa là 1200px */
+  padding: 0 1rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .home-student-page main {
+    width: 95%;
+    padding: 0 0.5rem;
+  }
 }

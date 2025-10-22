@@ -189,7 +189,7 @@ const Login = () => {
                 <input
                   type="username"
                   name="username"
-                  placeholder="Ussername"
+                  placeholder="Username"
                   value={formData.email}
                   onChange={handleInputChange}
                   required

@@ -1,144 +1,265 @@
-/* src/component/Header/Header.css */
+/* Header.css - Bright Colorful Theme */
 
 .header-container {
-  /* THAY ĐỔI: Sử dụng biến màu và thêm viền dưới */
-  background-color: var(--white-color); 
-  border-bottom: 1px solid var(--border-color);
-
-  /* Giữ nguyên logic header "dính" */
+  background: var(--bg-primary);
+  backdrop-filter: blur(10px);
+  border-bottom: 2px solid var(--border-light);
   position: sticky;
   top: 0;
   z-index: 1000;
-  transition: box-shadow 0.3s ease;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.header-container::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--bg-gradient-3);
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 .header-container.scrolled {
-  /* THAY ĐỔI: Tăng độ sâu của bóng đổ để nổi bật hơn */
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  box-shadow: var(--shadow-md);
+  border-bottom-color: var(--primary-blue);
 }
 
+.header-container.scrolled::after {
+  opacity: 1;
+}
+
+/* Header Top */
 .header-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 1rem 2rem;
-  /* THAY ĐỔI: Bỏ border-bottom ở đây vì đã chuyển lên container chính */
+  gap: 2rem;
 }
 
-.logo img {
-  height: 40px;
+/* Logo */
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  transition: transform 0.3s ease;
 }
 
+.logo:hover {
+  transform: scale(1.05);
+}
+
+.logo-icon {
+  font-size: 2rem;
+  animation: bounce 3s ease-in-out infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+.logo-text {
+  font-size: 1.5rem;
+  font-weight: 800;
+  background: var(--bg-gradient-3);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: 0.5px;
+}
+
+/* Search Bar */
 .search-bar {
   display: flex;
-  border: 1px solid var(--border-color);
-  border-radius: 20px;
+  flex: 1;
+  max-width: 600px;
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-light);
+  border-radius: 25px;
   overflow: hidden;
-  width: 500px;
+  transition: all 0.3s ease;
+}
+
+.search-bar:focus-within {
+  background: var(--bg-primary);
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
 }
 
 .search-bar input {
+  flex: 1;
   border: none;
-  padding: 0.5rem 1rem;
+  background: transparent;
+  padding: 0.75rem 1.5rem;
   font-size: 1rem;
-  width: 100%;
+  color: var(--text-primary);
+  outline: none;
 }
 
-.search-bar input:focus {
-  outline: none;
+.search-bar input::placeholder {
+  color: var(--text-muted);
 }
 
 .search-bar button {
   border: none;
-  background-color: var(--primary-color);
-  color: var(--white-color); /* THAY ĐỔI */
-  padding: 0 1.5rem;
+  background: var(--bg-gradient-3);
+  color: var(--text-white);
+  padding: 0.75rem 1.5rem;
   cursor: pointer;
   font-size: 1rem;
-  /* THÊM MỚI: Hiệu ứng chuyển màu mượt mà */
-  transition: background-color 0.2s;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
 }
 
-/* THÊM MỚI: Hiệu ứng hover cho nút tìm kiếm */
 .search-bar button:hover {
-  background-color: #357ABD; /* Một màu xanh đậm hơn một chút */
+  transform: scale(1.05);
 }
 
+.search-bar button i {
+  font-size: 0.9rem;
+}
 
-.auth-buttons a { /* <-- THAY ĐỔI Ở ĐÂY */
-border: none;
-  padding: 0.6rem 1.2rem;
-  border-radius: 5px;
+/* Auth Buttons */
+.auth-buttons {
+  display: flex;
+  gap: 1rem;
+}
+
+.auth-buttons a {
+  padding: 0.7rem 1.5rem;
+  border-radius: 25px;
   cursor: pointer;
-  font-weight: bold;
-  margin-left: 0.5rem;
-  display: inline-block;
-  transition: all 0.2s ease;
+  font-weight: 700;
+  font-size: 0.95rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  white-space: nowrap;
 }
+
 .login-btn {
-  background-color: transparent;
-  color: var(--primary-color);
-  border: 1px solid var(--primary-color);
-
-
-
-  
+  background: transparent;
+  color: var(--primary-blue);
+  border: 2px solid var(--primary-blue);
 }
 
-/* THÊM MỚI: Hiệu ứng hover cho nút đăng nhập */
 .login-btn:hover {
-  background-color: var(--primary-color);
-  color: var(--white-color);
+  background: var(--primary-blue);
+  color: var(--text-white);
+  box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+  transform: translateY(-2px);
 }
 
 .register-btn {
-  background-color: var(--primary-color);
-  color: var(--white-color); /* THAY ĐỔI */
-  border: 1px solid var(--primary-color);
+  background: var(--bg-gradient-3);
+  color: var(--text-white);
+  border: 2px solid transparent;
+  box-shadow: var(--shadow-sm);
 }
 
-/* THÊM MỚI: Hiệu ứng hover cho nút đăng ký */
 .register-btn:hover {
-  background-color: #357ABD;
-  border-color: #357ABD;
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
 }
 
+/* Header Navigation */
 .header-nav {
-  padding: 0.5rem 2rem;
-  background-color: var(--white-color); /* THAY ĐỔI: Đồng bộ màu nền với header-top */
+  padding: 0.75rem 2rem;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-light);
 }
 
 .header-nav ul {
   list-style: none;
   display: flex;
   justify-content: center;
-  gap: 2rem;
+  gap: 2.5rem;
+  flex-wrap: wrap;
 }
 
 .header-nav ul li a {
-  font-weight: bold;
-  color: var(--text-color-light); /* THAY ĐỔI: Sử dụng màu chữ phụ */
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
   padding: 0.5rem 0;
-  position: relative; /* Cần cho hiệu ứng gạch chân */
-  transition: color 0.2s;
+  position: relative;
+  transition: all 0.3s ease;
+  letter-spacing: 0.5px;
 }
 
-.header-nav ul li a:hover {
-  color: var(--text-color); /*  Đổi sang màu chữ chính khi hover */
-}
-
-/* Hiệu ứng gạch chân động khi hover vào link điều hướng */
 .header-nav ul li a::after {
   content: '';
   position: absolute;
-  bottom: 0;
-  left: 0;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
   width: 0;
-  height: 2px;
-  background-color: var(--primary-color);
+  height: 3px;
+  background: var(--bg-gradient-3);
   transition: width 0.3s ease;
+  border-radius: 2px;
+}
+
+.header-nav ul li a:hover {
+  color: var(--primary-blue);
 }
 
 .header-nav ul li a:hover::after {
   width: 100%;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .header-top {
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  
+  .search-bar {
+    order: 3;
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  .header-nav ul {
+    gap: 1.5rem;
+  }
+  
+  .header-nav ul li a {
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .header-top {
+    padding: 1rem;
+  }
+  
+  .header-nav {
+    padding: 0.5rem 1rem;
+  }
+  
+  .header-nav ul {
+    gap: 1rem;
+    font-size: 0.8rem;
+  }
+  
+  .logo-text {
+    font-size: 1.2rem;
+  }
+  
+  .auth-buttons a {
+    padding: 0.6rem 1rem;
+    font-size: 0.85rem;
+  }
 }
