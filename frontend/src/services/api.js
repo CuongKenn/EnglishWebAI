@@ -6,6 +6,10 @@ const BASE_URL = 'http://127.0.0.1:8000';
 const API_V1 = `${BASE_URL}/api/v1`;
 const API_USERS = `${BASE_URL}/api/users`;
 
+// Export API constants for use in other services
+export const apiV1 = API_V1;
+export const apiUsers = API_USERS;
+
 // Create axios instance with default config
 const apiClient = axios.create({
   baseURL: BASE_URL,

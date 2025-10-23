@@ -87,12 +87,17 @@ const Navbar = ({ userRole = 'student', isLoggedIn = false, onLogout }) => {
             <div className="user-menu">
               <div className="user-info">
                 <span className="user-role">{userRole.toUpperCase()}</span>
-                <span className="user-name">Người dùng</span>
               </div>
-              <button className="logout-btn" onClick={onLogout}>
-                <i className="fas fa-sign-out-alt"></i>
-                Đăng xuất
-              </button>
+              <div className="user-actions">
+                <Link to="/profile" className="profile-btn">
+                  <i className="fas fa-user"></i>
+                  Hồ sơ
+                </Link>
+                <button className="logout-btn" onClick={onLogout}>
+                  <i className="fas fa-sign-out-alt"></i>
+                  Đăng xuất
+                </button>
+              </div>
             </div>
           ) : (
             <div className="auth-buttons">

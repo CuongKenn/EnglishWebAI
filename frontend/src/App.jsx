@@ -28,6 +28,9 @@ import ParentDashboard from './pages/Parent/ParentDashboard/ParentDashboard';
 // Import Welcome Notification
 import WelcomeNotification from './components/WelcomeNotification/WelcomeNotification';
 
+// Import Profile
+import Profile from './components/Profile/Profile';
+
 // Import services
 import authService from './services/authService';
 
@@ -175,15 +178,27 @@ function App() {
       />
 
       {/* Parent Dashboard - Protected */}
-      <Route 
-        path="/parent-dashboard" 
+      <Route
+        path="/parent-dashboard"
         element={
           <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="parent">
             <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
               <ParentDashboard />
             </Layout>
           </ProtectedRoute>
-        } 
+        }
+      />
+
+      {/* Profile Route - Protected */}
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute isLoggedIn={isLoggedIn}>
+            <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+              <Profile />
+            </Layout>
+          </ProtectedRoute>
+        }
       />
       </Routes>
     </>
