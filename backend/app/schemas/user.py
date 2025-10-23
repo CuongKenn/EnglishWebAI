@@ -6,6 +6,7 @@ from enum import Enum
 class UserRole(str, Enum):
     USER = "user"
     PARENT = "parent"
+    TEACHER = "teacher"
     ADMIN = "admin"
     SUPERADMIN = "superadmin"
 

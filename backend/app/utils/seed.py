@@ -82,6 +82,26 @@ def seed_users(db: Session, force: bool = False):
             "phone": "0901234572",
             "is_active": True,
             "is_verified": True
+        },
+        {
+            "username": "teacher1",
+            "email": "teacher1@example.com",
+            "full_name": "Hoang Van E",
+            "hashed_password": get_password_hash("Teacher123!"),
+            "role": UserRole.TEACHER,
+            "phone": "0901234573",
+            "is_active": True,
+            "is_verified": True
+        },
+        {
+            "username": "teacher2",
+            "email": "teacher2@example.com",
+            "full_name": "Nguyen Thi F",
+            "hashed_password": get_password_hash("Teacher123!"),
+            "role": UserRole.TEACHER,
+            "phone": "0901234574",
+            "is_active": True,
+            "is_verified": True
         }
     ]
     
@@ -100,6 +120,7 @@ def seed_users(db: Session, force: bool = False):
         print("   - admin/superadmin: Admin123! / Super123!")
         print("   - students (user role): User123!")
         print("   - parents: Parent123!")
+        print("   - teachers: Teacher123!")
     except Exception as e:
         db.rollback()
         print(f"❌ Error seeding users: {str(e)}")
