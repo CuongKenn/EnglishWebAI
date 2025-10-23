@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios'; // Import axios để gửi yêu cầu API
+import authService from '../../services/authService';
 import './Register.css';
 
 const Register = () => {
@@ -62,13 +62,13 @@ const Register = () => {
 
    // Kiểm tra mật khẩu và mật khẩu xác nhận có khớp hay không
     if (formData.password !== formData.confirmPassword) {
-      alert('Passwords do not match!');
+      alert('Mật khẩu không khớp!');
       return;
     }
 
     // Kiểm tra các trường đã được điền đầy đủ chưa
-    if (!formData.name || !formData.phone || !formData.password || !formData.confirmPassword) {
-      alert('Please fill in all fields!');
+    if (!formData.name || !formData.phone || !formData.email || !formData.password || !formData.confirmPassword) {
+      alert('Vui lòng điền đầy đủ thông tin!');
       return;
     }
 
@@ -77,22 +77,20 @@ const Register = () => {
     createRipple(button, e);
 
     try {
-      // Gửi yêu cầu đăng ký tới API Django
-      const response = await axios.post('http://127.0.0.1:8000/api/users/register/', {
+      // Sử dụng authService để đăng ký
+      await authService.register({
         username: formData.name,
         phone: formData.phone,
-        email: formData.email,    // Gửi email
+        email: formData.email,
         password: formData.password,
-        confirmPassword: formData.confirmPassword, // Gửi confirmPassword
+        confirmPassword: formData.confirmPassword,
       }); 
 
-       if (response.status === 201) {
-        alert('Registration successful!');
-        navigate('/login'); // Chuyển tới trang đăng nhập sau khi đăng ký thành công
-      }
+      alert('Đăng ký thành công!');
+      navigate('/login'); // Chuyển tới trang đăng nhập sau khi đăng ký thành công
     } catch (error) {
       console.error('Registration failed:', error);
-      alert('Registration failed, please try again.');
+      alert(error.message || 'Đăng ký thất bại, vui lòng thử lại.');
     }
   };
 
