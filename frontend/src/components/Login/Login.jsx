@@ -72,14 +72,7 @@ const Login = ({ onLogin }) => {
       const userRole = response.role;
       
       if (onLogin) {
-        onLogin(userRole); // Pass role to App.jsx
-      }
-      
-      // Navigate based on role
-      if (userRole === 'admin' || userRole === 'superadmin') {
-        navigate('/admin');
-      } else {
-        navigate('/');
+        onLogin(userRole); // Pass role to App.jsx - App.jsx sẽ handle navigation
       }
     } catch (error) {
       console.error('Login failed:', error);
