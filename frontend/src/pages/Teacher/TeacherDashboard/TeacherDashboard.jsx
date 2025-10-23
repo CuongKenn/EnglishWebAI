@@ -11,14 +11,28 @@ const TeacherDashboard = () => {
   const [identifiers, setIdentifiers] = useState('');
   const [idType, setIdType] = useState('username');
   const [fileText, setFileText] = useState('');
+  const [showStudentsModal, setShowStudentsModal] = useState(false);
+  const [students, setStudents] = useState([]);
+  const [attendanceDate, setAttendanceDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [attendance, setAttendance] = useState({}); // { userId: { status, note } }
 
   const parseIdentifiers = (text) => {
-    return Array.from(new Set(
-      (text || '')
-        .split(/\r?\n|,|;|\s+/)
-        .map(s => s.trim())
-        .filter(Boolean)
-    ));
+    const raw = (text || '')
+      .split(/\r?\n|,|;|\s+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const headers = new Set(['email', 'username', 'user', 'id']);
+    const cleaned = raw.filter((t) => !headers.has(t.toLowerCase()));
+    return Array.from(new Set(cleaned));
+  };
+
+  const detectIdType = (tokens) => {
+    if (!tokens || tokens.length === 0) return 'username';
+    const hasAt = tokens.filter((t) => t.includes('@')).length;
+    if (hasAt >= Math.max(1, Math.floor(tokens.length * 0.6))) return 'email';
+    const allDigits = tokens.every((t) => /^\d+$/.test(t));
+    if (allDigits) return 'id';
+    return 'username';
   };
 
   const loadTeachingClasses = async () => {
@@ -44,6 +58,29 @@ const TeacherDashboard = () => {
     setShowAddModal(true);
   };
 
+  const loadStudents = async (clsId) => {
+    const res = await apiClient.get(`/api/v1/classes/${clsId}/students`);
+    setStudents(Array.isArray(res.data) ? res.data : []);
+  };
+
+  const loadAttendance = async (clsId, date) => {
+    try {
+      const res = await apiClient.get(`/api/v1/classes/${clsId}/attendance`, { params: { date } });
+      const map = {};
+      (res.data || []).forEach((r) => { map[r.userId] = { status: r.status, note: r.note || '' }; });
+      setAttendance(map);
+    } catch (e) {
+      setAttendance({});
+    }
+  };
+
+  const openStudents = async (cls) => {
+    setSelectedClass(cls);
+    setShowStudentsModal(true);
+    await loadStudents(cls.id);
+    await loadAttendance(cls.id, attendanceDate);
+  };
+
   const addStudents = async (e) => {
     e.preventDefault();
     if (!selectedClass) return;
@@ -51,7 +88,7 @@ const TeacherDashboard = () => {
     const ids = parseIdentifiers(text);
     if (ids.length === 0) return;
     try {
-      await apiClient.post(`/api/v1/classes/${selectedClass.id}/students`, {
+      const res = await apiClient.post(`/api/v1/classes/${selectedClass.id}/students`, {
         identifiers: ids,
         idType,
         role: 'student',
@@ -59,7 +96,15 @@ const TeacherDashboard = () => {
       });
       setShowAddModal(false);
       await loadTeachingClasses();
-      alert('Đã thêm học sinh vào lớp');
+      const added = Array.isArray(res.data) ? res.data.length : 0;
+      if (added > 0) {
+        alert(`Đã thêm ${added} học sinh vào lớp`);
+      } else {
+        alert('Không thêm được học sinh nào. Kiểm tra lại danh sách và kiểu định danh.');
+      }
+      if (selectedClass && showStudentsModal) {
+        await loadStudents(selectedClass.id);
+      }
     } catch (e) {
       alert('Thêm học sinh thất bại');
     }
@@ -136,7 +181,8 @@ const TeacherDashboard = () => {
                       {(cls.student_count || 0)}/{cls.max_students || '—'}
                     </td>
                     <td>
-                      <button className="action-btn" title="Thêm học sinh" onClick={() => openAddStudents(cls)}>+ HS</button>
+              <button className="action-btn" title="Danh sách học sinh" onClick={() => openStudents(cls)}>👥</button>
+              <button className="action-btn" title="Thêm học sinh" onClick={() => openAddStudents(cls)}>+ HS</button>
                     </td>
                   </tr>
                 ))}
@@ -197,6 +243,8 @@ const TeacherDashboard = () => {
                     setFileText(text);
                     const ids = parseIdentifiers(text);
                     setIdentifiers(ids.join('\n'));
+                    const guessed = detectIdType(ids);
+                    setIdType(guessed);
                   }}
                 />
               </div>
@@ -210,6 +258,96 @@ const TeacherDashboard = () => {
                 <button type="submit" className="btn-primary">Thêm</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Students + Attendance Modal */}
+      {showStudentsModal && (
+        <div className="modal-overlay" onClick={() => setShowStudentsModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Học sinh - {selectedClass?.name}</h2>
+              <button className="close-btn" onClick={() => setShowStudentsModal(false)}>×</button>
+            </div>
+
+            <div className="form-group">
+              <label>Ngày điểm danh</label>
+              <input
+                type="date"
+                value={attendanceDate}
+                onChange={async (e) => {
+                  const d = e.target.value;
+                  setAttendanceDate(d);
+                  if (selectedClass) await loadAttendance(selectedClass.id, d);
+                }}
+              />
+            </div>
+
+            <div style={{ overflowX: 'auto' }}>
+              <table className="projects-table">
+                <thead>
+                  <tr>
+                    <th>Họ tên</th>
+                    <th>Email</th>
+                    <th>Trạng thái</th>
+                    <th>Ghi chú</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {students.map((s) => (
+                    <tr key={s.id}>
+                      <td>{s.name}</td>
+                      <td>{s.email}</td>
+                      <td>
+                        <select
+                          value={attendance[s.id]?.status || 'present'}
+                          onChange={(e) => setAttendance((prev) => ({ ...prev, [s.id]: { ...(prev[s.id]||{}), status: e.target.value } }))}
+                        >
+                          <option value="present">Có mặt</option>
+                          <option value="absent">Vắng</option>
+                          <option value="late">Đi muộn</option>
+                          <option value="excused">Xin phép</option>
+                        </select>
+                      </td>
+                      <td>
+                        <input
+                          type="text"
+                          value={attendance[s.id]?.note || ''}
+                          onChange={(e) => setAttendance((prev) => ({ ...prev, [s.id]: { ...(prev[s.id]||{}), note: e.target.value } }))}
+                          placeholder="Ghi chú (tùy chọn)"
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="modal-actions">
+              <button className="btn-secondary" onClick={() => setShowStudentsModal(false)}>Đóng</button>
+              <button
+                className="btn-primary"
+                onClick={async () => {
+                  try {
+                    const records = students.map((s) => ({
+                      userId: s.id,
+                      status: (attendance[s.id]?.status) || 'present',
+                      note: attendance[s.id]?.note || undefined,
+                    }));
+                    await apiClient.post(`/api/v1/classes/${selectedClass.id}/attendance`, {
+                      date: attendanceDate,
+                      records,
+                    });
+                    alert('Đã lưu điểm danh');
+                  } catch (e) {
+                    alert('Lưu điểm danh thất bại');
+                  }
+                }}
+              >
+                Lưu điểm danh
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -86,6 +86,26 @@ class ClassStudentOut(BaseModel):
     class Config:
         from_attributes = True
 
+
+# ============= Attendance Schemas =============
+
+class AttendanceRecordItem(BaseModel):
+    userId: int
+    status: str = Field("present", pattern=r"^(present|absent|late|excused)$")
+    note: Optional[str] = None
+
+
+class AttendanceUpsertRequest(BaseModel):
+    date: str  # YYYY-MM-DD
+    records: List[AttendanceRecordItem]
+
+
+class AttendanceRecordOut(BaseModel):
+    userId: int
+    status: str
+    note: Optional[str] = None
+
+
 # ============= Lesson Schemas =============
 
 class LessonBase(BaseModel):

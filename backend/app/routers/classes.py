@@ -7,13 +7,16 @@ from app.core.dependencies import get_current_user
 from app.models.user import User, UserRole
 from app.models.classroom import Classroom
 from app.models.enrollment import Enrollment
+from app.models.attendance import AttendanceRecord
 from app.schemas.student import (
     ClassroomListResponse,
     ClassroomResponse,
     EnrollmentCreate,
     EnrollmentResponse,
     AddStudentsRequest,
-    ClassStudentOut
+    ClassStudentOut,
+    AttendanceUpsertRequest,
+    AttendanceRecordOut
 )
 
 router = APIRouter()
@@ -445,3 +448,54 @@ async def remove_student_from_class(
     enr.status = "inactive"
     db.commit()
     return {"message": "Đã gỡ học sinh khỏi lớp"}
+
+
+# ============= Attendance =============
+
+@router.get("/{class_id}/attendance", response_model=List[AttendanceRecordOut])
+async def get_attendance_by_date(
+    class_id: int,
+    date: str,  # YYYY-MM-DD
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    _ensure_can_manage_class(db, current_user, class_id)
+    from datetime import date as _d
+    try:
+        qdate = _d.fromisoformat(date)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid date format, expected YYYY-MM-DD")
+    rows = db.query(AttendanceRecord).filter(AttendanceRecord.class_id == class_id, AttendanceRecord.date == qdate).all()
+    out: List[AttendanceRecordOut] = []
+    for r in rows:
+        out.append({"userId": r.user_id, "status": r.status, "note": r.note})
+    return out
+
+
+@router.post("/{class_id}/attendance")
+async def upsert_attendance(
+    class_id: int,
+    payload: AttendanceUpsertRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    _ensure_can_manage_class(db, current_user, class_id)
+    from datetime import date as _d
+    try:
+        qdate = _d.fromisoformat(payload.date)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid date format, expected YYYY-MM-DD")
+    for item in payload.records:
+        rec = (
+            db.query(AttendanceRecord)
+            .filter(AttendanceRecord.class_id == class_id, AttendanceRecord.user_id == item.userId, AttendanceRecord.date == qdate)
+            .first()
+        )
+        if rec:
+            rec.status = item.status
+            rec.note = item.note
+        else:
+            rec = AttendanceRecord(class_id=class_id, user_id=item.userId, date=qdate, status=item.status, note=item.note)
+            db.add(rec)
+    db.commit()
+    return {"message": "Attendance saved"}

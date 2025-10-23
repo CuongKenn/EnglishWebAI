@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
@@ -60,6 +60,20 @@ def admin_delete_user(
 ):
     AdminService.delete_user(db, user_id)
     return {"message": "User deleted"}
+
+
+@router.post("/users/import-csv")
+def admin_import_users_csv(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_admin_user),
+):
+    try:
+        return AdminService.import_users_csv(db, file)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")
 
 
 @router.get("/teachers", response_model=List[AdminTeacherOut])

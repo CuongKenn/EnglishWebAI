@@ -12,6 +12,9 @@ from app.schemas.admin import (
 )
 from app.core.security import get_password_hash
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from fastapi import UploadFile
+import csv
+import io
 
 
 def _vn_date(dt: Optional[datetime]) -> str:
@@ -343,3 +346,115 @@ class AdminService:
             "activeClasses": active_classes,
             "averageStudents": round(avg_students, 2),
         }
+
+    # -------- Bulk Import Users (CSV) --------
+    @staticmethod
+    def _normalize_role(raw: Optional[str]) -> str:
+        if not raw:
+            return "user"
+        s = raw.strip().lower()
+        mapping = {
+            "user": "user", "student": "user", "hs": "user", "học sinh": "user", "hoc sinh": "user",
+            "teacher": "teacher", "gv": "teacher", "giáo viên": "teacher", "giao vien": "teacher",
+            "parent": "parent", "ph": "parent", "phụ huynh": "parent", "phu huynh": "parent",
+            "admin": "admin", "quản trị": "admin", "quan tri": "admin",
+            "superadmin": "superadmin", "super admin": "superadmin",
+        }
+        return mapping.get(s, "user")
+
+    @staticmethod
+    def _ensure_unique_username(db: Session, base: str) -> str:
+        base = (base or "user").strip().lower()
+        cand = base
+        idx = 1
+        while db.query(User).filter(User.username == cand).first() is not None:
+            idx += 1
+            cand = f"{base}{idx}"
+        return cand
+
+    @staticmethod
+    def import_users_csv(db: Session, file: UploadFile) -> Dict[str, Any]:
+        if not file.filename or not file.filename.lower().endswith((".csv", ".txt")):
+            raise ValueError("Please upload a .csv or .txt file")
+
+        content = file.file.read()
+        try:
+            text = content.decode("utf-8-sig")
+        except Exception:
+            text = content.decode("utf-8", errors="ignore")
+
+        reader = csv.DictReader(io.StringIO(text))
+        headers = [h.strip().lower() for h in (reader.fieldnames or [])]
+        if not headers:
+            raise ValueError("CSV has no headers")
+
+        def pick(row: dict, *names: str) -> Optional[str]:
+            for n in names:
+                if n in row and row[n]:
+                    return str(row[n]).strip()
+            return None
+
+        created = 0
+        skipped = 0
+        errors: List[Dict[str, Any]] = []
+        preview: List[Dict[str, Any]] = []
+
+        for idx, row in enumerate(reader, start=2):
+            lower_row = {k.strip().lower(): (v.strip() if isinstance(v, str) else v) for k, v in row.items()}
+            try:
+                name = pick(lower_row, "name", "full_name", "fullname", "ho ten", "ho_va_ten", "ten") or ""
+                email = pick(lower_row, "email")
+                username = pick(lower_row, "username", "tai_khoan", "ten_dang_nhap")
+                role_raw = pick(lower_row, "role", "vai_tro", "phan_quyen")
+                status_raw = pick(lower_row, "status", "trang_thai") or "active"
+                password = pick(lower_row, "password", "mat_khau") or "Temp123!"
+
+                if not email:
+                    skipped += 1
+                    errors.append({"row": idx, "message": "Missing email"})
+                    continue
+
+                role = AdminService._normalize_role(role_raw)
+                status = "active" if str(status_raw).strip().lower() in ("active", "1", "true", "đang hoạt động") else "inactive"
+                if not username:
+                    username = (email.split("@")[0]).lower()
+                username = AdminService._ensure_unique_username(db, username)
+
+                if db.query(User).filter(User.email == email).first():
+                    skipped += 1
+                    errors.append({"row": idx, "message": "Email already exists"})
+                    continue
+
+                user = User(
+                    email=email,
+                    username=username,
+                    full_name=name or username,
+                    hashed_password=get_password_hash(password),
+                    role=UserRole(role),
+                    is_active=(status == "active"),
+                    is_verified=False,
+                )
+                db.add(user)
+                try:
+                    db.commit()
+                except IntegrityError:
+                    db.rollback()
+                    skipped += 1
+                    errors.append({"row": idx, "message": "Integrity error (duplicate username/email)"})
+                    continue
+                db.refresh(user)
+                created += 1
+                if len(preview) < 20:
+                    preview.append({
+                        "id": user.id,
+                        "email": user.email,
+                        "username": user.username,
+                        "role": user.role.value,
+                        "status": "active" if user.is_active else "inactive",
+                    })
+            except Exception as e:
+                db.rollback()
+                errors.append({"row": idx, "message": str(e)})
+                skipped += 1
+
+        return {"created": created, "skipped": skipped, "errors": errors, "preview": preview}

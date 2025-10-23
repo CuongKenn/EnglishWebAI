@@ -444,6 +444,20 @@ export const adminAPI = {
       throw error.response ? error.response.data : error;
     }
   },
+
+  // Import users via CSV
+  importUsersCSV: async (file) => {
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      const response = await apiClient.post('/api/v1/admin/users/import-csv', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
 };
 
 // Export default apiClient for custom requests
