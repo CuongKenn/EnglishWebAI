@@ -7,38 +7,41 @@ const Navbar = ({ userRole = 'student', isLoggedIn = false, onLogout }) => {
   const location = useLocation();
 
   const getNavigationItems = () => {
+    // Menu cơ bản cho student
+    const studentMenu = [
+      { path: '/lessons', label: 'Học bài' },
+      { path: '/news', label: 'Tin tức' },
+      { path: '/join-class', label: 'Tham gia lớp học' },
+      { path: '/materials', label: 'Học liệu cơ bản' },
+      { path: '/exercises', label: 'Làm bài tập' },
+      { path: '/discussion', label: 'Hỏi đáp' }
+    ];
+
     switch (userRole) {
       case 'student':
-        return [
-          { path: '/lessons', label: 'Học bài' },
-          { path: '/news', label: 'Tin tức' },
-          { path: '/join-class', label: 'Tham gia lớp học' },
-          { path: '/materials', label: 'Học liệu cơ bản' },
-          { path: '/exercises', label: 'Làm bài tập' },
-          { path: '/discussion', label: 'Hỏi đáp' }
-        ];
+        return studentMenu;
+      
       case 'teacher':
+        // Teacher có menu student + menu giáo viên
         return [
-          { path: '/manage-classes', label: 'Quản lý lớp học' },
-          { path: '/manage-materials', label: 'Tạo và quản lý học liệu' },
-          { path: '/question-bank', label: 'Ngân hàng câu hỏi cá nhân' },
-          { path: '/assign-exercises', label: 'Giao bài tập và kiểm tra' },
-          { path: '/grading', label: 'Chấm điểm và phản hồi' },
-          { path: '/statistics', label: 'Thống kê và báo cáo' },
-          { path: '/online-teaching', label: 'Tích hợp dạy học trực tuyến' }
+          ...studentMenu,
+          { path: '/teacher-dashboard', label: '👨‍🏫 Trang giáo viên', special: true }
         ];
+      
       case 'parent':
         return [
           { path: '/track-progress', label: 'Theo dõi kết quả học tập' },
           { path: '/notifications', label: 'Nhận thông báo' },
           { path: '/teacher-communication', label: 'Trao đổi với giáo viên' }
         ];
+      
       case 'admin':
+        // Admin có menu student + menu quản lý
         return [
-          { path: '/manage-accounts', label: 'Quản lý tài khoản giáo viên và học sinh' },
-          { path: '/manage-classes-admin', label: 'Quản lý lớp học và phân công giảng dạy' },
-          { path: '/overview-stats', label: 'Xem thống kê tổng quan' }
+          ...studentMenu,
+          { path: '/admin-dashboard', label: '⚙️ Quản lý', special: true }
         ];
+      
       default:
         return [];
     }
@@ -71,7 +74,7 @@ const Navbar = ({ userRole = 'student', isLoggedIn = false, onLogout }) => {
             <Link
               key={index}
               to={item.path}
-              className={`nav-link ${isActive(item.path) ? 'active' : ''}`}
+              className={`nav-link ${isActive(item.path) ? 'active' : ''} ${item.special ? 'special-link' : ''}`}
             >
               {item.label}
             </Link>
