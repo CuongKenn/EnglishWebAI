@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import engine, Base, SessionLocal
 from app.routers import auth, users
+from app.routers import admin as admin_router
+from app.models import User
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -27,6 +29,7 @@ app.add_middleware(
 # Include routers (match frontend API paths)
 app.include_router(auth.router, prefix="/api/users", tags=["Authentication"])
 app.include_router(users.router, prefix=f"{settings.API_PREFIX}/users", tags=["Users"])
+app.include_router(admin_router.router, prefix=f"{settings.API_PREFIX}/admin", tags=["Admin"])
 
 @app.on_event("startup")
 async def startup_event():

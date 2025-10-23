@@ -44,6 +44,26 @@ def seed_users(db: Session, force: bool = False):
             "is_verified": True
         },
         {
+            "username": "teacher_a",
+            "email": "teacher_a@example.com",
+            "full_name": "Nguyễn Văn A",
+            "hashed_password": get_password_hash("Teacher123!"),
+            "role": UserRole.TEACHER,
+            "phone": "0901000001",
+            "is_active": True,
+            "is_verified": True
+        },
+        {
+            "username": "teacher_b",
+            "email": "teacher_b@example.com",
+            "full_name": "Trần Thị B",
+            "hashed_password": get_password_hash("Teacher123!"),
+            "role": UserRole.TEACHER,
+            "phone": "0901000002",
+            "is_active": True,
+            "is_verified": True
+        },
+        {
             "username": "student1",
             "email": "student1@example.com",
             "full_name": "Nguyen Van A",
