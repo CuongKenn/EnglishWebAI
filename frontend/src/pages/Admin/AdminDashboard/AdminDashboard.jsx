@@ -107,7 +107,8 @@ const AdminDashboard = () => {
       <main className="admin-main-content">
         <div className="dashboard-content">
           <Routes>
-            <Route path="/" element={<Navigate to="/admin-dashboard/overview-stats" replace />} />
+            <Route index element={<Navigate to="overview-stats" replace />} />
+            <Route path="/" element={<Navigate to="overview-stats" replace />} />
             <Route path="/manage-accounts" element={<ManageAccounts />} />
             <Route path="/manage-classes" element={<ManageClasses />} />
             <Route path="/overview-stats" element={<OverviewStats />} />
