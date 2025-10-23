@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import authService from '../../services/authService';
 import './Login.css';
 
 const Login = ({ onLogin }) => {
@@ -62,22 +62,28 @@ const Login = ({ onLogin }) => {
     createRipple(button, e);
 
     try {
-      // Gửi yêu cầu đăng nhập tới API Django
-      const response = await axios.post('http://127.0.0.1:8000/api/users/login/', {
+      // Sử dụng authService để đăng nhập
+      const response = await authService.login({
         username: formData.username,
         password: formData.password,
       });
 
-      if (response.status === 200) {
-        const userRole = response.data.role; // Get role from API backend
-        if (onLogin) {
-          onLogin(userRole); // Pass role to App.jsx
-        }
-        navigate('/'); // Navigate to home
+      // Lấy role từ response
+      const userRole = response.role;
+      
+      if (onLogin) {
+        onLogin(userRole); // Pass role to App.jsx
+      }
+      
+      // Navigate based on role
+      if (userRole === 'admin' || userRole === 'superadmin') {
+        navigate('/admin');
+      } else {
+        navigate('/');
       }
     } catch (error) {
       console.error('Login failed:', error);
-      alert('Login failed, please try again.');
+      alert(error.message || 'Đăng nhập thất bại, vui lòng thử lại.');
     }
   };
 
