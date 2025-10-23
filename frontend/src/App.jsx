@@ -15,29 +15,57 @@ import Exercises from './pages/Exercises/Exercises';
 import News from './pages/News/News';
 import Lessons from './pages/Lessons/Lessons';
 
+// Import Admin Pages
+import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute';
+import AdminDashboard from './pages/Admin/AdminDashboard/AdminDashboard';
+
+// Import Teacher Pages
+import TeacherDashboard from './pages/Teacher/TeacherDashboard/TeacherDashboard';
+
+// Import Welcome Notification
+import WelcomeNotification from './components/WelcomeNotification/WelcomeNotification';
+
 function App() {
   // 2. Tạo state trung tâm, mặc định là chưa đăng nhập
+  // FOR TESTING: Set to true and change role to test different views
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userRole, setUserRole] = useState('student'); // Thêm state cho role
+  const [userRole, setUserRole] = useState('student'); // 'student' | 'teacher' | 'admin' | 'parent'
+  const [showWelcome, setShowWelcome] = useState(false);
   
   // Lấy hàm navigate để chuyển trang sau khi đăng nhập
   const navigate = useNavigate();
 
-  // 3. Hàm xử lý đăng nhập (sau này sẽ gọi API thật)
+  // 3. Hàm xử lý đăng nhập (nhận role từ API)
   const handleLogin = (role = 'student') => {
     setIsLoggedIn(true);
     setUserRole(role);
-    navigate('/'); // Chuyển người dùng về trang chủ sau khi đăng nhập
+    
+    // Tất cả user đều về trang home sau khi đăng nhập
+    navigate('/');
+    
+    // Hiển thị thông báo chào mừng
+    setTimeout(() => {
+      setShowWelcome(true);
+    }, 300); // Delay nhỏ để navigate hoàn tất trước
   };
 
   // 4. Hàm xử lý đăng xuất
   const handleLogout = () => {
     setIsLoggedIn(false);
     setUserRole('student');
+    navigate('/');
   };
 
   return (
-    <Routes>
+    <>
+      {/* Welcome Notification */}
+      <WelcomeNotification 
+        isVisible={showWelcome}
+        onClose={() => setShowWelcome(false)}
+        userRole={userRole}
+      />
+
+      <Routes>
       {/* 5. Truyền state và các hàm xử lý xuống các trang cần thiết */}
       <Route 
         path="/" 
@@ -104,7 +132,32 @@ function App() {
           </Layout>
         } 
       />
-    </Routes>
+      
+      {/* Admin Dashboard - Protected with Sidebar */}
+      <Route 
+        path="/admin-dashboard/*" 
+        element={
+          <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="admin">
+            <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+              <AdminDashboard />
+            </Layout>
+          </ProtectedRoute>
+        } 
+      />
+
+      {/* Teacher Dashboard - Protected */}
+      <Route 
+        path="/teacher-dashboard" 
+        element={
+          <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="teacher">
+            <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+              <TeacherDashboard />
+            </Layout>
+          </ProtectedRoute>
+        } 
+      />
+      </Routes>
+    </>
   );
 }
 
