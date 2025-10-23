@@ -1,6 +1,6 @@
 # Schemas package initialization
 from app.schemas.user import User, UserCreate, UserUpdate, UserInDB, PasswordChange
-from app.schemas.auth import Token, LoginRequest, RegisterRequest
+from app.schemas.auth import Token, LoginRequest, RegisterRequest, LoginResponse
 
 __all__ = [
     "User",
@@ -10,5 +10,6 @@ __all__ = [
     "PasswordChange",
     "Token",
     "LoginRequest",
-    "RegisterRequest"
+    "RegisterRequest",
+    "LoginResponse"
 ]

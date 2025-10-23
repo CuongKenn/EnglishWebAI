@@ -9,11 +9,18 @@ class TokenData(BaseModel):
     user_id: Optional[int] = None
 
 class LoginRequest(BaseModel):
-    email: EmailStr
-    password: str
-
-class RegisterRequest(BaseModel):
-    email: EmailStr
     username: str
     password: str
-    full_name: Optional[str] = None
+
+class LoginResponse(BaseModel):
+    role: str
+    access_token: str
+    token_type: str = "bearer"
+    user: dict
+
+class RegisterRequest(BaseModel):
+    username: str
+    phone: str
+    email: EmailStr
+    password: str
+    confirmPassword: str
