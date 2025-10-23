@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useLessons } from '../../hooks';
 import CourseCard from '../../components/Home/CourseCard/CourseCard';
 import './Lessons.css';
 

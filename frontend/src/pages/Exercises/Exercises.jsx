@@ -1,66 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { useExercises } from '../../hooks';
 import './Exercises.css';
 
 const Exercises = () => {
   const [selectedSubject, setSelectedSubject] = useState('all');
   const [selectedGrade, setSelectedGrade] = useState('all');
   const [selectedDifficulty, setSelectedDifficulty] = useState('all');
-  const [exercises, setExercises] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [selectedExercise, setSelectedExercise] = useState(null);
-
-  // Mock data
-  useEffect(() => {
-    const mockExercises = [
-      {
-        id: 1,
-        title: 'Phép cộng trong phạm vi 20',
-        subject: 'Toán',
-        grade: 'Lớp 2',
-        difficulty: 'Dễ',
-        questions: 10,
-        timeLimit: 15,
-        description: 'Luyện tập phép cộng cơ bản từ 1-20',
-        image: '➕',
-        color: 'blue',
-        completed: false,
-        score: null
-      },
-      {
-        id: 2,
-        title: 'Từ vựng tiếng Anh - Gia đình',
-        subject: 'Tiếng Anh',
-        grade: 'Lớp 3',
-        difficulty: 'Trung bình',
-        questions: 15,
-        timeLimit: 20,
-        description: 'Học từ vựng về các thành viên trong gia đình',
-        image: '👨‍👩‍👧‍👦',
-        color: 'green',
-        completed: true,
-        score: 85
-      },
-      {
-        id: 3,
-        title: 'Thực vật và động vật',
-        subject: 'Khoa học',
-        grade: 'Lớp 4',
-        difficulty: 'Trung bình',
-        questions: 12,
-        timeLimit: 18,
-        description: 'Khám phá thế giới thực vật và động vật',
-        image: '🌱',
-        color: 'purple',
-        completed: false,
-        score: null
-      }
-    ];
-    
-    setTimeout(() => {
-      setExercises(mockExercises);
-      setLoading(false);
-    }, 1000);
-  }, []);
+  const { exercises, loading, error } = useExercises();
 
   const filteredExercises = exercises.filter(exercise => {
     const matchesSubject = selectedSubject === 'all' || exercise.subject === selectedSubject;
@@ -163,41 +110,45 @@ const Exercises = () => {
               <div className="loading-spinner"></div>
               <p>Đang tải bài tập...</p>
             </div>
+          ) : error ? (
+            <div className="error-container">
+              <p className="error-message">{error}</p>
+            </div>
           ) : (
             <div className="exercises-grid">
               {filteredExercises.map((exercise) => (
-                <div key={exercise.id} className={`exercise-card exercise-card-${exercise.color}`}>
+                <div key={exercise.id} className={`exercise-card exercise-card-${exercise.color || 'blue'}`}>
                   <div className="exercise-header">
                     <div className="exercise-image">
-                      <span className="exercise-emoji">{exercise.image}</span>
+                      <span className="exercise-emoji">{exercise.image || '📝'}</span>
                     </div>
                     <div className="exercise-info">
                       <h3 className="exercise-title">{exercise.title}</h3>
                       <div className="exercise-meta">
-                        <span className="subject-badge">{exercise.subject}</span>
-                        <span className="grade-badge">{exercise.grade}</span>
-                        <span className={`difficulty-badge difficulty-${exercise.difficulty.toLowerCase()}`}>
-                          {exercise.difficulty}
+                        <span className="subject-badge">{exercise.subject || 'N/A'}</span>
+                        <span className="grade-badge">{exercise.grade || 'N/A'}</span>
+                        <span className={`difficulty-badge difficulty-${(exercise.difficulty || 'dễ').toLowerCase()}`}>
+                          {exercise.difficulty || 'Dễ'}
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  <p className="exercise-description">{exercise.description}</p>
+                  <p className="exercise-description">{exercise.description || 'Không có mô tả'}</p>
 
                   <div className="exercise-stats">
                     <div className="stat-item">
                       <i className="fas fa-question-circle"></i>
-                      <span>{exercise.questions} câu hỏi</span>
+                      <span>{exercise.questions || exercise.question_count || 0} câu hỏi</span>
                     </div>
                     <div className="stat-item">
                       <i className="fas fa-clock"></i>
-                      <span>{exercise.timeLimit} phút</span>
+                      <span>{exercise.timeLimit || exercise.time_limit || 'N/A'} phút</span>
                     </div>
                     {exercise.completed && (
                       <div className="stat-item">
                         <i className="fas fa-trophy"></i>
-                        <span>{exercise.score}% điểm</span>
+                        <span>{exercise.score || 0}% điểm</span>
                       </div>
                     )}
                   </div>

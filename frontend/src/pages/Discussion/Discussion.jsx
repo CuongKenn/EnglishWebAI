@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useDiscussions } from '../../hooks';
 import './Discussion.css';
 
 const Discussion = () => {
   const [activeTab, setActiveTab] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('all');
-  const [questions, setQuestions] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [showAskForm, setShowAskForm] = useState(false);
   const [newQuestion, setNewQuestion] = useState({
     title: '',
@@ -14,68 +13,7 @@ const Discussion = () => {
     subject: '',
     tags: ''
   });
-
-  // Mock data
-  useEffect(() => {
-    const mockQuestions = [
-      {
-        id: 1,
-        title: 'Cách giải bài toán phép cộng có nhớ trong phạm vi 100?',
-        content: 'Em không hiểu cách làm phép cộng có nhớ, ai có thể giúp em không?',
-        author: 'Nguyễn Minh Anh',
-        authorRole: 'Học sinh',
-        subject: 'Toán',
-        grade: 'Lớp 2',
-        tags: ['phép cộng', 'có nhớ', 'lớp 2'],
-        answers: 3,
-        views: 45,
-        likes: 8,
-        createdAt: '2 giờ trước',
-        isAnswered: true,
-        isVip: false,
-        avatar: '👧'
-      },
-      {
-        id: 2,
-        title: 'Từ vựng tiếng Anh về gia đình',
-        content: 'Các bạn có thể chia sẻ từ vựng tiếng Anh về gia đình không?',
-        author: 'Trần Thị Hoa',
-        authorRole: 'Học sinh',
-        subject: 'Tiếng Anh',
-        grade: 'Lớp 3',
-        tags: ['từ vựng', 'gia đình', 'tiếng anh'],
-        answers: 5,
-        views: 78,
-        likes: 12,
-        createdAt: '4 giờ trước',
-        isAnswered: true,
-        isVip: false,
-        avatar: '👩'
-      },
-      {
-        id: 3,
-        title: 'Tại sao lá cây có màu xanh?',
-        content: 'Em thắc mắc tại sao lá cây lại có màu xanh, có ai biết giải thích không?',
-        author: 'Lê Văn Nam',
-        authorRole: 'Học sinh',
-        subject: 'Khoa học',
-        grade: 'Lớp 4',
-        tags: ['khoa học', 'thực vật', 'màu sắc'],
-        answers: 2,
-        views: 32,
-        likes: 6,
-        createdAt: '6 giờ trước',
-        isAnswered: false,
-        isVip: true,
-        avatar: '👦'
-      }
-    ];
-    
-    setTimeout(() => {
-      setQuestions(mockQuestions);
-      setLoading(false);
-    }, 1000);
-  }, []);
+  const { discussions: questions, loading, error, createDiscussion } = useDiscussions();
 
   const filteredQuestions = questions.filter(question => {
     const matchesTab = activeTab === 'all' || 
@@ -89,13 +27,22 @@ const Discussion = () => {
     return matchesTab && matchesSearch && matchesSubject;
   });
 
-  const handleAskQuestion = (e) => {
+  const handleAskQuestion = async (e) => {
     e.preventDefault();
     if (newQuestion.title && newQuestion.content) {
-      // Logic để gửi câu hỏi
-      alert('Câu hỏi của bạn đã được gửi!');
-      setNewQuestion({ title: '', content: '', subject: '', tags: '' });
-      setShowAskForm(false);
+      try {
+        await createDiscussion({
+          title: newQuestion.title,
+          content: newQuestion.content,
+          subject: newQuestion.subject,
+          tags: newQuestion.tags.split(',').map(tag => tag.trim())
+        });
+        alert('Câu hỏi của bạn đã được gửi!');
+        setNewQuestion({ title: '', content: '', subject: '', tags: '' });
+        setShowAskForm(false);
+      } catch (err) {
+        alert(err.message || 'Có lỗi xảy ra khi gửi câu hỏi');
+      }
     }
   };
 
@@ -262,6 +209,10 @@ const Discussion = () => {
               <div className="loading-spinner"></div>
               <p>Đang tải câu hỏi...</p>
             </div>
+          ) : error ? (
+            <div className="error-container">
+              <p className="error-message">{error}</p>
+            </div>
           ) : (
             <div className="questions-list">
               {filteredQuestions.map((question) => (
@@ -269,15 +220,15 @@ const Discussion = () => {
                   <div className="question-header">
                     <div className="author-info">
                       <div className="author-avatar">
-                        <span className="avatar-emoji">{question.avatar}</span>
+                        <span className="avatar-emoji">{question.avatar || '👤'}</span>
                       </div>
                       <div className="author-details">
-                        <h4 className="author-name">{question.author}</h4>
-                        <span className="author-role">{question.authorRole}</span>
+                        <h4 className="author-name">{question.author || question.author_name || 'Ẩn danh'}</h4>
+                        <span className="author-role">{question.authorRole || question.author_role || 'Học sinh'}</span>
                       </div>
                     </div>
                     <div className="question-meta">
-                      <span className="question-time">{question.createdAt}</span>
+                      <span className="question-time">{question.createdAt || question.created_at || 'Vừa xong'}</span>
                       {question.isVip && (
                         <span className="vip-badge">VIP</span>
                       )}

@@ -22,38 +22,55 @@ import AdminDashboard from './pages/Admin/AdminDashboard/AdminDashboard';
 // Import Teacher Pages
 import TeacherDashboard from './pages/Teacher/TeacherDashboard/TeacherDashboard';
 
+// Import Parent Pages
+import ParentDashboard from './pages/Parent/ParentDashboard/ParentDashboard';
+
 // Import Welcome Notification
 import WelcomeNotification from './components/WelcomeNotification/WelcomeNotification';
 
+// Import services
+import authService from './services/authService';
+
 function App() {
-  // 2. Tạo state trung tâm, mặc định là chưa đăng nhập
-  // FOR TESTING: Set to true and change role to test different views
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userRole, setUserRole] = useState('student'); // 'student' | 'teacher' | 'admin' | 'parent'
+  // 2. Tạo state trung tâm, sử dụng authService để check trạng thái
+  const [isLoggedIn, setIsLoggedIn] = useState(() => authService.isAuthenticated());
+  const [userRole, setUserRole] = useState(() => {
+    const user = authService.getCurrentUser();
+    return user?.role || 'user';
+  });
   const [showWelcome, setShowWelcome] = useState(false);
   
   // Lấy hàm navigate để chuyển trang sau khi đăng nhập
   const navigate = useNavigate();
 
   // 3. Hàm xử lý đăng nhập (nhận role từ API)
-  const handleLogin = (role = 'student') => {
+  const handleLogin = (role = 'user') => {
     setIsLoggedIn(true);
     setUserRole(role);
     
-    // Tất cả user đều về trang home sau khi đăng nhập
-    navigate('/');
+    // Navigate dựa trên role
+    if (role === 'admin' || role === 'superadmin') {
+      navigate('/admin-dashboard');
+    } else if (role === 'teacher') {
+      navigate('/teacher-dashboard');
+    } else if (role === 'parent') {
+      navigate('/parent-dashboard');
+    } else {
+      navigate('/');
+    }
     
     // Hiển thị thông báo chào mừng
     setTimeout(() => {
       setShowWelcome(true);
-    }, 300); // Delay nhỏ để navigate hoàn tất trước
+    }, 300);
   };
 
   // 4. Hàm xử lý đăng xuất
   const handleLogout = () => {
+    authService.logout();
     setIsLoggedIn(false);
-    setUserRole('student');
-    navigate('/');
+    setUserRole('user');
+    navigate('/login');
   };
 
   return (
@@ -152,6 +169,18 @@ function App() {
           <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="teacher">
             <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
               <TeacherDashboard />
+            </Layout>
+          </ProtectedRoute>
+        } 
+      />
+
+      {/* Parent Dashboard - Protected */}
+      <Route 
+        path="/parent-dashboard" 
+        element={
+          <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="parent">
+            <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+              <ParentDashboard />
             </Layout>
           </ProtectedRoute>
         } 
