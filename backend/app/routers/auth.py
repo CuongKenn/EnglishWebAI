@@ -1,41 +1,73 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.schemas.auth import LoginRequest, RegisterRequest, Token
-from app.schemas.user import User
+from app.schemas.auth import LoginRequest, RegisterRequest, LoginResponse
 from app.services.auth_service import AuthService
 
 router = APIRouter()
 
-@router.post("/register", response_model=dict, status_code=status.HTTP_201_CREATED)
+@router.post("/login/", response_model=LoginResponse)
+async def login(
+    login_data: LoginRequest,
+    db: Session = Depends(get_db)
+):
+    """Login user with username and password"""
+    try:
+        result = AuthService.login(db, login_data)
+        return {
+            "role": result["user"].role.value,
+            "access_token": result["access_token"],
+            "token_type": result["token_type"],
+            "user": {
+                "id": result["user"].id,
+                "username": result["user"].username,
+                "email": result["user"].email,
+                "full_name": result["user"].full_name,
+                "role": result["user"].role.value,
+                "phone": result["user"].phone
+            }
+        }
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+@router.post("/register/", status_code=status.HTTP_201_CREATED)
 async def register(
     register_data: RegisterRequest,
     db: Session = Depends(get_db)
 ):
     """Register a new user"""
-    result = AuthService.register(db, register_data)
-    return {
-        "message": "User registered successfully",
-        "access_token": result["access_token"],
-        "token_type": result["token_type"],
-        "user": result["user"]
-    }
+    # Validate passwords match
+    if register_data.password != register_data.confirmPassword:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Passwords do not match"
+        )
+    
+    try:
+        result = AuthService.register(db, register_data)
+        return {
+            "message": "User registered successfully",
+            "user": {
+                "id": result["user"].id,
+                "username": result["user"].username,
+                "email": result["user"].email,
+                "phone": result["user"].phone
+            }
+        }
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 
-@router.post("/login", response_model=dict)
-async def login(
-    login_data: LoginRequest,
-    db: Session = Depends(get_db)
-):
-    """Login user"""
-    result = AuthService.login(db, login_data)
-    return {
-        "message": "Login successful",
-        "access_token": result["access_token"],
-        "token_type": result["token_type"],
-        "user": result["user"]
-    }
-
-@router.post("/logout")
+@router.post("/logout/")
 async def logout():
     """Logout user (client should discard token)"""
     return {"message": "Logout successful"}

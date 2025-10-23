@@ -4,16 +4,17 @@ from datetime import datetime
 from enum import Enum
 
 class UserRole(str, Enum):
-    STUDENT = "student"
-    TEACHER = "teacher"
+    USER = "user"
+    PARENT = "parent"
     ADMIN = "admin"
+    SUPERADMIN = "superadmin"
 
 # Base User Schema
 class UserBase(BaseModel):
     email: EmailStr
     username: str = Field(..., min_length=3, max_length=50)
     full_name: Optional[str] = None
-    role: UserRole = UserRole.STUDENT
+    role: UserRole = UserRole.USER
     phone: Optional[str] = None
 
 # Schema for creating a user
