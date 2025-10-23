@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, List
 from datetime import datetime
 
@@ -61,6 +61,27 @@ class EnrollmentResponse(BaseModel):
     role: str
     status: str
     joined_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# ============= Class Students Management (Teacher/Admin) =============
+
+class AddStudentsRequest(BaseModel):
+    identifiers: List[str]
+    idType: str = Field("username", pattern=r"^(username|email|id)$")
+    role: str = Field("student", pattern=r"^(student)$")
+    status: str = Field("active", pattern=r"^(active|inactive)$")
+
+
+class ClassStudentOut(BaseModel):
+    id: int
+    username: str
+    name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    status: str
+    joined_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True

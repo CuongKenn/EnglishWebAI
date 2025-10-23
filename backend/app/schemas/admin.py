@@ -12,6 +12,12 @@ class AdminUserBase(BaseModel):
 
 
 class AdminUserCreate(AdminUserBase):
+    username: Optional[str] = Field(
+        None,
+        min_length=3,
+        max_length=30,
+        description="Optional username; defaults to email local-part if omitted",
+    )
     password: str = Field(..., min_length=6)
 
 

@@ -45,6 +45,14 @@ async def startup_event():
     """Run on application startup"""
     print("🚀 Starting EnglishWebAI Backend...")
     
+    # Auto-migrate lightweight schema (SQLite add columns if missing)
+    try:
+        from app.utils.db_migrations import ensure_schema
+        ensure_schema()
+        print("✅ Schema ensured (light migration)")
+    except Exception as e:
+        print(f"⚠️  Schema ensure failed: {e}")
+
     # Auto-seed database if empty
     from app.utils.seed import seed_users
     from app.models.user import User
