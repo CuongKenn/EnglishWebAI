@@ -613,14 +613,12 @@
 
 /* Social Buttons */
 .social-buttons {
-  display: flex;
-  gap: 1rem;
   margin-bottom: 2rem;
 }
 
 .social-btn {
-  flex: 1;
-  padding: 0.9rem;
+  width: 100%;
+  padding: 0.9rem 1.5rem;
   border: 2px solid #e0e0e0;
   border-radius: 12px;
   background: white;
@@ -628,8 +626,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.6rem;
-  font-weight: 500;
+  gap: 0.8rem;
+  font-weight: 600;
+  font-size: 0.95rem;
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
@@ -650,24 +649,19 @@
   left: 100%;
 }
 
+.social-icon {
+  flex-shrink: 0;
+}
+
 .google-btn {
   color: #333;
 }
 
 .google-btn:hover {
-  border-color: #EA4335;
+  border-color: #4285F4;
   transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(234, 67, 53, 0.2);
-}
-
-.facebook-btn {
-  color: #1877F2;
-}
-
-.facebook-btn:hover {
-  border-color: #1877F2;
-  transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(24, 119, 242, 0.2);
+  box-shadow: 0 8px 20px rgba(66, 133, 244, 0.25);
+  background: #fafbff;
 }
 
 /* Terms Text */
