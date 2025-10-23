@@ -15,7 +15,8 @@ class AuthService:
             email=register_data.email,
             username=register_data.username,
             password=register_data.password,
-            full_name=register_data.full_name
+            phone=register_data.phone,
+            full_name=register_data.username  # Use username as full_name by default
         )
         
         user = UserService.create_user(db, user_create)
@@ -34,13 +35,14 @@ class AuthService:
     
     @staticmethod
     def login(db: Session, login_data: LoginRequest):
-        """Login user"""
-        user = UserService.authenticate_user(db, login_data.email, login_data.password)
+        """Login user with username"""
+        # Try to authenticate with username
+        user = UserService.authenticate_user_by_username(db, login_data.username, login_data.password)
         
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incorrect email or password",
+                detail="Incorrect username or password",
                 headers={"WWW-Authenticate": "Bearer"},
             )
         

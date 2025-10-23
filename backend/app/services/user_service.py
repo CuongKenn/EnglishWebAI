@@ -91,8 +91,18 @@ class UserService:
     
     @staticmethod
     def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
-        """Authenticate user"""
+        """Authenticate user by email"""
         user = UserService.get_user_by_email(db, email)
+        if not user:
+            return None
+        if not verify_password(password, user.hashed_password):
+            return None
+        return user
+    
+    @staticmethod
+    def authenticate_user_by_username(db: Session, username: str, password: str) -> Optional[User]:
+        """Authenticate user by username"""
+        user = UserService.get_user_by_username(db, username)
         if not user:
             return None
         if not verify_password(password, user.hashed_password):
