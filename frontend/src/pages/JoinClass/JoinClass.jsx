@@ -1,21 +1,31 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useClasses } from '../../hooks';
 import './JoinClass.css';
 
 const JoinClass = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGrade, setSelectedGrade] = useState('all');
-  const [selectedSubject, setSelectedSubject] = useState('all');
-  const { classes, loading, error, joinClass } = useClasses();
+  const [selectedSkill, setSelectedSkill] = useState('all');
+  // Convert selectedGrade 'Lớp X' -> number for API
+  const gradeNumber = selectedGrade && selectedGrade !== 'all' ? (selectedGrade.match(/\d+/)?.[0] || null) : null;
+  const skillParam = selectedSkill !== 'all' ? selectedSkill : undefined;
+  const { classes, loading, error, joinClass } = useClasses({ grade: gradeNumber || undefined, skill: skillParam });
+  const [params] = useSearchParams();
+
+  // Initialize grade filter from query string
+  useEffect(() => {
+    const q = params.get('grade');
+    if (q) setSelectedGrade(q);
+  }, [params]);
 
   const filteredClasses = classes.filter(classItem => {
     const matchesSearch = classItem.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          classItem.teacher_name?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesGrade = selectedGrade === 'all' || classItem.grade === selectedGrade;
-    const matchesSubject = selectedSubject === 'all' || classItem.subject === selectedSubject;
+    const matchesSkill = selectedSkill === 'all' || (classItem.skill || '').toLowerCase() === selectedSkill.toLowerCase();
     
-    return matchesSearch && matchesGrade && matchesSubject;
+    return matchesSearch && matchesGrade && matchesSkill;
   });
 
   const handleJoinClass = async (classId) => {
@@ -66,26 +76,24 @@ const JoinClass = () => {
                 className="filter-select"
               >
                 <option value="all">Tất cả</option>
-                <option value="Lớp 1">Lớp 1</option>
-                <option value="Lớp 2">Lớp 2</option>
-                <option value="Lớp 3">Lớp 3</option>
-                <option value="Lớp 4">Lớp 4</option>
-                <option value="Lớp 5">Lớp 5</option>
+                {Array.from({ length: 12 }, (_, i) => i + 1).map((g) => (
+                  <option key={g} value={`Lớp ${g}`}>{`Lớp ${g}`}</option>
+                ))}
               </select>
             </div>
 
             <div className="filter-group">
-              <label className="filter-label">Môn học:</label>
+              <label className="filter-label">Kỹ năng:</label>
               <select 
-                value={selectedSubject} 
-                onChange={(e) => setSelectedSubject(e.target.value)}
+                value={selectedSkill} 
+                onChange={(e) => setSelectedSkill(e.target.value)}
                 className="filter-select"
               >
                 <option value="all">Tất cả</option>
-                <option value="Toán">Toán</option>
-                <option value="Tiếng Anh">Tiếng Anh</option>
-                <option value="Khoa học">Khoa học</option>
-                <option value="Lịch sử">Lịch sử</option>
+                <option value="listening">Listening</option>
+                <option value="speaking">Speaking</option>
+                <option value="reading">Reading</option>
+                <option value="writing">Writing</option>
               </select>
             </div>
           </div>
@@ -131,10 +139,10 @@ const JoinClass = () => {
                       <i className="fas fa-graduation-cap"></i>
                       <span>{classItem.grade || 'N/A'}</span>
                     </div>
-                    <div className="detail-item">
-                      <i className="fas fa-book"></i>
-                      <span>{classItem.subject || 'N/A'}</span>
-                    </div>
+                  <div className="detail-item">
+                    <i className="fas fa-book"></i>
+                    <span>{(classItem.skill ? (classItem.skill.charAt(0).toUpperCase() + classItem.skill.slice(1)) : 'N/A')}</span>
+                  </div>
                     <div className="detail-item">
                       <i className="fas fa-clock"></i>
                       <span>{classItem.schedule || 'Chưa có lịch học'}</span>

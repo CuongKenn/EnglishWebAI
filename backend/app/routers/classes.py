@@ -24,8 +24,9 @@ router = APIRouter()
 @router.get("/", response_model=List[ClassroomListResponse])
 async def get_classes(
     search: str = None,
-    grade: str = None,
+    grade: int = None,
     subject: str = None,
+    skill: str = None,
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db)
@@ -45,13 +46,31 @@ async def get_classes(
             (Classroom.description.ilike(f"%{search}%"))
         )
     
+    # Filter by grade/skill
+    if grade is not None:
+        try:
+            g = int(grade)
+            query = query.filter(Classroom.grade == g)
+        except Exception:
+            pass
+    if skill:
+        query = query.filter(Classroom.skill == skill)
+
     # Filter active classes only
     query = query.filter(Classroom.is_active == True)
     query = query.group_by(Classroom.id)
     query = query.offset(skip).limit(limit)
     
     results = query.all()
-    
+
+    # Resolve teacher names
+    teacher_ids = [c.teacher_id for c, _ in results if c.teacher_id]
+    name_map = {}
+    if teacher_ids:
+        rows = db.query(User.id, User.full_name, User.username).filter(User.id.in_(teacher_ids)).all()
+        for i, full_name, username in rows:
+            name_map[i] = full_name or username
+
     # Format response
     classes = []
     for classroom, student_count in results:
@@ -61,14 +80,17 @@ async def get_classes(
             "description": classroom.description,
             "schedule": classroom.schedule,
             "max_students": classroom.max_students,
-            "student_count": student_count,
-            "teacher_name": "Chưa có giáo viên",  # TODO: Join with User table
-            "subject": "Tiếng Anh",  # TODO: Add subject field to Classroom
-            "grade": "Lớp 3",  # TODO: Add grade field to Classroom
+            "maxStudents": classroom.max_students,
+            "students": int(student_count or 0),
+            "student_count": int(student_count or 0),
+            "teacher_name": name_map.get(classroom.teacher_id, "Chưa có giáo viên"),
+            "subject": "Tiếng Anh",
+            "grade": f"Lớp {classroom.grade}" if classroom.grade else None,
+            "skill": classroom.skill,
             "image": "📚",
             "color": "blue"
         })
-    
+
     return classes
 
 @router.get("/my-classes", response_model=List[ClassroomListResponse])
@@ -99,7 +121,15 @@ async def get_my_classes(
     query = query.group_by(Classroom.id)
     
     results = query.all()
-    
+
+    # Resolve teacher names
+    teacher_ids = [c.teacher_id for c, _ in results if c.teacher_id]
+    name_map = {}
+    if teacher_ids:
+        rows = db.query(User.id, User.full_name, User.username).filter(User.id.in_(teacher_ids)).all()
+        for i, full_name, username in rows:
+            name_map[i] = full_name or username
+
     # Format response
     classes = []
     for classroom, student_count in results:
@@ -109,17 +139,19 @@ async def get_my_classes(
             "description": classroom.description,
             "schedule": classroom.schedule,
             "max_students": classroom.max_students,
-            "student_count": student_count,
-            "teacher_name": "Chưa có giáo viên",
+            "maxStudents": classroom.max_students,
+            "students": int(student_count or 0),
+            "student_count": int(student_count or 0),
+            "teacher_name": name_map.get(classroom.teacher_id, "Chưa có giáo viên"),
             "subject": "Tiếng Anh",
-            "grade": "Lớp 3",
+            "grade": f"Lớp {classroom.grade}" if classroom.grade else None,
+            "skill": classroom.skill,
             "image": "📚",
             "color": "green"
         })
-    
+
     return classes
 
-@router.get("/teaching", response_model=List[ClassroomListResponse])
 @router.get("/teaching", response_model=List[ClassroomListResponse])
 async def get_classes_teaching(
     current_user: User = Depends(get_current_user),
