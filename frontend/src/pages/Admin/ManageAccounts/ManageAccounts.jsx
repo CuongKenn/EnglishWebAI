@@ -8,6 +8,9 @@ const ManageAccounts = () => {
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState('add'); // 'add' or 'edit'
   const [selectedUser, setSelectedUser] = useState(null);
+  const [showImport, setShowImport] = useState(false);
+  const [importFile, setImportFile] = useState(null);
+  const [importResult, setImportResult] = useState(null);
 
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -232,6 +235,9 @@ const ManageAccounts = () => {
               <button className="btn-primary" onClick={() => handleOpenModal('add')}>
                 ➕ Thêm tài khoản
               </button>
+              <button className="btn-primary" onClick={() => { setShowImport(true); setImportResult(null); }}>
+                📥 Import CSV
+              </button>
             </div>
           </div>
 
@@ -396,6 +402,68 @@ const ManageAccounts = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Import CSV Modal */}
+      {showImport && (
+        <div className="modal-overlay" onClick={() => setShowImport(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Import tài khoản từ CSV</h2>
+              <button className="close-btn" onClick={() => setShowImport(false)}>×</button>
+            </div>
+            {!importResult ? (
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                if (!importFile) { alert('Chọn file CSV trước'); return; }
+                try {
+                  const result = await adminAPI.importUsersCSV(importFile);
+                  setImportResult(result);
+                  await loadUsers();
+                } catch (err) {
+                  alert(err?.detail || 'Import thất bại');
+                }
+              }}>
+                <div className="form-group">
+                  <label>Chọn file (.csv hoặc .txt)</label>
+                  <input type="file" accept=".csv,.txt" onChange={(e) => setImportFile(e.target.files?.[0] || null)} />
+                </div>
+                <div style={{ fontSize: 13, color: '#6b7280' }}>
+                  Cột được hỗ trợ: name, email, username (tùy chọn), role, status, password. Role cho phép: user/student, teacher, parent, admin.
+                </div>
+                <div className="modal-actions">
+                  <button type="button" className="btn-secondary" onClick={() => setShowImport(false)}>Hủy</button>
+                  <button type="submit" className="btn-primary">Import</button>
+                </div>
+              </form>
+            ) : (
+              <div>
+                <p><strong>Kết quả:</strong></p>
+                <p>Đã tạo: {importResult.created} | Bỏ qua: {importResult.skipped}</p>
+                {importResult.errors?.length > 0 && (
+                  <div style={{ maxHeight: 200, overflow: 'auto', background: '#f9fafb', padding: 10, borderRadius: 8 }}>
+                    {importResult.errors.map((e, i) => (
+                      <div key={i} style={{ color: '#991b1b' }}>Dòng {e.row}: {e.message}</div>
+                    ))}
+                  </div>
+                )}
+                {importResult.preview?.length > 0 && (
+                  <div style={{ marginTop: 10, fontSize: 13, color: '#374151' }}>
+                    Một số tài khoản:
+                    <ul>
+                      {importResult.preview.map((u) => (
+                        <li key={u.id}>{u.username} - {u.email} ({u.role})</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                <div className="modal-actions">
+                  <button className="btn-primary" onClick={() => setShowImport(false)}>Đóng</button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
