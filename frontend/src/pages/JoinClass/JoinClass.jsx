@@ -1,76 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useClasses } from '../../hooks';
 import './JoinClass.css';
 
 const JoinClass = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGrade, setSelectedGrade] = useState('all');
   const [selectedSubject, setSelectedSubject] = useState('all');
-  const [classes, setClasses] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  // Mock data - sẽ được thay thế bằng API call
-  useEffect(() => {
-    const mockClasses = [
-      {
-        id: 1,
-        name: 'Lớp 2A - Toán',
-        teacher: 'Cô Nguyễn Thị Hoa',
-        subject: 'Toán',
-        grade: 'Lớp 2',
-        schedule: 'Thứ 2, 4, 6 - 8:00-9:00',
-        students: 25,
-        maxStudents: 30,
-        description: 'Khóa học Toán cơ bản cho học sinh lớp 2',
-        image: '📚',
-        color: 'blue'
-      },
-      {
-        id: 2,
-        name: 'Lớp 3B - Tiếng Anh',
-        teacher: 'Thầy John Smith',
-        subject: 'Tiếng Anh',
-        grade: 'Lớp 3',
-        schedule: 'Thứ 3, 5 - 9:00-10:00',
-        students: 20,
-        maxStudents: 25,
-        description: 'Học tiếng Anh qua các hoạt động vui nhộn',
-        image: '🌍',
-        color: 'green'
-      },
-      {
-        id: 3,
-        name: 'Lớp 4C - Khoa học',
-        teacher: 'Cô Lê Thị Mai',
-        subject: 'Khoa học',
-        grade: 'Lớp 4',
-        schedule: 'Thứ 2, 6 - 10:00-11:00',
-        students: 18,
-        maxStudents: 20,
-        description: 'Khám phá thế giới khoa học xung quanh',
-        image: '🔬',
-        color: 'purple'
-      }
-    ];
-    
-    setTimeout(() => {
-      setClasses(mockClasses);
-      setLoading(false);
-    }, 1000);
-  }, []);
+  const { classes, loading, error, joinClass } = useClasses();
 
   const filteredClasses = classes.filter(classItem => {
     const matchesSearch = classItem.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         classItem.teacher.toLowerCase().includes(searchTerm.toLowerCase());
+                         classItem.teacher_name?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesGrade = selectedGrade === 'all' || classItem.grade === selectedGrade;
     const matchesSubject = selectedSubject === 'all' || classItem.subject === selectedSubject;
     
     return matchesSearch && matchesGrade && matchesSubject;
   });
 
-  const handleJoinClass = (classId) => {
-    // Logic để tham gia lớp học
-    alert(`Bạn đã tham gia lớp học ${classId}!`);
+  const handleJoinClass = async (classId) => {
+    try {
+      await joinClass(classId);
+      alert('Tham gia lớp học thành công!');
+    } catch (err) {
+      alert(err.message || 'Có lỗi xảy ra khi tham gia lớp học');
+    }
   };
 
   return (
@@ -151,19 +105,23 @@ const JoinClass = () => {
               <div className="loading-spinner"></div>
               <p>Đang tải danh sách lớp học...</p>
             </div>
+          ) : error ? (
+            <div className="error-container">
+              <p className="error-message">{error}</p>
+            </div>
           ) : (
             <div className="classes-grid">
               {filteredClasses.map((classItem) => (
-                <div key={classItem.id} className={`class-card class-card-${classItem.color}`}>
+                <div key={classItem.id} className={`class-card class-card-${classItem.color || 'blue'}`}>
                   <div className="class-header">
                     <div className="class-image">
-                      <span className="class-emoji">{classItem.image}</span>
+                      <span className="class-emoji">{classItem.image || '📚'}</span>
                     </div>
                     <div className="class-info">
                       <h3 className="class-name">{classItem.name}</h3>
                       <p className="class-teacher">
                         <i className="fas fa-user"></i>
-                        {classItem.teacher}
+                        {classItem.teacher_name || 'Chưa có giáo viên'}
                       </p>
                     </div>
                   </div>
@@ -171,23 +129,23 @@ const JoinClass = () => {
                   <div className="class-details">
                     <div className="detail-item">
                       <i className="fas fa-graduation-cap"></i>
-                      <span>{classItem.grade}</span>
+                      <span>{classItem.grade || 'N/A'}</span>
                     </div>
                     <div className="detail-item">
                       <i className="fas fa-book"></i>
-                      <span>{classItem.subject}</span>
+                      <span>{classItem.subject || 'N/A'}</span>
                     </div>
                     <div className="detail-item">
                       <i className="fas fa-clock"></i>
-                      <span>{classItem.schedule}</span>
+                      <span>{classItem.schedule || 'Chưa có lịch học'}</span>
                     </div>
                     <div className="detail-item">
                       <i className="fas fa-users"></i>
-                      <span>{classItem.students}/{classItem.maxStudents} học sinh</span>
+                      <span>{classItem.students || 0}/{classItem.maxStudents || classItem.max_students || 30} học sinh</span>
                     </div>
                   </div>
 
-                  <p className="class-description">{classItem.description}</p>
+                  <p className="class-description">{classItem.description || 'Không có mô tả'}</p>
 
                   <div className="class-actions">
                     <button 

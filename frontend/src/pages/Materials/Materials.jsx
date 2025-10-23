@@ -1,77 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useMaterials } from '../../hooks';
 import './Materials.css';
 
 const Materials = () => {
   const [selectedGrade, setSelectedGrade] = useState('all');
   const [selectedSubject, setSelectedSubject] = useState('all');
-  const [materials, setMaterials] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [selectedMaterial, setSelectedMaterial] = useState(null);
-
-  // Mock data
-  useEffect(() => {
-    const mockMaterials = [
-      {
-        id: 1,
-        title: 'Toán lớp 2 - Phép cộng trừ cơ bản',
-        subject: 'Toán',
-        grade: 'Lớp 2',
-        description: 'Học các phép cộng trừ cơ bản từ 1-100',
-        image: '📚',
-        color: 'blue',
-        lessons: 15,
-        duration: '2 tuần',
-        difficulty: 'Dễ',
-        progress: 0,
-        chapters: [
-          { id: 1, title: 'Phép cộng trong phạm vi 20', lessons: 5, completed: 0 },
-          { id: 2, title: 'Phép trừ trong phạm vi 20', lessons: 5, completed: 0 },
-          { id: 3, title: 'Phép cộng trừ có nhớ', lessons: 5, completed: 0 }
-        ]
-      },
-      {
-        id: 2,
-        title: 'Tiếng Anh lớp 3 - Từ vựng cơ bản',
-        subject: 'Tiếng Anh',
-        grade: 'Lớp 3',
-        description: 'Học từ vựng tiếng Anh cơ bản cho trẻ em',
-        image: '🌍',
-        color: 'green',
-        lessons: 20,
-        duration: '3 tuần',
-        difficulty: 'Trung bình',
-        progress: 25,
-        chapters: [
-          { id: 1, title: 'Gia đình và bạn bè', lessons: 6, completed: 2 },
-          { id: 2, title: 'Màu sắc và số đếm', lessons: 7, completed: 1 },
-          { id: 3, title: 'Động vật và thiên nhiên', lessons: 7, completed: 0 }
-        ]
-      },
-      {
-        id: 3,
-        title: 'Khoa học lớp 4 - Thế giới tự nhiên',
-        subject: 'Khoa học',
-        grade: 'Lớp 4',
-        description: 'Khám phá thế giới tự nhiên xung quanh',
-        image: '🔬',
-        color: 'purple',
-        lessons: 18,
-        duration: '4 tuần',
-        difficulty: 'Trung bình',
-        progress: 0,
-        chapters: [
-          { id: 1, title: 'Thực vật và động vật', lessons: 6, completed: 0 },
-          { id: 2, title: 'Môi trường sống', lessons: 6, completed: 0 },
-          { id: 3, title: 'Bảo vệ môi trường', lessons: 6, completed: 0 }
-        ]
-      }
-    ];
-    
-    setTimeout(() => {
-      setMaterials(mockMaterials);
-      setLoading(false);
-    }, 1000);
-  }, []);
+  const { materials, loading, error } = useMaterials();
 
   const filteredMaterials = materials.filter(material => {
     const matchesGrade = selectedGrade === 'all' || material.grade === selectedGrade;
@@ -153,21 +88,25 @@ const Materials = () => {
               <div className="loading-spinner"></div>
               <p>Đang tải học liệu...</p>
             </div>
+          ) : error ? (
+            <div className="error-container">
+              <p className="error-message">{error}</p>
+            </div>
           ) : (
             <div className="materials-grid">
               {filteredMaterials.map((material) => (
-                <div key={material.id} className={`material-card material-card-${material.color}`}>
+                <div key={material.id} className={`material-card material-card-${material.color || 'blue'}`}>
                   <div className="material-header">
                     <div className="material-image">
-                      <span className="material-emoji">{material.image}</span>
+                      <span className="material-emoji">{material.image || '📚'}</span>
                     </div>
                     <div className="material-info">
                       <h3 className="material-title">{material.title}</h3>
                       <div className="material-meta">
-                        <span className="grade-badge">{material.grade}</span>
-                        <span className="subject-badge">{material.subject}</span>
-                        <span className={`difficulty-badge difficulty-${material.difficulty.toLowerCase()}`}>
-                          {material.difficulty}
+                        <span className="grade-badge">{material.grade || 'N/A'}</span>
+                        <span className="subject-badge">{material.subject || 'N/A'}</span>
+                        <span className={`difficulty-badge difficulty-${(material.difficulty || 'dễ').toLowerCase()}`}>
+                          {material.difficulty || 'Dễ'}
                         </span>
                       </div>
                     </div>
