@@ -4,6 +4,7 @@ from app.core.config import settings
 from app.core.database import engine, Base, SessionLocal
 from app.routers import auth, users
 from app.routers import admin as admin_router
+from app.routers import classes, lessons, exercises, materials, discussions, news
 from app.models import User
 
 # Create database tables
@@ -30,6 +31,14 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/api/users", tags=["Authentication"])
 app.include_router(users.router, prefix=f"{settings.API_PREFIX}/users", tags=["Users"])
 app.include_router(admin_router.router, prefix=f"{settings.API_PREFIX}/admin", tags=["Admin"])
+
+# Student routers
+app.include_router(classes.router, prefix=f"{settings.API_PREFIX}/classes", tags=["Classes"])
+app.include_router(lessons.router, prefix=f"{settings.API_PREFIX}/lessons", tags=["Lessons"])
+app.include_router(exercises.router, prefix=f"{settings.API_PREFIX}/exercises", tags=["Exercises"])
+app.include_router(materials.router, prefix=f"{settings.API_PREFIX}/materials", tags=["Materials"])
+app.include_router(discussions.router, prefix=f"{settings.API_PREFIX}/discussions", tags=["Discussions"])
+app.include_router(news.router, prefix=f"{settings.API_PREFIX}/news", tags=["News"])
 
 @app.on_event("startup")
 async def startup_event():
