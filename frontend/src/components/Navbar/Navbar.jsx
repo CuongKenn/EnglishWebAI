@@ -7,7 +7,7 @@ const Navbar = ({ userRole = 'student', isLoggedIn = false, onLogout }) => {
   const location = useLocation();
 
   const getNavigationItems = () => {
-    // Menu cơ bản cho student
+    // Menu cơ bản cho student và user
     const studentMenu = [
       { path: '/lessons', label: 'Học bài' },
       { path: '/news', label: 'Tin tức' },
@@ -18,6 +18,7 @@ const Navbar = ({ userRole = 'student', isLoggedIn = false, onLogout }) => {
     ];
 
     switch (userRole) {
+      case 'user':
       case 'student':
         return studentMenu;
       
@@ -25,7 +26,7 @@ const Navbar = ({ userRole = 'student', isLoggedIn = false, onLogout }) => {
         // Teacher có menu student + menu giáo viên
         return [
           ...studentMenu,
-          { path: '/teacher-dashboard', label: '👨‍🏫 Trang giáo viên', special: true }
+          { path: '/teacher-dashboard', label: 'Trang giáo viên', special: true }
         ];
       
       case 'parent':
@@ -36,14 +37,15 @@ const Navbar = ({ userRole = 'student', isLoggedIn = false, onLogout }) => {
         ];
       
       case 'admin':
+      case 'superadmin':
         // Admin có menu student + menu quản lý
         return [
           ...studentMenu,
-          { path: '/admin-dashboard', label: '⚙️ Quản lý', special: true }
+          { path: '/admin-dashboard', label: 'Quản lý', special: true }
         ];
       
       default:
-        return [];
+        return studentMenu;
     }
   };
 
