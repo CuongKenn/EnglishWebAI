@@ -13,6 +13,8 @@ class Classroom(Base):
     description = Column(Text, nullable=True)
     teacher_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     # Admin UI fields
+    grade = Column(Integer, nullable=True)  # 1..12
+    skill = Column(String, nullable=True)   # listening|speaking|reading|writing
     max_students = Column(Integer, nullable=True)
     schedule = Column(String, nullable=True)
     status = Column(String, default="active", nullable=False)  # active | inactive

@@ -211,6 +211,8 @@ class AdminService:
                 "code": c.code,
                 "teacher": names_map.get(c.teacher_id) if c.teacher_id else None,
                 "teacherId": c.teacher_id,
+                "grade": c.grade,
+                "skill": c.skill,
                 "students": counts.get(c.id, 0),
                 "maxStudents": c.max_students,
                 "schedule": c.schedule,
@@ -240,6 +242,8 @@ class AdminService:
             name=payload.name,
             code=payload.code,
             teacher_id=teacher_id,
+            grade=payload.grade,
+            skill=payload.skill,
             max_students=payload.maxStudents,
             schedule=payload.schedule,
             status=payload.status,
@@ -279,6 +283,8 @@ class AdminService:
             "code": c.code,
             "teacher": teacher_name,
             "teacherId": c.teacher_id,
+            "grade": c.grade,
+            "skill": c.skill,
             "students": students_count,
             "maxStudents": c.max_students,
             "schedule": c.schedule,
@@ -297,6 +303,10 @@ class AdminService:
             c.code = payload.code
         if payload.teacherId is not None:
             c.teacher_id = payload.teacherId
+        if payload.grade is not None:
+            c.grade = payload.grade
+        if payload.skill is not None:
+            c.skill = payload.skill
         if payload.maxStudents is not None:
             c.max_students = payload.maxStudents
         if payload.schedule is not None:

@@ -23,6 +23,10 @@ def ensure_classes_columns() -> None:
             conn.execute(text("ALTER TABLE classes ADD COLUMN max_students INTEGER"))
         if not _has_column("classes", "schedule"):
             conn.execute(text("ALTER TABLE classes ADD COLUMN schedule VARCHAR"))
+        if not _has_column("classes", "grade"):
+            conn.execute(text("ALTER TABLE classes ADD COLUMN grade INTEGER"))
+        if not _has_column("classes", "skill"):
+            conn.execute(text("ALTER TABLE classes ADD COLUMN skill VARCHAR"))
         if not _has_column("classes", "status"):
             conn.execute(text("ALTER TABLE classes ADD COLUMN status VARCHAR DEFAULT 'active'"))
         if not _has_column("classes", "is_active"):
@@ -35,4 +39,3 @@ def ensure_classes_columns() -> None:
 
 def ensure_schema() -> None:
     ensure_classes_columns()
-

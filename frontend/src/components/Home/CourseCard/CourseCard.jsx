@@ -1,7 +1,8 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import './CourseCard.css';
 
-const CourseCard = ({ title, icon, color = 'blue', subjects }) => {
+const CourseCard = ({ title, icon, color = 'blue', subjects, viewAllLink }) => {
   return (
     <div className={`course-card course-card-${color}`}>
       <div className="card-header">
@@ -22,10 +23,17 @@ const CourseCard = ({ title, icon, color = 'blue', subjects }) => {
         ))}
       </ul>
       <div className="card-footer">
-        <button className="view-all-btn">
-          <i className="fas fa-arrow-right"></i>
-          Xem tất cả
-        </button>
+        {viewAllLink ? (
+          <Link className="view-all-btn" to={viewAllLink}>
+            <i className="fas fa-arrow-right"></i>
+            Xem tất cả
+          </Link>
+        ) : (
+          <button className="view-all-btn">
+            <i className="fas fa-arrow-right"></i>
+            Xem tất cả
+          </button>
+        )}
       </div>
     </div>
   );

@@ -161,15 +161,24 @@ const CourseGrid = () => {
         </p>
       </div>
       <div className="grid">
-        {courseData.map((course, index) => (
-          <CourseCard 
-            key={index} 
-            title={course.title} 
-            icon={course.icon}
-            color={course.color}
-            subjects={course.subjects} 
-          />
-        ))}
+        {courseData.map((course, index) => {
+          // Parse grade number from title 'Lớp X'
+          let gradeNumber = null;
+          const m = /Lớp\s+(\d+)/i.exec(course.title);
+          if (m) gradeNumber = parseInt(m[1], 10);
+          // Navigate to JoinClass page to show real classes filtered by grade
+          const viewAllLink = gradeNumber ? `/join-class?grade=Lớp ${gradeNumber}` : '/join-class';
+          return (
+            <CourseCard 
+              key={index} 
+              title={course.title} 
+              icon={course.icon}
+              color={course.color}
+              subjects={course.subjects}
+              viewAllLink={viewAllLink}
+            />
+          );
+        })}
       </div>
     </div>
   );

@@ -43,6 +43,7 @@ class ClassroomListResponse(BaseModel):
     teacher_name: Optional[str]
     subject: Optional[str]
     grade: Optional[str]
+    skill: Optional[str]
     image: Optional[str] = "📚"
     color: Optional[str] = "blue"
 

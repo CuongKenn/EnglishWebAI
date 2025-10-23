@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useLessons } from '../../hooks';
 import CourseCard from '../../components/Home/CourseCard/CourseCard';
 import './Lessons.css';
@@ -152,6 +152,15 @@ const courseData = [
 ];
 
 const Lessons = () => {
+  const [params] = useSearchParams();
+  const selGrade = params.get('grade');
+  const filtered = selGrade
+    ? courseData.filter(c => {
+        const m = /Lớp\s+(\d+)/i.exec(c.title);
+        return m && parseInt(m[1], 10) === parseInt(selGrade, 10);
+      })
+    : courseData;
+
   return (
     <div className="lessons-page">
       <div className="lessons-header">
@@ -187,15 +196,23 @@ const Lessons = () => {
 
       <div className="lessons-container">
         <div className="lessons-grid">
-          {courseData.map((course, index) => (
-            <CourseCard 
-              key={index} 
-              title={course.title} 
-              icon={course.icon}
-              color={course.color}
-              subjects={course.subjects} 
-            />
-          ))}
+          {filtered.map((course, index) => {
+            let gradeNumber = null;
+            const m = /Lớp\s+(\d+)/i.exec(course.title);
+            if (m) gradeNumber = parseInt(m[1], 10);
+            // Also point to JoinClass filtered by grade to show real classes list
+            const viewAllLink = gradeNumber ? `/join-class?grade=Lớp ${gradeNumber}` : undefined;
+            return (
+              <CourseCard 
+                key={index} 
+                title={course.title} 
+                icon={course.icon}
+                color={course.color}
+                subjects={course.subjects}
+                viewAllLink={viewAllLink}
+              />
+            );
+          })}
         </div>
       </div>
     </div>
