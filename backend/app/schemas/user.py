@@ -1,0 +1,50 @@
+from pydantic import BaseModel, EmailStr, Field
+from typing import Optional
+from datetime import datetime
+from enum import Enum
+
+class UserRole(str, Enum):
+    STUDENT = "student"
+    TEACHER = "teacher"
+    ADMIN = "admin"
+
+# Base User Schema
+class UserBase(BaseModel):
+    email: EmailStr
+    username: str = Field(..., min_length=3, max_length=50)
+    full_name: Optional[str] = None
+    role: UserRole = UserRole.STUDENT
+    phone: Optional[str] = None
+
+# Schema for creating a user
+class UserCreate(UserBase):
+    password: str = Field(..., min_length=6)
+
+# Schema for updating a user
+class UserUpdate(BaseModel):
+    email: Optional[EmailStr] = None
+    username: Optional[str] = None
+    full_name: Optional[str] = None
+    phone: Optional[str] = None
+    avatar_url: Optional[str] = None
+
+# Schema for user in database
+class UserInDB(UserBase):
+    id: int
+    is_active: bool
+    is_verified: bool
+    avatar_url: Optional[str] = None
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+# Schema for user response
+class User(UserInDB):
+    pass
+
+# Schema for password change
+class PasswordChange(BaseModel):
+    old_password: str
+    new_password: str = Field(..., min_length=6)
