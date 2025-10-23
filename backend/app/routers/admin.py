@@ -86,7 +86,13 @@ def admin_create_class(
     db: Session = Depends(get_db),
     _: User = Depends(get_current_admin_user),
 ):
-    return AdminService.create_class(db, payload)
+    try:
+        return AdminService.create_class(db, payload)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        # Surface server error details to the client for debugging
+        raise HTTPException(status_code=500, detail=f"Create class failed: {str(e)}")
 
 
 @router.put("/classes/{class_id}", response_model=AdminClassOut)

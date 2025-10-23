@@ -303,6 +303,17 @@
   color: #065f46;
 }
 
+/* Support new roles */
+.role-badge.user {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.role-badge.parent {
+  background: #fce7f3;
+  color: #9d174d;
+}
+
 .role-badge.admin {
   background: #fef3c7;
   color: #92400e;

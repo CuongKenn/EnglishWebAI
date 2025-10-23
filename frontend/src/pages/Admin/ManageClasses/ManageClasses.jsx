@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import './ManageClasses.css';
+import apiClient from '../../../services/api';
 
 const ManageClasses = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -7,52 +8,11 @@ const ManageClasses = () => {
   const [modalMode, setModalMode] = useState('add');
   const [selectedClass, setSelectedClass] = useState(null);
 
-  // Sample teachers data
-  const teachers = [
-    { id: 1, name: 'Nguyễn Văn A' },
-    { id: 2, name: 'Trần Thị B' },
-    { id: 3, name: 'Lê Minh C' },
-  ];
+  const [teachers, setTeachers] = useState([]);
 
-  // Sample classes data
-  const [classes, setClasses] = useState([
-    {
-      id: 1,
-      name: 'English A1 - Morning',
-      code: 'ENG-A1-M',
-      teacher: 'Nguyễn Văn A',
-      teacherId: 1,
-      students: 25,
-      maxStudents: 30,
-      schedule: 'T2, T4, T6 - 8:00-10:00',
-      status: 'active',
-      description: 'Lớp học tiếng Anh cơ bản cho người mới bắt đầu'
-    },
-    {
-      id: 2,
-      name: 'English B1 - Afternoon',
-      code: 'ENG-B1-A',
-      teacher: 'Trần Thị B',
-      teacherId: 2,
-      students: 18,
-      maxStudents: 25,
-      schedule: 'T3, T5, T7 - 14:00-16:00',
-      status: 'active',
-      description: 'Lớp học tiếng Anh trung cấp'
-    },
-    {
-      id: 3,
-      name: 'English C1 - Evening',
-      code: 'ENG-C1-E',
-      teacher: 'Lê Minh C',
-      teacherId: 3,
-      students: 15,
-      maxStudents: 20,
-      schedule: 'T2, T4 - 18:00-20:00',
-      status: 'inactive',
-      description: 'Lớp học tiếng Anh nâng cao'
-    },
-  ]);
+  const [classes, setClasses] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const [formData, setFormData] = useState({
     name: '',
@@ -63,6 +23,43 @@ const ManageClasses = () => {
     status: 'active',
     description: ''
   });
+
+  const loadTeachers = async () => {
+    try {
+      const res = await apiClient.get('/api/v1/admin/teachers');
+      const data = res.data;
+      setTeachers(Array.isArray(data) ? data : []);
+    } catch (e) {
+      // silent
+    }
+  };
+
+  const loadClasses = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const res = await apiClient.get('/api/v1/admin/classes', { params: { search: searchTerm || undefined } });
+      const data = res.data;
+      setClasses(Array.isArray(data) ? data : []);
+    } catch (e) {
+      setError('Không tải được danh sách lớp học');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // Initial load
+    loadTeachers();
+    loadClasses();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const t = setTimeout(() => loadClasses(), 300);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm]);
 
   // Statistics
   const stats = {
@@ -104,38 +101,47 @@ const ManageClasses = () => {
     setSelectedClass(null);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const teacher = teachers.find(t => t.id === parseInt(formData.teacherId));
-    
-    if (modalMode === 'add') {
-      const newClass = {
-        id: classes.length + 1,
-        ...formData,
-        teacher: teacher.name,
-        students: 0
+    try {
+      const payload = {
+        name: formData.name,
+        code: formData.code,
+        teacherId: formData.teacherId ? parseInt(formData.teacherId) : null,
+        maxStudents: formData.maxStudents ? parseInt(formData.maxStudents) : null,
+        schedule: formData.schedule,
+        status: formData.status,
+        description: formData.description,
       };
-      setClasses([...classes, newClass]);
-    } else {
-      setClasses(classes.map(c => 
-        c.id === selectedClass.id 
-          ? { ...c, ...formData, teacher: teacher.name }
-          : c
-      ));
+      if (modalMode === 'add') {
+        await apiClient.post('/api/v1/admin/classes', payload);
+      } else if (selectedClass) {
+        await apiClient.put(`/api/v1/admin/classes/${selectedClass.id}`, payload);
+      }
+      await loadClasses();
+      handleCloseModal();
+    } catch (e) {
+      const msg = e?.response?.data?.detail || 'Lưu lớp học thất bại';
+      alert(msg);
     }
-    handleCloseModal();
   };
 
-  const handleDelete = (classId) => {
+  const handleDelete = async (classId) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa lớp học này?')) {
-      setClasses(classes.filter(c => c.id !== classId));
+      try {
+        await apiClient.delete(`/api/v1/admin/classes/${classId}`);
+        await loadClasses();
+      } catch (e) {
+        const msg = e?.response?.data?.detail || 'Xóa lớp học thất bại';
+        alert(msg);
+      }
     }
   };
 
   const filteredClasses = classes.filter(classData =>
-    classData.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    classData.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    classData.teacher.toLowerCase().includes(searchTerm.toLowerCase())
+    (classData.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (classData.code || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (classData.teacher || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -236,11 +242,11 @@ const ManageClasses = () => {
 
                   <div className="teacher-info">
                     <div className="teacher-avatar">
-                      {classData.teacher.charAt(0).toUpperCase()}
+                      {(classData.teacher || '?').charAt(0).toUpperCase()}
                     </div>
                     <div className="teacher-details">
                       <div className="teacher-label">Giáo viên</div>
-                      <div className="teacher-name">{classData.teacher}</div>
+                      <div className="teacher-name">{classData.teacher || 'Chưa phân công'}</div>
                     </div>
                   </div>
 

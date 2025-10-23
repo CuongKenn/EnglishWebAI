@@ -11,6 +11,7 @@ from app.schemas.admin import (
     AdminClassCreate, AdminClassUpdate
 )
 from app.core.security import get_password_hash
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 
 def _vn_date(dt: Optional[datetime]) -> str:
@@ -106,8 +107,8 @@ class AdminService:
 
     @staticmethod
     def create_user(db: Session, payload: AdminUserCreate) -> Dict[str, Any]:
-        # username from email localpart as default
-        username = payload.email.split("@")[0]
+        # Username from payload if provided, otherwise email local-part
+        username = (payload.username or payload.email.split("@")[0]).strip()
         # Create user
         user = User(
             email=payload.email,
@@ -217,10 +218,25 @@ class AdminService:
 
     @staticmethod
     def create_class(db: Session, payload: AdminClassCreate) -> Dict[str, Any]:
+        # Validate unique code
+        exists = db.query(Classroom).filter(Classroom.code == payload.code).first()
+        if exists:
+            raise ValueError("Class code already exists")
+
+        # Validate teacher if provided
+        teacher_id = payload.teacherId
+        if teacher_id is not None:
+            t = db.get(User, teacher_id)
+            if not t:
+                raise ValueError("Teacher not found")
+            # allow only teacher role assignment
+            if t.role != UserRole.TEACHER:
+                raise ValueError("Assigned user is not a teacher")
+
         c = Classroom(
             name=payload.name,
             code=payload.code,
-            teacher_id=payload.teacherId,
+            teacher_id=teacher_id,
             max_students=payload.maxStudents,
             schedule=payload.schedule,
             status=payload.status,
@@ -228,7 +244,15 @@ class AdminService:
             is_active=(payload.status == "active"),
         )
         db.add(c)
-        db.commit()
+        try:
+            db.commit()
+        except IntegrityError as e:
+            db.rollback()
+            # Likely duplicate code or FK constraint
+            raise ValueError("Database integrity error while creating class")
+        except SQLAlchemyError as e:
+            db.rollback()
+            raise ValueError("Database error while creating class")
         db.refresh(c)
         return AdminService.get_class(db, c.id)
 

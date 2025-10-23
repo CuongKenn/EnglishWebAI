@@ -1,80 +1,36 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import './OverviewStats.css';
+import apiClient from '../../../services/api';
 
 const OverviewStats = () => {
-  const [timeFilter, setTimeFilter] = useState('7days');
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalTeachers: 0,
+    totalStudents: 0,
+    activeUsers: 0,
+    totalClasses: 0,
+    activeClasses: 0,
+    averageStudents: 0,
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  // Sample statistics data
-  const stats = {
-    totalOrders: 16247,
-    orderChange: -6.8,
-    newCustomers: 356,
-    customerChange: 26.5,
-    totalRevenue: '₫245.8M',
-    revenueChange: 12.3,
-    avgCompletion: '85%',
-    completionChange: 4.2
-  };
-
-  const courseCompletion = [
-    { name: 'English A1', progress: 92 },
-    { name: 'English A2', progress: 78 },
-    { name: 'English B1', progress: 85 },
-    { name: 'English B2', progress: 65 },
-    { name: 'English C1', progress: 58 }
-  ];
-
-  const recentActivities = [
-    {
-      id: 1,
-      type: 'success',
-      icon: '✅',
-      title: 'Học sinh mới đăng ký',
-      description: 'Nguyễn Văn A đã đăng ký khóa English A1',
-      time: '5 phút trước'
-    },
-    {
-      id: 2,
-      type: 'info',
-      icon: '📚',
-      title: 'Lớp học mới được tạo',
-      description: 'Giáo viên Trần B tạo lớp English B2 - Morning',
-      time: '15 phút trước'
-    },
-    {
-      id: 3,
-      type: 'warning',
-      icon: '⚠️',
-      title: 'Cảnh báo sĩ số',
-      description: 'Lớp English A1 sắp đầy (28/30)',
-      time: '1 giờ trước'
-    },
-    {
-      id: 4,
-      type: 'success',
-      icon: '🎓',
-      title: 'Hoàn thành khóa học',
-      description: '15 học sinh hoàn thành khóa English A2',
-      time: '2 giờ trước'
-    }
-  ];
-
-  const topTeachers = [
-    { id: 1, name: 'Nguyễn Văn A', role: 'Giáo viên', score: 985 },
-    { id: 2, name: 'Trần Thị B', role: 'Giáo viên', score: 892 },
-    { id: 3, name: 'Lê Minh C', role: 'Giáo viên', score: 845 },
-    { id: 4, name: 'Phạm Thu D', role: 'Giáo viên', score: 798 },
-    { id: 5, name: 'Hoàng Văn E', role: 'Giáo viên', score: 756 }
-  ];
-
-  const getRankClass = (index) => {
-    switch(index) {
-      case 0: return 'gold';
-      case 1: return 'silver';
-      case 2: return 'bronze';
-      default: return 'default';
+  const loadStats = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const res = await apiClient.get('/api/v1/admin/stats/overview');
+      setStats(res.data || {});
+    } catch (e) {
+      setError('Không tải được thống kê');
+    } finally {
+      setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadStats();
+  }, []);
 
   return (
     <div className="admin-container">
@@ -85,211 +41,71 @@ const OverviewStats = () => {
           <p>Xem báo cáo và phân tích hiệu suất hệ thống</p>
         </div>
 
-        {/* Main Statistics Cards */}
+        {/* Main Statistics Cards (Real Data) */}
         <div className="stats-grid">
           <div className="stat-card">
             <div className="stat-header">
-              <span className="stat-title">Tổng đơn hàng</span>
-              <span className={`stat-change ${stats.orderChange > 0 ? 'positive' : 'negative'}`}>
-                {stats.orderChange > 0 ? '+' : ''}{stats.orderChange}%
-              </span>
+              <span className="stat-title">Tổng người dùng</span>
             </div>
-            <div className="stat-value">{stats.totalOrders.toLocaleString()}</div>
-            <div className="stat-subtitle">7 ngày qua</div>
+            <div className="stat-value">{stats.totalUsers}</div>
+            <div className="stat-subtitle">Toàn hệ thống</div>
           </div>
 
           <div className="stat-card">
             <div className="stat-header">
-              <span className="stat-title">Học sinh mới</span>
-              <span className={`stat-change ${stats.customerChange > 0 ? 'positive' : 'negative'}`}>
-                +{stats.customerChange}%
-              </span>
+              <span className="stat-title">Giáo viên</span>
             </div>
-            <div className="stat-value">{stats.newCustomers}</div>
-            <div className="stat-subtitle">7 ngày qua</div>
+            <div className="stat-value">{stats.totalTeachers}</div>
+            <div className="stat-subtitle">Đang hoạt động</div>
           </div>
 
           <div className="stat-card">
             <div className="stat-header">
-              <span className="stat-title">Doanh thu</span>
-              <span className={`stat-change ${stats.revenueChange > 0 ? 'positive' : 'negative'}`}>
-                +{stats.revenueChange}%
-              </span>
+              <span className="stat-title">Học sinh</span>
             </div>
-            <div className="stat-value">{stats.totalRevenue}</div>
-            <div className="stat-subtitle">7 ngày qua</div>
+            <div className="stat-value">{stats.totalStudents}</div>
+            <div className="stat-subtitle">Đã đăng ký</div>
           </div>
 
           <div className="stat-card">
             <div className="stat-header">
-              <span className="stat-title">Tỷ lệ hoàn thành</span>
-              <span className={`stat-change ${stats.completionChange > 0 ? 'positive' : 'negative'}`}>
-                +{stats.completionChange}%
-              </span>
+              <span className="stat-title">Người dùng hoạt động</span>
             </div>
-            <div className="stat-value">{stats.avgCompletion}</div>
-            <div className="stat-subtitle">Trung bình khóa học</div>
+            <div className="stat-value">{stats.activeUsers}</div>
+            <div className="stat-subtitle">Đang active</div>
+          </div>
+
+          <div className="stat-card">
+            <div className="stat-header">
+              <span className="stat-title">Tổng lớp học</span>
+            </div>
+            <div className="stat-value">{stats.totalClasses}</div>
+            <div className="stat-subtitle">Toàn hệ thống</div>
+          </div>
+
+          <div className="stat-card">
+            <div className="stat-header">
+              <span className="stat-title">Lớp đang mở</span>
+            </div>
+            <div className="stat-value">{stats.activeClasses}</div>
+            <div className="stat-subtitle">Sẵn sàng</div>
+          </div>
+
+          <div className="stat-card">
+            <div className="stat-header">
+              <span className="stat-title">TB học sinh / lớp</span>
+            </div>
+            <div className="stat-value">{stats.averageStudents}</div>
+            <div className="stat-subtitle">Số học sinh</div>
           </div>
         </div>
 
-        {/* Charts Section */}
-        <div className="charts-grid">
-          {/* Course Completion Chart */}
-          <div className="chart-card">
-            <div className="chart-header">
-              <div>
-                <h3 className="chart-title">Tiến độ khóa học</h3>
-                <p className="chart-subtitle">Tỷ lệ hoàn thành theo khóa học</p>
-              </div>
-            </div>
-            <div className="progress-bars">
-              {courseCompletion.map((course, index) => (
-                <div key={index} className="progress-item">
-                  <div className="progress-header">
-                    <span className="progress-label">{course.name}</span>
-                    <span className="progress-value">{course.progress}%</span>
-                  </div>
-                  <div className="progress-bar-container">
-                    <div 
-                      className="progress-bar-fill" 
-                      style={{ width: `${course.progress}%` }}
-                    ></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Engagement Chart */}
-          <div className="chart-card">
-            <div className="chart-header">
-              <div>
-                <h3 className="chart-title">Mức độ tương tác</h3>
-                <p className="chart-subtitle">Người dùng hoạt động vs không hoạt động</p>
-              </div>
-              <div className="time-filter">
-                <button 
-                  className={timeFilter === '7days' ? 'active' : ''}
-                  onClick={() => setTimeFilter('7days')}
-                >
-                  7 ngày
-                </button>
-                <button 
-                  className={timeFilter === '30days' ? 'active' : ''}
-                  onClick={() => setTimeFilter('30days')}
-                >
-                  30 ngày
-                </button>
-                <button 
-                  className={timeFilter === '90days' ? 'active' : ''}
-                  onClick={() => setTimeFilter('90days')}
-                >
-                  90 ngày
-                </button>
-              </div>
-            </div>
-            <div className="pie-chart-container">
-              <div className="pie-chart">
-                <div className="pie-chart-center">
-                  <div className="pie-chart-percentage">72%</div>
-                  <div className="pie-chart-label">Đang hoạt động</div>
-                </div>
-              </div>
-              <div className="legend">
-                <div className="legend-item">
-                  <div className="legend-label">
-                    <div className="legend-color primary"></div>
-                    <span>Người dùng hoạt động</span>
-                  </div>
-                  <div className="legend-value">72%</div>
-                </div>
-                <div className="legend-item">
-                  <div className="legend-label">
-                    <div className="legend-color secondary"></div>
-                    <span>Không hoạt động</span>
-                  </div>
-                  <div className="legend-value">28%</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Activity and Leaderboard Section */}
-        <div className="charts-grid">
-          {/* Recent Activity */}
-          <div className="chart-card">
-            <div className="chart-header">
-              <div>
-                <h3 className="chart-title">Hoạt động gần đây</h3>
-                <p className="chart-subtitle">Các sự kiện mới nhất trong hệ thống</p>
-              </div>
-            </div>
-            <div className="activity-list">
-              {recentActivities.map(activity => (
-                <div key={activity.id} className="activity-item">
-                  <div className={`activity-icon ${activity.type}`}>
-                    {activity.icon}
-                  </div>
-                  <div className="activity-details">
-                    <h4 className="activity-title">{activity.title}</h4>
-                    <p className="activity-description">{activity.description}</p>
-                  </div>
-                  <div className="activity-time">{activity.time}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Top Teachers Leaderboard */}
-          <div className="chart-card">
-            <div className="chart-header">
-              <div>
-                <h3 className="chart-title">Giáo viên xuất sắc</h3>
-                <p className="chart-subtitle">Top 5 giáo viên có điểm cao nhất</p>
-              </div>
-            </div>
-            <div className="leaderboard">
-              {topTeachers.map((teacher, index) => (
-                <div key={teacher.id} className="leaderboard-item">
-                  <div className={`leaderboard-rank ${getRankClass(index)}`}>
-                    {index + 1}
-                  </div>
-                  <div className="leaderboard-avatar">
-                    {teacher.name.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="leaderboard-info">
-                    <div className="leaderboard-name">{teacher.name}</div>
-                    <div className="leaderboard-role">{teacher.role}</div>
-                  </div>
-                  <div className="leaderboard-score">{teacher.score}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Performance Overview Chart */}
-        <div className="chart-card">
-          <div className="chart-header">
-            <div>
-              <h3 className="chart-title">Tổng quan hiệu suất</h3>
-              <p className="chart-subtitle">Biểu đồ theo dõi các chỉ số chính</p>
-            </div>
-            <div className="time-filter">
-              <button className="active">01 May</button>
-              <button>02 May</button>
-              <button>03 May</button>
-              <button>04 May</button>
-              <button>05 May</button>
-              <button>06 May</button>
-              <button>07 May</button>
-            </div>
-          </div>
-          <div className="chart-placeholder">
-            📈 Biểu đồ tương tác sẽ được hiển thị ở đây (có thể tích hợp Chart.js hoặc Recharts)
-          </div>
-        </div>
+        {error && (
+          <div style={{ color: '#b91c1c', marginTop: '10px' }}>{error}</div>
+        )}
+        {loading && (
+          <div style={{ color: '#6b7280', marginTop: '10px' }}>Đang tải dữ liệu...</div>
+        )}
       </div>
     </div>
   );

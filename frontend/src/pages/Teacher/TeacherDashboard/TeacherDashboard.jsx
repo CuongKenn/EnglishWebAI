@@ -1,60 +1,68 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import './TeacherDashboard.css';
+import apiClient from '../../../services/api';
 
 const TeacherDashboard = () => {
-  // Sample data
-  const projects = [
-    {
-      id: 1,
-      name: 'English A1 - Morning Class',
-      date: 'Jan 30, 2025',
-      progress: 65,
-      status: 'on-track',
-      assigned: ['GV', 'HS'],
-      count: 5
-    },
-    {
-      id: 2,
-      name: 'English B2 - Advanced',
-      date: 'Feb 10, 2025',
-      progress: 20,
-      status: 'delayed',
-      assigned: ['GV', 'HS'],
-      count: 2
-    },
-    {
-      id: 3,
-      name: 'IELTS Preparation Course',
-      date: 'Mar 1, 2025',
-      progress: 45,
-      status: 'at-risk',
-      assigned: ['GV', 'HS'],
-      count: 1
-    },
-    {
-      id: 4,
-      name: 'Business English Workshop',
-      date: 'Feb 15, 2025',
-      progress: 89,
-      status: 'on-track',
-      assigned: ['GV', 'HS'],
-      count: 1
-    },
-    {
-      id: 5,
-      name: 'Conversation Club',
-      date: 'Jan 25, 2025',
-      progress: 100,
-      status: 'completed',
-      assigned: ['GV', 'HS'],
-      count: 1
-    }
-  ];
+  const [classes, setClasses] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [selectedClass, setSelectedClass] = useState(null);
+  const [identifiers, setIdentifiers] = useState('');
+  const [idType, setIdType] = useState('username');
+  const [fileText, setFileText] = useState('');
 
-  const getProgressFillClass = (progress) => {
-    if (progress >= 70) return '';
-    if (progress >= 40) return 'warning';
-    return 'danger';
+  const parseIdentifiers = (text) => {
+    return Array.from(new Set(
+      (text || '')
+        .split(/\r?\n|,|;|\s+/)
+        .map(s => s.trim())
+        .filter(Boolean)
+    ));
+  };
+
+  const loadTeachingClasses = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const res = await apiClient.get('/api/v1/classes/teaching');
+      setClasses(Array.isArray(res.data) ? res.data : []);
+    } catch (e) {
+      setError('Không tải được danh sách lớp dạy');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadTeachingClasses();
+  }, []);
+
+  const openAddStudents = (cls) => {
+    setSelectedClass(cls);
+    setIdentifiers('');
+    setShowAddModal(true);
+  };
+
+  const addStudents = async (e) => {
+    e.preventDefault();
+    if (!selectedClass) return;
+    const text = identifiers || fileText;
+    const ids = parseIdentifiers(text);
+    if (ids.length === 0) return;
+    try {
+      await apiClient.post(`/api/v1/classes/${selectedClass.id}/students`, {
+        identifiers: ids,
+        idType,
+        role: 'student',
+        status: 'active',
+      });
+      setShowAddModal(false);
+      await loadTeachingClasses();
+      alert('Đã thêm học sinh vào lớp');
+    } catch (e) {
+      alert('Thêm học sinh thất bại');
+    }
   };
 
   return (
@@ -74,42 +82,24 @@ const TeacherDashboard = () => {
           </div>
         </div>
 
-        {/* Stats Grid */}
+        {/* Stats Grid (real) */}
         <div className="stats-grid">
           <div className="stat-card">
             <div className="stat-header">
-              <div className="stat-title">Tổng dự án</div>
+              <div className="stat-title">Tổng lớp đang dạy</div>
               <div className="stat-icon green">📦</div>
             </div>
-            <div className="stat-value">6</div>
-            <div className="stat-subtitle">2 Hoàn thành</div>
-          </div>
-
-          <div className="stat-card task">
-            <div className="stat-header">
-              <div className="stat-title">Nhiệm vụ</div>
-              <div className="stat-icon blue">📋</div>
-            </div>
-            <div className="stat-value">132</div>
-            <div className="stat-subtitle">28 Hoàn thành</div>
+            <div className="stat-value">{classes.length}</div>
+            <div className="stat-subtitle">Cập nhật theo thời gian thực</div>
           </div>
 
           <div className="stat-card members">
             <div className="stat-header">
-              <div className="stat-title">Học sinh</div>
+              <div className="stat-title">Tổng học sinh</div>
               <div className="stat-icon orange">👥</div>
             </div>
-            <div className="stat-value">8</div>
-            <div className="stat-subtitle">2 Hoàn thành</div>
-          </div>
-
-          <div className="stat-card productivity">
-            <div className="stat-header">
-              <div className="stat-title">Năng suất</div>
-              <div className="stat-icon purple">🏃</div>
-            </div>
-            <div className="stat-value">76%</div>
-            <div className="stat-subtitle">26% Tăng</div>
+            <div className="stat-value">{classes.reduce((sum, c) => sum + (c.student_count || 0), 0)}</div>
+            <div className="stat-subtitle">Trong tất cả lớp</div>
           </div>
         </div>
 
@@ -119,59 +109,34 @@ const TeacherDashboard = () => {
           <div className="projects-section">
             <div className="section-header">
               <h2 className="section-title">Lớp học đang hoạt động</h2>
-              <button className="btn-primary">+ Tạo lớp mới</button>
+              {/* Teachers may create via admin; hide create from here */}
             </div>
-
+            {error && <div style={{ color: '#b91c1c', marginBottom: 10 }}>{error}</div>}
+            {loading && <div style={{ color: '#6b7280', marginBottom: 10 }}>Đang tải...</div>}
             <table className="projects-table">
               <thead>
                 <tr>
                   <th>Tên lớp</th>
-                  <th>Tiến độ</th>
-                  <th>Trạng thái</th>
-                  <th>Phân công</th>
+                  <th>Lịch học</th>
+                  <th>Sĩ số</th>
                   <th>Hành động</th>
                 </tr>
               </thead>
               <tbody>
-                {projects.map(project => (
-                  <tr key={project.id}>
+                {classes.map(cls => (
+                  <tr key={cls.id}>
                     <td>
-                      <div className="project-name">{project.name}</div>
-                      <div className="project-date">{project.date}</div>
+                      <div className="project-name">{cls.name}</div>
+                      <div className="project-date">{cls.description || ' '}</div>
                     </td>
                     <td>
-                      <div className="progress-bar-wrapper">
-                        <div className="progress-text">{project.progress}%</div>
-                        <div className="progress-bar">
-                          <div 
-                            className={`progress-fill ${getProgressFillClass(project.progress)}`}
-                            style={{ width: `${project.progress}%` }}
-                          ></div>
-                        </div>
-                      </div>
+                      {cls.schedule || '—'}
                     </td>
                     <td>
-                      <span className={`status-badge ${project.status}`}>
-                        {project.status === 'on-track' && 'Đúng tiến độ'}
-                        {project.status === 'delayed' && 'Trễ hạn'}
-                        {project.status === 'at-risk' && 'Có rủi ro'}
-                        {project.status === 'completed' && 'Hoàn thành'}
-                      </span>
+                      {(cls.student_count || 0)}/{cls.max_students || '—'}
                     </td>
                     <td>
-                      <div className="assigned-avatars">
-                        <div className="avatar-group">
-                          {project.assigned.map((initial, idx) => (
-                            <div key={idx} className="avatar">{initial}</div>
-                          ))}
-                        </div>
-                        {project.count > 0 && (
-                          <div className="avatar-count">+{project.count}</div>
-                        )}
-                      </div>
-                    </td>
-                    <td>
-                      <button className="action-btn" title="Tùy chọn">⋮</button>
+                      <button className="action-btn" title="Thêm học sinh" onClick={() => openAddStudents(cls)}>+ HS</button>
                     </td>
                   </tr>
                 ))}
@@ -179,61 +144,75 @@ const TeacherDashboard = () => {
             </table>
           </div>
 
-          {/* Task Progress */}
+          {/* Right column can host future widgets */}
           <div className="task-progress-card">
             <div className="section-header" style={{ marginBottom: '20px' }}>
-              <h3 className="section-title">Tiến độ công việc</h3>
+              <h3 className="section-title">Hỗ trợ nhanh</h3>
             </div>
-
-            <div className="progress-circle">
-              <div style={{ 
-                width: '150px', 
-                height: '150px', 
-                margin: '0 auto',
-                borderRadius: '50%',
-                background: 'conic-gradient(#10b981 0% 64%, #e5e7eb 64% 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <div style={{
-                  width: '120px',
-                  height: '120px',
-                  background: 'white',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '32px',
-                  fontWeight: '700',
-                  color: '#1f2937'
-                }}>
-                  64%
-                </div>
-              </div>
-              <div className="circle-value" style={{ fontSize: '24px', margin: '15px 0 0 0' }}>Tiến độ tổng thể</div>
-            </div>
-
-            <div className="progress-breakdown">
-              <div className="breakdown-item completed">
-                <div className="breakdown-icon">✅</div>
-                <div className="breakdown-value">8</div>
-                <div className="breakdown-label">Hoàn thành</div>
-              </div>
-              <div className="breakdown-item in-progress">
-                <div className="breakdown-icon">🔄</div>
-                <div className="breakdown-value">12</div>
-                <div className="breakdown-label">Đang làm</div>
-              </div>
-              <div className="breakdown-item upcoming">
-                <div className="breakdown-icon">⏰</div>
-                <div className="breakdown-value">14</div>
-                <div className="breakdown-label">Sắp tới</div>
-              </div>
-            </div>
+            <p style={{ color: '#6b7280' }}>Chọn lớp và bấm “+ HS” để thêm học sinh theo username (phân tách bằng dấu phẩy).</p>
           </div>
         </div>
       </div>
+
+      {/* Add Students Modal */}
+      {showAddModal && (
+        <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Thêm học sinh vào lớp</h2>
+              <button className="close-btn" onClick={() => setShowAddModal(false)}>×</button>
+            </div>
+            <form onSubmit={addStudents}>
+              <div className="form-group">
+                <label>Lớp</label>
+                <input type="text" disabled value={selectedClass?.name || ''} />
+              </div>
+              <div className="form-group">
+                <label>Kiểu định danh</label>
+                <select value={idType} onChange={(e) => setIdType(e.target.value)}>
+                  <option value="username">Username</option>
+                  <option value="email">Email</option>
+                  <option value="id">User ID</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Danh sách (dấu phẩy, khoảng trắng hoặc xuống dòng)</label>
+                <textarea
+                  value={identifiers}
+                  onChange={(e) => setIdentifiers(e.target.value)}
+                  placeholder={idType === 'email' ? 'vd: a@x.com, b@x.com, ...' : 'vd: student1\nstudent2\nstudent3'}
+                  rows={6}
+                  style={{ resize: 'vertical' }}
+                />
+              </div>
+              <div className="form-group">
+                <label>Hoặc tải tệp .csv/.txt</label>
+                <input
+                  type="file"
+                  accept=".csv,.txt"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const text = await file.text();
+                    setFileText(text);
+                    const ids = parseIdentifiers(text);
+                    setIdentifiers(ids.join('\n'));
+                  }}
+                />
+              </div>
+              {parseIdentifiers(identifiers).length > 0 && (
+                <div style={{ color: '#6b7280', fontSize: 13 }}>
+                  Sẽ thêm khoảng {parseIdentifiers(identifiers).length} mục (loại bỏ trùng lặp tự động)
+                </div>
+              )}
+              <div className="modal-actions">
+                <button type="button" className="btn-secondary" onClick={() => setShowAddModal(false)}>Hủy</button>
+                <button type="submit" className="btn-primary">Thêm</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

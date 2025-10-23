@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import './ManageAccounts.css';
+import { adminAPI } from '../../../services/api';
 
 const ManageAccounts = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -8,63 +9,64 @@ const ManageAccounts = () => {
   const [modalMode, setModalMode] = useState('add'); // 'add' or 'edit'
   const [selectedUser, setSelectedUser] = useState(null);
 
-  // Sample data - sẽ thay thế bằng API call sau
-  const [users, setUsers] = useState([
-    {
-      id: 1,
-      name: 'Nguyễn Văn A',
-      email: 'nguyenvana@example.com',
-      role: 'teacher',
-      status: 'active',
-      classes: 5,
-      students: 120,
-      joinDate: '15/01/2024'
-    },
-    {
-      id: 2,
-      name: 'Trần Thị B',
-      email: 'tranthib@example.com',
-      role: 'teacher',
-      status: 'active',
-      classes: 3,
-      students: 85,
-      joinDate: '20/02/2024'
-    },
-    {
-      id: 3,
-      name: 'Lê Minh C',
-      email: 'leminhc@example.com',
-      role: 'student',
-      status: 'active',
-      classes: 2,
-      students: 0,
-      joinDate: '01/03/2024'
-    },
-    {
-      id: 4,
-      name: 'Phạm Thu D',
-      email: 'phamthud@example.com',
-      role: 'student',
-      status: 'inactive',
-      classes: 1,
-      students: 0,
-      joinDate: '10/03/2024'
-    },
-  ]);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    role: 'student',
+    username: '',
+    role: 'user',
     password: '',
     status: 'active'
   });
+
+  const roleLabel = (role) => {
+    switch (role) {
+      case 'teacher':
+        return 'Giáo viên';
+      case 'user':
+        return 'Học sinh';
+      case 'parent':
+        return 'Phụ huynh';
+      case 'admin':
+        return 'Quản trị';
+      default:
+        return role;
+    }
+  };
+
+  const loadUsers = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const params = {
+        search: searchTerm || undefined,
+        role: filterRole !== 'all' ? filterRole : undefined,
+      };
+      const data = await adminAPI.getUsers(params);
+      setUsers(Array.isArray(data) ? data : []);
+    } catch (e) {
+      setError('Không tải được danh sách người dùng');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      loadUsers();
+    }, 300);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterRole, searchTerm]);
 
   // Statistics
   const stats = {
     totalUsers: users.length,
     totalTeachers: users.filter(u => u.role === 'teacher').length,
-    totalStudents: users.filter(u => u.role === 'student').length,
+    totalStudents: users.filter(u => u.role === 'user').length,
     activeUsers: users.filter(u => u.status === 'active').length,
   };
 
@@ -75,6 +77,7 @@ const ManageAccounts = () => {
       setFormData({
         name: user.name,
         email: user.email,
+        username: user.username || '',
         role: user.role,
         status: user.status,
         password: ''
@@ -83,7 +86,8 @@ const ManageAccounts = () => {
       setFormData({
         name: '',
         email: '',
-        role: 'student',
+        username: '',
+        role: 'user',
         password: '',
         status: 'active'
       });
@@ -97,38 +101,51 @@ const ManageAccounts = () => {
     setFormData({
       name: '',
       email: '',
-      role: 'student',
+      username: '',
+      role: 'user',
       password: '',
       status: 'active'
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (modalMode === 'add') {
-      // Thêm user mới
-      const newUser = {
-        id: users.length + 1,
-        ...formData,
-        classes: 0,
-        students: 0,
-        joinDate: new Date().toLocaleDateString('vi-VN')
-      };
-      setUsers([...users, newUser]);
-    } else {
-      // Cập nhật user
-      setUsers(users.map(u => 
-        u.id === selectedUser.id 
-          ? { ...u, ...formData }
-          : u
-      ));
+    try {
+      if (modalMode === 'add') {
+        const payload = {
+          name: formData.name,
+          email: formData.email,
+          username: formData.username || undefined,
+          role: formData.role,
+          password: formData.password,
+          status: formData.status,
+        };
+        await adminAPI.createUser(payload);
+      } else if (selectedUser) {
+        const payload = {
+          name: formData.name,
+          email: formData.email,
+          role: formData.role,
+          status: formData.status,
+          // password is not required for edit; backend updates if provided
+        };
+        await adminAPI.updateUser(selectedUser.id, payload);
+      }
+      await loadUsers();
+      handleCloseModal();
+    } catch (err) {
+      alert('Có lỗi khi lưu tài khoản');
     }
-    handleCloseModal();
   };
 
-  const handleDelete = (userId) => {
+  const handleDelete = async (userId) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa tài khoản này?')) {
-      setUsers(users.filter(u => u.id !== userId));
+      try {
+        await adminAPI.deleteUser(userId);
+        await loadUsers();
+      } catch (e) {
+        alert('Xóa tài khoản thất bại');
+      }
     }
   };
 
@@ -207,8 +224,10 @@ const ManageAccounts = () => {
                 onChange={(e) => setFilterRole(e.target.value)}
               >
                 <option value="all">Tất cả vai trò</option>
+                <option value="user">Học sinh</option>
+                <option value="parent">Phụ huynh</option>
                 <option value="teacher">Giáo viên</option>
-                <option value="student">Học sinh</option>
+                <option value="admin">Quản trị</option>
               </select>
               <button className="btn-primary" onClick={() => handleOpenModal('add')}>
                 ➕ Thêm tài khoản
@@ -244,7 +263,7 @@ const ManageAccounts = () => {
                   </td>
                   <td>
                     <span className={`role-badge ${user.role}`}>
-                      {user.role === 'teacher' ? 'Giáo viên' : 'Học sinh'}
+                      {roleLabel(user.role)}
                     </span>
                   </td>
                   <td>
@@ -323,14 +342,27 @@ const ManageAccounts = () => {
                   placeholder="Nhập email"
                 />
               </div>
+              {modalMode === 'add' && (
+                <div className="form-group">
+                  <label>Username</label>
+                  <input
+                    type="text"
+                    value={formData.username}
+                    onChange={(e) => setFormData({...formData, username: e.target.value})}
+                    placeholder="Nhập username (tùy chọn)"
+                  />
+                </div>
+              )}
               <div className="form-group">
                 <label>Vai trò</label>
                 <select
                   value={formData.role}
                   onChange={(e) => setFormData({...formData, role: e.target.value})}
                 >
-                  <option value="student">Học sinh</option>
+                  <option value="user">Học sinh</option>
+                  <option value="parent">Phụ huynh</option>
                   <option value="teacher">Giáo viên</option>
+                  <option value="admin">Quản trị</option>
                 </select>
               </div>
               {modalMode === 'add' && (
