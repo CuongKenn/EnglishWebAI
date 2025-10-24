@@ -23,6 +23,7 @@ import AdminDashboard from './pages/Admin/AdminDashboard/AdminDashboard';
 
 // Import Teacher Pages
 import TeacherDashboard from './pages/Teacher/TeacherDashboard/TeacherDashboard';
+import TeacherDashboardNew from './pages/Teacher/TeacherDashboard/TeacherDashboardNew';
 import TeacherMaterials from './pages/Teacher/TeacherMaterials/TeacherMaterials';
 
 // Import Parent Pages
@@ -161,21 +162,29 @@ function App() {
         } 
       />
       
-      {/* Admin Dashboard - Protected with Sidebar */}
+      {/* Admin Dashboard - Protected, No Layout wrapper for fullscreen */}
       <Route 
         path="/admin-dashboard/*" 
         element={
           <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="admin">
-            <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
-              <AdminDashboard />
-            </Layout>
+            <AdminDashboard />
           </ProtectedRoute>
         } 
       />
 
-      {/* Teacher Dashboard - Protected */}
+      {/* Teacher Dashboard New - Protected with Nested Routes */}
       <Route 
-        path="/teacher-dashboard" 
+        path="/teacher-dashboard/*" 
+        element={
+          <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="teacher">
+            <TeacherDashboardNew />
+          </ProtectedRoute>
+        } 
+      />
+
+      {/* Teacher Dashboard Old (Legacy) - Protected */}
+      <Route 
+        path="/teacher-dashboard-old" 
         element={
           <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="teacher">
             <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>

@@ -44,59 +44,66 @@ const OverviewStats = () => {
         {/* Main Statistics Cards (Real Data) */}
         <div className="stats-grid">
           <div className="stat-card">
-            <div className="stat-header">
-              <span className="stat-title">Tổng người dùng</span>
+            <div className="stat-icon-box blue">👥</div>
+            <div className="stat-info">
+              <div className="stat-title">Tổng người dùng</div>
+              <div className="stat-value">{stats.totalUsers}</div>
+              <div className="stat-subtitle">Toàn hệ thống</div>
             </div>
-            <div className="stat-value">{stats.totalUsers}</div>
-            <div className="stat-subtitle">Toàn hệ thống</div>
           </div>
 
           <div className="stat-card">
-            <div className="stat-header">
-              <span className="stat-title">Giáo viên</span>
+            <div className="stat-icon-box green">👨‍🏫</div>
+            <div className="stat-info">
+              <div className="stat-title">Giáo viên</div>
+              <div className="stat-value">{stats.totalTeachers}</div>
+              <div className="stat-subtitle">Đang hoạt động</div>
             </div>
-            <div className="stat-value">{stats.totalTeachers}</div>
-            <div className="stat-subtitle">Đang hoạt động</div>
           </div>
 
           <div className="stat-card">
-            <div className="stat-header">
-              <span className="stat-title">Học sinh</span>
+            <div className="stat-icon-box orange">👨‍🎓</div>
+            <div className="stat-info">
+              <div className="stat-title">Học sinh</div>
+              <div className="stat-value">{stats.totalStudents}</div>
+              <div className="stat-subtitle">Đã đăng ký</div>
             </div>
-            <div className="stat-value">{stats.totalStudents}</div>
-            <div className="stat-subtitle">Đã đăng ký</div>
           </div>
 
           <div className="stat-card">
-            <div className="stat-header">
-              <span className="stat-title">Người dùng hoạt động</span>
+            <div className="stat-icon-box purple">✓</div>
+            <div className="stat-info">
+              <div className="stat-title">Người dùng hoạt động</div>
+              <div className="stat-value">{stats.activeUsers}</div>
+              <div className="stat-subtitle">Đang active</div>
             </div>
-            <div className="stat-value">{stats.activeUsers}</div>
-            <div className="stat-subtitle">Đang active</div>
           </div>
 
           <div className="stat-card">
-            <div className="stat-header">
-              <span className="stat-title">Tổng lớp học</span>
+            <div className="stat-icon-box blue">🏫</div>
+            <div className="stat-info">
+              <div className="stat-title">Tổng lớp học</div>
+              <div className="stat-value">{stats.totalClasses}</div>
+              <div className="stat-subtitle">Toàn hệ thống</div>
             </div>
-            <div className="stat-value">{stats.totalClasses}</div>
-            <div className="stat-subtitle">Toàn hệ thống</div>
           </div>
 
           <div className="stat-card">
-            <div className="stat-header">
-              <span className="stat-title">Lớp đang mở</span>
+            <div className="stat-icon-box green">📚</div>
+            <div className="stat-info">
+              <div className="stat-title">Lớp đang mở</div>
+              <div className="stat-value">{stats.activeClasses}</div>
+              <div className="stat-subtitle">Sẵn sàng</div>
             </div>
-            <div className="stat-value">{stats.activeClasses}</div>
-            <div className="stat-subtitle">Sẵn sàng</div>
           </div>
 
           <div className="stat-card">
-            <div className="stat-header">
-              <span className="stat-title">TB học sinh / lớp</span>
+            <div className="stat-icon-box orange">📊</div>
+            <div className="stat-info">
+              <div className="stat-title">TB học sinh / lớp</div>
+              <div className="stat-value">{stats.averageStudents}</div>
+              <div className="stat-subtitle">Trung bình</div>
             </div>
-            <div className="stat-value">{stats.averageStudents}</div>
-            <div className="stat-subtitle">Số học sinh</div>
           </div>
         </div>
 
