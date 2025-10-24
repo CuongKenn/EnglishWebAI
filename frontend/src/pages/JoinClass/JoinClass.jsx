@@ -51,7 +51,7 @@ const JoinClass = () => {
         <div className="header-content">
           <h1 className="page-title fade-in">
             <span className="title-icon">👥</span>
-            Tham gia lớp học
+            Lớp học của tôi
           </h1>
           <p className="page-subtitle fade-in">
             Tìm và tham gia các lớp học phù hợp với trình độ của bạn
