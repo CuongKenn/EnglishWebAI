@@ -1,48 +1,7 @@
 import React, { useState, useEffect } from 'react';
-// import { useDiscussions } from '../../hooks'; // Bỏ comment dòng này khi dùng hook thật
+import { useDiscussions } from '../../hooks';
 import { MessageSquarePlus, Search, MessageSquare, Eye, Heart, Share, ThumbsUp, Send, Paperclip } from 'lucide-react';
 import './Discussion.css';
-
-// Mock hook và data để component có thể chạy độc lập và hiển thị kết quả
-const useDiscussions = () => {
-    const mockData = [
-        {
-            id: 1,
-            author: 'Trần Thị Hoa',
-            author_role: 'Học sinh',
-            avatar: '😊',
-            created_at: '4 giờ trước',
-            title: 'Từ vựng tiếng Anh về gia đình',
-            content: 'Các bạn có thể chia sẻ từ vựng tiếng Anh về gia đình không?',
-            tags: ['từ vựng', 'gia đình', 'tiếng anh'],
-            answers: 5,
-            views: 78,
-            likes: 12,
-            subject: 'Tiếng Anh',
-            grade: 'Lớp 3',
-            isVip: false,
-            isAnswered: true
-        },
-        {
-            id: 2,
-            author: 'Nguyễn Văn An',
-            author_role: 'Học sinh',
-            avatar: '🤔',
-            created_at: '6 giờ trước',
-            title: 'Cách sử dụng thì hiện tại hoàn thành',
-            content: 'Mình đang gặp khó khăn với thì hiện tại hoàn thành. Ai có thể giải thích cách dùng không?',
-            tags: ['ngữ pháp', 'thì', 'hiện tại hoàn thành'],
-            answers: 12,
-            views: 156,
-            likes: 23,
-            subject: 'Tiếng Anh',
-            grade: 'Lớp 7',
-            isVip: false,
-            isAnswered: false
-        },
-    ];
-    return { discussions: mockData, loading: false, error: null, createDiscussion: async (data) => { console.log("Creating new discussion:", data) } };
-};
 
 
 const Discussion = () => {

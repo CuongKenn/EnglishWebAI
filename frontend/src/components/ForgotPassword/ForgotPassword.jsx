@@ -118,8 +118,7 @@ const ForgotPassword = () => {
     setIsLoading(true);
 
     try {
-      // TODO: Call API to reset password
-      // await authService.resetPassword(email, newPassword);
+      await authService.resetPassword(email, newPassword);
       
       setMessage({
         type: 'success',

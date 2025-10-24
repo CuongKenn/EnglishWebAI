@@ -2,7 +2,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import authService from '../../../services/authService';
-import { usersAPI, classesAPI, exercisesAPI } from '../../../services/api';
+import { parentAPI } from '../../../services/parentService';
+import { Plus } from 'lucide-react';
 import './ParentDashboard.css';
 
 const ParentDashboard = () => {
@@ -12,6 +13,8 @@ const ParentDashboard = () => {
   const [selectedChild, setSelectedChild] = useState(null);
   const [childProgress, setChildProgress] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
+  const [showAddChildModal, setShowAddChildModal] = useState(false);
+  const [studentEmail, setStudentEmail] = useState('');
 
   useEffect(() => {
     loadParentData();
@@ -20,37 +23,29 @@ const ParentDashboard = () => {
   const loadParentData = async () => {
     try {
       setLoading(true);
-      // TODO: Implement API to get children list
-      // For now, use mock data
-      const mockChildren = [
-        {
-          id: 1,
-          name: 'Nguyễn Văn A',
-          grade: 'Lớp 3',
-          avatar: '👦',
-          totalClasses: 5,
-          completedLessons: 45,
-          totalLessons: 60,
-          averageScore: 8.5,
-        },
-        {
-          id: 2,
-          name: 'Nguyễn Thị B',
-          grade: 'Lớp 5',
-          avatar: '👧',
-          totalClasses: 6,
-          completedLessons: 78,
-          totalLessons: 90,
-          averageScore: 9.2,
-        },
-      ];
-      setChildren(mockChildren);
-      if (mockChildren.length > 0) {
-        setSelectedChild(mockChildren[0]);
-        loadChildProgress(mockChildren[0].id);
+      const childrenData = await parentAPI.getChildren();
+      
+      // Transform API data to match component structure
+      const transformedChildren = childrenData.map(child => ({
+        id: child.id,
+        name: child.name,
+        grade: child.grade || 'N/A',
+        avatar: child.avatar_url || '�',
+        totalClasses: child.total_classes,
+        completedLessons: child.completed_lessons,
+        totalLessons: child.total_lessons,
+        averageScore: child.average_score,
+      }));
+      
+      setChildren(transformedChildren);
+      if (transformedChildren.length > 0) {
+        setSelectedChild(transformedChildren[0]);
+        loadChildProgress(transformedChildren[0].id);
       }
     } catch (error) {
       console.error('Error loading parent data:', error);
+      // Fallback to empty state on error
+      setChildren([]);
     } finally {
       setLoading(false);
     }
@@ -58,73 +53,72 @@ const ParentDashboard = () => {
 
   const loadChildProgress = async (childId) => {
     try {
-      // TODO: Implement API to get child progress
-      const mockProgress = {
-        recentActivities: [
-          {
-            id: 1,
-            type: 'lesson',
-            title: 'Hoàn thành bài học: Phép cộng trong phạm vi 1000',
-            subject: 'Toán',
-            date: '2 giờ trước',
-            status: 'completed',
-          },
-          {
-            id: 2,
-            type: 'exercise',
-            title: 'Nộp bài tập: Luyện tập phép trừ',
-            subject: 'Toán',
-            score: '9/10',
-            date: '5 giờ trước',
-            status: 'graded',
-          },
-          {
-            id: 3,
-            type: 'discussion',
-            title: 'Tham gia thảo luận: Cách học từ vựng hiệu quả',
-            subject: 'Tiếng Anh',
-            date: '1 ngày trước',
-            status: 'participated',
-          },
-        ],
-        upcomingTasks: [
-          {
-            id: 1,
-            title: 'Bài kiểm tra giữa kỳ - Toán',
-            dueDate: '2 ngày nữa',
-            subject: 'Toán',
-            priority: 'high',
-          },
-          {
-            id: 2,
-            title: 'Nộp bài tập về nhà - Tiếng Việt',
-            dueDate: '3 ngày nữa',
-            subject: 'Tiếng Việt',
-            priority: 'medium',
-          },
-        ],
-        subjectProgress: [
-          { subject: 'Toán', progress: 85, color: '#3B82F6' },
-          { subject: 'Tiếng Việt', progress: 78, color: '#10B981' },
-          { subject: 'Tiếng Anh', progress: 92, color: '#F59E0B' },
-          { subject: 'Khoa học', progress: 70, color: '#8B5CF6' },
-        ],
+      const progressData = await parentAPI.getChildProgress(childId);
+      
+      // Transform API data to match component structure
+      const transformedProgress = {
+        recentActivities: progressData.recent_activities.map(activity => ({
+          id: activity.title,
+          type: activity.type,
+          title: activity.title,
+          subject: activity.subject,
+          score: activity.score ? `${activity.score}/10` : undefined,
+          date: activity.time,
+          status: activity.status,
+        })),
+        upcomingTasks: progressData.upcoming_tasks.map(task => ({
+          id: task.title,
+          title: task.title,
+          dueDate: task.dueDate,
+          subject: task.subject,
+          priority: task.priority,
+        })),
+        subjectProgress: progressData.subject_progress.map(subject => ({
+          subject: subject.subject,
+          progress: subject.progress,
+          color: subject.color,
+        })),
         attendance: {
-          present: 42,
-          absent: 2,
-          late: 1,
-          total: 45,
+          present: progressData.attendance.present,
+          absent: progressData.attendance.absent,
+          late: progressData.attendance.late,
+          total: progressData.attendance.total,
         },
       };
-      setChildProgress(mockProgress);
+      
+      setChildProgress(transformedProgress);
     } catch (error) {
       console.error('Error loading child progress:', error);
+      // Set empty state on error
+      setChildProgress(null);
     }
   };
 
   const handleChildSelect = (child) => {
     setSelectedChild(child);
     loadChildProgress(child.id);
+  };
+
+  const handleAddChild = async () => {
+    if (!studentEmail.trim()) {
+      alert('Vui lòng nhập email học sinh!');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await parentAPI.linkStudent(studentEmail);
+      alert('Đã gửi yêu cầu liên kết đến học sinh. Đợi học sinh xác nhận.');
+      setShowAddChildModal(false);
+      setStudentEmail('');
+      // Reload children list
+      loadParentData();
+    } catch (error) {
+      console.error('Error linking student:', error);
+      alert(error.message || 'Không thể gửi yêu cầu. Vui lòng thử lại!');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (loading) {
@@ -149,7 +143,30 @@ const ParentDashboard = () => {
       <div className="parent-dashboard-content">
         {/* Children List Sidebar */}
         <div className="children-sidebar">
-          <h3>Con của bạn</h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h3>Con của bạn</h3>
+            <button 
+              className="add-child-btn"
+              onClick={() => setShowAddChildModal(true)}
+              style={{
+                background: '#4CAF50',
+                color: 'white',
+                border: 'none',
+                borderRadius: '50%',
+                width: '36px',
+                height: '36px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                transition: 'all 0.2s'
+              }}
+              title="Thêm con"
+            >
+              <Plus size={20} />
+            </button>
+          </div>
           {children.map((child) => (
             <div
               key={child.id}
@@ -369,6 +386,65 @@ const ParentDashboard = () => {
           )}
         </div>
       </div>
+
+      {/* Add Child Modal */}
+      {showAddChildModal && (
+        <div className="modal-overlay" onClick={() => setShowAddChildModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3>Thêm con</h3>
+            <p style={{ marginBottom: '1rem', color: '#666' }}>
+              Nhập email tài khoản học sinh của con bạn. Học sinh cần xác nhận để hoàn tất kết nối.
+            </p>
+            <input
+              type="email"
+              placeholder="Nhập email học sinh"
+              value={studentEmail}
+              onChange={(e) => setStudentEmail(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '12px',
+                marginBottom: '1rem',
+                border: '1px solid #ddd',
+                borderRadius: '8px',
+                fontSize: '14px'
+              }}
+              onKeyPress={(e) => e.key === 'Enter' && handleAddChild()}
+            />
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => {
+                  setShowAddChildModal(false);
+                  setStudentEmail('');
+                }}
+                style={{
+                  padding: '10px 20px',
+                  border: '1px solid #ddd',
+                  background: 'white',
+                  borderRadius: '8px',
+                  cursor: 'pointer'
+                }}
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleAddChild}
+                style={{
+                  padding: '10px 20px',
+                  border: 'none',
+                  background: '#4CAF50',
+                  color: 'white',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: '500'
+                }}
+                disabled={loading}
+              >
+                {loading ? 'Đang gửi...' : 'Gửi yêu cầu'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
