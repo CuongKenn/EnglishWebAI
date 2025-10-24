@@ -31,11 +31,8 @@ services:
       - "${BACKEND_PORT:-8000}:8000"
     networks:
       - englishwebai_network
-    command: >
-      sh -c "
-        echo 'Starting server...' &&
-        uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-      "
+    # Use startup script instead of direct command
+    # The Dockerfile CMD will handle startup now
 
   # Frontend
   frontend:
