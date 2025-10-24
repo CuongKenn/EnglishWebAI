@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User, Camera, Mail, Phone, MapPin, Calendar, Edit2, Save, X, AlertCircle, CheckCircle, Send, Link as LinkIcon, UserCheck } from 'lucide-react';
 import authService from '../../services/authService';
+import { linkParent, unlinkParent, getMyParents, verifyParentLink } from '../../services/userService';
 import './Profile.css';
 
 const Profile = () => {
@@ -21,9 +22,21 @@ const Profile = () => {
         const userData = authService.getCurrentUser();
         setUser(userData);
         setEditedUser(userData);
-        // TODO: Get from API
-        setEmailVerified(userData.email_verified || false);
-        setLinkedParent(userData.linked_parent || null);
+        setEmailVerified(userData.is_verified || false);
+        
+        // Fetch linked parents if user is a student
+        if (userData.role === 'user') {
+          const parents = await getMyParents();
+          if (parents && parents.length > 0) {
+            // Map to include verification status
+            setLinkedParent({
+              id: parents[0].parent_id,
+              email: parents[0].parent?.email || 'Unknown',
+              name: parents[0].parent?.full_name || parents[0].parent?.username || 'Parent',
+              verified: parents[0].is_verified
+            });
+          }
+        }
       } catch (error) {
         console.error('Error fetching user:', error);
       } finally {
@@ -145,30 +158,45 @@ const Profile = () => {
     }
 
     try {
-      // TODO: Call API to link parent account
-      // Mock data for now
+      const link = await linkParent(parentEmail);
       setLinkedParent({
+        id: link.parent_id,
         email: parentEmail,
-        name: 'Phụ huynh',
-        verified: false
+        verified: link.is_verified
       });
       setParentEmail('');
       alert('Đã gửi yêu cầu liên kết đến ' + parentEmail);
     } catch (error) {
       console.error('Error linking parent:', error);
-      alert('Có lỗi xảy ra, vui lòng thử lại!');
+      alert(error.message || 'Có lỗi xảy ra, vui lòng thử lại!');
     }
   };
 
   const handleUnlinkParent = async () => {
     if (window.confirm('Bạn có chắc muốn hủy liên kết với phụ huynh?')) {
       try {
-        // TODO: Call API to unlink parent
+        await unlinkParent(linkedParent.id);
         setLinkedParent(null);
         alert('Đã hủy liên kết với phụ huynh!');
       } catch (error) {
         console.error('Error unlinking parent:', error);
-        alert('Có lỗi xảy ra, vui lòng thử lại!');
+        alert(error.message || 'Có lỗi xảy ra, vui lòng thử lại!');
+      }
+    }
+  };
+
+  const handleVerifyParent = async () => {
+    if (window.confirm('Bạn có chắc muốn xác nhận liên kết với phụ huynh này?')) {
+      try {
+        await verifyParentLink(linkedParent.id);
+        setLinkedParent({
+          ...linkedParent,
+          verified: true
+        });
+        alert('Đã xác nhận liên kết với phụ huynh!');
+      } catch (error) {
+        console.error('Error verifying parent:', error);
+        alert(error.message || 'Có lỗi xảy ra, vui lòng thử lại!');
       }
     }
   };
@@ -473,11 +501,29 @@ const Profile = () => {
                                 <p style={{ margin: 0, fontSize: '0.85rem', color: '#6c757d' }}>
                                   {linkedParent.email}
                                 </p>
+                                {!linkedParent.verified && (
+                                  <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: '#ff9800', fontWeight: 500 }}>
+                                    ⚠️ Chưa xác nhận
+                                  </p>
+                                )}
+                                {linkedParent.verified && (
+                                  <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: '#4caf50', fontWeight: 500 }}>
+                                    ✓ Đã xác nhận
+                                  </p>
+                                )}
                               </div>
                             </div>
-                            <button className="unlink-btn" onClick={handleUnlinkParent}>
-                              Hủy liên kết
-                            </button>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                              {!linkedParent.verified && (
+                                <button className="verify-btn" onClick={handleVerifyParent} style={{ fontSize: '0.85rem', padding: '6px 12px' }}>
+                                  <CheckCircle size={14} />
+                                  Xác nhận
+                                </button>
+                              )}
+                              <button className="unlink-btn" onClick={handleUnlinkParent}>
+                                Hủy liên kết
+                              </button>
+                            </div>
                           </div>
                         ) : (
                           <div className="linking-form">

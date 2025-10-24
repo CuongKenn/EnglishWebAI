@@ -26,10 +26,6 @@ const BASE_URL = normalized || 'http://127.0.0.1:8000';
 const API_V1 = `${BASE_URL}/api/v1`;
 const API_USERS = `${BASE_URL}/api/users`;
 
-// Export API constants for use in other services
-export const apiV1 = API_V1;
-export const apiUsers = API_USERS;
-
 // Create axios instance with default config
 const apiClient = axios.create({
   baseURL: BASE_URL,
@@ -38,6 +34,46 @@ const apiClient = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+// Create axios instance for /api/v1 endpoints
+const apiV1Client = axios.create({
+  baseURL: API_V1,
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Request interceptor for apiV1Client
+apiV1Client.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor for apiV1Client
+apiV1Client.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
+// Export API instances
+export const apiV1 = apiV1Client;
+export const apiUsers = API_USERS;
 
 // Request interceptor to add auth token
 apiClient.interceptors.request.use(

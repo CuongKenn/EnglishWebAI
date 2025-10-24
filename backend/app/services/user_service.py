@@ -144,3 +144,17 @@ class UserService:
         db_user.hashed_password = get_password_hash(new_password)
         db.commit()
         return True
+    
+    @staticmethod
+    def reset_password(db: Session, email: str, new_password: str) -> bool:
+        """Reset user password (for forgot password flow)"""
+        db_user = UserService.get_user_by_email(db, email)
+        if not db_user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        
+        db_user.hashed_password = get_password_hash(new_password)
+        db.commit()
+        return True

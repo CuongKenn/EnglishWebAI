@@ -37,6 +37,20 @@ class AuthService {
     authAPI.logout();
   }
   
+  /**
+   * Đặt lại mật khẩu (cho chức năng quên mật khẩu)
+   */
+  async resetPassword(email, newPassword) {
+    try {
+      const response = await apiUsers.post('/reset-password', {
+        email,
+        new_password: newPassword
+      });
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
 
   /**
    * Lấy thông tin user hiện tại

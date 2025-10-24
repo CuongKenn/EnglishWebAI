@@ -24,3 +24,7 @@ class RegisterRequest(BaseModel):
     email: EmailStr
     password: str
     confirmPassword: str
+
+class ResetPasswordRequest(BaseModel):
+    email: EmailStr
+    new_password: str

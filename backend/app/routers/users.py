@@ -3,8 +3,10 @@ from sqlalchemy.orm import Session
 from typing import List
 from app.core.database import get_db
 from app.core.dependencies import get_current_active_user
-from app.schemas.user import User, UserUpdate, PasswordChange
+from app.schemas.user import User, UserUpdate, PasswordChange, LinkParentRequest, ParentStudentLink
+from app.schemas.auth import ResetPasswordRequest
 from app.services.user_service import UserService
+from app.services.parent_service import ParentService
 from app.models.user import User as UserModel
 
 router = APIRouter()
@@ -40,6 +42,15 @@ async def change_password(
     )
     return {"message": "Password changed successfully"}
 
+@router.post("/reset-password")
+async def reset_password(
+    reset_data: ResetPasswordRequest,
+    db: Session = Depends(get_db)
+):
+    """Reset password (for forgot password flow - OTP must be verified first)"""
+    UserService.reset_password(db, reset_data.email, reset_data.new_password)
+    return {"message": "Password reset successfully"}
+
 @router.get("/", response_model=List[User])
 async def get_users(
     skip: int = 0,
@@ -74,3 +85,41 @@ async def delete_user(
     """Delete user (admin only in production)"""
     UserService.delete_user(db, user_id)
     return {"message": "User deleted successfully"}
+
+@router.post("/me/link-parent", response_model=ParentStudentLink)
+async def link_parent(
+    link_data: LinkParentRequest,
+    current_user: UserModel = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Link a parent account to current student"""
+    link = ParentService.link_parent(db, current_user.id, link_data.parent_email)
+    return link
+
+@router.delete("/me/unlink-parent/{parent_id}")
+async def unlink_parent(
+    parent_id: int,
+    current_user: UserModel = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Unlink a parent from current student"""
+    ParentService.unlink_parent(db, current_user.id, parent_id)
+    return {"message": "Parent unlinked successfully"}
+
+@router.get("/me/parents", response_model=List[ParentStudentLink])
+async def get_my_parents(
+    current_user: UserModel = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Get all parents linked to current student"""
+    return ParentService.get_student_parents(db, current_user.id)
+
+@router.post("/me/verify-parent/{parent_id}")
+async def verify_parent_link(
+    parent_id: int,
+    current_user: UserModel = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Verify/confirm parent link (student accepts the connection)"""
+    ParentService.verify_parent_link(db, current_user.id, parent_id)
+    return {"message": "Parent link verified successfully"}

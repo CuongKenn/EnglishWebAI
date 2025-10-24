@@ -50,3 +50,21 @@ class User(UserInDB):
 class PasswordChange(BaseModel):
     old_password: str
     new_password: str = Field(..., min_length=6)
+
+# Schema for linking parent
+class LinkParentRequest(BaseModel):
+    parent_email: EmailStr
+
+# Schema for parent-student link response
+class ParentStudentLink(BaseModel):
+    id: int
+    parent_id: int
+    student_id: int
+    is_verified: bool
+    created_at: datetime
+    verified_at: Optional[datetime] = None
+    parent: Optional[User] = None
+    student: Optional[User] = None
+
+    class Config:
+        from_attributes = True
