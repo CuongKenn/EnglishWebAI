@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import ProfileDropdown from '../ProfileDropdown/ProfileDropdown';
 import './Navbar.css';
 
 const Navbar = ({ userRole = 'student', isLoggedIn = false, onLogout }) => {
@@ -86,21 +87,7 @@ const Navbar = ({ userRole = 'student', isLoggedIn = false, onLogout }) => {
         {/* User Menu */}
         <div className="navbar-user">
           {isLoggedIn ? (
-            <div className="user-menu">
-              <div className="user-info">
-                <span className="user-role">{userRole.toUpperCase()}</span>
-              </div>
-              <div className="user-actions">
-                <Link to="/profile" className="profile-btn">
-                  <i className="fas fa-user"></i>
-                  Hồ sơ
-                </Link>
-                <button className="logout-btn" onClick={onLogout}>
-                  <i className="fas fa-sign-out-alt"></i>
-                  Đăng xuất
-                </button>
-              </div>
-            </div>
+            <ProfileDropdown onLogout={onLogout} />
           ) : (
             <div className="auth-buttons">
               <Link to="/login" className="login-btn">

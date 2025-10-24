@@ -31,6 +31,10 @@ import WelcomeNotification from './components/WelcomeNotification/WelcomeNotific
 // Import Profile
 import Profile from './components/Profile/Profile';
 
+// Import Other Pages
+import ReportCard from './pages/ReportCard/ReportCard';
+import InviteFriends from './pages/InviteFriends/InviteFriends';
+
 // Import services
 import authService from './services/authService';
 
@@ -196,6 +200,30 @@ function App() {
           <ProtectedRoute isLoggedIn={isLoggedIn}>
             <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
               <Profile />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Report Card Route - Protected */}
+      <Route
+        path="/report-card"
+        element={
+          <ProtectedRoute isLoggedIn={isLoggedIn}>
+            <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+              <ReportCard />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Invite Friends Route - Protected */}
+      <Route
+        path="/invite-friends"
+        element={
+          <ProtectedRoute isLoggedIn={isLoggedIn}>
+            <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+              <InviteFriends />
             </Layout>
           </ProtectedRoute>
         }
