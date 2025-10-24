@@ -1,24 +1,69 @@
 import React, { useState } from 'react';
-import { Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
+import { Routes, Route, Link, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import './AdminDashboard.css';
+import ProfileDropdown from '../../../components/ProfileDropdown/ProfileDropdown';
+import authService from '../../../services/authService';
 
 // Import admin pages
 import ManageAccounts from '../ManageAccounts/ManageAccounts';
 import ManageClasses from '../ManageClasses/ManageClasses';
 import OverviewStats from '../OverviewStats/OverviewStats';
+import Settings from '../Settings/Settings';
+import Backup from '../Backup/Backup';
+import Logs from '../Logs/Logs';
 
 const AdminDashboard = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const isActive = (path) => {
     return location.pathname === path;
   };
 
+  const handleLogout = () => {
+    authService.logout();
+    navigate('/login');
+  };
+
   return (
-    <div className="admin-dashboard-wrapper">
+    <>
+      {/* Top Navbar */}
+      <nav className="admin-top-navbar">
+        <div className="admin-navbar-left">
+          <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span className="admin-navbar-logo">🎓</span>
+            <h1 className="admin-navbar-title">English AI</h1>
+          </Link>
+        </div>
+        <div className="admin-navbar-center">
+          <Link to="/lessons" className="admin-navbar-link">Học bài</Link>
+          <Link to="/news" className="admin-navbar-link">Tin tức</Link>
+          <Link to="/join-class" className="admin-navbar-link">Lớp học của tôi</Link>
+          <Link to="/materials" className="admin-navbar-link">Học liệu cơ bản</Link>
+          <Link to="/exercises" className="admin-navbar-link">Làm bài tập</Link>
+          <Link to="/discussion" className="admin-navbar-link">Hỏi đáp</Link>
+          <Link to="/admin-dashboard" className="admin-navbar-link admin-navbar-link-special">Quản lý</Link>
+        </div>
+        <div className="admin-navbar-right">
+          <button className="admin-navbar-icon-btn" title="Tìm kiếm">🔍</button>
+          <button className="admin-navbar-icon-btn" title="Thông báo">🔔</button>
+          <ProfileDropdown onLogout={handleLogout} />
+        </div>
+      </nav>
+
+      <div className="admin-dashboard-wrapper">
       {/* Sidebar */}
       <aside className={`admin-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
+        {/* Sidebar Toggle Button */}
+        <button 
+          className="sidebar-toggle"
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          title={sidebarCollapsed ? "Mở rộng" : "Thu gọn"}
+        >
+          {sidebarCollapsed ? '›' : '‹'}
+        </button>
+        
         <div className="sidebar-header">
           <h2 className="sidebar-title">
             <span>⚙️</span>
@@ -101,6 +146,7 @@ const AdminDashboard = () => {
             </ul>
           </div>
         </nav>
+
       </aside>
 
       {/* Main Content */}
@@ -112,22 +158,14 @@ const AdminDashboard = () => {
             <Route path="/manage-accounts" element={<ManageAccounts />} />
             <Route path="/manage-classes" element={<ManageClasses />} />
             <Route path="/overview-stats" element={<OverviewStats />} />
-            <Route path="/settings" element={<ComingSoon title="Cấu hình hệ thống" />} />
-            <Route path="/backup" element={<ComingSoon title="Sao lưu dữ liệu" />} />
-            <Route path="/logs" element={<ComingSoon title="Nhật ký hệ thống" />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/backup" element={<Backup />} />
+            <Route path="/logs" element={<Logs />} />
           </Routes>
         </div>
       </main>
-
-      {/* Sidebar Toggle Button */}
-      <button 
-        className="sidebar-toggle"
-        onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-        title={sidebarCollapsed ? "Mở rộng" : "Thu gọn"}
-      >
-        {sidebarCollapsed ? '→' : '←'}
-      </button>
     </div>
+    </>
   );
 };
 

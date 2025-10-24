@@ -164,39 +164,39 @@ const ManageClasses = () => {
         {/* Statistics Cards */}
         <div className="stats-grid">
           <div className="stat-card">
-            <div className="stat-header">
-              <span className="stat-title">Tổng số lớp</span>
-              <span className="stat-change positive">+12.5%</span>
+            <div className="stat-icon-box blue">🏫</div>
+            <div className="stat-info">
+              <div className="stat-title">Tổng số lớp</div>
+              <div className="stat-value">{stats.totalClasses}</div>
+              <div className="stat-subtitle">Toàn hệ thống</div>
             </div>
-            <div className="stat-value">{stats.totalClasses}</div>
-            <div className="stat-subtitle">Tất cả lớp học</div>
           </div>
 
           <div className="stat-card">
-            <div className="stat-header">
-              <span className="stat-title">Đang hoạt động</span>
-              <span className="stat-change positive">+8.3%</span>
+            <div className="stat-icon-box green">✓</div>
+            <div className="stat-info">
+              <div className="stat-title">Đang hoạt động</div>
+              <div className="stat-value">{stats.activeClasses}</div>
+              <div className="stat-subtitle">Lớp đang mở</div>
             </div>
-            <div className="stat-value">{stats.activeClasses}</div>
-            <div className="stat-subtitle">Lớp đang mở</div>
           </div>
 
           <div className="stat-card">
-            <div className="stat-header">
-              <span className="stat-title">Tổng học sinh</span>
-              <span className="stat-change positive">+18.2%</span>
+            <div className="stat-icon-box orange">👨‍🎓</div>
+            <div className="stat-info">
+              <div className="stat-title">Tổng học sinh</div>
+              <div className="stat-value">{stats.totalStudents}</div>
+              <div className="stat-subtitle">Đã đăng ký</div>
             </div>
-            <div className="stat-value">{stats.totalStudents}</div>
-            <div className="stat-subtitle">Đã đăng ký</div>
           </div>
 
           <div className="stat-card">
-            <div className="stat-header">
-              <span className="stat-title">Trung bình/Lớp</span>
-              <span className="stat-change negative">-3.1%</span>
+            <div className="stat-icon-box purple">📊</div>
+            <div className="stat-info">
+              <div className="stat-title">Trung bình/Lớp</div>
+              <div className="stat-value">{stats.averageStudents}</div>
+              <div className="stat-subtitle">Học sinh/lớp</div>
             </div>
-            <div className="stat-value">{stats.averageStudents}</div>
-            <div className="stat-subtitle">Học sinh/lớp</div>
           </div>
         </div>
 
