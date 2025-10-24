@@ -101,8 +101,7 @@ const Login = ({ onLogin }) => {
   };
 
   const handleForgotPassword = () => {
-    console.log('Forgot password clicked');
-    // Navigate to forgot password page
+    navigate('/forgot-password');
   };
 
   return (

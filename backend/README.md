@@ -152,6 +152,43 @@ Server sẽ chạy tại: http://localhost:8000
 - `GET /api/v1/users/{user_id}` - Lấy thông tin user theo ID
 - `DELETE /api/v1/users/{user_id}` - Xóa user
 
+### OTP & Email Service
+
+- `POST /api/v1/otp/send` - Gửi OTP đến email người dùng
+- `POST /api/v1/otp/send-to-me` - Gửi OTP đến email user hiện tại (authenticated)
+- `POST /api/v1/otp/verify` - Xác thực mã OTP
+- `POST /api/v1/otp/resend` - Gửi lại mã OTP
+
+📚 **Xem thêm**: [EMAIL_QUICKSTART.md](./EMAIL_QUICKSTART.md) và [EMAIL_SERVICE.md](./EMAIL_SERVICE.md)
+
+## 📧 Email Service Setup
+
+Backend đã tích hợp dịch vụ gửi email qua SMTP để gửi OTP. Để sử dụng:
+
+1. Cấu hình SMTP trong `.env`:
+   ```env
+   SMTP_HOST=smtp.gmail.com
+   SMTP_PORT=587
+   SMTP_USERNAME=your-email@gmail.com
+   SMTP_PASSWORD=your-app-password
+   SMTP_FROM_EMAIL=noreply@englishwebai.com
+   SMTP_FROM_NAME=EnglishWebAI
+   OTP_EXPIRE_MINUTES=5
+   OTP_LENGTH=6
+   ```
+
+2. Tạo App Password cho Gmail (nếu dùng Gmail):
+   - Truy cập https://myaccount.google.com/security
+   - Bật 2-Factor Authentication
+   - Tạo App Password cho Mail
+
+3. Test email service:
+   ```bash
+   python tests/test_email_service.py
+   ```
+
+**Xem hướng dẫn chi tiết**: [EMAIL_QUICKSTART.md](./EMAIL_QUICKSTART.md)
+
 ## 🧪 Testing
 
 ```bash

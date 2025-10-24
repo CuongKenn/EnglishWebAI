@@ -30,11 +30,27 @@ class UserService:
     def create_user(db: Session, user: UserCreate) -> User:
         """Create new user"""
         # Check if email already exists
-        if UserService.get_user_by_email(db, user.email):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Email already registered"
-            )
+        existing_user = UserService.get_user_by_email(db, user.email)
+        if existing_user:
+            # If user exists but is inactive (temporary from OTP), update it
+            if not existing_user.is_active:
+                # Update the temporary user with real registration data
+                existing_user.username = user.username
+                existing_user.full_name = user.full_name
+                existing_user.hashed_password = get_password_hash(user.password)
+                existing_user.role = user.role
+                existing_user.phone = user.phone
+                existing_user.is_active = True  # Activate the user
+                existing_user.is_verified = True  # Mark as verified (OTP was verified)
+                db.commit()
+                db.refresh(existing_user)
+                return existing_user
+            else:
+                # User is active, email already registered
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Email already registered"
+                )
         
         # Check if username already exists
         if UserService.get_user_by_username(db, user.username):

@@ -3,7 +3,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import engine, Base, SessionLocal
-from app.routers import auth, users
+from app.routers import auth, users, otp
 from app.routers import admin as admin_router
 from app.routers import classes, lessons, exercises, materials, discussions, news
 from app.models import User
@@ -32,6 +32,7 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/api/users", tags=["Authentication"])
 app.include_router(users.router, prefix=f"{settings.API_PREFIX}/users", tags=["Users"])
 app.include_router(admin_router.router, prefix=f"{settings.API_PREFIX}/admin", tags=["Admin"])
+app.include_router(otp.router, prefix=f"{settings.API_PREFIX}/otp", tags=["OTP"])
 
 # Student routers
 app.include_router(classes.router, prefix=f"{settings.API_PREFIX}/classes", tags=["Classes"])
