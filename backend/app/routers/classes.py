@@ -18,6 +18,11 @@ from app.schemas.student import (
     AttendanceUpsertRequest,
     AttendanceRecordOut
 )
+from app.schemas.student import MaterialResponse, ExerciseResponse
+from app.schemas.student import LessonResponse, LessonCreate, LessonUpdate
+from app.models.material import Material
+from app.models.exercise import Exercise
+from app.models.lesson import Lesson
 
 router = APIRouter()
 
@@ -355,6 +360,27 @@ def _ensure_can_manage_class(db: Session, current_user: User, class_id: int) -> 
 # Removed duplicate definition of /teaching endpoint to prevent ambiguous routing
 
 
+def _ensure_can_view_class(db: Session, current_user: User, class_id: int) -> Classroom:
+    """Allow teacher/admin of class or enrolled active student to view."""
+    classroom: Optional[Classroom] = db.query(Classroom).filter(Classroom.id == class_id).first()
+    if not classroom:
+        raise HTTPException(status_code=404, detail="Không tìm thấy lớp học")
+    # Teachers/Admins
+    if current_user.role in (UserRole.ADMIN, UserRole.SUPERADMIN):
+        return classroom
+    if current_user.role == UserRole.TEACHER and classroom.teacher_id == current_user.id:
+        return classroom
+    # Students: check enrollment active
+    enr = (
+        db.query(Enrollment)
+        .filter(Enrollment.class_id == class_id, Enrollment.user_id == current_user.id, Enrollment.status == "active")
+        .first()
+    )
+    if enr:
+        return classroom
+    raise HTTPException(status_code=403, detail="Bạn chưa tham gia lớp này")
+
+
 @router.get("/{class_id}/students", response_model=List[ClassStudentOut])
 async def list_class_students(
     class_id: int,
@@ -528,3 +554,110 @@ async def upsert_attendance(
             db.add(rec)
     db.commit()
     return {"message": "Attendance saved"}
+
+
+# ============= Class content for enrolled students =============
+
+@router.get("/{class_id}/materials", response_model=List[MaterialResponse])
+async def list_class_materials(
+    class_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Danh sách học liệu của lớp (học sinh đã tham gia, giáo viên lớp, hoặc admin)"""
+    _ensure_can_view_class(db, current_user, class_id)
+    rows = db.query(Material).filter(Material.class_id == class_id).all()
+    return rows
+
+
+@router.get("/{class_id}/exercises", response_model=List[ExerciseResponse])
+async def list_class_exercises(
+    class_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Danh sách bài tập của lớp (học sinh đã tham gia, giáo viên lớp, hoặc admin)"""
+    _ensure_can_view_class(db, current_user, class_id)
+    rows = db.query(Exercise).filter(Exercise.class_id == class_id).all()
+    return rows
+
+
+@router.get("/{class_id}/lessons", response_model=List[LessonResponse])
+async def list_class_lessons(
+    class_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Danh sách bài học theo lớp (học sinh đã tham gia, giáo viên, hoặc admin)"""
+    _ensure_can_view_class(db, current_user, class_id)
+    rows = (
+        db.query(Lesson)
+        .filter(Lesson.class_id == class_id)
+        .order_by(Lesson.order_index.asc().nulls_last(), Lesson.id.asc())
+        .all()
+    )
+    return rows
+
+
+@router.post("/{class_id}/lessons", response_model=LessonResponse, status_code=201)
+async def create_class_lesson(
+    class_id: int,
+    payload: LessonCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Tạo bài học mới trong lớp (giáo viên lớp hoặc admin)"""
+    _ensure_can_manage_class(db, current_user, class_id)
+    # Determine next order_index
+    max_idx = db.query(func.max(Lesson.order_index)).filter(Lesson.class_id == class_id).scalar() or 0
+    lesson = Lesson(
+        class_id=class_id,
+        title=payload.title,
+        content=payload.content,
+        order_index=(max_idx + 1),
+    )
+    db.add(lesson)
+    db.commit()
+    db.refresh(lesson)
+    return lesson
+
+
+@router.put("/{class_id}/lessons/{lesson_id}", response_model=LessonResponse)
+async def update_class_lesson(
+    class_id: int,
+    lesson_id: int,
+    payload: LessonUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Cập nhật tiêu đề/nội dung/thứ tự bài học (giáo viên lớp hoặc admin)"""
+    _ensure_can_manage_class(db, current_user, class_id)
+    lesson = db.query(Lesson).filter(Lesson.id == lesson_id, Lesson.class_id == class_id).first()
+    if not lesson:
+        raise HTTPException(status_code=404, detail="Không tìm thấy bài học")
+    if payload.title is not None:
+        lesson.title = payload.title
+    if payload.content is not None:
+        lesson.content = payload.content
+    if payload.order_index is not None:
+        lesson.order_index = payload.order_index
+    db.commit()
+    db.refresh(lesson)
+    return lesson
+
+
+@router.delete("/{class_id}/lessons/{lesson_id}")
+async def delete_class_lesson(
+    class_id: int,
+    lesson_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Xóa bài học (giáo viên lớp hoặc admin)"""
+    _ensure_can_manage_class(db, current_user, class_id)
+    lesson = db.query(Lesson).filter(Lesson.id == lesson_id, Lesson.class_id == class_id).first()
+    if not lesson:
+        raise HTTPException(status_code=404, detail="Không tìm thấy bài học")
+    db.delete(lesson)
+    db.commit()
+    return {"message": "Đã xóa bài học"}

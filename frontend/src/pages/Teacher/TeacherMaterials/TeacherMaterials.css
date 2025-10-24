@@ -1,0 +1,64 @@
+/* Basic styles for Teacher Materials management page */
+.tm-page {
+  padding: 20px;
+}
+
+.tm-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.tm-header h1 {
+  margin: 0 0 4px 0;
+  font-size: 22px;
+  color: #1f2937;
+}
+
+.tm-header p { margin: 0; color: #6b7280; }
+
+.tm-actions { display: flex; gap: 10px; align-items: center; }
+
+.tm-select, .tm-input, .tm-textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  outline: none;
+}
+
+.tm-list { background: #fff; border-radius: 12px; padding: 16px; }
+.tm-loading { color: #6b7280; }
+.tm-empty { color: #6b7280; text-align: center; padding: 24px; }
+.tm-error { background: #fee2e2; color: #991b1b; padding: 12px; border-radius: 8px; margin-bottom: 12px; }
+
+.tm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.tm-card { border: 1px solid #e5e7eb; border-radius: 12px; padding: 14px; background: #fff; }
+.tm-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.tm-card-title { font-weight: 700; color: #111827; }
+
+.tm-tag { font-size: 12px; padding: 4px 8px; border-radius: 999px; }
+.tm-file { background: #dbeafe; color: #1e40af; }
+.tm-link { background: #e0f2fe; color: #075985; text-decoration: none; }
+.tm-text { background: #ede9fe; color: #5b21b6; }
+
+.tm-desc { color: #374151; margin-bottom: 8px; }
+.tm-link-row { margin: 8px 0; }
+.tm-link-row .tm-link { color: #2563eb; }
+
+.tm-card-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+.btn-primary { padding: 10px 16px; background: linear-gradient(135deg,#10b981,#059669); border: none; color: #fff; border-radius: 8px; cursor: pointer; }
+.btn-secondary { padding: 10px 16px; background: #e5e7eb; border: none; color: #111827; border-radius: 8px; cursor: pointer; }
+.btn-danger { padding: 10px 16px; background: #ef4444; border: none; color: #fff; border-radius: 8px; cursor: pointer; }
+
+.tm-form { display: flex; flex-direction: column; gap: 12px; }
+.tm-label { display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: #374151; }
+.tm-form-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+
+/* Modal base styles */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+.modal-content { background: #fff; border-radius: 12px; padding: 20px; width: 100%; max-width: 520px; max-height: 90vh; overflow: auto; }
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.close-btn { background: transparent; border: none; font-size: 22px; color: #6b7280; cursor: pointer; }

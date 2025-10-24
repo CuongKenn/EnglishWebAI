@@ -162,6 +162,73 @@ export const classesAPI = {
       throw error.response ? error.response.data : error;
     }
   },
+
+  // Lấy danh sách lớp giáo viên đang dạy
+  getTeachingClasses: async () => {
+    try {
+      const response = await apiClient.get('/api/v1/classes/teaching');
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Lấy học liệu của lớp (sau khi tham gia)
+  getClassMaterials: async (classId) => {
+    try {
+      const response = await apiClient.get(`/api/v1/classes/${classId}/materials`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Lấy bài tập của lớp (sau khi tham gia)
+  getClassExercises: async (classId) => {
+    try {
+      const response = await apiClient.get(`/api/v1/classes/${classId}/exercises`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Lessons of a class
+  getClassLessons: async (classId) => {
+    try {
+      const response = await apiClient.get(`/api/v1/classes/${classId}/lessons`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  createLesson: async (classId, data) => {
+    try {
+      const response = await apiClient.post(`/api/v1/classes/${classId}/lessons`, data);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  updateLesson: async (classId, lessonId, data) => {
+    try {
+      const response = await apiClient.put(`/api/v1/classes/${classId}/lessons/${lessonId}`, data);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  deleteLesson: async (classId, lessonId) => {
+    try {
+      const response = await apiClient.delete(`/api/v1/classes/${classId}/lessons/${lessonId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
 };
 
 // ==================== Lessons APIs ====================
@@ -297,6 +364,75 @@ export const materialsAPI = {
     try {
       const response = await apiClient.get(`/api/v1/materials/${materialId}/download`);
       return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Tạo học liệu (giáo viên)
+  createMaterial: async (data) => {
+    try {
+      const response = await apiClient.post('/api/v1/materials/', data);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Cập nhật học liệu (giáo viên)
+  updateMaterial: async (materialId, data) => {
+    try {
+      const response = await apiClient.put(`/api/v1/materials/${materialId}`, data);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Xóa học liệu (giáo viên)
+  deleteMaterial: async (materialId) => {
+    try {
+      const response = await apiClient.delete(`/api/v1/materials/${materialId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Danh sách học liệu theo lớp (giáo viên)
+  listByClass: async (classId) => {
+    try {
+      const response = await apiClient.get(`/api/v1/materials/by-class/${classId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Danh sách học liệu theo bài học (giáo viên)
+  listByLesson: async (lessonId) => {
+    try {
+      const response = await apiClient.get(`/api/v1/materials/by-lesson/${lessonId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Upload file học liệu, trả về file_path
+  upload: async (file) => {
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      // Tránh set Content-Type thủ công để axios tự thêm boundary
+      // Gửi trực tiếp bằng axios, kèm Authorization nếu có
+      const token = localStorage.getItem('access_token');
+      const response = await axios.post(`${BASE_URL}/api/v1/materials/upload`, form, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      return response.data; // { file_path }
     } catch (error) {
       throw error.response ? error.response.data : error;
     }

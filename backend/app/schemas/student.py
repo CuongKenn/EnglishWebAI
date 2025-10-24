@@ -115,7 +115,7 @@ class LessonBase(BaseModel):
     order_index: Optional[int] = None
 
 class LessonCreate(LessonBase):
-    class_id: int
+    class_id: Optional[int] = None
 
 class LessonUpdate(BaseModel):
     title: Optional[str] = None
@@ -210,6 +210,7 @@ class MaterialUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     url: Optional[str] = None
+    lesson_id: Optional[int] = None
 
 class MaterialResponse(MaterialBase):
     id: int
