@@ -31,8 +31,21 @@ services:
       - "${BACKEND_PORT:-8000}:8000"
     networks:
       - englishwebai_network
-    # Use startup script instead of direct command
-    # The Dockerfile CMD will handle startup now
+    command: >
+      sh -c "
+        echo 'Starting EnglishWebAI Backend...' &&
+        if [ ! -f .env ]; then
+          echo 'Creating .env from .env.example...' &&
+          cp .env.example .env &&
+          echo 'WARNING: Using default .env file. Please configure SMTP credentials!';
+        fi &&
+        echo 'Running database migrations...' &&
+        alembic upgrade head &&
+        echo 'Cleaning up temporary users...' &&
+        python fix_roles.py || true &&
+        echo 'Starting server...' &&
+        uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+      "
 
   # Frontend
   frontend:
