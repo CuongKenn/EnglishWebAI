@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import authService from '../../services/authService';
+import otpService from '../../services/otpService';
+import OTPModal from '../OTPModal/OTPModal';
 import './Register.css';
 
 const Register = () => {
@@ -16,6 +18,9 @@ const Register = () => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [stars, setStars] = useState([]);
   const [meteors, setMeteors] = useState([]);
+  const [showOTPModal, setShowOTPModal] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [pendingUserData, setPendingUserData] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -76,21 +81,57 @@ const Register = () => {
     const button = e.target.querySelector('.sign-up-btn');
     createRipple(button, e);
 
+    setIsRegistering(true);
+
     try {
-      // Sử dụng authService để đăng ký
-      await authService.register({
+      // Lưu thông tin user tạm thời
+      const userData = {
         username: formData.name,
         phone: formData.phone,
         email: formData.email,
         password: formData.password,
         confirmPassword: formData.confirmPassword,
-      }); 
+      };
+      
+      setPendingUserData(userData);
 
-      alert('Đăng ký thành công!');
-      navigate('/login'); // Chuyển tới trang đăng nhập sau khi đăng ký thành công
+      // Gửi OTP để xác thực email trước khi đăng ký
+      await otpService.sendOTP(formData.email, 'verification');
+      
+      setShowOTPModal(true);
+      alert('Mã OTP đã được gửi đến email của bạn. Vui lòng kiểm tra và xác thực!');
+      
     } catch (error) {
-      console.error('Registration failed:', error);
-      alert(error.message || 'Đăng ký thất bại, vui lòng thử lại.');
+      console.error('Send OTP failed:', error);
+      alert(error.message || 'Không thể gửi mã OTP, vui lòng thử lại.');
+    } finally {
+      setIsRegistering(false);
+    }
+  };
+
+  const handleVerifyOTP = async (otpCode) => {
+    try {
+      // Xác thực OTP
+      await otpService.verifyOTP(pendingUserData.email, otpCode, 'verification');
+      
+      // Sau khi xác thực OTP thành công, tiến hành đăng ký
+      await authService.register(pendingUserData);
+      
+      setShowOTPModal(false);
+      alert('Đăng ký thành công!');
+      navigate('/login');
+      
+    } catch (error) {
+      console.error('Verification or Registration failed:', error);
+      throw error; // Re-throw để OTPModal có thể xử lý
+    }
+  };
+
+  const handleResendOTP = async () => {
+    try {
+      await otpService.resendOTP(pendingUserData.email, 'verification');
+    } catch (error) {
+      throw error;
     }
   };
 
@@ -372,6 +413,16 @@ const Register = () => {
           </div>
         </div>
       </div>
+
+      {/* OTP Modal */}
+      <OTPModal
+        isOpen={showOTPModal}
+        onClose={() => setShowOTPModal(false)}
+        onVerify={handleVerifyOTP}
+        email={formData.email}
+        purpose="verification"
+        onResend={handleResendOTP}
+      />
     </div>
   );
 };

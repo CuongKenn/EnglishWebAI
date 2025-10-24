@@ -8,6 +8,7 @@ import Layout from './components/Layout/Layout';
 import HomeStudent from './pages/HomeStudent/HomeStudent';
 import Login from './components/Login/Login';
 import Register from './components/Register/Register';
+import ForgotPassword from './components/ForgotPassword/ForgotPassword';
 import JoinClass from './pages/JoinClass/JoinClass';
 import Materials from './pages/Materials/Materials';
 import Discussion from './pages/Discussion/Discussion';
@@ -100,6 +101,7 @@ function App() {
         element={<Login onLogin={handleLogin} />} 
       />
       <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
       
       {/* Public Routes */}
       <Route 

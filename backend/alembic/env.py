@@ -10,8 +10,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 # Import your models
-from app.core.database import Base
-from app.models import User  # Import all models
+from app.core.database import Base, SQLALCHEMY_DATABASE_URL
+from app.models import *  # Import all models
 
 # this is the Alembic Config object
 config = context.config
@@ -23,8 +23,8 @@ if config.config_file_name is not None:
 # Set target metadata
 target_metadata = Base.metadata
 
-# Get database URL from environment
-database_url = os.getenv("DATABASE_URL")
+# Get database URL from environment or use the one from database.py
+database_url = os.getenv("DATABASE_URL", SQLALCHEMY_DATABASE_URL)
 if database_url:
     config.set_main_option("sqlalchemy.url", database_url)
 
