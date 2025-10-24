@@ -2,7 +2,27 @@
 import axios from 'axios';
 
 // Base URL configuration
-const BASE_URL = 'http://127.0.0.1:8000';
+// Ưu tiên lấy từ biến môi trường Vite để linh hoạt ở dev/prod/Docker
+const VITE_API_BASE = (typeof import.meta !== 'undefined' && import.meta.env && (
+  import.meta.env.VITE_BACKEND_BASE_URL || import.meta.env.VITE_API_BASE_URL
+)) || '';
+
+// Cho phép truyền cả dạng đầy đủ (http://host:port) hoặc kèm /api/v1
+const normalized = (() => {
+  try {
+    if (!VITE_API_BASE) return '';
+    // Nếu người dùng set VITE_API_BASE_URL=http://localhost:8000/api/v1
+    // thì tách phần base host để axios baseURL chuẩn
+    const withoutTrailing = VITE_API_BASE.replace(/\/$/, '');
+    const m = withoutTrailing.match(/^(.*):\/\/[^/]+(?::\d+)?(?:\/api\/v1)?$/);
+    // Nếu có /api/v1 ở cuối, cắt đi
+    return withoutTrailing.replace(/\/api\/v1$/, '');
+  } catch {
+    return '';
+  }
+})();
+
+const BASE_URL = normalized || 'http://127.0.0.1:8000';
 const API_V1 = `${BASE_URL}/api/v1`;
 const API_USERS = `${BASE_URL}/api/users`;
 

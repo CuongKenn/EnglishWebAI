@@ -36,14 +36,14 @@ class ClassroomResponse(ClassroomBase):
 class ClassroomListResponse(BaseModel):
     id: int
     name: str
-    description: Optional[str]
-    schedule: Optional[str]
-    max_students: Optional[int]
+    description: Optional[str] = None
+    schedule: Optional[str] = None
+    max_students: Optional[int] = None
     student_count: int
-    teacher_name: Optional[str]
-    subject: Optional[str]
-    grade: Optional[str]
-    skill: Optional[str]
+    teacher_name: Optional[str] = None
+    subject: Optional[str] = None
+    grade: Optional[str] = None
+    skill: Optional[str] = None
     image: Optional[str] = "📚"
     color: Optional[str] = "blue"
 

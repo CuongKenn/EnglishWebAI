@@ -42,7 +42,23 @@ const TeacherDashboard = () => {
       const res = await apiClient.get('/api/v1/classes/teaching');
       setClasses(Array.isArray(res.data) ? res.data : []);
     } catch (e) {
-      setError('Không tải được danh sách lớp dạy');
+      // Hiển thị thông báo lỗi cụ thể để dễ chẩn đoán
+      if (e?.response) {
+        const status = e.response.status;
+        if (status === 401) {
+          setError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+        } else if (status === 403) {
+          setError('Tài khoản hiện tại không có quyền giáo viên.');
+        } else {
+          const detail = e.response.data?.detail || 'Không tải được danh sách lớp dạy';
+          setError(detail);
+        }
+      } else if (e?.request) {
+        setError('Không kết nối được máy chủ. Kiểm tra backend (http://127.0.0.1:8000) hoặc cấu hình API.');
+      } else {
+        setError('Đã xảy ra lỗi khi tải danh sách lớp dạy.');
+      }
+      console.error('Load teaching classes failed:', e);
     } finally {
       setLoading(false);
     }
