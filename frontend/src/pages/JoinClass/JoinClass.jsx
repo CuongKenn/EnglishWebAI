@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { useClasses } from '../../hooks';
+import { classesAPI } from '../../services/api';
 import './JoinClass.css';
 
 const JoinClass = () => {
@@ -12,6 +13,8 @@ const JoinClass = () => {
   const skillParam = selectedSkill !== 'all' ? selectedSkill : undefined;
   const { classes, loading, error, joinClass } = useClasses({ grade: gradeNumber || undefined, skill: skillParam });
   const [params] = useSearchParams();
+  const navigate = useNavigate();
+  // Removed inline modal flow; navigate to class content page instead
 
   // Initialize grade filter from query string
   useEffect(() => {
@@ -30,10 +33,15 @@ const JoinClass = () => {
 
   const handleJoinClass = async (classId) => {
     try {
-      await joinClass(classId);
-      alert('Tham gia lớp học thành công!');
+      // Cố gắng tham gia lớp; nếu đã tham gia hoặc có lỗi nhẹ vẫn điều hướng sang nội dung lớp
+      try {
+        await classesAPI.joinClass(classId);
+      } catch (e) {
+        // Bỏ qua lỗi "đã tham gia" hoặc tương tự; vẫn cho chuyển trang để xem nội dung nếu có quyền
+      }
+      navigate(`/class/${classId}/content`);
     } catch (err) {
-      alert(err.message || 'Có lỗi xảy ra khi tham gia lớp học');
+      navigate(`/class/${classId}/content`);
     }
   };
 
@@ -180,9 +188,10 @@ const JoinClass = () => {
               <p>Hãy thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</p>
             </div>
           )}
-        </div>
       </div>
     </div>
+
+  </div>
   );
 };
 

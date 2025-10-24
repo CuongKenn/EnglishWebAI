@@ -369,6 +369,20 @@
   color: #495057;
 }
 
+/* Modal styles for class content */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+.modal-content { background: #fff; border-radius: 12px; width: 100%; max-width: 720px; max-height: 90vh; overflow: auto; padding: 20px; }
+.modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.close-btn { background: transparent; border: none; font-size: 22px; color: #6b7280; cursor: pointer; }
+.tab-bar { display: flex; gap: 8px; margin: 8px 0 16px; }
+.tab-btn { padding: 8px 12px; border-radius: 999px; border: 1px solid #e5e7eb; background: #f9fafb; cursor: pointer; }
+.tab-btn.active { background: #667eea; border-color: #667eea; color: #fff; }
+.list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
+.list-item { border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; }
+.list-title { font-weight: 700; color: #111827; }
+.list-desc { color: #374151; margin-top: 4px; }
+.list-meta { color: #6b7280; font-size: 12px; margin-top: 6px; }
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .page-content {

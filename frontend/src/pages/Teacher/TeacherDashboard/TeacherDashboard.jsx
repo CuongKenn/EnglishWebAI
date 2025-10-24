@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './TeacherDashboard.css';
 import apiClient from '../../../services/api';
 
 const TeacherDashboard = () => {
+  const navigate = useNavigate();
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -139,6 +141,7 @@ const TeacherDashboard = () => {
             <div className="header-actions">
               <button className="btn-icon" title="Tìm kiếm">🔍</button>
               <button className="btn-icon" title="Thông báo">🔔</button>
+              <button className="btn-primary" onClick={() => navigate('/teacher-materials')}>Quản lý học liệu</button>
             </div>
           </div>
         </div>

@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import engine, Base, SessionLocal
@@ -39,6 +40,13 @@ app.include_router(exercises.router, prefix=f"{settings.API_PREFIX}/exercises", 
 app.include_router(materials.router, prefix=f"{settings.API_PREFIX}/materials", tags=["Materials"])
 app.include_router(discussions.router, prefix=f"{settings.API_PREFIX}/discussions", tags=["Discussions"])
 app.include_router(news.router, prefix=f"{settings.API_PREFIX}/news", tags=["News"])
+
+# Serve media files if available (e.g., uploaded materials)
+try:
+    app.mount("/media", StaticFiles(directory="media", check_dir=False), name="media")
+except Exception:
+    # If StaticFiles fails due to version mismatch or other issues, skip mounting
+    pass
 
 @app.on_event("startup")
 async def startup_event():

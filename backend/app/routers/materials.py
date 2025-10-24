@@ -1,11 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
+import os
+import shutil
+from datetime import datetime
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.models.material import Material
+from app.models.lesson import Lesson
+from app.models.classroom import Classroom
 from app.schemas.student import MaterialListResponse, MaterialResponse
+from app.schemas.student import MaterialCreate, MaterialUpdate
 
 router = APIRouter()
 
@@ -157,4 +163,268 @@ async def download_material(
     return {
         "url": material.url or material.file_path,
         "filename": material.title
+    }
+
+
+# ===================== Teacher/Admin: CRUD Materials =====================
+
+def _ensure_can_manage_class(db: Session, current_user: User, class_id: int) -> Classroom:
+    classroom: Optional[Classroom] = db.query(Classroom).filter(Classroom.id == class_id).first()
+    if not classroom:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy lớp học")
+    if current_user.role in (UserRole.ADMIN, UserRole.SUPERADMIN):
+        return classroom
+    if current_user.role == UserRole.TEACHER and classroom.teacher_id == current_user.id:
+        return classroom
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Không có quyền quản lý lớp học này")
+
+
+def _get_material_class_id(db: Session, material: Material) -> Optional[int]:
+    if material.class_id:
+        return material.class_id
+    if material.lesson_id:
+        lesson = db.query(Lesson).filter(Lesson.id == material.lesson_id).first()
+        if lesson:
+            return lesson.class_id
+    return None
+
+
+@router.get("/by-class/{class_id}", response_model=List[MaterialResponse])
+async def list_materials_by_class(
+    class_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Danh sách học liệu theo lớp (giáo viên lớp hoặc admin)"""
+    _ensure_can_manage_class(db, current_user, class_id)
+    materials = db.query(Material).filter(Material.class_id == class_id).all()
+    return materials
+
+
+@router.get("/by-lesson/{lesson_id}", response_model=List[MaterialResponse])
+async def list_materials_by_lesson(
+    lesson_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Danh sách học liệu theo bài học (giáo viên lớp của bài học hoặc admin)"""
+    lesson = db.query(Lesson).filter(Lesson.id == lesson_id).first()
+    if not lesson:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy bài học")
+    _ensure_can_manage_class(db, current_user, int(lesson.class_id))
+    materials = db.query(Material).filter(Material.lesson_id == lesson_id).all()
+    return materials
+
+
+@router.post("/", response_model=MaterialResponse, status_code=status.HTTP_201_CREATED)
+async def create_material(
+    payload: MaterialCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Tạo học liệu mới (chỉ giáo viên lớp hoặc admin)
+
+    Yêu cầu: cung cấp ít nhất một trong `class_id` hoặc `lesson_id`.
+    Nếu chỉ có `lesson_id`, hệ thống sẽ suy ra `class_id` từ bài học.
+    """
+    if not payload.class_id and not payload.lesson_id:
+        raise HTTPException(status_code=400, detail="Cần cung cấp class_id hoặc lesson_id")
+
+    # Determine class_id and ensure permission
+    class_id: Optional[int] = payload.class_id
+    if payload.lesson_id and not class_id:
+        lesson = db.query(Lesson).filter(Lesson.id == payload.lesson_id).first()
+        if not lesson:
+            raise HTTPException(status_code=404, detail="Không tìm thấy bài học")
+        class_id = int(lesson.class_id)
+
+    if class_id is None:
+        raise HTTPException(status_code=400, detail="Không xác định được lớp học cho học liệu")
+
+    _ensure_can_manage_class(db, current_user, int(class_id))
+
+    material = Material(
+        class_id=class_id,
+        lesson_id=payload.lesson_id,
+        title=payload.title,
+        type=payload.type,
+        url=payload.url,
+        file_path=payload.file_path,
+        description=payload.description,
+    )
+    db.add(material)
+    db.commit()
+    db.refresh(material)
+    return material
+
+
+@router.put("/{material_id}", response_model=MaterialResponse)
+async def update_material(
+    material_id: int,
+    payload: MaterialUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Cập nhật học liệu (giáo viên lớp hoặc admin)"""
+    material = db.query(Material).filter(Material.id == material_id).first()
+    if not material:
+        raise HTTPException(status_code=404, detail="Không tìm thấy học liệu")
+    class_id = _get_material_class_id(db, material)
+    if class_id is None:
+        raise HTTPException(status_code=400, detail="Học liệu không gắn với lớp hợp lệ")
+    _ensure_can_manage_class(db, current_user, int(class_id))
+
+    if payload.title is not None:
+        material.title = payload.title
+    if payload.description is not None:
+        material.description = payload.description
+    if payload.url is not None:
+        material.url = payload.url
+    if getattr(payload, 'lesson_id', None) is not None:
+        if payload.lesson_id is None:
+            material.lesson_id = None
+        else:
+            lesson = db.query(Lesson).filter(Lesson.id == payload.lesson_id).first()
+            if not lesson:
+                raise HTTPException(status_code=404, detail="Không tìm thấy bài học")
+            # Check permission within that class
+            _ensure_can_manage_class(db, current_user, int(lesson.class_id))
+            material.lesson_id = int(payload.lesson_id)
+            # Keep class_id in sync
+            material.class_id = int(lesson.class_id)
+    db.commit()
+    db.refresh(material)
+    return material
+
+
+@router.delete("/{material_id}")
+async def delete_material(
+    material_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Xóa học liệu (giáo viên lớp hoặc admin)"""
+    material = db.query(Material).filter(Material.id == material_id).first()
+    if not material:
+        raise HTTPException(status_code=404, detail="Không tìm thấy học liệu")
+    class_id = _get_material_class_id(db, material)
+    if class_id is None:
+        raise HTTPException(status_code=400, detail="Học liệu không gắn với lớp hợp lệ")
+    _ensure_can_manage_class(db, current_user, int(class_id))
+
+    # Optionally, remove file from disk
+    try:
+        if material.file_path and os.path.isfile(material.file_path):
+            os.remove(material.file_path)
+    except Exception:
+        # Ignore file delete errors
+        pass
+
+    db.delete(material)
+    db.commit()
+    return {"message": "Đã xóa học liệu"}
+
+
+def _pick_writable_materials_dir() -> str:
+    """Pick a writable base directory for storing uploaded materials.
+    Priority:
+    1) ENV MEDIA_ROOT
+    2) <project>/media/materials (relative to this file)
+    3) /tmp/englishwebai/media/materials
+    Returns a path that exists and is writable.
+    """
+    # 1) ENV override
+    env_root = os.getenv("MEDIA_ROOT")
+    candidates = []
+    if env_root:
+        candidates.append(os.path.join(env_root, "materials"))
+
+    # 2) Project media/materials
+    proj_media = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "media", "materials"))
+    candidates.append(proj_media)
+
+    # 3) /tmp fallback
+    candidates.append(os.path.abspath("/tmp/englishwebai/media/materials"))
+
+    for path in candidates:
+        try:
+            os.makedirs(path, exist_ok=True)
+            # Sanity check write permission
+            testfile = os.path.join(path, ".permcheck")
+            with open(testfile, "w") as f:
+                f.write("ok")
+            os.remove(testfile)
+            return path
+        except Exception:
+            continue
+    # If all fail, raise explicit error
+    raise HTTPException(status_code=500, detail="Không thể tạo thư mục lưu trữ học liệu (permissions)")
+
+
+@router.post("/upload", status_code=status.HTTP_201_CREATED)
+async def upload_material_file(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+):
+    """Upload file học liệu, trả về đường dẫn lưu trữ.
+
+    Lưu ý: endpoint này chỉ upload file, chưa tạo bản ghi Material.
+    Dùng đường dẫn trả về (file_path) khi gọi API tạo học liệu.
+    """
+    if current_user.role not in (UserRole.TEACHER, UserRole.ADMIN, UserRole.SUPERADMIN):
+        raise HTTPException(status_code=403, detail="Chỉ giáo viên hoặc admin mới được upload")
+
+    # Ensure media directory exists and is writable (with fallbacks)
+    base_dir = _pick_writable_materials_dir()
+
+    # Build unique filename
+    date_dir = datetime.utcnow().strftime("%Y%m%d")
+    save_dir = os.path.join(base_dir, date_dir)
+    os.makedirs(save_dir, exist_ok=True)
+
+    # Sanitize original filename
+    original = os.path.basename(file.filename or "material")
+    name, ext = os.path.splitext(original)
+    ts = datetime.utcnow().strftime("%H%M%S%f")
+    filename = f"{name}_{ts}{ext}" if ext else f"{name}_{ts}"
+    file_path = os.path.join(save_dir, filename)
+
+    # Save file with streaming copy for robustness
+    try:
+        with open(file_path, "wb") as out:
+            # Prefer streaming to handle large files and avoid await issues
+            shutil.copyfileobj(file.file, out)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Upload failed: {e}")
+
+    # If this is a text file, read back as UTF-8 (best effort) for auto material
+    text_content = None
+    try:
+        name_lower = original.lower()
+        if (file.content_type or "").startswith("text/") or name_lower.endswith(".txt") or name_lower.endswith(".md"):
+            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                # Cap to ~200 KB to avoid overly large payloads
+                text_content = f.read(200_000)
+    except Exception:
+        text_content = None
+
+    # Return info
+    size = 0
+    try:
+        size = os.path.getsize(file_path)
+    except Exception:
+        pass
+    # Try compute public URL if stored under project media
+    public_url = None
+    proj_media_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "media"))
+    if file_path.startswith(proj_media_root):
+        # Expose as /media/<relative>
+        rel = os.path.relpath(file_path, proj_media_root).replace("\\", "/")
+        public_url = f"/media/{rel}"
+    return {
+        "file_path": file_path,
+        "filename": original,
+        "size": size,
+        "public_url": public_url,
+        "text_content": text_content,
     }

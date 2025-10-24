@@ -14,6 +14,7 @@ import Discussion from './pages/Discussion/Discussion';
 import Exercises from './pages/Exercises/Exercises';
 import News from './pages/News/News';
 import Lessons from './pages/Lessons/Lessons';
+import ClassContent from './pages/ClassContent/ClassContent';
 
 // Import Admin Pages
 import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute';
@@ -21,6 +22,7 @@ import AdminDashboard from './pages/Admin/AdminDashboard/AdminDashboard';
 
 // Import Teacher Pages
 import TeacherDashboard from './pages/Teacher/TeacherDashboard/TeacherDashboard';
+import TeacherMaterials from './pages/Teacher/TeacherMaterials/TeacherMaterials';
 
 // Import Parent Pages
 import ParentDashboard from './pages/Parent/ParentDashboard/ParentDashboard';
@@ -172,6 +174,28 @@ function App() {
           <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="teacher">
             <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
               <TeacherDashboard />
+            </Layout>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/class/:classId/content" 
+        element={
+          <ProtectedRoute isLoggedIn={isLoggedIn}>
+            <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+              <ClassContent />
+            </Layout>
+          </ProtectedRoute>
+        } 
+      />
+
+      {/* Teacher Materials - Protected */}
+      <Route 
+        path="/teacher-materials" 
+        element={
+          <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="teacher">
+            <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+              <TeacherMaterials />
             </Layout>
           </ProtectedRoute>
         } 
