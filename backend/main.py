@@ -5,7 +5,7 @@ from app.core.config import settings
 from app.core.database import engine, Base, SessionLocal
 from app.routers import auth, users, otp, parent
 from app.routers import admin as admin_router
-from app.routers import classes, lessons, exercises, materials, discussions, news
+from app.routers import classes, lessons, exercises, materials, discussions, news, notifications, messages
 from app.models import User
 
 # Create database tables
@@ -42,6 +42,8 @@ app.include_router(exercises.router, prefix=f"{settings.API_PREFIX}/exercises", 
 app.include_router(materials.router, prefix=f"{settings.API_PREFIX}/materials", tags=["Materials"])
 app.include_router(discussions.router, prefix=f"{settings.API_PREFIX}/discussions", tags=["Discussions"])
 app.include_router(news.router, prefix=f"{settings.API_PREFIX}/news", tags=["News"])
+app.include_router(notifications.router, prefix=f"{settings.API_PREFIX}/notifications", tags=["Notifications"])
+app.include_router(messages.router, prefix=f"{settings.API_PREFIX}/messages", tags=["Messages"])
 
 # Serve media files if available (e.g., uploaded materials)
 try:

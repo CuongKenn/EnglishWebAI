@@ -16,6 +16,8 @@ from app.models.discussion_like import DiscussionLike
 from app.models.news import NewsPost
 from app.models.attendance import AttendanceRecord
 from app.models.otp import OTP
+from app.models.notification import Notification
+from app.models.message import Message
 
 __all__ = [
     "User",
@@ -31,4 +33,6 @@ __all__ = [
     "NewsPost",
     "AttendanceRecord",
     "OTP",
+    "Notification",
+    "Message",
 ]
