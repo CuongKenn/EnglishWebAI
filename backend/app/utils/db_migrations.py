@@ -19,6 +19,9 @@ def ensure_classes_columns() -> None:
     new fields. Safe to run multiple times.
     """
     with engine.begin() as conn:
+        # Ensure teacher_id exists (older DBs might not have it)
+        if not _has_column("classes", "teacher_id"):
+            conn.execute(text("ALTER TABLE classes ADD COLUMN teacher_id INTEGER"))
         if not _has_column("classes", "max_students"):
             conn.execute(text("ALTER TABLE classes ADD COLUMN max_students INTEGER"))
         if not _has_column("classes", "schedule"):
@@ -37,5 +40,21 @@ def ensure_classes_columns() -> None:
             conn.execute(text("ALTER TABLE classes ADD COLUMN updated_at DATETIME"))
 
 
+def ensure_enrollments_columns() -> None:
+    """Ensure columns on class_enrollments exist.
+
+    Older local SQLite databases may miss these columns, causing queries like
+    `Enrollment.status == "active"` to fail with "no such column".
+    """
+    with engine.begin() as conn:
+        if not _has_column("class_enrollments", "role"):
+            conn.execute(text("ALTER TABLE class_enrollments ADD COLUMN role VARCHAR DEFAULT 'student'"))
+        if not _has_column("class_enrollments", "status"):
+            conn.execute(text("ALTER TABLE class_enrollments ADD COLUMN status VARCHAR DEFAULT 'active'"))
+        if not _has_column("class_enrollments", "joined_at"):
+            conn.execute(text("ALTER TABLE class_enrollments ADD COLUMN joined_at DATETIME"))
+
+
 def ensure_schema() -> None:
     ensure_classes_columns()
+    ensure_enrollments_columns()

@@ -34,10 +34,8 @@ async def get_classes(
     """
     Lấy danh sách các lớp học có sẵn để tham gia
     """
-    query = db.query(
-        Classroom,
-        func.count(Enrollment.id).label("student_count")
-    ).outerjoin(Enrollment, Classroom.id == Enrollment.class_id)
+    # Lấy danh sách lớp trước, đếm sĩ số bằng truy vấn riêng để tránh lỗi GROUP BY trên Postgres
+    query = db.query(Classroom)
     
     # Filter by search term
     if search:
@@ -58,13 +56,23 @@ async def get_classes(
 
     # Filter active classes only
     query = query.filter(Classroom.is_active == True)
-    query = query.group_by(Classroom.id)
     query = query.offset(skip).limit(limit)
-    
-    results = query.all()
+    classes_rows = query.all()
+
+    # Đếm sĩ số theo class_id (chỉ active)
+    class_ids = [c.id for c in classes_rows]
+    counts_map = {}
+    if class_ids:
+        counts = (
+            db.query(Enrollment.class_id, func.count(Enrollment.id))
+            .filter(Enrollment.class_id.in_(class_ids), Enrollment.status == "active")
+            .group_by(Enrollment.class_id)
+            .all()
+        )
+        counts_map = {cid: int(cnt) for cid, cnt in counts}
 
     # Resolve teacher names
-    teacher_ids = [c.teacher_id for c, _ in results if c.teacher_id]
+    teacher_ids = [c.teacher_id for c in classes_rows if c.teacher_id]
     name_map = {}
     if teacher_ids:
         rows = db.query(User.id, User.full_name, User.username).filter(User.id.in_(teacher_ids)).all()
@@ -73,7 +81,7 @@ async def get_classes(
 
     # Format response
     classes = []
-    for classroom, student_count in results:
+    for classroom in classes_rows:
         classes.append({
             "id": classroom.id,
             "name": classroom.name,
@@ -81,8 +89,8 @@ async def get_classes(
             "schedule": classroom.schedule,
             "max_students": classroom.max_students,
             "maxStudents": classroom.max_students,
-            "students": int(student_count or 0),
-            "student_count": int(student_count or 0),
+            "students": counts_map.get(classroom.id, 0),
+            "student_count": counts_map.get(classroom.id, 0),
             "teacher_name": name_map.get(classroom.teacher_id, "Chưa có giáo viên"),
             "subject": "Tiếng Anh",
             "grade": f"Lớp {classroom.grade}" if classroom.grade else None,
@@ -112,18 +120,19 @@ async def get_my_classes(
     if not class_ids:
         return []
     
-    query = db.query(
-        Classroom,
-        func.count(Enrollment.id).label("student_count")
-    ).outerjoin(Enrollment, Classroom.id == Enrollment.class_id)
-    
-    query = query.filter(Classroom.id.in_(class_ids))
-    query = query.group_by(Classroom.id)
-    
-    results = query.all()
+    classes_rows = db.query(Classroom).filter(Classroom.id.in_(class_ids)).all()
+
+    # Count students for these classes
+    counts = (
+        db.query(Enrollment.class_id, func.count(Enrollment.id))
+        .filter(Enrollment.class_id.in_(class_ids), Enrollment.status == "active")
+        .group_by(Enrollment.class_id)
+        .all()
+    )
+    counts_map = {cid: int(cnt) for cid, cnt in counts}
 
     # Resolve teacher names
-    teacher_ids = [c.teacher_id for c, _ in results if c.teacher_id]
+    teacher_ids = [c.teacher_id for c in classes_rows if c.teacher_id]
     name_map = {}
     if teacher_ids:
         rows = db.query(User.id, User.full_name, User.username).filter(User.id.in_(teacher_ids)).all()
@@ -132,7 +141,7 @@ async def get_my_classes(
 
     # Format response
     classes = []
-    for classroom, student_count in results:
+    for classroom in classes_rows:
         classes.append({
             "id": classroom.id,
             "name": classroom.name,
@@ -140,8 +149,8 @@ async def get_my_classes(
             "schedule": classroom.schedule,
             "max_students": classroom.max_students,
             "maxStudents": classroom.max_students,
-            "students": int(student_count or 0),
-            "student_count": int(student_count or 0),
+            "students": counts_map.get(classroom.id, 0),
+            "student_count": counts_map.get(classroom.id, 0),
             "teacher_name": name_map.get(classroom.teacher_id, "Chưa có giáo viên"),
             "subject": "Tiếng Anh",
             "grade": f"Lớp {classroom.grade}" if classroom.grade else None,
@@ -158,33 +167,53 @@ async def get_classes_teaching(
     db: Session = Depends(get_db)
 ):
     """Danh sách lớp do giáo viên hiện tại phụ trách"""
-    if current_user.role not in (UserRole.TEACHER, UserRole.ADMIN, UserRole.SUPERADMIN):
-        return []
+    try:
+        if current_user.role not in (UserRole.TEACHER, UserRole.ADMIN, UserRole.SUPERADMIN):
+            return []
 
-    q = (
-        db.query(Classroom, func.count(Enrollment.id).label("student_count"))
-        .outerjoin(Enrollment, Classroom.id == Enrollment.class_id)
-        .filter(Classroom.teacher_id == current_user.id)
-        .group_by(Classroom.id)
-    )
-    results = q.all()
-    out: List[ClassroomListResponse] = []
-    teacher_name = current_user.full_name or current_user.username
-    for classroom, student_count in results:
-        out.append({
-            "id": classroom.id,
-            "name": classroom.name,
-            "description": classroom.description,
-            "schedule": classroom.schedule,
-            "max_students": classroom.max_students,
-            "student_count": int(student_count or 0),
-            "teacher_name": teacher_name,
-            "subject": None,
-            "grade": None,
-            "image": "📚",
-            "color": "green",
-        })
-    return out
+        if not current_user.id:
+            return []
+
+        classes_rows = (
+            db.query(Classroom)
+            .filter(Classroom.teacher_id == int(current_user.id))
+            .all()
+        )
+        out: List[ClassroomListResponse] = []
+        teacher_name = current_user.full_name or current_user.username
+
+        # Count students for these classes
+        class_ids = [c.id for c in classes_rows]
+        counts_map = {}
+        if class_ids:
+            counts = (
+                db.query(Enrollment.class_id, func.count(Enrollment.id))
+                .filter(Enrollment.class_id.in_(class_ids), Enrollment.status == "active")
+                .group_by(Enrollment.class_id)
+                .all()
+            )
+            counts_map = {cid: int(cnt) for cid, cnt in counts}
+
+        for classroom in classes_rows:
+            out.append({
+                "id": classroom.id,
+                "name": classroom.name,
+                "description": classroom.description,
+                "schedule": classroom.schedule,
+                "max_students": classroom.max_students,
+                "student_count": counts_map.get(classroom.id, 0),
+                "teacher_name": teacher_name,
+                "subject": None,
+                "grade": None,
+                "skill": None,
+                "image": "📚",
+                "color": "green",
+            })
+        return out
+    except Exception as e:
+        # Log để debug lỗi 500 thay vì trả text/plain chung chung
+        print("[ERROR] /classes/teaching:", repr(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/{class_id}", response_model=ClassroomResponse)
 async def get_class(
@@ -323,39 +352,7 @@ def _ensure_can_manage_class(db: Session, current_user: User, class_id: int) -> 
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Không có quyền quản lý lớp học này")
 
 
-@router.get("/teaching", response_model=List[ClassroomListResponse])
-async def get_classes_teaching(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Danh sách lớp do giáo viên hiện tại phụ trách"""
-    if current_user.role not in (UserRole.TEACHER, UserRole.ADMIN, UserRole.SUPERADMIN):
-        return []
-
-    q = (
-        db.query(Classroom, func.count(Enrollment.id).label("student_count"))
-        .outerjoin(Enrollment, Classroom.id == Enrollment.class_id)
-        .filter(Classroom.teacher_id == current_user.id)
-        .group_by(Classroom.id)
-    )
-    results = q.all()
-    out: List[ClassroomListResponse] = []
-    teacher_name = current_user.full_name or current_user.username
-    for classroom, student_count in results:
-        out.append({
-            "id": classroom.id,
-            "name": classroom.name,
-            "description": classroom.description,
-            "schedule": classroom.schedule,
-            "max_students": classroom.max_students,
-            "student_count": int(student_count or 0),
-            "teacher_name": teacher_name,
-            "subject": None,
-            "grade": None,
-            "image": "📚",
-            "color": "green",
-        })
-    return out
+# Removed duplicate definition of /teaching endpoint to prevent ambiguous routing
 
 
 @router.get("/{class_id}/students", response_model=List[ClassStudentOut])
