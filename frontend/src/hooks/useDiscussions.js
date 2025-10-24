@@ -57,6 +57,28 @@ export const useDiscussions = (params = {}) => {
     }
   };
 
+  const likeDiscussion = async (discussionId) => {
+    try {
+      const result = await discussionsAPI.likeDiscussion(discussionId);
+      await fetchDiscussions(); // Refresh to get updated like count
+      return result;
+    } catch (err) {
+      setError(err.message || 'Không thể thích câu hỏi');
+      throw err;
+    }
+  };
+
+  const unlikeDiscussion = async (discussionId) => {
+    try {
+      const result = await discussionsAPI.unlikeDiscussion(discussionId);
+      await fetchDiscussions(); // Refresh to get updated like count
+      return result;
+    } catch (err) {
+      setError(err.message || 'Không thể bỏ thích câu hỏi');
+      throw err;
+    }
+  };
+
   return {
     discussions,
     loading,
@@ -64,6 +86,8 @@ export const useDiscussions = (params = {}) => {
     refetch: fetchDiscussions,
     createDiscussion,
     deleteDiscussion,
+    likeDiscussion,
+    unlikeDiscussion,
   };
 };
 

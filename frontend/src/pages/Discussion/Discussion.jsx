@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useDiscussions } from '../../hooks';
+import { authAPI } from '../../services/api';
 import { MessageSquarePlus, Search, MessageSquare, Eye, Heart, Share, ThumbsUp, Send, Paperclip } from 'lucide-react';
 import './Discussion.css';
 
@@ -7,7 +8,8 @@ import './Discussion.css';
 const Discussion = () => {
     const [activeTab, setActiveTab] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
-    const [selectedSubject, setSelectedSubject] = useState('Tiếng Anh');
+    const [selectedSubject, setSelectedSubject] = useState('all');
+    const [currentUser, setCurrentUser] = useState(null);
     const [showAskForm, setShowAskForm] = useState(false);
     const [likedQuestions, setLikedQuestions] = useState(new Set());
     const [newQuestion, setNewQuestion] = useState({ title: '', content: '', subject: '', tags: '' });
@@ -15,15 +17,35 @@ const Discussion = () => {
     // --- [BẮT ĐẦU] CODE MỚI ---
     const [replyingTo, setReplyingTo] = useState(null); // Lưu ID của câu hỏi đang trả lời
     const [commentText, setCommentText] = useState(""); // Lưu nội dung comment
+    const [expandedQuestion, setExpandedQuestion] = useState(null); // ID câu hỏi đang xem replies
+    const [questionPosts, setQuestionPosts] = useState({}); // Cache các replies theo question ID
+    const [loadingPosts, setLoadingPosts] = useState(false);
     // --- [KẾT THÚC] CODE MỚI ---
 
-    const { discussions: questions, loading, error, createDiscussion } = useDiscussions();
+    const { 
+        discussions: questions, 
+        loading, 
+        error, 
+        createDiscussion,
+        likeDiscussion,
+        unlikeDiscussion,
+        refetch 
+    } = useDiscussions();
+
+    // Lấy thông tin user hiện tại
+    useEffect(() => {
+        const user = authAPI.getCurrentUser();
+        setCurrentUser(user);
+    }, []);
 
     const filteredQuestions = questions.filter(question => {
+        // Check tab filters
         const matchesTab = activeTab === 'all' ||
             (activeTab === 'answered' && question.isAnswered) ||
             (activeTab === 'unanswered' && !question.isAnswered) ||
-            (activeTab === 'vip' && question.isVip);
+            (activeTab === 'vip' && question.isVip) ||
+            (activeTab === 'myquestions' && currentUser && question.authorUsername === currentUser.username);
+        
         const matchesSearch = question.title.toLowerCase().includes(searchTerm.toLowerCase()) || question.content.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesSubject = selectedSubject === 'all' || question.subject === selectedSubject;
         return matchesTab && matchesSearch && matchesSubject;
@@ -48,16 +70,17 @@ const Discussion = () => {
         }
     };
 
-    const handleLikeQuestion = (questionId) => {
-        setLikedQuestions(prev => {
-            const newLiked = new Set(prev);
-            if (newLiked.has(questionId)) {
-                newLiked.delete(questionId);
+    const handleLikeQuestion = async (question) => {
+        try {
+            if (question.isLiked) {
+                await unlikeDiscussion(question.id);
             } else {
-                newLiked.add(questionId);
+                await likeDiscussion(question.id);
             }
-            return newLiked;
-        });
+        } catch (err) {
+            console.error('Error toggling like:', err);
+            alert('Có lỗi xảy ra khi thích/bỏ thích câu hỏi');
+        }
     };
 
     // --- [BẮT ĐẦU] CODE MỚI ---
@@ -71,14 +94,62 @@ const Discussion = () => {
         }
     };
 
-    // Hàm xử lý khi gửi trả lời (hiện tại chỉ log ra console)
-    const handleReplySubmit = (e) => {
+    // Hàm xử lý khi gửi trả lời
+    const handleReplySubmit = async (e) => {
         e.preventDefault();
-        if (commentText.trim()) {
-            console.log(`Submitting reply for question ${replyingTo}:`, commentText);
-            // Sau khi gửi, đóng ô trả lời và xóa nội dung
-            setReplyingTo(null);
-            setCommentText("");
+        if (commentText.trim() && replyingTo) {
+            try {
+                // Import discussionsAPI nếu cần
+                const { discussionsAPI } = await import('../../services/api');
+                await discussionsAPI.createPost(replyingTo, { content: commentText });
+                
+                // Refresh discussions để cập nhật số câu trả lời
+                await refetch();
+                
+                // Nếu đang xem replies, refresh luôn
+                if (expandedQuestion === replyingTo) {
+                    await fetchPosts(replyingTo);
+                }
+                
+                // Sau khi gửi, đóng ô trả lời và xóa nội dung
+                setReplyingTo(null);
+                setCommentText("");
+                alert('Đã gửi câu trả lời thành công!');
+            } catch (err) {
+                console.error('Error submitting reply:', err);
+                alert(err?.detail || 'Có lỗi xảy ra khi gửi trả lời');
+            }
+        }
+    };
+
+    // Hàm load các replies của câu hỏi
+    const fetchPosts = async (questionId) => {
+        setLoadingPosts(true);
+        try {
+            const { discussionsAPI } = await import('../../services/api');
+            const posts = await discussionsAPI.getPosts(questionId);
+            setQuestionPosts(prev => ({
+                ...prev,
+                [questionId]: posts
+            }));
+        } catch (err) {
+            console.error('Error fetching posts:', err);
+            alert('Không thể tải các câu trả lời');
+        } finally {
+            setLoadingPosts(false);
+        }
+    };
+
+    // Toggle xem replies
+    const handleToggleViewReplies = async (questionId) => {
+        if (expandedQuestion === questionId) {
+            setExpandedQuestion(null);
+        } else {
+            setExpandedQuestion(questionId);
+            // Load posts nếu chưa có trong cache
+            if (!questionPosts[questionId]) {
+                await fetchPosts(questionId);
+            }
         }
     };
     // --- [KẾT THÚC] CODE MỚI ---
@@ -87,7 +158,7 @@ const Discussion = () => {
         { id: 'all', label: 'Tất cả', count: questions.length },
         { id: 'answered', label: 'Đã trả lời', count: questions.filter(q => q.isAnswered).length },
         { id: 'unanswered', label: 'Chưa trả lời', count: questions.filter(q => !q.isAnswered).length },
-        
+        { id: 'myquestions', label: 'Câu hỏi của tôi', count: currentUser ? questions.filter(q => q.authorUsername === currentUser.username).length : 0 },
     ];
 
     return (
@@ -221,8 +292,8 @@ const Discussion = () => {
                                                     <span>{question.views}</span>
                                                 </div>
                                                 <button
-                                                    className={`stat-item-btn ${likedQuestions.has(question.id) ? 'liked' : ''}`}
-                                                    onClick={() => handleLikeQuestion(question.id)}
+                                                    className={`stat-item-btn ${question.isLiked ? 'liked' : ''}`}
+                                                    onClick={() => handleLikeQuestion(question)}
                                                 >
                                                     <Heart size={20} className="lucide-heart" />
                                                     <span>{question.likes}</span>
@@ -235,15 +306,23 @@ const Discussion = () => {
                                         </div>
                                     </div>
                                     <div className="question-actions">
-                                        {/* --- CẬP NHẬT ONCLICK CHO NÚT TRẢ LỜI --- */}
-                                        <button className="action-btn" onClick={() => handleToggleReply(question.id)}>
-                                            <Send size={16}/> Trả lời
-                                        </button>
+                                        {/* Nút xem câu trả lời */}
+                                        {question.answers > 0 && (
+                                            <button className="action-btn" onClick={() => handleToggleViewReplies(question.id)}>
+                                                <MessageSquare size={16}/> {expandedQuestion === question.id ? 'Ẩn' : 'Xem'} {question.answers} câu trả lời
+                                            </button>
+                                        )}
+                                        {/* Hiện nút Trả lời cho tất cả user (kể cả người hỏi để reply lại người trả lời) */}
+                                        {currentUser && (
+                                            <button className="action-btn" onClick={() => handleToggleReply(question.id)}>
+                                                <Send size={16}/> Trả lời
+                                            </button>
+                                        )}
                                         <button
-                                            className={`action-btn ${likedQuestions.has(question.id) ? 'liked' : ''}`}
-                                            onClick={() => handleLikeQuestion(question.id)}
+                                            className={`action-btn ${question.isLiked ? 'liked' : ''}`}
+                                            onClick={() => handleLikeQuestion(question)}
                                         >
-                                            <ThumbsUp size={16}/> Thích
+                                            <ThumbsUp size={16}/> {question.isLiked ? 'Đã thích' : 'Thích'}
                                         </button>
                                         <button className="action-btn">
                                             <Share size={16}/> Chia sẻ
@@ -270,6 +349,38 @@ const Discussion = () => {
                                         </div>
                                     )}
                                     {/* --- [KẾT THÚC] CODE MỚI --- */}
+
+                                    {/* Hiển thị danh sách replies */}
+                                    {expandedQuestion === question.id && (
+                                        <div className="replies-section">
+                                            <h4 className="replies-title">Các câu trả lời ({question.answers})</h4>
+                                            {loadingPosts ? (
+                                                <p>Đang tải câu trả lời...</p>
+                                            ) : questionPosts[question.id] && questionPosts[question.id].length > 0 ? (
+                                                <div className="replies-list">
+                                                    {questionPosts[question.id].map(post => (
+                                                        <div key={post.id} className="reply-item">
+                                                            <div className="reply-author">
+                                                                <span className="reply-avatar">👤</span>
+                                                                <div className="reply-author-info">
+                                                                    <strong>{post.author_name || 'Ẩn danh'}</strong>
+                                                                    <span className="reply-role">{post.author_role || 'user'}</span>
+                                                                </div>
+                                                                <span className="reply-time">
+                                                                    {new Date(post.created_at).toLocaleString('vi-VN')}
+                                                                </span>
+                                                            </div>
+                                                            <div className="reply-content">
+                                                                {post.content}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <p>Chưa có câu trả lời nào.</p>
+                                            )}
+                                        </div>
+                                    )}
 
                                 </div>
                             ))}

@@ -541,6 +541,26 @@ export const discussionsAPI = {
       throw error.response ? error.response.data : error;
     }
   },
+
+  // Like câu hỏi
+  likeDiscussion: async (discussionId) => {
+    try {
+      const response = await apiClient.post(`/api/v1/discussions/${discussionId}/like`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Unlike câu hỏi
+  unlikeDiscussion: async (discussionId) => {
+    try {
+      const response = await apiClient.delete(`/api/v1/discussions/${discussionId}/like`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
 };
 
 // ==================== News APIs ====================

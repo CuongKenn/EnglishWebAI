@@ -12,6 +12,7 @@ from app.models.material import Material
 from app.models.exercise import Exercise
 from app.models.submission import Submission
 from app.models.discussion import DiscussionThread, DiscussionPost
+from app.models.discussion_like import DiscussionLike
 from app.models.news import NewsPost
 from app.models.attendance import AttendanceRecord
 from app.models.otp import OTP
@@ -26,6 +27,7 @@ __all__ = [
     "Submission",
     "DiscussionThread",
     "DiscussionPost",
+    "DiscussionLike",
     "NewsPost",
     "AttendanceRecord",
     "OTP",

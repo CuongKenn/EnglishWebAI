@@ -6,6 +6,7 @@ from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.models.user import User
 from app.models.discussion import DiscussionThread, DiscussionPost
+from app.models.discussion_like import DiscussionLike
 from app.schemas.student import (
     DiscussionThreadCreate,
     DiscussionThreadResponse,
@@ -24,78 +25,73 @@ async def get_discussions(
     search: str = None,
     skip: int = 0,
     limit: int = 100,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
-    Lấy danh sách câu hỏi thảo luận
+    Lấy danh sách câu hỏi thảo luận từ database
     """
-    # Mock data matching frontend expectations
-    mock_discussions = [
-        {
-            "id": 1,
-            "title": "Cách giải bài toán phép cộng có nhớ trong phạm vi 100?",
-            "content": "Em không hiểu cách làm phép cộng có nhớ, ai có thể giúp em không?",
-            "author": "Nguyễn Minh Anh",
-            "authorRole": "Học sinh",
-            "subject": "Toán",
-            "grade": "Lớp 2",
-            "tags": ["phép cộng", "có nhớ", "lớp 2"],
-            "answers": 3,
-            "views": 45,
-            "likes": 8,
-            "createdAt": "2 giờ trước",
-            "isAnswered": True,
-            "isVip": False,
-            "avatar": "👧"
-        },
-        {
-            "id": 2,
-            "title": "Từ vựng tiếng Anh về gia đình",
-            "content": "Các bạn có thể chia sẻ từ vựng tiếng Anh về gia đình không?",
-            "author": "Trần Thị Hoa",
-            "authorRole": "Học sinh",
-            "subject": "Tiếng Anh",
-            "grade": "Lớp 3",
-            "tags": ["từ vựng", "gia đình", "tiếng anh"],
-            "answers": 5,
-            "views": 78,
-            "likes": 12,
-            "createdAt": "4 giờ trước",
-            "isAnswered": True,
-            "isVip": False,
-            "avatar": "👩"
-        },
-        {
-            "id": 3,
-            "title": "Tại sao lá cây có màu xanh?",
-            "content": "Em thắc mắc tại sao lá cây lại có màu xanh, có ai biết giải thích không?",
-            "author": "Lê Văn Nam",
-            "authorRole": "Học sinh",
-            "subject": "Khoa học",
-            "grade": "Lớp 4",
-            "tags": ["khoa học", "thực vật", "màu sắc"],
-            "answers": 2,
-            "views": 32,
-            "likes": 6,
-            "createdAt": "6 giờ trước",
-            "isAnswered": False,
-            "isVip": True,
-            "avatar": "👦"
-        }
-    ]
+    # Query discussions from database
+    query = db.query(DiscussionThread)
     
-    # Filter by parameters
-    filtered = mock_discussions
-    if subject:
-        filtered = [d for d in filtered if d["subject"] == subject]
-    if answered is not None:
-        filtered = [d for d in filtered if d["isAnswered"] == answered]
-    if vip is not None:
-        filtered = [d for d in filtered if d["isVip"] == vip]
+    # Apply filters
     if search:
-        filtered = [d for d in filtered if search.lower() in d["title"].lower() or search.lower() in d["content"].lower()]
+        query = query.filter(DiscussionThread.title.ilike(f"%{search}%"))
     
-    return filtered
+    # Order by created_at desc and apply pagination
+    threads = query.order_by(desc(DiscussionThread.created_at)).offset(skip).limit(limit).all()
+    
+    # Format response with user and post count
+    result = []
+    for thread in threads:
+        # Get post count (answers)
+        post_count = db.query(func.count(DiscussionPost.id)).filter(
+            DiscussionPost.thread_id == thread.id
+        ).scalar() or 0
+        
+        # Get creator info
+        creator = db.query(User).filter(User.id == thread.created_by).first()
+        
+        # Get class info if available
+        from app.models.classroom import Classroom
+        classroom = None
+        if thread.class_id:
+            classroom = db.query(Classroom).filter(Classroom.id == thread.class_id).first()
+        
+        # Get real like count
+        like_count = db.query(func.count(DiscussionLike.id)).filter(
+            DiscussionLike.thread_id == thread.id
+        ).scalar() or 0
+        
+        # Check if current user liked this thread
+        user_liked = False
+        if current_user:
+            user_liked = db.query(DiscussionLike).filter(
+                DiscussionLike.thread_id == thread.id,
+                DiscussionLike.user_id == current_user.id
+            ).first() is not None
+        
+        result.append({
+            "id": thread.id,
+            "title": thread.title,
+            "content": "",  # Not stored in thread, only in posts
+            "author": creator.full_name or creator.username if creator else "Unknown",
+            "authorUsername": creator.username if creator else "Unknown",  # For comparison in frontend
+            "authorRole": creator.role.value if creator else "user",
+            "subject": classroom.subject if classroom else "Chung",
+            "grade": classroom.name if classroom else "",
+            "tags": [],  # Can be added later if needed
+            "answers": post_count,
+            "views": 0,  # Can be added later with a views tracking system
+            "likes": like_count,
+            "isLiked": user_liked,  # Flag to check if current user liked
+            "createdAt": thread.created_at.strftime("%Y-%m-%d %H:%M") if thread.created_at else "",
+            "isAnswered": post_count > 0,
+            "isVip": False,  # Can be added later
+            "avatar": "👤"
+        })
+    
+    return result
 
 @router.post("/", response_model=DiscussionThreadResponse)
 async def create_discussion(
@@ -176,7 +172,23 @@ async def get_discussion_posts(
         DiscussionPost.thread_id == thread_id
     ).order_by(DiscussionPost.created_at).offset(skip).limit(limit).all()
     
-    return posts
+    # Format response with author info
+    result = []
+    for post in posts:
+        author = db.query(User).filter(User.id == post.author_id).first()
+        result.append({
+            "id": post.id,
+            "thread_id": post.thread_id,
+            "author_id": post.author_id,
+            "content": post.content,
+            "parent_post_id": post.parent_post_id,
+            "created_at": post.created_at,
+            "author_name": author.full_name or author.username if author else "Unknown",
+            "author_role": author.role.value if author else "user",
+            "author_avatar": author.avatar_url if author else None
+        })
+    
+    return result
 
 @router.post("/{thread_id}/posts", response_model=DiscussionPostResponse)
 async def create_discussion_post(
@@ -247,3 +259,85 @@ async def delete_discussion(
     db.commit()
     
     return {"message": "Đã xóa câu hỏi thành công"}
+
+@router.post("/{thread_id}/like")
+async def like_discussion(
+    thread_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Like một câu hỏi
+    """
+    # Check if thread exists
+    thread = db.query(DiscussionThread).filter(DiscussionThread.id == thread_id).first()
+    if not thread:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Không tìm thấy câu hỏi"
+        )
+    
+    # Check if already liked
+    existing_like = db.query(DiscussionLike).filter(
+        DiscussionLike.thread_id == thread_id,
+        DiscussionLike.user_id == current_user.id
+    ).first()
+    
+    if existing_like:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Bạn đã thích câu hỏi này rồi"
+        )
+    
+    # Create like
+    like = DiscussionLike(
+        thread_id=thread_id,
+        user_id=current_user.id
+    )
+    
+    db.add(like)
+    db.commit()
+    
+    # Get total likes
+    total_likes = db.query(func.count(DiscussionLike.id)).filter(
+        DiscussionLike.thread_id == thread_id
+    ).scalar()
+    
+    return {
+        "message": "Đã thích câu hỏi",
+        "likes": total_likes
+    }
+
+@router.delete("/{thread_id}/like")
+async def unlike_discussion(
+    thread_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Unlike một câu hỏi
+    """
+    # Check if like exists
+    existing_like = db.query(DiscussionLike).filter(
+        DiscussionLike.thread_id == thread_id,
+        DiscussionLike.user_id == current_user.id
+    ).first()
+    
+    if not existing_like:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Bạn chưa thích câu hỏi này"
+        )
+    
+    db.delete(existing_like)
+    db.commit()
+    
+    # Get total likes
+    total_likes = db.query(func.count(DiscussionLike.id)).filter(
+        DiscussionLike.thread_id == thread_id
+    ).scalar()
+    
+    return {
+        "message": "Đã bỏ thích câu hỏi",
+        "likes": total_likes
+    }

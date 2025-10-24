@@ -279,6 +279,7 @@ class DiscussionListResponse(BaseModel):
     title: str
     content: str
     author: str
+    authorUsername: str  # Username for comparison
     authorRole: str
     subject: Optional[str]
     grade: Optional[str]
@@ -286,6 +287,7 @@ class DiscussionListResponse(BaseModel):
     answers: int = 0
     views: int = 0
     likes: int = 0
+    isLiked: bool = False  # Whether current user liked this
     createdAt: str
     isAnswered: bool = False
     isVip: bool = False

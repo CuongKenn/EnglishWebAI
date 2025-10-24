@@ -4,8 +4,10 @@ Seed data for development and testing
 from sqlalchemy.orm import Session
 from app.core.database import SessionLocal
 from app.models.user import User, UserRole
+from app.models.discussion import DiscussionThread, DiscussionPost
+from app.models.classroom import Classroom
 from app.core.security import get_password_hash
-from datetime import datetime
+from datetime import datetime, timedelta
 
 def seed_users(db: Session, force: bool = False):
     """Seed users with different roles"""
@@ -146,12 +148,150 @@ def seed_users(db: Session, force: bool = False):
         print(f"❌ Error seeding users: {str(e)}")
         raise
 
+def seed_discussions(db: Session, force: bool = False):
+    """Seed discussion threads and posts"""
+    
+    # Check if discussions already exist
+    existing_discussion = db.query(DiscussionThread).first()
+    if existing_discussion and not force:
+        print("⚠️  Database already has discussions. Use --force to reset and seed.")
+        return
+    
+    # If force, delete all existing discussions
+    if force:
+        db.query(DiscussionPost).delete()
+        db.query(DiscussionThread).delete()
+        db.commit()
+        print("🗑️  Cleared existing discussions.")
+    
+    # Get users for assigning as authors
+    students = db.query(User).filter(User.role == UserRole.USER).all()
+    teachers = db.query(User).filter(User.role == UserRole.TEACHER).all()
+    
+    if not students or not teachers:
+        print("⚠️  Need users to seed discussions. Run seed_users first.")
+        return
+    
+    # Get a classroom if exists
+    classroom = db.query(Classroom).first()
+    class_id = classroom.id if classroom else None
+    
+    discussions_data = [
+        {
+            "title": "Cách phân biệt Present Simple và Present Continuous?",
+            "created_by": students[0].id if len(students) > 0 else 1,
+            "class_id": class_id,
+            "posts": [
+                {
+                    "content": "Em đang bị nhầm lẫn giữa 2 thì này. Thầy cô giải thích giúp em với ạ!",
+                    "created_by": students[0].id if len(students) > 0 else 1
+                },
+                {
+                    "content": "Present Simple dùng cho sự thật, thói quen. Present Continuous dùng cho hành động đang xảy ra.",
+                    "created_by": teachers[0].id if len(teachers) > 0 else 2
+                }
+            ]
+        },
+        {
+            "title": "Khi nào dùng 'a' và 'an'?",
+            "created_by": students[1].id if len(students) > 1 else 1,
+            "class_id": class_id,
+            "posts": [
+                {
+                    "content": "Em hay nhầm giữa 'a' và 'an'. Có quy tắc nào dễ nhớ không ạ?",
+                    "created_by": students[1].id if len(students) > 1 else 1
+                },
+                {
+                    "content": "Dùng 'an' trước nguyên âm (a, e, i, o, u), dùng 'a' trước phụ âm. Ví dụ: an apple, a book.",
+                    "created_by": teachers[0].id if len(teachers) > 0 else 2
+                }
+            ]
+        },
+        {
+            "title": "Phương pháp học từ vựng hiệu quả",
+            "created_by": students[0].id if len(students) > 0 else 1,
+            "class_id": class_id,
+            "posts": [
+                {
+                    "content": "Mọi người có phương pháp nào học từ vựng nhanh không? Chia sẻ với em với!",
+                    "created_by": students[0].id if len(students) > 0 else 1
+                }
+            ]
+        },
+        {
+            "title": "Cấu trúc câu bị động trong tiếng Anh",
+            "created_by": students[1].id if len(students) > 1 else 1,
+            "class_id": class_id,
+            "posts": [
+                {
+                    "content": "Em đang học về câu bị động nhưng còn nhiều chỗ chưa hiểu. Nhờ thầy cô giảng lại ạ!",
+                    "created_by": students[1].id if len(students) > 1 else 1
+                },
+                {
+                    "content": "Câu bị động: S + be + V3/ed + (by O). Ví dụ: The book is read by me.",
+                    "created_by": teachers[1].id if len(teachers) > 1 else 2
+                }
+            ]
+        },
+        {
+            "title": "Làm thế nào để cải thiện kỹ năng nghe?",
+            "created_by": students[0].id if len(students) > 0 else 1,
+            "class_id": class_id,
+            "posts": [
+                {
+                    "content": "Em nghe tiếng Anh rất kém. Mọi người có tips gì không ạ?",
+                    "created_by": students[0].id if len(students) > 0 else 1
+                },
+                {
+                    "content": "Hãy nghe nhiều podcast, xem phim có phụ đề, và luyện tập hàng ngày nhé!",
+                    "created_by": teachers[0].id if len(teachers) > 0 else 2
+                }
+            ]
+        }
+    ]
+    
+    created_threads = []
+    try:
+        for disc_data in discussions_data:
+            # Create thread
+            thread = DiscussionThread(
+                title=disc_data["title"],
+                created_by=disc_data["created_by"],
+                class_id=disc_data["class_id"],
+                created_at=datetime.utcnow() - timedelta(days=len(created_threads))
+            )
+            db.add(thread)
+            db.flush()  # Get thread.id
+            
+            # Create posts
+            for i, post_data in enumerate(disc_data.get("posts", [])):
+                post = DiscussionPost(
+                    thread_id=thread.id,
+                    content=post_data["content"],
+                    created_by=post_data["created_by"],
+                    created_at=datetime.utcnow() - timedelta(days=len(created_threads), hours=i)
+                )
+                db.add(post)
+            
+            created_threads.append(thread)
+        
+        db.commit()
+        print(f"✅ Successfully seeded {len(created_threads)} discussion threads with posts")
+        for thread in created_threads:
+            post_count = db.query(DiscussionPost).filter(DiscussionPost.thread_id == thread.id).count()
+            print(f"   - '{thread.title}' ({post_count} posts)")
+    except Exception as e:
+        db.rollback()
+        print(f"❌ Error seeding discussions: {str(e)}")
+        raise
+
 def seed_all(force: bool = False):
     """Run all seed functions"""
     print("🌱 Starting database seeding...")
     db = SessionLocal()
     try:
         seed_users(db, force=force)
+        seed_discussions(db, force=force)
         print("\n✅ Database seeding completed!")
     except Exception as e:
         print(f"\n❌ Seeding failed: {str(e)}")
