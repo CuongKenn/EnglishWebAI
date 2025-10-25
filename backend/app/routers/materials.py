@@ -20,6 +20,52 @@ router = APIRouter()
 
 # ===================== Student: Access Materials =====================
 
+@router.get("/student/materials/", response_model=List[MaterialListResponse])
+async def get_student_materials_list(
+    class_id: Optional[int] = None,
+    type: Optional[str] = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Lấy danh sách học liệu mà học sinh có thể truy cập (endpoint dành riêng cho student)
+    - Chỉ trả về học liệu từ các lớp mà học sinh đã tham gia với role='student' và status='active'
+    - Có thể lọc theo class_id và type
+    """
+    # Lấy danh sách class_id mà học sinh đã tham gia
+    enrolled_class_ids = db.query(Enrollment.class_id).filter(
+        and_(
+            Enrollment.user_id == current_user.id,
+            Enrollment.role == "student",
+            Enrollment.status == "active"
+        )
+    ).all()
+    
+    enrolled_class_ids = [c[0] for c in enrolled_class_ids]
+    
+    if not enrolled_class_ids:
+        return []
+    
+    # Query materials
+    query = db.query(Material).filter(Material.class_id.in_(enrolled_class_ids))
+    
+    # Filters
+    if class_id:
+        if class_id not in enrolled_class_ids:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Bạn không có quyền truy cập lớp học này"
+            )
+        query = query.filter(Material.class_id == class_id)
+    
+    if type:
+        query = query.filter(Material.type == type)
+    
+    query = query.order_by(Material.created_at.desc())
+    materials = query.all()
+    
+    return materials
+
 # ===================== Public/Legacy Endpoints =====================
 
 @router.get("/", response_model=List[MaterialListResponse])
