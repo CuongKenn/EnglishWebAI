@@ -196,6 +196,10 @@
   border-left: 4px solid #3498db;
 }
 
+.exercise-card-orange {
+  border-left: 4px solid #e67e22;
+}
+
 .exercise-card-green {
   border-left: 4px solid #2ecc71;
 }
@@ -242,6 +246,58 @@
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
+}
+
+.subject-badge, .grade-badge, .difficulty-badge, .type-badge, .status-badge, .score-badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.type-badge {
+  background: #3498db;
+  color: white;
+}
+
+.type-assignment {
+  background: #3498db;
+}
+
+.type-quiz {
+  background: #e67e22;
+}
+
+.status-badge {
+  font-weight: 700;
+}
+
+.status-submitted {
+  background: #f39c12;
+  color: white;
+}
+
+.status-graded {
+  background: #27ae60;
+  color: white;
+}
+
+.status-overdue {
+  background: #e74c3c;
+  color: white;
+}
+
+.score-badge {
+  background: #9b59b6;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.score-highlight {
+  color: #27ae60;
+  font-weight: 700;
 }
 
 .subject-badge, .grade-badge, .difficulty-badge {
@@ -515,6 +571,77 @@
 .start-exercise-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.close-modal-btn {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.close-modal-btn:hover {
+  background: #5a6268;
+}
+
+/* Submission Section */
+.submission-section {
+  margin-top: 1.5rem;
+}
+
+.submission-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 1rem;
+}
+
+.submission-details {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.submission-content {
+  background: white;
+  padding: 1rem;
+  border-radius: 6px;
+  margin: 0.5rem 0;
+  white-space: pre-wrap;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.file-info {
+  color: #495057;
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+}
+
+.feedback-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #dee2e6;
+}
+
+.feedback-content {
+  background: #e3f2fd;
+  padding: 1rem;
+  border-radius: 6px;
+  margin-top: 0.5rem;
+  border-left: 4px solid #2196f3;
+}
+
+.warning-text {
+  color: #e74c3c;
+  font-weight: 600;
 }
 
 /* No Results */

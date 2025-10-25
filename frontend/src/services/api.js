@@ -337,11 +337,9 @@ export const exercisesAPI = {
   },
 
   // Nộp bài tập
-  submitExercise: async (exerciseId, answer) => {
+  submitExercise: async (exerciseId, submissionData) => {
     try {
-      const response = await apiClient.post(`/api/v1/exercises/${exerciseId}/submit`, {
-        answer,
-      });
+      const response = await apiClient.post(`/api/v1/exercises/${exerciseId}/submit`, submissionData);
       return response.data;
     } catch (error) {
       throw error.response ? error.response.data : error;
@@ -361,20 +359,40 @@ export const exercisesAPI = {
 
 // ==================== Materials APIs ====================
 export const materialsAPI = {
-  // Lấy danh sách học liệu
+  // Lấy danh sách học liệu cho student
   getMaterials: async (params = {}) => {
     try {
-      const response = await apiClient.get('/api/v1/materials/', { params });
+      const response = await apiClient.get('/api/v1/materials/student/materials/', { params });
       return response.data;
     } catch (error) {
       throw error.response ? error.response.data : error;
     }
   },
 
-  // Lấy chi tiết học liệu
+  // Lấy chi tiết học liệu cho student
   getMaterialDetail: async (materialId) => {
     try {
-      const response = await apiClient.get(`/api/v1/materials/${materialId}`);
+      const response = await apiClient.get(`/api/v1/materials/student/materials/${materialId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Lấy học liệu theo lớp cho student
+  getMaterialsByClass: async (classId, params = {}) => {
+    try {
+      const response = await apiClient.get(`/api/v1/materials/student/materials/by-class/${classId}`, { params });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Lấy thống kê học liệu cho student
+  getStatistics: async () => {
+    try {
+      const response = await apiClient.get('/api/v1/materials/student/materials/statistics');
       return response.data;
     } catch (error) {
       throw error.response ? error.response.data : error;
