@@ -63,9 +63,15 @@ apiV1Client.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      // Chỉ redirect về login nếu KHÔNG phải đang ở trang login
+      const isLoginPage = window.location.pathname === '/login';
+      const isLoginRequest = error.config?.url?.includes('/login');
+      
+      if (!isLoginPage && !isLoginRequest) {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
@@ -94,10 +100,17 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Token expired or invalid
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      // Chỉ redirect về login nếu KHÔNG phải đang ở trang login
+      // và KHÔNG phải request đến endpoint login
+      const isLoginPage = window.location.pathname === '/login';
+      const isLoginRequest = error.config?.url?.includes('/login');
+      
+      if (!isLoginPage && !isLoginRequest) {
+        // Token expired or invalid - redirect to login
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
@@ -125,7 +138,39 @@ export const authAPI = {
       }
       return response.data;
     } catch (error) {
-      throw error.response ? error.response.data : error;
+      // Xử lý lỗi chi tiết hơn
+      if (error.response) {
+        const errorData = error.response.data;
+        
+        // Nếu có detail message từ backend
+        if (errorData.detail) {
+          throw { detail: errorData.detail, status: error.response.status };
+        }
+        
+        // Nếu có message từ backend
+        if (errorData.message) {
+          throw { detail: errorData.message, status: error.response.status };
+        }
+        
+        // Xử lý theo HTTP status code
+        switch (error.response.status) {
+          case 401:
+            throw { detail: 'Tên đăng nhập hoặc mật khẩu không chính xác!' };
+          case 403:
+            throw { detail: 'Tài khoản đã bị vô hiệu hóa!' };
+          case 404:
+            throw { detail: 'Tài khoản không tồn tại!' };
+          default:
+            throw { detail: 'Đăng nhập thất bại, vui lòng thử lại!' };
+        }
+      }
+      
+      // Lỗi mạng hoặc lỗi khác
+      if (error.message === 'Network Error') {
+        throw { detail: 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng!' };
+      }
+      
+      throw { detail: 'Đã xảy ra lỗi, vui lòng thử lại!' };
     }
   },
 
