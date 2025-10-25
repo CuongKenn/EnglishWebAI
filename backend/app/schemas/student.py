@@ -333,3 +333,23 @@ class NewsListResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class NewsCreate(BaseModel):
+    title: str
+    description: Optional[str] = ""
+    content: str
+    icon: Optional[str] = "📰"
+    type: str = "announcement"
+    category: str = "Thông báo"
+    image: Optional[str] = None
+    status: str = "published"
+
+class NewsUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    content: Optional[str] = None
+    icon: Optional[str] = None
+    type: Optional[str] = None
+    category: Optional[str] = None
+    image: Optional[str] = None
+    status: Optional[str] = None
