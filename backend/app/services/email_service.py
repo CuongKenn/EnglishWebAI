@@ -1,26 +1,127 @@
 import smtplib
 import ssl
+import logging
+import os
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from typing import List
 from app.core.config import settings
 from datetime import datetime
 
+# Configure logger for email service
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+# Create logs directory if it doesn't exist
+logs_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'logs')
+os.makedirs(logs_dir, exist_ok=True)
+
+# Configure file handler
+file_handler = logging.FileHandler(os.path.join(logs_dir, 'email_service.log'))
+file_handler.setLevel(logging.INFO)
+
+# Create formatter
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(formatter)
+
+# Add handler to logger
+logger.addHandler(file_handler)
+
 
 class EmailService:
     """Service for sending emails via SMTP"""
     
     @staticmethod
+    def send_test_email(to_email: str) -> bool:
+        """
+        Send a test email to verify email service configuration
+        
+        Args:
+            to_email: Recipient email address
+            
+        Returns:
+            bool: True if email sent successfully
+        """
+        logger.info(f"Sending test email to {to_email}")
+        
+        subject = f"Test Email from {settings.APP_NAME}"
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <style>
+                body {{
+                    font-family: Arial, sans-serif;
+                    line-height: 1.6;
+                    color: #333;
+                }}
+                .container {{
+                    max-width: 600px;
+                    margin: 0 auto;
+                    padding: 20px;
+                }}
+                .header {{
+                    background-color: #4CAF50;
+                    color: white;
+                    padding: 20px;
+                    text-align: center;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>{settings.APP_NAME}</h1>
+                </div>
+                <div class="content">
+                    <h2>Test Email</h2>
+                    <p>This is a test email to verify the email service configuration.</p>
+                    <p>If you received this email, it means the email service is working correctly.</p>
+                    <p>Sent at: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        text_content = f"""
+        Test Email from {settings.APP_NAME}
+        
+        This is a test email to verify the email service configuration.
+        If you received this email, it means the email service is working correctly.
+        
+        Sent at: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+        """
+        
+        return EmailService.send_email(
+            to_email=to_email,
+            subject=subject,
+            html_content=html_content,
+            text_content=text_content
+        )
+    
+    @staticmethod
     def _create_smtp_connection():
         """Create and return SMTP connection"""
         context = ssl.create_default_context()
+        context.check_hostname = False
+        context.verify_mode = ssl.CERT_NONE
         try:
+            logger.info(f"Attempting to connect to SMTP server {settings.SMTP_HOST}:{settings.SMTP_PORT}")
             server = smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT)
+            
+            logger.info("Initiating TLS connection")
             server.starttls(context=context)
+            
             if settings.SMTP_USERNAME and settings.SMTP_PASSWORD:
+                logger.info(f"Authenticating with SMTP server using username: {settings.SMTP_USERNAME}")
                 server.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
+                logger.info("SMTP authentication successful")
+            
             return server
         except Exception as e:
+            logger.error(f"SMTP connection failed: {str(e)}")
             raise Exception(f"Failed to connect to SMTP server: {str(e)}")
     
     @staticmethod
@@ -43,6 +144,8 @@ class EmailService:
             bool: True if email sent successfully, False otherwise
         """
         try:
+            logger.info(f"Preparing to send email with subject: {subject}")
+            
             # Create message
             message = MIMEMultipart("alternative")
             message["Subject"] = subject
@@ -52,27 +155,34 @@ class EmailService:
             if isinstance(to_email, str):
                 message["To"] = to_email
                 recipients = [to_email]
+                logger.info(f"Single recipient: {to_email}")
             else:
                 message["To"] = ", ".join(to_email)
                 recipients = to_email
+                logger.info(f"Multiple recipients: {len(recipients)} addresses")
             
             # Add text content if provided
             if text_content:
+                logger.debug("Adding plain text content to email")
                 part1 = MIMEText(text_content, "plain")
                 message.attach(part1)
             
             # Add HTML content
+            logger.debug("Adding HTML content to email")
             part2 = MIMEText(html_content, "html")
             message.attach(part2)
             
             # Send email
+            logger.info("Establishing SMTP connection")
             with EmailService._create_smtp_connection() as server:
+                logger.info(f"Sending email from {settings.SMTP_FROM_EMAIL} to {len(recipients)} recipient(s)")
                 server.sendmail(settings.SMTP_FROM_EMAIL, recipients, message.as_string())
+                logger.info("Email sent successfully")
             
             return True
             
         except Exception as e:
-            print(f"Error sending email: {str(e)}")
+            logger.error(f"Error sending email: {str(e)}", exc_info=True)
             return False
     
     @staticmethod
@@ -88,6 +198,10 @@ class EmailService:
         Returns:
             bool: True if email sent successfully
         """
+        logger.info(f"Preparing OTP email for {to_email}")
+        if username:
+            logger.info(f"Sending OTP to user: {username}")
+        logger.debug(f"OTP code generated: {otp_code[:2]}{'*' * (len(otp_code)-4)}{otp_code[-2:]}")  # Log partially masked OTP
         subject = f"Your {settings.APP_NAME} Verification Code"
         
         # Create HTML content
@@ -213,6 +327,10 @@ class EmailService:
         Returns:
             bool: True if email sent successfully
         """
+        logger.info(f"Preparing password reset email for {to_email}")
+        if username:
+            logger.info(f"Sending password reset to user: {username}")
+        logger.debug(f"Reset code generated: {reset_code[:2]}{'*' * (len(reset_code)-4)}{reset_code[-2:]}")  # Log partially masked reset code
         subject = f"Reset Your {settings.APP_NAME} Password"
         
         html_content = f"""
