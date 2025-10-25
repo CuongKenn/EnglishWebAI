@@ -12,6 +12,8 @@ import OverviewStats from '../OverviewStats/OverviewStats';
 import Settings from '../Settings/Settings';
 import Backup from '../Backup/Backup';
 import Logs from '../Logs/Logs';
+import AISettings from '../AISettings/AISettings';
+import AIAnalytics from '../AIAnalytics/AIAnalytics';
 
 
 const AdminDashboard = () => {
@@ -139,6 +141,31 @@ const AdminDashboard = () => {
             </ul>
           </div>
 
+          {/* QUẢN LÝ AI */}
+          <div className="nav-section">
+            <div className="nav-section-title">Quản lý AI</div>
+            <ul className="sidebar-menu">
+              <li className="sidebar-menu-item">
+                <Link 
+                  to="/admin-dashboard/ai-analytics" 
+                  className={`sidebar-link ${isActive('/admin-dashboard/ai-analytics') ? 'active' : ''}`}
+                >
+                  <span className="link-icon">🤖</span>
+                  <span className="link-text">AI Analytics</span>
+                </Link>
+              </li>
+              <li className="sidebar-menu-item">
+                <Link 
+                  to="/admin-dashboard/ai-settings" 
+                  className={`sidebar-link ${isActive('/admin-dashboard/ai-settings') ? 'active' : ''}`}
+                >
+                  <span className="link-icon">🔑</span>
+                  <span className="link-text">AI Settings</span>
+                </Link>
+              </li>
+            </ul>
+          </div>
+
           {/* CÀI ĐẶT */}
           <div className="nav-section">
             <div className="nav-section-title">Cài đặt</div>
@@ -180,6 +207,8 @@ const AdminDashboard = () => {
             <Route path="/manage-classes" element={<ManageClasses />} />
             <Route path="/manage-news" element={<ManageNews />} />
             <Route path="/overview-stats" element={<OverviewStats />} />
+            <Route path="/ai-analytics" element={<AIAnalytics />} />
+            <Route path="/ai-settings" element={<AISettings />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/backup" element={<Backup />} />
             <Route path="/logs" element={<Logs />} />
