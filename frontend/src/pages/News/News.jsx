@@ -5,6 +5,7 @@ import './News.css';
 
 const News = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedNews, setSelectedNews] = useState(null);
   const { news: newsData, loading, error } = useNews();
 
   const categories = ['all', 'Khuyến mãi', 'Học tập', 'Hướng dẫn', 'Sự kiện', 'Tính năng mới', 'Thông báo'];
@@ -32,6 +33,14 @@ const News = () => {
       'Thông báo': '#6C5CE7',
     };
     return colors[category] || '#667eea';
+  };
+
+  const handleOpenDetail = (post) => {
+    setSelectedNews(post);
+  };
+
+  const handleCloseDetail = () => {
+    setSelectedNews(null);
   };
 
   return (
@@ -87,7 +96,7 @@ const News = () => {
             <>
               {/* Featured Post */}
               {featuredPost && (
-                <article className="featured-post">
+                <article className="featured-post" onClick={() => handleOpenDetail(featuredPost)} style={{ cursor: 'pointer' }}>
                   <div className="featured-image">
                     <img 
                       src={featuredPost.image || 'https://via.placeholder.com/1200x600/667eea/ffffff?text=Featured+Post'} 
@@ -137,7 +146,7 @@ const News = () => {
               {/* Regular Posts Grid */}
               <div className="posts-grid">
                 {regularPosts.map((post) => (
-                  <article key={post.id} className="post-card">
+                  <article key={post.id} className="post-card" onClick={() => handleOpenDetail(post)} style={{ cursor: 'pointer' }}>
                     <div className="post-image">
                       <img 
                         src={post.image || 'https://via.placeholder.com/600x400/667eea/ffffff?text=Post'} 
@@ -236,6 +245,75 @@ const News = () => {
           </div>
         </aside>
       </div>
+
+      {/* News Detail Modal */}
+      {selectedNews && (
+        <div className="modal-overlay" onClick={handleCloseDetail}>
+          <div className="modal-content-news-detail" onClick={(e) => e.stopPropagation()}>
+            <button className="close-btn" onClick={handleCloseDetail}>×</button>
+            
+            <div className="news-detail-header">
+              <span 
+                className="news-detail-category"
+                style={{ backgroundColor: getCategoryColor(selectedNews.category) }}
+              >
+                {selectedNews.icon} {selectedNews.category}
+              </span>
+              <h1 className="news-detail-title">{selectedNews.title}</h1>
+              <p className="news-detail-description">{selectedNews.description}</p>
+              
+              <div className="news-detail-meta">
+                <div className="author-info-detail">
+                  <div className="author-avatar-detail">
+                    {selectedNews.author_role === 'teacher' ? '👨‍🏫' : '👤'}
+                  </div>
+                  <div className="author-details-detail">
+                    <span className="author-name-detail">{selectedNews.author_name || 'Admin'}</span>
+                    <span className="author-role-detail">
+                      {selectedNews.author_role === 'teacher' ? 'Giáo viên' : 'Admin'}
+                    </span>
+                  </div>
+                </div>
+                <div className="post-stats-detail">
+                  <span className="stat-item-detail">
+                    <i className="far fa-clock"></i> {selectedNews.reading_time || 5} phút đọc
+                  </span>
+                  <span className="stat-item-detail">
+                    <i className="far fa-eye"></i> {selectedNews.views || 0}
+                  </span>
+                  <span className="stat-item-detail">
+                    <i className="far fa-heart"></i> {selectedNews.likes || 0}
+                  </span>
+                  <span className="stat-item-detail">
+                    <i className="far fa-calendar"></i> {selectedNews.date}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {selectedNews.image && (
+              <div className="news-detail-image">
+                <img src={selectedNews.image} alt={selectedNews.title} />
+              </div>
+            )}
+
+            <div className="news-detail-content">
+              <div className="news-content-text" style={{ whiteSpace: 'pre-wrap' }}>
+                {selectedNews.content}
+              </div>
+            </div>
+
+            <div className="news-detail-actions">
+              <button className="action-btn like-btn">
+                <i className="far fa-heart"></i> Thích ({selectedNews.likes || 0})
+              </button>
+              <button className="action-btn share-btn">
+                <i className="fas fa-share"></i> Chia sẻ
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -52,7 +52,7 @@ async def get_news(
             "views": news.views,
             "likes": news.likes,
             "reading_time": news.reading_time,
-            "author_name": author.name if author else "Admin",
+            "author_name": author.full_name if author else "Admin",
             "author_role": author.role.value if author else "admin"
         })
     
@@ -229,7 +229,7 @@ async def get_all_news_for_management(
             "views": news.views,
             "likes": news.likes,
             "reading_time": news.reading_time,
-            "author_name": author.name if author else "Unknown",
+            "author_name": author.full_name if author else "Unknown",
             "author_id": news.author_id,
             "published_at": news.published_at.isoformat() if news.published_at else None,
             "created_at": news.created_at.isoformat() if news.created_at else None,
