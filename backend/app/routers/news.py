@@ -4,8 +4,10 @@ from sqlalchemy import desc
 from typing import List
 from datetime import datetime
 from app.core.database import get_db
+from app.core.dependencies import get_current_user
+from app.models.user import User, UserRole
 from app.models.news import NewsPost
-from app.schemas.student import NewsListResponse, NewsPostResponse
+from app.schemas.student import NewsListResponse, NewsPostResponse, NewsCreate, NewsUpdate
 
 router = APIRouter()
 
@@ -115,3 +117,102 @@ async def get_news_detail(
         )
     
     return news
+
+# ===================== Teacher/Admin: CRUD News =====================
+
+@router.post("/", response_model=NewsPostResponse, status_code=status.HTTP_201_CREATED)
+async def create_news(
+    news_data: NewsCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Tạo tin tức mới (chỉ teacher và admin)
+    """
+    if current_user.role not in [UserRole.TEACHER, UserRole.ADMIN, UserRole.SUPERADMIN]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Chỉ giáo viên và admin mới có thể tạo tin tức"
+        )
+    
+    news = NewsPost(
+        title=news_data.title,
+        content=news_data.content,
+        author_id=current_user.id,
+        status=news_data.status,
+        published_at=datetime.now() if news_data.status == "published" else None
+    )
+    
+    db.add(news)
+    db.commit()
+    db.refresh(news)
+    
+    return news
+
+@router.put("/{news_id}", response_model=NewsPostResponse)
+async def update_news(
+    news_id: int,
+    news_data: NewsUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Cập nhật tin tức (chỉ tác giả hoặc admin)
+    """
+    news = db.query(NewsPost).filter(NewsPost.id == news_id).first()
+    
+    if not news:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Không tìm thấy tin tức"
+        )
+    
+    # Check permission
+    if news.author_id != current_user.id and current_user.role not in [UserRole.ADMIN, UserRole.SUPERADMIN]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Bạn không có quyền sửa tin tức này"
+        )
+    
+    # Update fields
+    update_data = news_data.dict(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(news, field, value)
+    
+    # Update published_at if status changes to published
+    if news_data.status == "published" and news.published_at is None:
+        news.published_at = datetime.now()
+    
+    db.commit()
+    db.refresh(news)
+    
+    return news
+
+@router.delete("/{news_id}")
+async def delete_news(
+    news_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Xóa tin tức (chỉ tác giả hoặc admin)
+    """
+    news = db.query(NewsPost).filter(NewsPost.id == news_id).first()
+    
+    if not news:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Không tìm thấy tin tức"
+        )
+    
+    # Check permission
+    if news.author_id != current_user.id and current_user.role not in [UserRole.ADMIN, UserRole.SUPERADMIN]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Bạn không có quyền xóa tin tức này"
+        )
+    
+    db.delete(news)
+    db.commit()
+    
+    return {"message": "Đã xóa tin tức thành công"}

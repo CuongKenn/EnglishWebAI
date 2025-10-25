@@ -232,6 +232,83 @@ async def create_discussion_post(
         "author_avatar": current_user.avatar_url
     }
 
+@router.put("/{thread_id}/posts/{post_id}", response_model=DiscussionPostResponse)
+async def update_discussion_post(
+    thread_id: int,
+    post_id: int,
+    post_data: DiscussionPostCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Chỉnh sửa bình luận (chỉ người tạo mới có thể sửa)
+    """
+    post = db.query(DiscussionPost).filter(
+        DiscussionPost.id == post_id,
+        DiscussionPost.thread_id == thread_id
+    ).first()
+    
+    if not post:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Không tìm thấy bình luận"
+        )
+    
+    if post.author_id != current_user.id and current_user.role.value not in ["admin", "superadmin"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Bạn không có quyền sửa bình luận này"
+        )
+    
+    # Update content
+    post.content = post_data.content
+    db.commit()
+    db.refresh(post)
+    
+    return {
+        "id": post.id,
+        "thread_id": post.thread_id,
+        "author_id": post.author_id,
+        "content": post.content,
+        "parent_post_id": post.parent_post_id,
+        "created_at": post.created_at,
+        "author_name": current_user.full_name or current_user.username,
+        "author_role": current_user.role.value,
+        "author_avatar": current_user.avatar_url
+    }
+
+@router.delete("/{thread_id}/posts/{post_id}")
+async def delete_discussion_post(
+    thread_id: int,
+    post_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Xóa bình luận (chỉ người tạo hoặc admin mới có thể xóa)
+    """
+    post = db.query(DiscussionPost).filter(
+        DiscussionPost.id == post_id,
+        DiscussionPost.thread_id == thread_id
+    ).first()
+    
+    if not post:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Không tìm thấy bình luận"
+        )
+    
+    if post.author_id != current_user.id and current_user.role.value not in ["admin", "superadmin"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Bạn không có quyền xóa bình luận này"
+        )
+    
+    db.delete(post)
+    db.commit()
+    
+    return {"message": "Đã xóa bình luận thành công"}
+
 @router.delete("/{thread_id}")
 async def delete_discussion(
     thread_id: int,
@@ -340,4 +417,64 @@ async def unlike_discussion(
     return {
         "message": "Đã bỏ thích câu hỏi",
         "likes": total_likes
+    }
+
+@router.post("/{thread_id}/posts/{post_id}/like")
+async def like_discussion_post(
+    thread_id: int,
+    post_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Like một bình luận trong thảo luận
+    NOTE: Hiện tại chưa có model DiscussionPostLike, tạm thời return success
+    TODO: Thêm model DiscussionPostLike nếu cần thiết
+    """
+    # Check if post exists
+    post = db.query(DiscussionPost).filter(
+        DiscussionPost.id == post_id,
+        DiscussionPost.thread_id == thread_id
+    ).first()
+    
+    if not post:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Không tìm thấy bình luận"
+        )
+    
+    # TODO: Implement post like logic when DiscussionPostLike model is created
+    return {
+        "message": "Đã thích bình luận",
+        "likes": 0
+    }
+
+@router.delete("/{thread_id}/posts/{post_id}/like")
+async def unlike_discussion_post(
+    thread_id: int,
+    post_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Unlike một bình luận trong thảo luận
+    NOTE: Hiện tại chưa có model DiscussionPostLike, tạm thời return success
+    TODO: Thêm model DiscussionPostLike nếu cần thiết
+    """
+    # Check if post exists
+    post = db.query(DiscussionPost).filter(
+        DiscussionPost.id == post_id,
+        DiscussionPost.thread_id == thread_id
+    ).first()
+    
+    if not post:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Không tìm thấy bình luận"
+        )
+    
+    # TODO: Implement post unlike logic when DiscussionPostLike model is created
+    return {
+        "message": "Đã bỏ thích bình luận",
+        "likes": 0
     }

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
 from sqlalchemy.orm import Session
+from sqlalchemy import func, and_, or_
 from typing import List, Optional
 import os
 import shutil
@@ -10,12 +11,275 @@ from app.models.user import User, UserRole
 from app.models.material import Material
 from app.models.lesson import Lesson
 from app.models.classroom import Classroom
+from app.models.enrollment import Enrollment
 from app.schemas.student import MaterialListResponse, MaterialResponse
 from app.schemas.student import MaterialCreate, MaterialUpdate
 
 router = APIRouter()
 
+
+# ===================== Student: Access Materials =====================
+
+@router.get("/student/materials/", response_model=List[MaterialListResponse])
+async def get_student_materials_list(
+    class_id: Optional[int] = None,
+    type: Optional[str] = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Lấy danh sách học liệu mà học sinh có thể truy cập (endpoint dành riêng cho student)
+    - Chỉ trả về học liệu từ các lớp mà học sinh đã tham gia với role='student' và status='active'
+    - Có thể lọc theo class_id và type
+    """
+    # Lấy danh sách class_id mà học sinh đã tham gia
+    enrolled_class_ids = db.query(Enrollment.class_id).filter(
+        and_(
+            Enrollment.user_id == current_user.id,
+            Enrollment.role == "student",
+            Enrollment.status == "active"
+        )
+    ).all()
+    
+    enrolled_class_ids = [c[0] for c in enrolled_class_ids]
+    
+    if not enrolled_class_ids:
+        return []
+    
+    # Query materials
+    query = db.query(Material).filter(Material.class_id.in_(enrolled_class_ids))
+    
+    # Filters
+    if class_id:
+        if class_id not in enrolled_class_ids:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Bạn không có quyền truy cập lớp học này"
+            )
+        query = query.filter(Material.class_id == class_id)
+    
+    if type:
+        query = query.filter(Material.type == type)
+    
+    query = query.order_by(Material.created_at.desc())
+    materials = query.all()
+    
+    return materials
+
+# ===================== Public/Legacy Endpoints =====================
+
 @router.get("/", response_model=List[MaterialListResponse])
+async def get_student_materials(
+    class_id: Optional[int] = None,
+    type: Optional[str] = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Lấy danh sách học liệu mà học sinh có thể truy cập
+    - Chỉ trả về học liệu từ các lớp mà học sinh đã tham gia với role='student' và status='active'
+    - Có thể lọc theo class_id và type
+    """
+    # Lấy danh sách class_id mà học sinh đã tham gia
+    enrolled_class_ids = db.query(Enrollment.class_id).filter(
+        and_(
+            Enrollment.user_id == current_user.id,
+            Enrollment.role == "student",
+            Enrollment.status == "active"
+        )
+    ).all()
+    
+    enrolled_class_ids = [c[0] for c in enrolled_class_ids]
+    
+    if not enrolled_class_ids:
+        return []
+    
+    # Query materials
+    query = db.query(Material).filter(Material.class_id.in_(enrolled_class_ids))
+    
+    # Filters
+    if class_id:
+        if class_id not in enrolled_class_ids:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Bạn không có quyền truy cập lớp học này"
+            )
+        query = query.filter(Material.class_id == class_id)
+    
+    if type:
+        query = query.filter(Material.type == type)
+    
+    query = query.order_by(Material.created_at.desc())
+    materials = query.all()
+    
+    return materials
+
+
+@router.get("/student/materials/{material_id}", response_model=MaterialResponse)
+async def get_student_material_detail(
+    material_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Lấy chi tiết học liệu
+    - Kiểm tra quyền truy cập: học sinh phải tham gia lớp chứa học liệu
+    """
+    material = db.query(Material).filter(Material.id == material_id).first()
+    
+    if not material:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Không tìm thấy học liệu"
+        )
+    
+    # Determine class_id
+    class_id = material.class_id
+    if not class_id and material.lesson_id:
+        lesson = db.query(Lesson).filter(Lesson.id == material.lesson_id).first()
+        if lesson:
+            class_id = lesson.class_id
+    
+    if not class_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Học liệu không thuộc lớp học nào"
+        )
+    
+    # Check enrollment
+    enrollment = db.query(Enrollment).filter(
+        and_(
+            Enrollment.class_id == class_id,
+            Enrollment.user_id == current_user.id,
+            Enrollment.role == "student",
+            Enrollment.status == "active"
+        )
+    ).first()
+    
+    if not enrollment:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Bạn không có quyền truy cập học liệu này"
+        )
+    
+    return material
+
+
+@router.get("/student/materials/by-class/{class_id}", response_model=List[MaterialResponse])
+async def get_student_materials_by_class(
+    class_id: int,
+    type: Optional[str] = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Lấy danh sách học liệu theo lớp học
+    - Kiểm tra quyền truy cập: học sinh phải tham gia lớp
+    """
+    # Check enrollment
+    enrollment = db.query(Enrollment).filter(
+        and_(
+            Enrollment.class_id == class_id,
+            Enrollment.user_id == current_user.id,
+            Enrollment.role == "student",
+            Enrollment.status == "active"
+        )
+    ).first()
+    
+    if not enrollment:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Bạn không có quyền truy cập lớp học này"
+        )
+    
+    # Query materials
+    query = db.query(Material).filter(Material.class_id == class_id)
+    
+    if type:
+        query = query.filter(Material.type == type)
+    
+    query = query.order_by(Material.created_at.desc())
+    materials = query.all()
+    
+    return materials
+
+
+@router.get("/student/materials/statistics")
+async def get_student_materials_statistics(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Thống kê học liệu của học sinh
+    - Tổng số học liệu có thể truy cập
+    - Phân loại theo type
+    - Theo từng lớp học
+    """
+    # Lấy danh sách class_id mà học sinh đã tham gia
+    enrolled_classes = db.query(
+        Enrollment.class_id,
+        Classroom.name
+    ).join(
+        Classroom, Enrollment.class_id == Classroom.id
+    ).filter(
+        and_(
+            Enrollment.user_id == current_user.id,
+            Enrollment.role == "student",
+            Enrollment.status == "active"
+        )
+    ).all()
+    
+    if not enrolled_classes:
+        return {
+            "total_materials": 0,
+            "by_type": {},
+            "by_class": []
+        }
+    
+    enrolled_class_ids = [c[0] for c in enrolled_classes]
+    class_names = {c[0]: c[1] for c in enrolled_classes}
+    
+    # Tổng số materials
+    total = db.query(func.count(Material.id)).filter(
+        Material.class_id.in_(enrolled_class_ids)
+    ).scalar()
+    
+    # Phân loại theo type
+    by_type = db.query(
+        Material.type,
+        func.count(Material.id).label("count")
+    ).filter(
+        Material.class_id.in_(enrolled_class_ids)
+    ).group_by(Material.type).all()
+    
+    by_type_dict = {t[0]: t[1] for t in by_type}
+    
+    # Phân loại theo class
+    by_class = db.query(
+        Material.class_id,
+        func.count(Material.id).label("count")
+    ).filter(
+        Material.class_id.in_(enrolled_class_ids)
+    ).group_by(Material.class_id).all()
+    
+    by_class_list = [
+        {
+            "class_id": c[0],
+            "class_name": class_names.get(c[0], "Unknown"),
+            "count": c[1]
+        }
+        for c in by_class
+    ]
+    
+    return {
+        "total_materials": total,
+        "by_type": by_type_dict,
+        "by_class": by_class_list
+    }
+
+
+# ===================== Public/Legacy Endpoints =====================
+
 async def get_materials(
     grade: str = None,
     subject: str = None,
