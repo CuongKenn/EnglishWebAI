@@ -1,6 +1,6 @@
 // src/App.jsx
 
-import React, { useState } from 'react'; // 1. Import useState
+import React, { useState } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 
 // Import Layout và các trang
@@ -16,6 +16,20 @@ import Exercises from './pages/Exercises/Exercises';
 import News from './pages/News/News';
 import Lessons from './pages/Lessons/Lessons';
 import ClassContent from './pages/ClassContent/ClassContent';
+import CourseContentPage from './pages/CourseContentPage/CourseContentPage';
+import MyCourses from './pages/MyCourses/MyCourses';
+import StudyPlan from './pages/StudyPlan/StudyPlan';
+import LearningProfile from './pages/LearningProfile/LearningProfile';
+import SpeakingExercise from './pages/SpeakingExercise/SpeakingExercise';
+import TestSpeaking from './pages/SpeakingExercise/TestSpeaking';
+import SimpleTest from './pages/SpeakingExercise/SimpleTest';
+import SpeakingExerciseDemo from './pages/SpeakingExercise/SpeakingExerciseDemo';
+import SpeakingExerciseShowcase from './pages/SpeakingExercise/SpeakingExerciseShowcase'; 
+import ReadingCourse from './pages/ReadingCourse/ReadingCourse';
+import WritingCourse from './pages/WritingCourse/WritingCourse';
+import VocabularyCourse from './pages/VocabularyCourse/VocabularyCourse';
+import VocabularyDemo from './pages/VocabularyDemo/VocabularyDemo';
+import VocabularyTest from './pages/VocabularyTest/VocabularyTest';
 
 // Import Admin Pages
 import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute';
@@ -42,7 +56,6 @@ import InviteFriends from './pages/InviteFriends/InviteFriends';
 import authService from './services/authService';
 
 function App() {
-  // 2. Tạo state trung tâm, sử dụng authService để check trạng thái
   const [isLoggedIn, setIsLoggedIn] = useState(() => authService.isAuthenticated());
   const [userRole, setUserRole] = useState(() => {
     const user = authService.getCurrentUser();
@@ -50,15 +63,12 @@ function App() {
   });
   const [showWelcome, setShowWelcome] = useState(false);
   
-  // Lấy hàm navigate để chuyển trang sau khi đăng nhập
   const navigate = useNavigate();
 
-  // 3. Hàm xử lý đăng nhập (nhận role từ API)
   const handleLogin = (role = 'user') => {
     setIsLoggedIn(true);
     setUserRole(role);
     
-    // Navigate dựa trên role
     if (role === 'admin' || role === 'superadmin') {
       navigate('/admin-dashboard');
     } else if (role === 'teacher') {
@@ -69,13 +79,11 @@ function App() {
       navigate('/');
     }
     
-    // Hiển thị thông báo chào mừng
     setTimeout(() => {
       setShowWelcome(true);
     }, 300);
   };
 
-  // 4. Hàm xử lý đăng xuất
   const handleLogout = () => {
     authService.logout();
     setIsLoggedIn(false);
@@ -85,7 +93,6 @@ function App() {
 
   return (
     <>
-      {/* Welcome Notification */}
       <WelcomeNotification 
         isVisible={showWelcome}
         onClose={() => setShowWelcome(false)}
@@ -93,167 +100,271 @@ function App() {
       />
 
       <Routes>
-      {/* 5. Truyền state và các hàm xử lý xuống các trang cần thiết */}
-      <Route 
-        path="/" 
-        element={
-          <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
-            <HomeStudent />
-          </Layout>
-        } 
-      />
-      <Route 
-        path="/login" 
-        element={<Login onLogin={handleLogin} />} 
-      />
-      <Route path="/register" element={<Register />} />
-      <Route path="/forgot-password" element={<ForgotPassword />} />
-      
-      {/* Public Routes */}
-      <Route 
-        path="/news" 
-        element={
-          <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
-            <News />
-          </Layout>
-        } 
-      />
-      <Route 
-        path="/lessons" 
-        element={
-          <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
-            <Lessons />
-          </Layout>
-        } 
-      />
-      
-      {/* Student Routes */}
-      <Route 
-        path="/join-class" 
-        element={
-          <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
-            <JoinClass />
-          </Layout>
-        } 
-      />
-      <Route 
-        path="/materials" 
-        element={
-          <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
-            <Materials />
-          </Layout>
-        } 
-      />
-      <Route 
-        path="/exercises" 
-        element={
-          <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
-            <Exercises />
-          </Layout>
-        } 
-      />
-      <Route 
-        path="/discussion" 
-        element={
-          <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
-            <Discussion />
-          </Layout>
-        } 
-      />
-      
-      {/* Admin Dashboard - Protected with Sidebar */}
-      <Route 
-        path="/admin-dashboard/*" 
-        element={
-          <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="admin">
+        <Route 
+          path="/" 
+          element={
             <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
-              <AdminDashboard />
+              <HomeStudent />
             </Layout>
-          </ProtectedRoute>
-        } 
-      />
+          } 
+        />
+        <Route 
+          path="/login" 
+          element={<Login onLogin={handleLogin} />} 
+        />
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        
+        <Route 
+          path="/news" 
+          element={
+            <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+              <News />
+            </Layout>
+          } 
+        />
+        <Route 
+          path="/lessons" 
+          element={
+            <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+              <Lessons />
+            </Layout>
+          } 
+        />
+        
+        <Route 
+          path="/my-courses" 
+          element={
+            <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+              <MyCourses />
+            </Layout>
+          } 
+        />
 
-      {/* Teacher Dashboard - Protected */}
-      <Route 
-        path="/teacher-dashboard" 
-        element={
-          <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="teacher">
+        <Route 
+          path="/study-plan" 
+          element={
             <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
-              <TeacherDashboard />
+              <StudyPlan />
             </Layout>
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/class/:classId/content" 
-        element={
-          <ProtectedRoute isLoggedIn={isLoggedIn}>
-            <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
-              <ClassContent />
-            </Layout>
-          </ProtectedRoute>
-        } 
-      />
+          } 
+        />
 
-      {/* Teacher Materials - Protected */}
-      <Route 
-        path="/teacher-materials" 
-        element={
-          <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="teacher">
+        <Route 
+          path="/learning-profile" 
+          element={
             <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
-              <TeacherMaterials />
+              <LearningProfile />
             </Layout>
-          </ProtectedRoute>
-        } 
-      />
+          } 
+        />
 
-      {/* Parent Dashboard - Protected */}
-      <Route
-        path="/parent-dashboard"
-        element={
-          <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="parent">
+        <Route 
+          path="/speaking/:courseId" 
+          element={
+            <ProtectedRoute isLoggedIn={isLoggedIn}>
+              <SpeakingExercise />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/learn/:courseId" 
+          element={
+            <ProtectedRoute isLoggedIn={isLoggedIn}>
+              <ReadingCourse />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/writing/:courseId" 
+          element={
+            <ProtectedRoute isLoggedIn={isLoggedIn}>
+              <WritingCourse />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/vocabulary/:courseId" 
+          element={
+            <ProtectedRoute isLoggedIn={isLoggedIn}>
+              <VocabularyCourse />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/vocabulary-demo" 
+          element={
             <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
-              <ParentDashboard />
+              <VocabularyDemo />
             </Layout>
-          </ProtectedRoute>
-        }
-      />
+          } 
+        />
+        
+        <Route 
+          path="/vocabulary-test" 
+          element={
+            <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+              <VocabularyTest />
+            </Layout>
+          } 
+        />
+        
+        <Route 
+          path="/speaking-demo" 
+          element={
+            <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+              <SpeakingExerciseDemo />
+            </Layout>
+          } 
+        />
+        
+        <Route 
+          path="/speaking-showcase" 
+          element={
+            <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+              <SpeakingExerciseShowcase />
+            </Layout>
+          } 
+        />
+        
+        <Route 
+          path="/join-class" 
+          element={
+            <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+              <JoinClass />
+            </Layout>
+          } 
+        />
+        
+        <Route
+          path="/course/:courseId"
+          element={
+            <ProtectedRoute isLoggedIn={isLoggedIn}>
+              <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+                <CourseContentPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
 
-      {/* Profile Route - Protected */}
-      <Route
-        path="/profile"
-        element={
-          <ProtectedRoute isLoggedIn={isLoggedIn}>
+        <Route 
+          path="/materials" 
+          element={
             <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
-              <Profile />
+              <Materials />
             </Layout>
-          </ProtectedRoute>
-        }
-      />
+          } 
+        />
+        <Route 
+          path="/exercises" 
+          element={
+            <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+              <Exercises />
+            </Layout>
+          } 
+        />
+        <Route 
+          path="/discussion" 
+          element={
+            <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+              <Discussion />
+            </Layout>
+          } 
+        />
+        
+        <Route 
+          path="/admin-dashboard/*" 
+          element={
+            <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="admin">
+              <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+                <AdminDashboard />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
 
-      {/* Report Card Route - Protected */}
-      <Route
-        path="/report-card"
-        element={
-          <ProtectedRoute isLoggedIn={isLoggedIn}>
-            <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
-              <ReportCard />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
+        {/* ================== [BẮT ĐẦU] ĐÃ SỬA LỖI TẠI ĐÂY ================== */}
+        <Route 
+          path="/teacher-dashboard" 
+          element={
+            <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="teacher">
+              <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+                <TeacherDashboard />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        {/* ================== [KẾT THÚC] ĐÃ SỬA LỖI TẠI ĐÂY ================== */}
 
-      {/* Invite Friends Route - Protected */}
-      <Route
-        path="/invite-friends"
-        element={
-          <ProtectedRoute isLoggedIn={isLoggedIn}>
-            <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
-              <InviteFriends />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
+        <Route 
+          path="/class/:classId/content" 
+          element={
+            <ProtectedRoute isLoggedIn={isLoggedIn}>
+              <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+                <ClassContent />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/teacher-materials" 
+          element={
+            <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="teacher">
+              <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+                <TeacherMaterials />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route
+          path="/parent-dashboard"
+          element={
+            <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="parent">
+              <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+                <ParentDashboard />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute isLoggedIn={isLoggedIn}>
+              <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+                <Profile />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/report-card"
+          element={
+            <ProtectedRoute isLoggedIn={isLoggedIn}>
+              <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+                <ReportCard />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/invite-friends"
+          element={
+            <ProtectedRoute isLoggedIn={isLoggedIn}>
+              <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+                <InviteFriends />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </>
   );

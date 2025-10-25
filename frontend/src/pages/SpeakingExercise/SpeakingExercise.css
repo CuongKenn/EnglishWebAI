@@ -1,0 +1,564 @@
+/* SpeakingExercise.css - Premium Design inspired by Prep */
+.speaking-exercise-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 50%, #ec4899 100%);
+  padding: 0;
+  position: relative;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Main Content Container */
+.main-content-container {
+  max-width: 800px;
+  width: 90%;
+  margin: 20px auto;
+  padding: 30px 20px;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Exercise Header Section */
+.exercise-header-section {
+  text-align: center;
+  margin-bottom: 30px;
+  color: white;
+}
+
+.exercise-progress-badge {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  display: inline-block;
+  margin-bottom: 15px;
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.exercise-title {
+  font-size: 2.2em;
+  font-weight: 700;
+  margin-bottom: 10px;
+  line-height: 1.2;
+}
+
+.exercise-instruction {
+  font-size: 1.1em;
+  font-weight: 400;
+  opacity: 0.9;
+}
+
+/* General Card Styling */
+.exercise-card {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 24px;
+  padding: 28px 32px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.exercise-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+}
+
+.card-icon-wrapper {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+}
+
+.card-icon-wrapper:hover {
+  transform: scale(1.1);
+}
+
+.card-icon-wrapper.speaker {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.card-icon-wrapper.play {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+}
+
+.card-content {
+  flex-grow: 1;
+}
+
+.card-title {
+  font-size: 1.2em;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 5px;
+}
+
+.card-subtitle {
+  font-size: 0.9em;
+  color: #666;
+}
+
+/* Audio Player Specifics */
+.audio-player-controls {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.audio-control-btn {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  transition: background 0.2s ease;
+}
+
+.audio-control-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.audio-progress-bar-container {
+  flex-grow: 1;
+  height: 6px;
+  background: #e0e0e0;
+  border-radius: 3px;
+  position: relative;
+}
+
+.audio-progress-fill {
+  height: 100%;
+  background: #3b82f6;
+  border-radius: 3px;
+  width: 0%;
+  transition: width 0.1s linear;
+}
+
+.audio-time-display {
+  font-size: 0.85em;
+  color: #666;
+  white-space: nowrap;
+}
+
+/* Recording Button */
+.record-button-container {
+  text-align: center;
+  margin: 40px 0;
+}
+
+.record-button {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+  padding: 20px 40px;
+  border-radius: 50px;
+  border: none;
+  font-size: 1.2em;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 15px 35px rgba(239, 68, 68, 0.4);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.record-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.record-button:hover::before {
+  left: 100%;
+}
+
+.record-button:hover {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  transform: translateY(-3px);
+  box-shadow: 0 20px 40px rgba(239, 68, 68, 0.6);
+}
+
+.record-button.recording {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  box-shadow: 0 15px 35px rgba(249, 115, 22, 0.4);
+  animation: pulse 2s infinite;
+}
+
+.record-button.recording:hover {
+  background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+  box-shadow: 0 20px 40px rgba(249, 115, 22, 0.6);
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+/* Navigation */
+.navigation-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 800px;
+  margin-top: 40px;
+  padding: 0 20px;
+}
+
+.nav-button {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  color: white;
+  padding: 16px 32px;
+  border-radius: 30px;
+  border: none;
+  font-size: 1.1em;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.nav-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.nav-button:hover::before {
+  left: 100%;
+}
+
+.nav-button:hover {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(139, 92, 246, 0.5);
+}
+
+.nav-button.disabled {
+  background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.progress-dots {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transition: all 0.3s ease;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+.dot.active {
+  background: white;
+  border-color: white;
+  transform: scale(1.2);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+}
+
+/* Specific Exercise Type Styling - Hello Bar */
+.current-item-display {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border-radius: 20px;
+  padding: 32px;
+  margin: 24px 0;
+  text-align: center;
+  font-size: 2em;
+  font-weight: 700;
+  color: #1e293b;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.current-item-display::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transition: left 0.5s ease;
+}
+
+.current-item-display:hover::before {
+  left: 100%;
+}
+
+.current-item-display:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+}
+
+.exercise-image-container {
+  margin: 20px 0;
+  text-align: center;
+}
+
+.exercise-image {
+  max-width: 100%;
+  max-height: 300px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: 2px solid #e2e8f0;
+}
+
+.exercise-description {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+}
+
+.exercise-description p {
+  margin: 0;
+  color: #475569;
+  font-style: italic;
+  text-align: center;
+}
+
+/* AI Grading Badge */
+.ai-grading-badge {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 25px;
+  font-size: 1em;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 30px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.ai-grading-badge:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+}
+
+/* Result Header (for when results are shown) */
+.result-header {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  padding: 20px 30px;
+  border-radius: 20px;
+  margin-bottom: 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 8px 32px rgba(16, 185, 129, 0.3);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.result-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.result-icon {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.result-text {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.score-info {
+  text-align: right;
+}
+
+.score-label {
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+.score-value {
+  font-size: 24px;
+  font-weight: 700;
+  display: block;
+}
+
+/* Pronunciation Results */
+.pronunciation-results-section {
+  background: white;
+  border-radius: 20px;
+  padding: 25px 30px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  margin-top: 20px;
+}
+
+.pronunciation-results-title {
+  font-size: 1.3em;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 15px;
+}
+
+.pronunciation-legend {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+  font-size: 0.9em;
+  color: #555;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.legend-color.green { background-color: #10b981; }
+.legend-color.yellow { background-color: #facc15; }
+.legend-color.red { background-color: #ef4444; }
+
+.word-pronunciation-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.word-pronunciation-item {
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight: 500;
+  color: white;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.word-pronunciation-item:hover {
+  transform: translateY(-2px);
+}
+
+.word-pronunciation-item.correct { background-color: #10b981; }
+.word-pronunciation-item.partial { background-color: #facc15; }
+.word-pronunciation-item.incorrect { background-color: #ef4444; }
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .main-content-container {
+    padding: 20px 15px;
+    width: 95%;
+  }
+
+  .exercise-title {
+    font-size: 1.8em;
+  }
+
+  .exercise-instruction {
+    font-size: 1em;
+  }
+
+  .exercise-card {
+    flex-direction: column;
+    text-align: center;
+    gap: 15px;
+    padding: 20px;
+  }
+
+  .card-icon-wrapper {
+    margin-bottom: 10px;
+  }
+
+  .audio-player-controls {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .navigation-controls {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
+    padding: 0 15px;
+  }
+
+  .nav-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .progress-dots {
+    order: -1;
+    margin-bottom: 10px;
+  }
+
+  .result-header {
+    flex-direction: column;
+    text-align: center;
+    gap: 15px;
+    padding: 20px;
+  }
+}
