@@ -294,9 +294,9 @@ async def get_materials(
     mock_materials = [
         {
             "id": 1,
-            "title": "Toán lớp 2 - Phép cộng trừ cơ bản",
-            "description": "Học các phép cộng trừ cơ bản từ 1-100",
-            "subject": "Toán",
+            "title": "English Grade 2 - Basic Vocabulary",
+            "description": "Learn basic English vocabulary for beginners",
+            "subject": "Vocabulary",
             "grade": "Lớp 2",
             "difficulty": "Dễ",
             "lessons": 15,
@@ -305,16 +305,16 @@ async def get_materials(
             "image": "📚",
             "color": "blue",
             "chapters": [
-                {"id": 1, "title": "Phép cộng trong phạm vi 20", "lessons": 5, "completed": 0},
-                {"id": 2, "title": "Phép trừ trong phạm vi 20", "lessons": 5, "completed": 0},
-                {"id": 3, "title": "Phép cộng trừ có nhớ", "lessons": 5, "completed": 0}
+                {"id": 1, "title": "Colors and Numbers", "lessons": 5, "completed": 0},
+                {"id": 2, "title": "Family Members", "lessons": 5, "completed": 0},
+                {"id": 3, "title": "Common Objects", "lessons": 5, "completed": 0}
             ]
         },
         {
             "id": 2,
-            "title": "Tiếng Anh lớp 3 - Từ vựng cơ bản",
-            "description": "Học từ vựng tiếng Anh cơ bản cho trẻ em",
-            "subject": "Tiếng Anh",
+            "title": "English Grade 3 - Basic Listening",
+            "description": "Practice basic English listening comprehension for children",
+            "subject": "Listening",
             "grade": "Lớp 3",
             "difficulty": "Trung bình",
             "lessons": 20,
@@ -323,16 +323,16 @@ async def get_materials(
             "image": "🌍",
             "color": "green",
             "chapters": [
-                {"id": 1, "title": "Gia đình và bạn bè", "lessons": 6, "completed": 0},
-                {"id": 2, "title": "Màu sắc và số đếm", "lessons": 7, "completed": 0},
-                {"id": 3, "title": "Động vật và thiên nhiên", "lessons": 7, "completed": 0}
+                {"id": 1, "title": "Family and Friends", "lessons": 6, "completed": 0},
+                {"id": 2, "title": "Colors and Numbers", "lessons": 7, "completed": 0},
+                {"id": 3, "title": "Animals and Nature", "lessons": 7, "completed": 0}
             ]
         },
         {
             "id": 3,
-            "title": "Khoa học lớp 4 - Thế giới tự nhiên",
-            "description": "Khám phá thế giới tự nhiên xung quanh",
-            "subject": "Khoa học",
+            "title": "English Grade 4 - Reading Comprehension",
+            "description": "Develop reading comprehension skills with age-appropriate texts",
+            "subject": "Reading",
             "grade": "Lớp 4",
             "difficulty": "Trung bình",
             "lessons": 18,
@@ -341,9 +341,9 @@ async def get_materials(
             "image": "🔬",
             "color": "purple",
             "chapters": [
-                {"id": 1, "title": "Thực vật và động vật", "lessons": 6, "completed": 0},
-                {"id": 2, "title": "Môi trường sống", "lessons": 6, "completed": 0},
-                {"id": 3, "title": "Bảo vệ môi trường", "lessons": 6, "completed": 0}
+                {"id": 1, "title": "Short Stories", "lessons": 6, "completed": 0},
+                {"id": 2, "title": "Descriptive Texts", "lessons": 6, "completed": 0},
+                {"id": 3, "title": "Reading for Information", "lessons": 6, "completed": 0}
             ]
         }
     ]

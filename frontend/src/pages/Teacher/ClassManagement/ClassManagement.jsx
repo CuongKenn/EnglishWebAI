@@ -127,11 +127,13 @@ const ClassManagement = () => {
           value={filterSubject}
           onChange={(e) => setFilterSubject(e.target.value)}
         >
-          <option value="all">Tất cả môn học</option>
-          <option value="Tiếng Anh">Tiếng Anh</option>
-          <option value="Toán">Toán</option>
-          <option value="Văn">Văn</option>
-          <option value="Khoa học">Khoa học</option>
+          <option value="all">Tất cả kỹ năng</option>
+          <option value="Listening">Listening</option>
+          <option value="Speaking">Speaking</option>
+          <option value="Reading">Reading</option>
+          <option value="Writing">Writing</option>
+          <option value="Grammar">Grammar</option>
+          <option value="Vocabulary">Vocabulary</option>
         </select>
       </div>
 

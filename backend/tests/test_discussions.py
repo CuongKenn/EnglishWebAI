@@ -32,7 +32,7 @@ def test_get_discussions_list(db_session, test_student, student_token):
 def test_get_discussions_with_class_filter(db_session, test_student, student_token):
     """Test getting discussions filtered by class"""
     response = client.get(
-        "/api/v1/discussions/?subject=Toán",
+        "/api/v1/discussions/?subject=Listening",
         headers={"Authorization": f"Bearer {student_token}"}
     )
     assert response.status_code == 200

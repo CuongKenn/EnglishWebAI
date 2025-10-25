@@ -5,14 +5,12 @@ from app.core.database import Base
 import enum
 
 class Subject(str, enum.Enum):
-    MATH = "Toán"
-    ENGLISH = "Tiếng Anh"
-    SCIENCE = "Khoa học"
-    HISTORY = "Lịch sử"
-    LITERATURE = "Ngữ văn"
-    PHYSICS = "Vật lý"
-    CHEMISTRY = "Hóa học"
-    BIOLOGY = "Sinh học"
+    LISTENING = "Listening"
+    SPEAKING = "Speaking"
+    READING = "Reading"
+    WRITING = "Writing"
+    GRAMMAR = "Grammar"
+    VOCABULARY = "Vocabulary"
 
 class Grade(str, enum.Enum):
     PRESCHOOL = "Mẫu giáo"

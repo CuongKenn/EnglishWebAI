@@ -184,9 +184,9 @@ const Discussion = () => {
                             </div>
                             <div className="form-row">
                                 <div className="form-group">
-                                    <label className="form-label">Môn học:</label>
+                                    <label className="form-label">Kỹ năng:</label>
                                     <select value={newQuestion.subject} onChange={(e) => setNewQuestion({ ...newQuestion, subject: e.target.value })} className="form-select" required >
-                                        <option value="">Chọn môn học</option>
+                                        <option value="">Chọn kỹ năng</option>
                                         <option value="Kĩ năng nghe">Kĩ năng nghe</option>
                                         <option value="Kĩ năng nói">Kĩ năng nói</option>
                                         <option value="Kĩ năng viết">Kĩ năng viết</option>
@@ -224,7 +224,7 @@ const Discussion = () => {
                         />
                     </div>
                     <div className="filter-group">
-                        <label className="filter-label" htmlFor="subject-select">Môn học:</label>
+                        <label className="filter-label" htmlFor="subject-select">Kỹ năng:</label>
                         <select
                             id="subject-select"
                             value={selectedSubject}
