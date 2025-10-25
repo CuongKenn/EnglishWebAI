@@ -33,24 +33,36 @@ export function TranslateAI() {
   };
 
   return (
-    <div className="space-y-6">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Header */}
       <div>
-        <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 px-4 py-2 text-white shadow-lg">
-          <Languages className="h-5 w-5" />
-          <span className="font-medium">Dịch thuật AI thông minh</span>
+        <div style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '8px',
+          borderRadius: '9999px',
+          background: 'linear-gradient(to right, #3b82f6, #06b6d4)',
+          padding: '8px 16px',
+          color: 'white',
+          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+          marginBottom: '16px',
+        }}>
+          <Languages style={{ width: '20px', height: '20px' }} />
+          <span style={{ fontWeight: 500 }}>Dịch thuật AI thông minh</span>
         </div>
-        <h1 className="mb-2">Dịch bằng AI 🌐</h1>
-        <p className="text-gray-600">
+        <h1 style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '8px' }}>Dịch bằng AI 🌐</h1>
+        <p style={{ color: '#6b7280' }}>
           Công nghệ AI hiện đại giúp dịch chính xác và tự nhiên như người bản xứ
         </p>
       </div>
 
       {/* Language Selector */}
-      <Card className="p-4">
-        <div className="flex items-center gap-4">
-          <div className="flex-1">
-            <label className="mb-2 block text-sm font-medium text-gray-700">Từ ngôn ngữ</label>
+      <Card style={{ padding: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ flex: 1 }}>
+            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500, color: '#374151' }}>
+              Từ ngôn ngữ
+            </label>
             <Select value={sourceLang} onValueChange={setSourceLang}>
               <SelectTrigger>
                 <SelectValue />
@@ -70,13 +82,15 @@ export function TranslateAI() {
             variant="outline"
             size="icon"
             onClick={handleSwapLanguages}
-            className="mt-6 rounded-full"
+            style={{ marginTop: '24px', borderRadius: '9999px' }}
           >
-            <ArrowRightLeft className="h-4 w-4" />
+            <ArrowRightLeft style={{ width: '16px', height: '16px' }} />
           </Button>
 
-          <div className="flex-1">
-            <label className="mb-2 block text-sm font-medium text-gray-700">Sang ngôn ngữ</label>
+          <div style={{ flex: 1 }}>
+            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500, color: '#374151' }}>
+              Sang ngôn ngữ
+            </label>
             <Select value={targetLang} onValueChange={setTargetLang}>
               <SelectTrigger>
                 <SelectValue />
@@ -95,13 +109,17 @@ export function TranslateAI() {
       </Card>
 
       {/* Translation Area */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: window.innerWidth >= 1024 ? '1fr 1fr' : '1fr',
+        gap: '24px' 
+      }}>
         {/* Source Text */}
-        <Card className="p-6">
-          <div className="mb-3 flex items-center justify-between">
-            <h3>Văn bản gốc</h3>
+        <Card style={{ padding: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+            <h3 style={{ fontSize: '1.125rem', fontWeight: 600 }}>Văn bản gốc</h3>
             <Button variant="ghost" size="sm">
-              <Volume2 className="mr-2 h-4 w-4" />
+              <Volume2 style={{ width: '16px', height: '16px', marginRight: '8px' }} />
               Nghe
             </Button>
           </div>
@@ -109,15 +127,17 @@ export function TranslateAI() {
             value={sourceText}
             onChange={(e) => setSourceText(e.target.value)}
             placeholder="Nhập văn bản cần dịch..."
-            className="min-h-[300px] resize-none"
+            style={{ minHeight: '300px', resize: 'none' }}
           />
-          <div className="mt-3 flex items-center justify-between">
-            <span className="text-sm text-gray-500">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '12px' }}>
+            <span style={{ fontSize: '14px', color: '#6b7280' }}>
               {sourceText.length} ký tự
             </span>
             <Button
               onClick={handleTranslate}
-              className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700"
+              style={{ 
+                background: 'linear-gradient(to right, #2563eb, #0891b2)',
+              }}
             >
               Dịch ngay
             </Button>
@@ -125,38 +145,55 @@ export function TranslateAI() {
         </Card>
 
         {/* Translated Text */}
-        <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 p-6">
-          <div className="mb-3 flex items-center justify-between">
-            <h3>Bản dịch AI</h3>
-            <div className="flex gap-2">
+        <Card style={{ 
+          background: 'linear-gradient(to bottom right, #eff6ff, #ecfeff)',
+          padding: '24px' 
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+            <h3 style={{ fontSize: '1.125rem', fontWeight: 600 }}>Bản dịch AI</h3>
+            <div style={{ display: 'flex', gap: '8px' }}>
               <Button variant="ghost" size="sm">
-                <Volume2 className="mr-2 h-4 w-4" />
+                <Volume2 style={{ width: '16px', height: '16px', marginRight: '8px' }} />
                 Nghe
               </Button>
               <Button variant="ghost" size="sm" onClick={handleCopy}>
                 {copied ? (
-                  <Check className="mr-2 h-4 w-4" />
+                  <>
+                    <Check style={{ width: '16px', height: '16px', marginRight: '8px' }} />
+                    Đã sao
+                  </>
                 ) : (
-                  <Copy className="mr-2 h-4 w-4" />
+                  <>
+                    <Copy style={{ width: '16px', height: '16px', marginRight: '8px' }} />
+                    Sao chép
+                  </>
                 )}
-                {copied ? "Đã sao" : "Sao chép"}
               </Button>
             </div>
           </div>
-          <div className="min-h-[300px] rounded-lg bg-white p-4">
+          <div style={{ 
+            minHeight: '300px', 
+            borderRadius: '8px', 
+            backgroundColor: 'white', 
+            padding: '16px' 
+          }}>
             {translatedText ? (
-              <p className="text-gray-800">{translatedText}</p>
+              <p style={{ color: '#1f2937' }}>{translatedText}</p>
             ) : (
-              <p className="text-gray-400">Bản dịch sẽ xuất hiện ở đây...</p>
+              <p style={{ color: '#9ca3af' }}>Bản dịch sẽ xuất hiện ở đây...</p>
             )}
           </div>
         </Card>
       </div>
 
       {/* Quick Phrases */}
-      <Card className="p-6">
-        <h3 className="mb-4">💡 Cụm từ thông dụng</h3>
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+      <Card style={{ padding: '24px' }}>
+        <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '16px' }}>💡 Cụm từ thông dụng</h3>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: window.innerWidth >= 640 ? (window.innerWidth >= 1024 ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)') : '1fr',
+          gap: '8px' 
+        }}>
           {[
             "Xin chào, bạn khỏe không?",
             "Tôi muốn học tiếng Anh",
@@ -168,8 +205,8 @@ export function TranslateAI() {
             <Button
               key={index}
               variant="outline"
-              className="justify-start"
               onClick={() => setSourceText(phrase)}
+              style={{ justifyContent: 'flex-start', textAlign: 'left' }}
             >
               {phrase}
             </Button>

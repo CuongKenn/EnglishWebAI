@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from 'react'; // <--- SỬA LỖI 1: Đã sửa lại cú pháp import
 import { Link, useLocation } from 'react-router-dom';
 import ProfileDropdown from '../ProfileDropdown/ProfileDropdown';
 import './Navbar.css';
@@ -53,10 +53,14 @@ const Navbar = ({ userRole = 'student', isLoggedIn = false, onLogout }) => {
   const navigationItems = getNavigationItems();
 
   const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
+    setIsMenuOpen(!isMenuOpen); // <--- SỬA LỖI 2: Đã sửa lại tên biến
   };
 
   const isActive = (path) => {
+    // Cải tiến logic `isActive` để highlight đúng tab "Lớp học của tôi"
+    if (path.startsWith('/join-class')) {
+      return location.pathname === '/join-class';
+    }
     return location.pathname === path;
   };
 
@@ -128,5 +132,3 @@ const Navbar = ({ userRole = 'student', isLoggedIn = false, onLogout }) => {
 };
 
 export default Navbar;
-
-

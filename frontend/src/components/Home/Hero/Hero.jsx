@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import './Hero.css';
 
 const Hero = () => {
@@ -16,10 +17,10 @@ const Hero = () => {
             cá nhân hóa lộ trình học tập cho mọi học sinh từ lớp 1 đến lớp 12
           </p>
           <div className="hero-buttons">
-            <button className="btn-primary">
+            <Link to="/lessons" className="btn-primary">
               <i className="fas fa-rocket"></i>
               Bắt đầu học ngay
-            </button>
+            </Link>
             <button className="btn-secondary">
               <i className="fas fa-play-circle"></i>
               Xem giới thiệu
