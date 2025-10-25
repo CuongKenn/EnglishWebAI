@@ -2,49 +2,234 @@ import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { useClasses } from '../../hooks';
 import { classesAPI } from '../../services/api';
+import { BookOpen, BarChart2, Star, ChevronRight, Crown, ArrowUp, Trophy } from 'lucide-react';
 import './JoinClass.css';
+
+// --- [BẮT ĐẦU] CẬP NHẬT DỮ LIỆU MẪU ---
+const mockGradeCourses = {
+  'Lớp 1': {
+    subjects: [
+      {
+        name: 'Phonics & Vocabulary (Phát âm & Từ vựng)',
+        courses: [
+          { id: 'en1_phonics_adventure', title: 'Phonics Adventure: Học phát âm qua trò chơi', image: '/images/courses/english/g1_phonics.png', lessons: 150, resources: 45, skill: 'reading' },
+          { id: 'en1_first_words', title: 'My First 100 Words: Từ vựng cơ bản', image: '/images/courses/english/g1_vocab.png', lessons: 120, resources: 60, skill: 'reading' },
+        ]
+      },
+      {
+        name: 'Listening & Speaking (Nghe & Nói)',
+        courses: [
+          { id: 'en1_songs_stories', title: 'Sing & Learn: Học tiếng Anh qua bài hát', image: '/images/courses/english/g1_songs.png', lessons: 80, resources: 30, skill: 'listening' },
+          { id: 'en1_greetings', title: 'Hello & Friends: Luyện tập chào hỏi', image: '/images/courses/english/g1_speaking.png', lessons: 65, resources: 25, skill: 'speaking' },
+        ]
+      }
+    ]
+  },
+  'Lớp 7': {
+    subjects: [
+       {
+        name: 'General English',
+        courses: [
+          { id: 'en7_general_1', title: 'Chương trình Tiếng Anh toàn diện Lớp 7', image: '/images/courses/english/default.png', lessons: 150, resources: 50, skill: 'general' },
+          { id: 'en7_listening_master', title: 'Listening Master Class Lớp 7', image: '/images/courses/english/g6_reading.png', lessons: 80, resources: 30, skill: 'listening' },
+          { id: 'en7_speaking_flow', title: 'Speaking with Flow Lớp 7', image: '/images/courses/english/g6_speaking.png', lessons: 75, resources: 25, skill: 'speaking' },
+          { id: 'en7_reading_comp', title: 'Reading Comprehension Lớp 7', image: '/images/courses/english/g10_ielts.png', lessons: 90, resources: 40, skill: 'reading' },
+          { id: 'en7_writing_skills', title: 'Creative Writing Lớp 7', image: '/images/courses/english/g10_writing.png', lessons: 60, resources: 35, skill: 'writing' },
+        ]
+      }
+    ]
+  },
+  ...Object.fromEntries(
+    ['Mẫu giáo', 'Lớp 2', 'Lớp 3', 'Lớp 4', 'Lớp 5', 'Lớp 6', 'Lớp 8', 'Lớp 9', 'Lớp 10', 'Lớp 11', 'Lớp 12'].map(grade => [
+      grade,
+      {
+        subjects: [
+          {
+            name: 'General English',
+            courses: [
+              { id: `en_general_${grade.replace(' ', '')}`, title: `Chương trình Tiếng Anh toàn diện ${grade}`, image: '/images/courses/english/default.png', lessons: 150, resources: 50, skill: 'general' }
+            ]
+          }
+        ]
+      }
+    ])
+  )
+};
+
+const leaderboardDataWeek = [
+  { rank: 1, name: 'Đặng Quốc Bảo', score: 1599, change: 29 },
+  { rank: 2, name: 'Lê Phi Geo Phat', score: 1169, change: 40 },
+  { rank: 3, name: 'Nguyễn Hiếu Minh Hiếu', score: 1087, change: 30 },
+];
+const leaderboardDataMonth = [
+  { rank: 1, name: 'Lê Phi Geo Phat', score: 8540, change: 150 },
+  { rank: 2, name: 'Đặng Quốc Bảo', score: 7820, change: 125 },
+  { rank: 3, name: 'Trần Anh Thư', score: 6950, change: 210 },
+];
+// --- [KẾT THÚC] CẬP NHẬT DỮ LIỆU MẪU ---
 
 const JoinClass = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGrade, setSelectedGrade] = useState('all');
   const [selectedSkill, setSelectedSkill] = useState('all');
-  // Convert selectedGrade 'Lớp X' -> number for API
   const gradeNumber = selectedGrade && selectedGrade !== 'all' ? (selectedGrade.match(/\d+/)?.[0] || null) : null;
   const skillParam = selectedSkill !== 'all' ? selectedSkill : undefined;
   const { classes, loading, error, joinClass } = useClasses({ grade: gradeNumber || undefined, skill: skillParam });
   const [params] = useSearchParams();
   const navigate = useNavigate();
-  // Removed inline modal flow; navigate to class content page instead
+  
+  const selGrade = params.get('grade'); 
+  
+  const [activeSkillFilter, setActiveSkillFilter] = useState('all');
+  const skillFilters = ['all', 'listening', 'speaking', 'reading', 'writing'];
+  const filterLabels = { all: 'Tất cả', listening: 'Nghe', speaking: 'Nói', reading: 'Đọc', writing: 'Viết' };
 
-  // Initialize grade filter from query string
+  const [leaderboardPeriod, setLeaderboardPeriod] = useState('week');
+  const leaderboardData = leaderboardPeriod === 'week' ? leaderboardDataWeek : leaderboardDataMonth;
+
+  const courseDataForGrade = selGrade && mockGradeCourses[selGrade] ? mockGradeCourses[selGrade] : { subjects: [] };
+  const gradeList = ['Mẫu giáo', ...Array.from({ length: 12 }, (_, i) => `Lớp ${i + 1}`)];
+
   useEffect(() => {
     const q = params.get('grade');
     if (q) setSelectedGrade(q);
   }, [params]);
 
   const filteredClasses = classes.filter(classItem => {
-    const matchesSearch = classItem.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         classItem.teacher_name?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = classItem.name.toLowerCase().includes(searchTerm.toLowerCase()) || classItem.teacher_name?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesGrade = selectedGrade === 'all' || classItem.grade === selectedGrade;
     const matchesSkill = selectedSkill === 'all' || (classItem.skill || '').toLowerCase() === selectedSkill.toLowerCase();
-    
     return matchesSearch && matchesGrade && matchesSkill;
   });
 
   const handleJoinClass = async (classId) => {
     try {
-      // Cố gắng tham gia lớp; nếu đã tham gia hoặc có lỗi nhẹ vẫn điều hướng sang nội dung lớp
-      try {
-        await classesAPI.joinClass(classId);
-      } catch (e) {
-        // Bỏ qua lỗi "đã tham gia" hoặc tương tự; vẫn cho chuyển trang để xem nội dung nếu có quyền
-      }
+      try { await classesAPI.joinClass(classId); } catch (e) { /* Bỏ qua lỗi */ }
       navigate(`/class/${classId}/content`);
     } catch (err) {
       navigate(`/class/${classId}/content`);
     }
   };
 
+  if (selGrade) {
+    return (
+      <div className="join-class-page grade-view-layout">
+        <aside className="sidebar-left">
+          <nav className="grade-nav">
+            <ul>
+              {gradeList.map(grade => (
+                <li key={grade}>
+                  <Link to={`/join-class?grade=${encodeURIComponent(grade)}`} className={selGrade === grade ? 'active' : ''}>
+                    <BookOpen size={16} /><span>{grade}</span><ChevronRight size={16} className="chevron" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </aside>
+
+        <main className="main-content">
+          <h1 className="main-title">Các khóa học {selGrade}</h1>
+          
+          <div className="course-filters">
+            {skillFilters.map(skill => (
+              <button
+                key={skill}
+                className={`filter-skill-btn ${activeSkillFilter === skill ? 'active' : ''}`}
+                onClick={() => setActiveSkillFilter(skill)}
+              >
+                {filterLabels[skill]}
+              </button>
+            ))}
+          </div>
+
+          {courseDataForGrade.subjects.map(subject => (
+            <section key={subject.name} className="subject-section">
+              <h2 className="subject-title">{subject.name}</h2>
+              <div className="course-grid">
+                {subject.courses
+                  .filter(course => activeSkillFilter === 'all' || course.skill === activeSkillFilter || course.skill === 'general')
+                  .map(course => (
+                  <Link key={course.id} to={`/course/${course.id}`} className="course-item-card-link">
+                      <div className="course-item-card">
+                        <div className="course-image-container">
+                          <img src={course.image || '/images/courses/default.png'} alt={course.title} className="course-image" />
+                        </div>
+                        <div className="course-info">
+                          <h3 className="course-title">{course.title}</h3>
+                          <div className="course-meta">
+                            <span>{course.lessons} bài học</span><span>•</span><span>{course.resources} tài liệu</span>
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                ))}
+              </div>
+            </section>
+          ))}
+        </main>
+
+        <aside className="sidebar-right">
+          <div className="leaderboard-card redesigned">
+            <div className="leaderboard-top">
+              <div className="card-header">
+                <h4><BarChart2 size={18} /> Bảng vinh danh</h4>
+                <Link to="#" className="details-link">Chi tiết</Link>
+              </div>
+            </div>
+            
+            <div className="leaderboard-bottom">
+              <div className="leaderboard-filters">
+                <button 
+                  className={`filter-btn ${leaderboardPeriod === 'week' ? 'active' : ''}`}
+                  onClick={() => setLeaderboardPeriod('week')}
+                >
+                  Tuần này
+                </button>
+                <button 
+                  className={`filter-btn ${leaderboardPeriod === 'month' ? 'active' : ''}`}
+                  onClick={() => setLeaderboardPeriod('month')}
+                >
+                  Tháng này
+                </button>
+              </div>
+              <ul className="leaderboard-list">
+                {leaderboardData.map(user => (
+                  <li key={user.rank}>
+                    <div className="leaderboard-user-info">
+                      <div className={`rank-badge rank-${user.rank}`}>
+                        {user.rank <= 3 ? <Trophy size={16} /> : user.rank}
+                      </div>
+                      <span className="name">{user.name}</span>
+                    </div>
+                    <div className="score-col">
+                      <span className="score">{user.score}</span>
+                      <span className="change green">
+                        <ArrowUp size={12} /> (+{user.change})
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+          
+          <div className="user-profile-card redesigned">
+             <div className="user-info">
+                <div className="user-avatar">NV</div>
+                <div className="user-details">
+                  <span className="user-name">nguyễn văn hoài...</span>
+                  <span className="user-level"><Star size={12} /> Cấp 1</span>
+                </div>
+             </div>
+             <div className="user-score"><Crown size={18} /><span>0</span></div>
+          </div>
+        </aside>
+      </div>
+    );
+  }
+
+  // Giao diện mặc định (đầy đủ)
   return (
     <div className="join-class-page">
       <div className="page-header">
@@ -60,7 +245,6 @@ const JoinClass = () => {
       </div>
 
       <div className="page-content">
-        {/* Search and Filter Section */}
         <div className="search-filter-section slide-up">
           <div className="search-container">
             <div className="search-box">
@@ -107,7 +291,6 @@ const JoinClass = () => {
           </div>
         </div>
 
-        {/* Classes Grid */}
         <div className="classes-section fade-in">
           <div className="section-header">
             <h2 className="section-title">Lớp học có sẵn</h2>
@@ -190,7 +373,6 @@ const JoinClass = () => {
           )}
       </div>
     </div>
-
   </div>
   );
 };
