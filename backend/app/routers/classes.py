@@ -64,13 +64,17 @@ async def get_classes(
     query = query.offset(skip).limit(limit)
     classes_rows = query.all()
 
-    # Đếm sĩ số theo class_id (chỉ active)
+    # Đếm sĩ số theo class_id (chỉ active students)
     class_ids = [c.id for c in classes_rows]
     counts_map = {}
     if class_ids:
         counts = (
             db.query(Enrollment.class_id, func.count(Enrollment.id))
-            .filter(Enrollment.class_id.in_(class_ids), Enrollment.status == "active")
+            .filter(
+                Enrollment.class_id.in_(class_ids), 
+                Enrollment.status == "active",
+                Enrollment.role == "student"
+            )
             .group_by(Enrollment.class_id)
             .all()
         )
@@ -130,7 +134,11 @@ async def get_my_classes(
     # Count students for these classes
     counts = (
         db.query(Enrollment.class_id, func.count(Enrollment.id))
-        .filter(Enrollment.class_id.in_(class_ids), Enrollment.status == "active")
+        .filter(
+            Enrollment.class_id.in_(class_ids), 
+            Enrollment.status == "active",
+            Enrollment.role == "student"
+        )
         .group_by(Enrollment.class_id)
         .all()
     )
@@ -193,7 +201,11 @@ async def get_classes_teaching(
         if class_ids:
             counts = (
                 db.query(Enrollment.class_id, func.count(Enrollment.id))
-                .filter(Enrollment.class_id.in_(class_ids), Enrollment.status == "active")
+                .filter(
+                    Enrollment.class_id.in_(class_ids), 
+                    Enrollment.status == "active",
+                    Enrollment.role == "student"
+                )
                 .group_by(Enrollment.class_id)
                 .all()
             )
@@ -239,7 +251,8 @@ async def get_class(
     # Count students
     student_count = db.query(func.count(Enrollment.id)).filter(
         Enrollment.class_id == class_id,
-        Enrollment.status == "active"
+        Enrollment.status == "active",
+        Enrollment.role == "student"
     ).scalar()
     
     return {
@@ -293,7 +306,8 @@ async def join_class(
     if classroom.max_students:
         student_count = db.query(func.count(Enrollment.id)).filter(
             Enrollment.class_id == class_id,
-            Enrollment.status == "active"
+            Enrollment.status == "active",
+            Enrollment.role == "student"
         ).scalar()
         
         if student_count >= classroom.max_students:
