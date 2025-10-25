@@ -112,12 +112,24 @@ export function TranslateAI() {
       <div style={{ 
         display: 'grid', 
         gridTemplateColumns: window.innerWidth >= 1024 ? '1fr 1fr' : '1fr',
-        gap: '24px' 
+        gap: '24px',
+        alignItems: 'stretch'
       }}>
         {/* Source Text */}
-        <Card style={{ padding: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-            <h3 style={{ fontSize: '1.125rem', fontWeight: 600 }}>Văn bản gốc</h3>
+        <Card style={{ 
+          padding: '24px', 
+          display: 'flex', 
+          flexDirection: 'column',
+          height: '100%'
+        }}>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between', 
+            marginBottom: '12px',
+            minHeight: '32px'
+          }}>
+            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#1f2937' }}>Văn bản gốc</h3>
             <Button variant="ghost" size="sm">
               <Volume2 style={{ width: '16px', height: '16px', marginRight: '8px' }} />
               Nghe
@@ -127,9 +139,18 @@ export function TranslateAI() {
             value={sourceText}
             onChange={(e) => setSourceText(e.target.value)}
             placeholder="Nhập văn bản cần dịch..."
-            style={{ minHeight: '300px', resize: 'none' }}
+            style={{ 
+              height: '380px',
+              resize: 'none'
+            }}
           />
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '12px' }}>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between', 
+            marginTop: '12px',
+            minHeight: '36px'
+          }}>
             <span style={{ fontSize: '14px', color: '#6b7280' }}>
               {sourceText.length} ký tự
             </span>
@@ -147,10 +168,19 @@ export function TranslateAI() {
         {/* Translated Text */}
         <Card style={{ 
           background: 'linear-gradient(to bottom right, #eff6ff, #ecfeff)',
-          padding: '24px' 
+          padding: '24px',
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100%'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-            <h3 style={{ fontSize: '1.125rem', fontWeight: 600 }}>Bản dịch AI</h3>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between', 
+            marginBottom: '12px',
+            minHeight: '32px'
+          }}>
+            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#1f2937' }}>Bản dịch AI</h3>
             <div style={{ display: 'flex', gap: '8px' }}>
               <Button variant="ghost" size="sm">
                 <Volume2 style={{ width: '16px', height: '16px', marginRight: '8px' }} />
@@ -172,17 +202,21 @@ export function TranslateAI() {
             </div>
           </div>
           <div style={{ 
-            minHeight: '300px', 
+            height: '380px',
             borderRadius: '8px', 
             backgroundColor: 'white', 
-            padding: '16px' 
+            padding: '16px',
+            overflowY: 'auto',
+            border: '1px solid #e5e7eb'
           }}>
             {translatedText ? (
-              <p style={{ color: '#1f2937' }}>{translatedText}</p>
+              <p style={{ color: '#1f2937', lineHeight: '1.6', margin: 0 }}>{translatedText}</p>
             ) : (
-              <p style={{ color: '#9ca3af' }}>Bản dịch sẽ xuất hiện ở đây...</p>
+              <p style={{ color: '#9ca3af', margin: 0 }}>Bản dịch sẽ xuất hiện ở đây...</p>
             )}
           </div>
+          {/* Empty div to match source card's bottom spacing */}
+          <div style={{ minHeight: '48px', marginTop: '12px' }}></div>
         </Card>
       </div>
 

@@ -1,73 +1,110 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "../ui/button";
 import { Card } from "../ui/card";
 import { Badge } from "../ui/badge";
-import { BookOpen, Timer, CheckCircle2, XCircle } from "lucide-react";
+import { BookOpen, Timer, CheckCircle2, XCircle, RefreshCw } from "lucide-react";
 import { Progress } from "../ui/progress";
+import { getReadingPassage, submitReadingAnswers } from "../../services/aiService";
 
 export function ReadingAI() {
+  const [selectedLevel, setSelectedLevel] = useState("advanced");
+  const [passage, setPassage] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [selectedAnswers, setSelectedAnswers] = useState({});
   const [showResults, setShowResults] = useState(false);
   const [timeLeft, setTimeLeft] = useState(600); // 10 minutes
+  const [startTime, setStartTime] = useState(null);
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
 
-  const passage = {
-    title: "The Future of Artificial Intelligence in Education",
-    level: "Advanced",
-    timeLimit: "10 minutes",
-    content: `
-      Artificial Intelligence (AI) is revolutionizing the education sector in unprecedented ways. From personalized learning experiences to automated grading systems, AI is transforming how students learn and teachers teach. 
+  // Load passage khi component mount hoặc khi level thay đổi
+  useEffect(() => {
+    loadPassage(selectedLevel);
+  }, [selectedLevel]);
 
-      One of the most significant impacts of AI in education is the ability to provide personalized learning paths. Traditional classroom settings often struggle to cater to individual student needs, but AI-powered systems can analyze a student's learning style, pace, and preferences to create customized educational content. This adaptive learning approach ensures that each student receives instruction tailored to their specific requirements.
+  // Timer countdown
+  useEffect(() => {
+    if (!isTimerRunning || timeLeft <= 0) return;
 
-      Moreover, AI is enabling new forms of assessment and feedback. Automated grading systems can now evaluate not just multiple-choice questions but also essays and complex problem-solving tasks. These systems provide instant feedback, allowing students to learn from their mistakes immediately rather than waiting days or weeks for teacher feedback.
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          setIsTimerRunning(false);
+          handleSubmit(); // Auto submit khi hết thời gian
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
 
-      However, the integration of AI in education also raises important questions about data privacy, the role of human teachers, and ensuring equal access to these technologies. As we move forward, it will be crucial to address these concerns while harnessing the benefits of AI to create more effective and inclusive educational environments.
-    `,
-    questions: [
-      {
-        question: "What is the main idea of the passage?",
-        options: [
-          "AI is replacing human teachers in classrooms",
-          "AI is transforming education through personalization and automation",
-          "Traditional education is better than AI-powered learning",
-          "AI can only grade multiple-choice questions",
-        ],
-        correct: 1,
-      },
-      {
-        question: "According to the passage, how does AI help with personalized learning?",
-        options: [
-          "By creating the same content for all students",
-          "By analyzing student learning styles and creating customized content",
-          "By replacing teachers with robots",
-          "By making classes smaller",
-        ],
-        correct: 1,
-      },
-      {
-        question: "What concern about AI in education is mentioned in the passage?",
-        options: [
-          "AI is too expensive",
-          "AI makes learning too easy",
-          "Questions about data privacy and equal access",
-          "AI cannot understand human language",
-        ],
-        correct: 2,
-      },
-    ],
+    return () => clearInterval(timer);
+  }, [isTimerRunning, timeLeft]);
+
+  const loadPassage = async (level) => {
+    setLoading(true);
+    try {
+      const data = await getReadingPassage(level);
+      setPassage(data);
+      setSelectedAnswers({});
+      setShowResults(false);
+      setTimeLeft(600);
+      setStartTime(Date.now());
+      setIsTimerRunning(true);
+    } catch (error) {
+      console.error("Error loading passage:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSubmit = () => {
+  const handleLevelChange = (level) => {
+    setSelectedLevel(level);
+  };
+
+  const handleSubmit = async () => {
+    setIsTimerRunning(false);
     setShowResults(true);
+    
+    // Nếu có API backend, gửi kết quả lên
+    if (passage && passage.id) {
+      try {
+        await submitReadingAnswers(passage.id, selectedAnswers);
+      } catch (error) {
+        console.error("Error submitting answers:", error);
+      }
+    }
   };
 
   const calculateScore = () => {
+    if (!passage) return 0;
     let correct = 0;
     passage.questions.forEach((q, index) => {
       if (selectedAnswers[index] === q.correct) correct++;
     });
-    return (correct / passage.questions.length) * 100;
+    return Math.round((correct / passage.questions.length) * 100);
   };
+
+  const resetExercise = () => {
+    loadPassage(selectedLevel);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex h-96 items-center justify-center">
+        <div className="text-center">
+          <RefreshCw className="mx-auto h-12 w-12 animate-spin text-indigo-600" />
+          <p className="mt-4 text-gray-600">Đang tải bài đọc...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!passage) {
+    return (
+      <div className="flex h-96 items-center justify-center">
+        <p className="text-gray-600">Không thể tải bài đọc. Vui lòng thử lại.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -84,29 +121,56 @@ export function ReadingAI() {
       </div>
 
       {/* Level Selection */}
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Card className="border-2 p-4 hover:border-indigo-500 hover:bg-indigo-50">
-          <div className="text-center">
-            <div className="mb-2 text-3xl">📘</div>
-            <p className="font-medium">Beginner</p>
-            <p className="text-xs text-gray-500">100-150 từ</p>
-          </div>
-        </Card>
-        <Card className="border-2 p-4 hover:border-indigo-500 hover:bg-indigo-50">
-          <div className="text-center">
-            <div className="mb-2 text-3xl">📗</div>
-            <p className="font-medium">Intermediate</p>
-            <p className="text-xs text-gray-500">200-300 từ</p>
-          </div>
-        </Card>
-        <Card className="border-2 border-indigo-500 bg-indigo-50 p-4">
-          <div className="text-center">
-            <div className="mb-2 text-3xl">📕</div>
-            <p className="font-medium">Advanced</p>
-            <p className="text-xs text-gray-500">300-500 từ</p>
-          </div>
-        </Card>
-      </div>
+      <Card className="p-6">
+        <p className="mb-4 font-semibold text-gray-900">Chọn cấp độ của bạn:</p>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <button
+            onClick={() => handleLevelChange("beginner")}
+            disabled={loading}
+            className={`rounded-xl border-2 p-4 transition-all ${
+              selectedLevel === "beginner"
+                ? "border-indigo-500 bg-indigo-50 shadow-md"
+                : "border-gray-200 bg-white hover:border-indigo-300 hover:bg-indigo-50"
+            }`}
+          >
+            <div className="text-center">
+              <div className="mb-2 text-3xl">📘</div>
+              <p className="font-semibold text-gray-900">Beginner</p>
+              <p className="text-xs text-gray-600">100-150 từ</p>
+            </div>
+          </button>
+          <button
+            onClick={() => handleLevelChange("intermediate")}
+            disabled={loading}
+            className={`rounded-xl border-2 p-4 transition-all ${
+              selectedLevel === "intermediate"
+                ? "border-indigo-500 bg-indigo-50 shadow-md"
+                : "border-gray-200 bg-white hover:border-indigo-300 hover:bg-indigo-50"
+            }`}
+          >
+            <div className="text-center">
+              <div className="mb-2 text-3xl">📗</div>
+              <p className="font-semibold text-gray-900">Intermediate</p>
+              <p className="text-xs text-gray-600">200-300 từ</p>
+            </div>
+          </button>
+          <button
+            onClick={() => handleLevelChange("advanced")}
+            disabled={loading}
+            className={`rounded-xl border-2 p-4 transition-all ${
+              selectedLevel === "advanced"
+                ? "border-indigo-500 bg-indigo-50 shadow-md"
+                : "border-gray-200 bg-white hover:border-indigo-300 hover:bg-indigo-50"
+            }`}
+          >
+            <div className="text-center">
+              <div className="mb-2 text-3xl">📕</div>
+              <p className="font-semibold text-gray-900">Advanced</p>
+              <p className="text-xs text-gray-600">300-500 từ</p>
+            </div>
+          </button>
+        </div>
+      </Card>
 
       {/* Reading Passage */}
       <Card className="overflow-hidden">
@@ -138,9 +202,9 @@ export function ReadingAI() {
         </div>
 
         <div className="p-6">
-          <div className="prose max-w-none rounded-lg bg-gradient-to-br from-indigo-50 to-blue-50 p-6">
+          <div className="prose max-w-none rounded-xl bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50 p-6 shadow-inner">
             {passage.content.split('\n\n').map((paragraph, index) => (
-              <p key={index} className="mb-4 leading-relaxed text-gray-800 last:mb-0">
+              <p key={index} className="mb-4 leading-relaxed text-gray-900 last:mb-0">
                 {paragraph.trim()}
               </p>
             ))}
@@ -244,16 +308,25 @@ export function ReadingAI() {
               </div>
             </div>
 
-            <div className="mt-6 text-center">
+            <div className="mt-6 flex justify-center gap-3">
+              <Button
+                onClick={resetExercise}
+                className="bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700"
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Làm bài mới
+              </Button>
               <Button
                 onClick={() => {
                   setSelectedAnswers({});
                   setShowResults(false);
                   setTimeLeft(600);
+                  setStartTime(Date.now());
+                  setIsTimerRunning(true);
                 }}
                 variant="outline"
               >
-                Làm bài mới
+                Làm lại bài này
               </Button>
             </div>
           </div>

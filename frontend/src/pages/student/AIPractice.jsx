@@ -34,7 +34,7 @@ export default function AIPractice() {
     <div className="ai-practice-container">
       <AISidebar activeTab={activeTab} onTabChange={setActiveTab} />
       <main className="ai-practice-content">
-        <div className="container mx-auto px-6 py-8">
+        <div className="container mx-auto px-6 py-8" style={{ maxWidth: '100%', overflowX: 'hidden' }}>
           {renderContent()}
         </div>
       </main>
