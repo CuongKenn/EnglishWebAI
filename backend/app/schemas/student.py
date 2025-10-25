@@ -330,6 +330,11 @@ class NewsListResponse(BaseModel):
     category: str
     date: str
     image: Optional[str]
+    views: Optional[int] = 0
+    likes: Optional[int] = 0
+    reading_time: Optional[int] = 5
+    author_name: Optional[str] = "Admin"
+    author_role: Optional[str] = "admin"
 
     class Config:
         from_attributes = True

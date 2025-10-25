@@ -7,6 +7,7 @@ import authService from '../../../services/authService';
 // Import teacher pages
 import ClassManagement from '../ClassManagement/ClassManagement';
 import MaterialsManagement from '../MaterialsManagement/MaterialsManagement';
+import ManageNews from '../ManageNews/ManageNews';
 import QuestionBank from '../QuestionBank/QuestionBank';
 import AssignmentsTests from '../AssignmentsTests/AssignmentsTests';
 import GradingFeedback from '../GradingFeedback/GradingFeedback';
@@ -127,6 +128,15 @@ const TeacherDashboardNew = () => {
                   <span className="link-text">Ngân hàng câu hỏi</span>
                 </Link>
               </li>
+              <li className="sidebar-menu-item">
+                <Link 
+                  to="/teacher-dashboard/news" 
+                  className={`sidebar-link ${isActive('/teacher-dashboard/news') ? 'active' : ''}`}
+                >
+                  <span className="link-icon">📰</span>
+                  <span className="link-text">Tin tức & Bài viết</span>
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -216,6 +226,7 @@ const TeacherDashboardNew = () => {
             <Route path="/overview" element={<TeacherOverview />} />
             <Route path="/classes" element={<ClassManagement />} />
             <Route path="/materials" element={<MaterialsManagement />} />
+            <Route path="/news" element={<ManageNews />} />
             <Route path="/question-bank" element={<QuestionBank />} />
             <Route path="/assignments" element={<AssignmentsTests />} />
             <Route path="/grading" element={<GradingFeedback />} />
