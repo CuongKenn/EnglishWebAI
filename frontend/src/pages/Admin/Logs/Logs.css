@@ -1,0 +1,44 @@
+.logs-container {
+  padding: 24px;
+}
+
+.logs-header {
+  margin-bottom: 32px;
+}
+
+.logs-header h2 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 8px;
+}
+
+.logs-header p {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.coming-soon-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  text-align: center;
+}
+
+.coming-soon-icon {
+  font-size: 80px;
+  margin-bottom: 20px;
+}
+
+.coming-soon-content h3 {
+  font-size: 24px;
+  color: #1f2937;
+  margin-bottom: 10px;
+}
+
+.coming-soon-content p {
+  font-size: 16px;
+  color: #6b7280;
+}

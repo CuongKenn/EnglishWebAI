@@ -34,7 +34,6 @@ Thumbs.db
 
 # Logs
 *.log
-logs/
 
 # Database
 *.sqlite
