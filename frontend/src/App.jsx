@@ -16,6 +16,7 @@ import Exercises from './pages/Exercises/Exercises';
 import News from './pages/News/News';
 import Lessons from './pages/Lessons/Lessons';
 import ClassContent from './pages/ClassContent/ClassContent';
+import AIPractice from './pages/student/AIPractice';
 
 // Import Admin Pages
 import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute';
@@ -142,6 +143,14 @@ function App() {
         element={
           <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
             <Materials />
+          </Layout>
+        } 
+      />
+      <Route 
+        path="/ai-practice" 
+        element={
+          <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+            <AIPractice />
           </Layout>
         } 
       />

@@ -13,7 +13,7 @@ const Navbar = ({ userRole = 'student', isLoggedIn = false, onLogout }) => {
       { path: '/lessons', label: 'Học bài' },
       { path: '/news', label: 'Tin tức' },
       { path: '/join-class', label: 'Lớp học của tôi' },
-      { path: '/materials', label: 'Học liệu cơ bản' },
+      { path: '/ai-practice', label: 'Thực hành AI' },
       { path: '/exercises', label: 'Làm bài tập' },
       { path: '/discussion', label: 'Hỏi đáp' }
     ];
