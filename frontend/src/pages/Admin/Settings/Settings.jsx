@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Settings.css';
+import { adminAPI } from '../../../services/api';
 
 const Settings = () => {
   const [settings, setSettings] = useState({
@@ -17,6 +18,40 @@ const Settings = () => {
   });
 
   const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const data = await adminAPI.getSystemSettings();
+      
+      // Map backend settings to frontend format
+      setSettings({
+        siteName: data.site_name || 'English AI',
+        siteEmail: data.email_from || 'admin@englishai.com',
+        maintenanceMode: data.maintenance_mode || false,
+        allowRegistration: data.registration_enabled ?? true,
+        requireEmailVerification: data.email_verification_required || false,
+        maxStudentsPerClass: data.max_students_per_class || 40,
+        sessionTimeout: 30, // TODO: Add to backend
+        enableNotifications: data.notification_enabled ?? true,
+        enableFileUpload: true, // TODO: Add to backend
+        maxFileSize: data.max_file_size_mb || 10,
+        allowedFileTypes: data.allowed_file_types || 'pdf,doc,docx,txt,jpg,png',
+      });
+    } catch (e) {
+      console.error('Failed to load settings:', e);
+      setError('Không thể tải cấu hình hệ thống');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -26,32 +61,71 @@ const Settings = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO: Save to backend
-    console.log('Saving settings:', settings);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
-  };
-
-  const handleReset = () => {
-    if (window.confirm('Bạn có chắc muốn khôi phục cài đặt mặc định?')) {
-      // Reset to defaults
-      setSettings({
-        siteName: 'English AI',
-        siteEmail: 'admin@englishai.com',
-        maintenanceMode: false,
-        allowRegistration: true,
-        requireEmailVerification: true,
-        maxStudentsPerClass: 40,
-        sessionTimeout: 30,
-        enableNotifications: true,
-        enableFileUpload: true,
-        maxFileSize: 10,
-        allowedFileTypes: 'pdf,doc,docx,txt,jpg,png',
-      });
+    
+    try {
+      setLoading(true);
+      setError('');
+      
+      // Map frontend settings to backend format
+      const backendSettings = {
+        site_name: settings.siteName,
+        email_from: settings.siteEmail,
+        maintenance_mode: settings.maintenanceMode,
+        registration_enabled: settings.allowRegistration,
+        email_verification_required: settings.requireEmailVerification,
+        max_students_per_class: parseInt(settings.maxStudentsPerClass),
+        notification_enabled: settings.enableNotifications,
+        max_file_size_mb: parseInt(settings.maxFileSize),
+        allowed_file_types: settings.allowedFileTypes,
+      };
+      
+      await adminAPI.updateSystemSettings(backendSettings);
+      
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (e) {
+      console.error('Failed to save settings:', e);
+      setError('Không thể lưu cấu hình. Vui lòng thử lại.');
+    } finally {
+      setLoading(false);
     }
   };
+
+  const handleReset = async () => {
+    if (window.confirm('Bạn có chắc muốn khôi phục cài đặt mặc định?')) {
+      try {
+        setLoading(true);
+        setError('');
+        
+        // Initialize default settings on backend
+        await adminAPI.initializeDefaultSettings();
+        
+        // Reload settings
+        await loadSettings();
+        
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+      } catch (e) {
+        console.error('Failed to reset settings:', e);
+        setError('Không thể khôi phục cài đặt mặc định');
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  if (loading && !settings.siteName) {
+    return (
+      <div className="settings-container">
+        <div className="loading-state">
+          <div className="spinner"></div>
+          <p>Đang tải cấu hình...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="settings-container">
@@ -66,6 +140,12 @@ const Settings = () => {
           </div>
         )}
       </div>
+
+      {error && (
+        <div className="error-notification">
+          ❌ {error}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="settings-form">
         {/* General Settings */}
@@ -234,11 +314,11 @@ const Settings = () => {
 
         {/* Action Buttons */}
         <div className="settings-actions">
-          <button type="button" onClick={handleReset} className="btn-secondary">
+          <button type="button" onClick={handleReset} className="btn-secondary" disabled={loading}>
             🔄 Khôi phục mặc định
           </button>
-          <button type="submit" className="btn-primary">
-            💾 Lưu cài đặt
+          <button type="submit" className="btn-primary" disabled={loading}>
+            {loading ? '⏳ Đang lưu...' : '💾 Lưu cài đặt'}
           </button>
         </div>
       </form>

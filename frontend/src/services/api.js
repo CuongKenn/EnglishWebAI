@@ -777,6 +777,91 @@ export const adminAPI = {
       throw error.response ? error.response.data : error;
     }
   },
+
+  // System Settings
+  getSystemSettings: async () => {
+    try {
+      const response = await apiClient.get('/api/v1/admin/settings');
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  updateSystemSettings: async (settings) => {
+    try {
+      const response = await apiClient.put('/api/v1/admin/settings', settings);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  initializeDefaultSettings: async () => {
+    try {
+      const response = await apiClient.post('/api/v1/admin/settings/initialize');
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // System Config (Low-level)
+  getAllSystemConfigs: async (publicOnly = false) => {
+    try {
+      const response = await apiClient.get('/api/v1/admin/system-config', {
+        params: { public_only: publicOnly }
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  getSystemConfigByKey: async (key) => {
+    try {
+      const response = await apiClient.get(`/api/v1/admin/system-config/${key}`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  createSystemConfig: async (configData) => {
+    try {
+      const response = await apiClient.post('/api/v1/admin/system-config', configData);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  updateSystemConfig: async (key, configData) => {
+    try {
+      const response = await apiClient.put(`/api/v1/admin/system-config/${key}`, configData);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  deleteSystemConfig: async (key) => {
+    try {
+      const response = await apiClient.delete(`/api/v1/admin/system-config/${key}`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  bulkUpdateSystemConfigs: async (configs) => {
+    try {
+      const response = await apiClient.post('/api/v1/admin/system-config/bulk-update', { configs });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
 };
 
 // Export default apiClient for custom requests

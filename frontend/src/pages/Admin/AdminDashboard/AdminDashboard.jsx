@@ -144,7 +144,10 @@ const AdminDashboard = () => {
             <div className="nav-section-title">Cài đặt</div>
             <ul className="sidebar-menu">
               <li className="sidebar-menu-item">
-                <Link to="/admin-dashboard/settings" className="sidebar-link">
+                <Link 
+                  to="/admin-dashboard/settings" 
+                  className={`sidebar-link ${isActive('/admin-dashboard/settings') ? 'active' : ''}`}
+                >
                   <span className="link-icon">⚙️</span>
                   <span className="link-text">Cấu hình hệ thống</span>
                 </Link>

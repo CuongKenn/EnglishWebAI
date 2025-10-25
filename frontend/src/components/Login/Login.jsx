@@ -251,7 +251,7 @@ const Login = ({ onLogin }) => {
             )}
 
             <form onSubmit={handleSubmit} className="space-form">
-              {/* Username Input */}
+              {/* Username or Email Input */}
               <div className="input-container">
                 <div className="input-icon">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -262,12 +262,13 @@ const Login = ({ onLogin }) => {
                 <input
                   type="text"
                   name="username"
-                  placeholder="Username"
+                  placeholder="Username or Email"
                   value={formData.username}
                   onChange={handleInputChange}
                   required
                   className="space-input"
                 />
+               
               </div>
 
               {/* Password Input */}

@@ -10,7 +10,12 @@ from app.schemas.admin import (
     AdminClassOut, AdminClassCreate, AdminClassUpdate,
     AdminTeacherOut, AdminOverviewStats
 )
+from app.schemas.system_config import (
+    SystemConfigOut, SystemConfigCreate, SystemConfigUpdate,
+    SystemSettingsOut, SystemSettingsUpdate, SystemConfigBulkUpdate
+)
 from app.services.admin_service import AdminService
+from app.services.system_config_service import SystemConfigService
 
 
 router = APIRouter()
@@ -140,3 +145,106 @@ def admin_overview_stats(
 ):
     return AdminService.overview_stats(db)
 
+
+# -------- System Configuration --------
+@router.get("/system-config", response_model=List[SystemConfigOut])
+def get_all_system_configs(
+    public_only: bool = Query(False),
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_admin_user),
+):
+    """Get all system configurations"""
+    return SystemConfigService.get_all_configs(db, public_only=public_only)
+
+
+@router.get("/system-config/{key}", response_model=SystemConfigOut)
+def get_system_config_by_key(
+    key: str,
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_admin_user),
+):
+    """Get a specific configuration by key"""
+    config = SystemConfigService.get_config_by_key(db, key)
+    if not config:
+        raise HTTPException(status_code=404, detail=f"Configuration '{key}' not found")
+    return config
+
+
+@router.post("/system-config", response_model=SystemConfigOut)
+def create_system_config(
+    config_data: SystemConfigCreate,
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_admin_user),
+):
+    """Create a new system configuration"""
+    existing = SystemConfigService.get_config_by_key(db, config_data.key)
+    if existing:
+        raise HTTPException(status_code=400, detail=f"Configuration '{config_data.key}' already exists")
+    return SystemConfigService.create_config(db, config_data)
+
+
+@router.put("/system-config/{key}", response_model=SystemConfigOut)
+def update_system_config(
+    key: str,
+    config_data: SystemConfigUpdate,
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_admin_user),
+):
+    """Update an existing configuration"""
+    config = SystemConfigService.update_config(db, key, config_data)
+    if not config:
+        raise HTTPException(status_code=404, detail=f"Configuration '{key}' not found")
+    return config
+
+
+@router.delete("/system-config/{key}")
+def delete_system_config(
+    key: str,
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_admin_user),
+):
+    """Delete a configuration"""
+    success = SystemConfigService.delete_config(db, key)
+    if not success:
+        raise HTTPException(status_code=404, detail=f"Configuration '{key}' not found")
+    return {"message": f"Configuration '{key}' deleted successfully"}
+
+
+@router.post("/system-config/bulk-update", response_model=List[SystemConfigOut])
+def bulk_update_system_configs(
+    bulk_data: SystemConfigBulkUpdate,
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_admin_user),
+):
+    """Bulk update configurations"""
+    return SystemConfigService.bulk_update(db, bulk_data.configs)
+
+
+# -------- System Settings (Grouped) --------
+@router.get("/settings", response_model=SystemSettingsOut)
+def get_system_settings(
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_admin_user),
+):
+    """Get all system settings as a structured object"""
+    return SystemConfigService.get_all_settings(db)
+
+
+@router.put("/settings", response_model=SystemSettingsOut)
+def update_system_settings(
+    settings: SystemSettingsUpdate,
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_admin_user),
+):
+    """Update system settings"""
+    return SystemConfigService.update_settings(db, settings)
+
+
+@router.post("/settings/initialize")
+def initialize_default_settings(
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_admin_user),
+):
+    """Initialize default system settings"""
+    SystemConfigService.initialize_default_configs(db)
+    return {"message": "Default settings initialized successfully"}
