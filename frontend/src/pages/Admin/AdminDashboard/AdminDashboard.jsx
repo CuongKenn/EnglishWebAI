@@ -7,10 +7,12 @@ import authService from '../../../services/authService';
 // Import admin pages
 import ManageAccounts from '../ManageAccounts/ManageAccounts';
 import ManageClasses from '../ManageClasses/ManageClasses';
+import ManageNews from '../ManageNews/ManageNews';
 import OverviewStats from '../OverviewStats/OverviewStats';
 import Settings from '../Settings/Settings';
 import Backup from '../Backup/Backup';
 import Logs from '../Logs/Logs';
+
 
 const AdminDashboard = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -105,6 +107,22 @@ const AdminDashboard = () => {
             </ul>
           </div>
 
+          {/* QUẢN LÝ NỘI DUNG */}
+          <div className="nav-section">
+            <div className="nav-section-title">Quản lý nội dung</div>
+            <ul className="sidebar-menu">
+              <li className="sidebar-menu-item">
+                <Link 
+                  to="/admin-dashboard/manage-news" 
+                  className={`sidebar-link ${isActive('/admin-dashboard/manage-news') ? 'active' : ''}`}
+                >
+                  <span className="link-icon">📰</span>
+                  <span className="link-text">Tin tức & Thông báo</span>
+                </Link>
+              </li>
+            </ul>
+          </div>
+
           {/* THỐNG KÊ VÀ BÁO CÁO */}
           <div className="nav-section">
             <div className="nav-section-title">Thống kê và báo cáo</div>
@@ -157,6 +175,7 @@ const AdminDashboard = () => {
             <Route path="/" element={<Navigate to="overview-stats" replace />} />
             <Route path="/manage-accounts" element={<ManageAccounts />} />
             <Route path="/manage-classes" element={<ManageClasses />} />
+            <Route path="/manage-news" element={<ManageNews />} />
             <Route path="/overview-stats" element={<OverviewStats />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/backup" element={<Backup />} />

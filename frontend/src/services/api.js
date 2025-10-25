@@ -583,7 +583,7 @@ export const discussionsAPI = {
 
 // ==================== News APIs ====================
 export const newsAPI = {
-  // Lấy danh sách tin tức
+  // Lấy danh sách tin tức (public)
   getNews: async (params = {}) => {
     try {
       const response = await apiClient.get('/api/v1/news/', { params });
@@ -597,6 +597,46 @@ export const newsAPI = {
   getNewsDetail: async (newsId) => {
     try {
       const response = await apiClient.get(`/api/v1/news/${newsId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Lấy tất cả tin tức cho quản lý (admin/teacher)
+  getAllNewsForManagement: async () => {
+    try {
+      const response = await apiClient.get('/api/v1/news/manage/all');
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Tạo tin tức mới (admin/teacher)
+  createNews: async (newsData) => {
+    try {
+      const response = await apiClient.post('/api/v1/news/', newsData);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Cập nhật tin tức (admin/teacher)
+  updateNews: async (newsId, newsData) => {
+    try {
+      const response = await apiClient.put(`/api/v1/news/${newsId}`, newsData);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Xóa tin tức (admin/teacher)
+  deleteNews: async (newsId) => {
+    try {
+      const response = await apiClient.delete(`/api/v1/news/${newsId}`);
       return response.data;
     } catch (error) {
       throw error.response ? error.response.data : error;

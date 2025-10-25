@@ -19,83 +19,44 @@ async def get_news(
     db: Session = Depends(get_db)
 ):
     """
-    Lấy danh sách tin tức và sự kiện
+    Lấy danh sách tin tức và sự kiện - Trả về từ database
     """
-    # Mock data matching frontend expectations
-    mock_news = [
-        {
-            "id": 1,
-            "title": "🎉 Mua VIP tặng ngay Bộ đề ôn tập kiểm tra giữa kỳ I",
-            "description": "Bộ đề ôn tập kiểm tra giữa kỳ giúp học sinh ôn tập hiệu quả và giáo viên xây dựng đề thi dễ dàng.",
-            "content": "Chương trình ưu đãi đặc biệt trong tháng 10! Khi mua gói VIP, bạn sẽ nhận được hoàn toàn miễn phí bộ đề ôn tập kiểm tra giữa kỳ I với đầy đủ các môn học.",
-            "icon": "🎁",
-            "type": "promotion",
-            "category": "Khuyến mãi",
-            "date": "15/10/2025",
-            "image": "https://via.placeholder.com/600x400/667eea/ffffff?text=VIP+Promotion"
-        },
-        {
-            "id": 2,
-            "title": "🔥 Chỉ còn ít tuổi! Giải pháp bứt phá điểm kiểm tra cho con",
-            "description": "Phương pháp học thông minh giúp con tiến bộ vượt bậc trong thời gian ngắn với công nghệ AI cá nhân hóa.",
-            "content": "Hệ thống AI của chúng tôi sẽ phân tích điểm mạnh, điểm yếu của từng học sinh và đưa ra lộ trình học tập phù hợp nhất.",
-            "icon": "🚀",
-            "type": "tips",
-            "category": "Học tập",
-            "date": "12/10/2025",
-            "image": "https://via.placeholder.com/600x400/764ba2/ffffff?text=Study+Tips"
-        },
-        {
-            "id": 3,
-            "title": "📚 Hướng dẫn tham gia lớp học trực tuyến năm 2025-2026",
-            "description": "Hướng dẫn chi tiết cách tham gia lớp học trực tuyến, sử dụng các tính năng học tập hiệu quả.",
-            "content": "Video hướng dẫn từng bước để phụ huynh và học sinh có thể dễ dàng tham gia vào lớp học trực tuyến.",
-            "icon": "📖",
-            "type": "guide",
-            "category": "Hướng dẫn",
-            "date": "10/10/2025",
-            "image": "https://via.placeholder.com/600x400/f093fb/ffffff?text=Online+Class"
-        },
-        {
-            "id": 4,
-            "title": "🏆 Đấu trường Trí thức 2025 - 2026 chính thức trở lại!",
-            "description": "Cuộc thi tri thức lớn nhất năm dành cho học sinh trên toàn quốc với nhiều giải thưởng hấp dẫn.",
-            "content": "Cuộc thi với tổng giá trị giải thưởng lên đến 100 triệu đồng. Đăng ký ngay hôm nay!",
-            "icon": "🎯",
-            "type": "event",
-            "category": "Sự kiện",
-            "date": "08/10/2025",
-            "image": "https://via.placeholder.com/600x400/4facfe/ffffff?text=Contest+2025"
-        },
-        {
-            "id": 5,
-            "title": "✨ Ra mắt tính năng AI Speaking Coach",
-            "description": "Luyện phát âm tiếng Anh với trợ lý AI thông minh, nhận phản hồi tức thì về cách phát âm của bạn.",
-            "content": "Tính năng mới cho phép học sinh luyện tập phát âm với AI, nhận được đánh giá chi tiết về độ chính xác.",
-            "icon": "🎤",
-            "type": "feature",
-            "category": "Tính năng mới",
-            "date": "05/10/2025",
-            "image": "https://via.placeholder.com/600x400/00f2fe/ffffff?text=AI+Speaking"
-        },
-        {
-            "id": 6,
-            "title": "📅 Lịch thi học kỳ I năm học 2025-2026",
-            "description": "Công bố lịch thi chính thức cho học kỳ I, các em học sinh cần lưu ý và chuẩn bị kỹ càng.",
-            "content": "Kỳ thi giữa kỳ I sẽ diễn ra từ ngày 15/11 - 20/11/2025. Kỳ thi cuối kỳ từ 20/12 - 25/12/2025.",
-            "icon": "📆",
-            "type": "announcement",
-            "category": "Thông báo",
-            "date": "01/10/2025",
-            "image": "https://via.placeholder.com/600x400/a18cd1/ffffff?text=Exam+Schedule"
-        }
-    ]
+    query = db.query(NewsPost).filter(NewsPost.status == "published")
     
-    # Filter by category
+    # Filter by category if provided
     if category and category != "all":
-        return [news for news in mock_news if news["category"] == category]
+        query = query.filter(NewsPost.category == category)
     
-    return mock_news
+    # Order by published_at descending (newest first)
+    query = query.order_by(desc(NewsPost.published_at))
+    
+    # Apply pagination
+    news_posts = query.offset(skip).limit(limit).all()
+    
+    # Transform to response format
+    result = []
+    for news in news_posts:
+        # Get author info
+        author = db.query(User).filter(User.id == news.author_id).first() if news.author_id else None
+        
+        result.append({
+            "id": news.id,
+            "title": news.title,
+            "description": news.description or "",
+            "content": news.content,
+            "icon": news.icon or "📰",
+            "type": news.type,
+            "category": news.category,
+            "date": news.published_at.strftime("%d/%m/%Y") if news.published_at else news.created_at.strftime("%d/%m/%Y"),
+            "image": news.image,
+            "views": news.views,
+            "likes": news.likes,
+            "reading_time": news.reading_time,
+            "author_name": author.full_name if author else "Admin",
+            "author_role": author.role.value if author else "admin"
+        })
+    
+    return result
 
 @router.get("/{news_id}", response_model=NewsPostResponse)
 async def get_news_detail(
@@ -135,10 +96,20 @@ async def create_news(
             detail="Chỉ giáo viên và admin mới có thể tạo tin tức"
         )
     
+    # Calculate reading time based on content length (approx 200 words per minute)
+    word_count = len(news_data.content.split())
+    reading_time = max(1, round(word_count / 200))
+    
     news = NewsPost(
         title=news_data.title,
+        description=news_data.description,
         content=news_data.content,
         author_id=current_user.id,
+        category=news_data.category,
+        icon=news_data.icon,
+        type=news_data.type,
+        image=news_data.image,
+        reading_time=reading_time,
         status=news_data.status,
         published_at=datetime.now() if news_data.status == "published" else None
     )
@@ -216,3 +187,53 @@ async def delete_news(
     db.commit()
     
     return {"message": "Đã xóa tin tức thành công"}
+
+# ===================== Admin/Teacher Management =====================
+
+@router.get("/manage/all")
+async def get_all_news_for_management(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Lấy tất cả tin tức cho quản lý (bao gồm draft, published, archived)
+    Chỉ dành cho admin và teacher
+    """
+    if current_user.role not in [UserRole.TEACHER, UserRole.ADMIN, UserRole.SUPERADMIN]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Chỉ giáo viên và admin mới có thể xem tất cả tin tức"
+        )
+    
+    # Teacher chỉ thấy bài của mình, Admin thấy tất cả
+    if current_user.role == UserRole.TEACHER:
+        news_posts = db.query(NewsPost).filter(
+            NewsPost.author_id == current_user.id
+        ).order_by(desc(NewsPost.created_at)).all()
+    else:
+        news_posts = db.query(NewsPost).order_by(desc(NewsPost.created_at)).all()
+    
+    result = []
+    for news in news_posts:
+        author = db.query(User).filter(User.id == news.author_id).first() if news.author_id else None
+        result.append({
+            "id": news.id,
+            "title": news.title,
+            "description": news.description,
+            "content": news.content,
+            "category": news.category,
+            "icon": news.icon,
+            "type": news.type,
+            "image": news.image,
+            "status": news.status,
+            "views": news.views,
+            "likes": news.likes,
+            "reading_time": news.reading_time,
+            "author_name": author.full_name if author else "Unknown",
+            "author_id": news.author_id,
+            "published_at": news.published_at.isoformat() if news.published_at else None,
+            "created_at": news.created_at.isoformat() if news.created_at else None,
+            "updated_at": news.updated_at.isoformat() if news.updated_at else None
+        })
+    
+    return result

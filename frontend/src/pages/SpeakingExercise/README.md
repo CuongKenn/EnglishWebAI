@@ -125,3 +125,4 @@ const speakingExercises = {
 - [ ] Advanced audio effects
 - [ ] Offline support
 - [ ] Multi-language support
+
