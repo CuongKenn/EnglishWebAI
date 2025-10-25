@@ -255,7 +255,7 @@ const ParentDashboard = () => {
                   <div className="overview-content">
                     {/* Subject Progress */}
                     <div className="section">
-                      <h3>Tiến độ theo môn học</h3>
+                      <h3>Tiến độ theo kỹ năng</h3>
                       <div className="subject-progress-list">
                         {childProgress.subjectProgress.map((subject, index) => (
                           <div key={index} className="subject-progress-item">

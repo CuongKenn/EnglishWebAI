@@ -231,10 +231,13 @@ const QuestionBank = () => {
           value={filterSubject}
           onChange={(e) => setFilterSubject(e.target.value)}
         >
-          <option value="all">Tất cả môn</option>
-          <option value="English">Tiếng Anh</option>
-          <option value="Math">Toán</option>
-          <option value="Science">Khoa học</option>
+          <option value="all">Tất cả kỹ năng</option>
+          <option value="Listening">Listening</option>
+          <option value="Speaking">Speaking</option>
+          <option value="Reading">Reading</option>
+          <option value="Writing">Writing</option>
+          <option value="Grammar">Grammar</option>
+          <option value="Vocabulary">Vocabulary</option>
         </select>
       </div>
 
@@ -358,13 +361,13 @@ const QuestionBank = () => {
 
                 <div className="form-row">
                   <div className="form-group">
-                    <label>Môn học <span className="required">*</span></label>
+                    <label>Kỹ năng <span className="required">*</span></label>
                     <input 
                       type="text"
                       required
                       value={formData.subject}
                       onChange={(e) => setFormData({...formData, subject: e.target.value})}
-                      placeholder="VD: Tiếng Anh"
+                      placeholder="VD: Listening, Speaking, Reading, Writing"
                     />
                   </div>
 

@@ -174,9 +174,10 @@ async def get_child_progress(
     # Get subject progress
     # TODO: Implement proper subject progress calculation
     subject_progress = [
-        SubjectProgress(subject="Math", progress=75, color="#FF6B6B"),
-        SubjectProgress(subject="English", progress=85, color="#4ECDC4"),
-        SubjectProgress(subject="Science", progress=60, color="#95E1D3"),
+        SubjectProgress(subject="Listening", progress=75, color="#FF6B6B"),
+        SubjectProgress(subject="Speaking", progress=85, color="#4ECDC4"),
+        SubjectProgress(subject="Reading", progress=60, color="#95E1D3"),
+        SubjectProgress(subject="Writing", progress=70, color="#FFA07A"),
     ]
     
     # Get attendance stats

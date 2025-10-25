@@ -12,6 +12,8 @@ const Login = ({ onLogin }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [stars, setStars] = useState([]);
   const [meteors, setMeteors] = useState([]);
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -52,10 +54,16 @@ const Login = ({ onLogin }) => {
       ...prev,
       [name]: value,
     }));
+    // Xóa lỗi khi người dùng bắt đầu nhập lại
+    if (error) {
+      setError('');
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    setIsLoading(true);
 
     // Add ripple effect
     const button = e.target.querySelector('.sign-in-btn');
@@ -76,7 +84,45 @@ const Login = ({ onLogin }) => {
       }
     } catch (error) {
       console.error('Login failed:', error);
-      alert(error.message || 'Đăng nhập thất bại, vui lòng thử lại.');
+      
+      // Xử lý các loại lỗi khác nhau
+      let errorMessage = 'Đăng nhập thất bại, vui lòng thử lại.';
+      
+      if (error.detail) {
+        // Lỗi từ backend trả về
+        if (typeof error.detail === 'string') {
+          errorMessage = error.detail;
+        } else if (error.detail.message) {
+          errorMessage = error.detail.message;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
+      // Map thông báo từ tiếng Anh sang tiếng Việt
+      const lowerMessage = errorMessage.toLowerCase();
+      
+      if (lowerMessage.includes('incorrect username or password') ||
+          lowerMessage.includes('incorrect') ||
+          lowerMessage.includes('invalid credentials')) {
+        errorMessage = 'Tên đăng nhập hoặc mật khẩu không chính xác!';
+      } else if (lowerMessage.includes('inactive user') ||
+                 lowerMessage.includes('disabled') ||
+                 lowerMessage.includes('account is disabled')) {
+        errorMessage = 'Tài khoản đã bị vô hiệu hóa!';
+      } else if (lowerMessage.includes('user not found') ||
+                 lowerMessage.includes('not found')) {
+        errorMessage = 'Tài khoản không tồn tại!';
+      } else if (lowerMessage.includes('network error') ||
+                 lowerMessage.includes('failed to fetch')) {
+        errorMessage = 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng!';
+      }
+      
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -192,8 +238,20 @@ const Login = ({ onLogin }) => {
           <div className="form-content">
             <h2 className="form-title">SIGN IN</h2>
 
+            {/* Error Message */}
+            {error && (
+              <div className="error-message">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <span>{error}</span>
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-form">
-              {/* Username Input */}
+              {/* Username or Email Input */}
               <div className="input-container">
                 <div className="input-icon">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -204,12 +262,13 @@ const Login = ({ onLogin }) => {
                 <input
                   type="text"
                   name="username"
-                  placeholder="Username"
+                  placeholder="Username or Email"
                   value={formData.username}
                   onChange={handleInputChange}
                   required
                   className="space-input"
                 />
+               
               </div>
 
               {/* Password Input */}
@@ -261,8 +320,8 @@ const Login = ({ onLogin }) => {
               </div>
 
               {/* Sign In Button */}
-              <button type="submit" className="sign-in-btn">
-                <span>Sign in</span>
+              <button type="submit" className="sign-in-btn" disabled={isLoading}>
+                <span>{isLoading ? 'Đang đăng nhập...' : 'Sign in'}</span>
                 <div className="btn-glow"></div>
               </button>
             </form>

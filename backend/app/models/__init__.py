@@ -18,6 +18,7 @@ from app.models.attendance import AttendanceRecord
 from app.models.otp import OTP
 from app.models.notification import Notification
 from app.models.message import Message
+from app.models.system_config import SystemConfig
 
 __all__ = [
     "User",
@@ -35,4 +36,5 @@ __all__ = [
     "OTP",
     "Notification",
     "Message",
+    "SystemConfig",
 ]

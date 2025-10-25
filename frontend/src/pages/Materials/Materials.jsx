@@ -58,17 +58,19 @@ const Materials = () => {
             </div>
 
             <div className="filter-group">
-              <label className="filter-label">Môn học:</label>
+              <label className="filter-label">Kỹ năng:</label>
               <select 
                 value={selectedSubject} 
                 onChange={(e) => setSelectedSubject(e.target.value)}
                 className="filter-select"
               >
                 <option value="all">Tất cả</option>
-                <option value="Toán">Toán</option>
-                <option value="Tiếng Anh">Tiếng Anh</option>
-                <option value="Khoa học">Khoa học</option>
-                <option value="Lịch sử">Lịch sử</option>
+                <option value="Listening">Listening</option>
+                <option value="Speaking">Speaking</option>
+                <option value="Reading">Reading</option>
+                <option value="Writing">Writing</option>
+                <option value="Grammar">Grammar</option>
+                <option value="Vocabulary">Vocabulary</option>
               </select>
             </div>
           </div>

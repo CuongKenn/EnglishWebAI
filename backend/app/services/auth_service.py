@@ -35,9 +35,9 @@ class AuthService:
     
     @staticmethod
     def login(db: Session, login_data: LoginRequest):
-        """Login user with username"""
-        # Try to authenticate with username
-        user = UserService.authenticate_user_by_username(db, login_data.username, login_data.password)
+        """Login user with username or email"""
+        # Try to authenticate with username or email
+        user = UserService.authenticate_user_by_username_or_email(db, login_data.username, login_data.password)
         
         if not user:
             raise HTTPException(

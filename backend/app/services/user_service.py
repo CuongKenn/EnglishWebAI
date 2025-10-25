@@ -126,6 +126,23 @@ class UserService:
         return user
     
     @staticmethod
+    def authenticate_user_by_username_or_email(db: Session, username_or_email: str, password: str) -> Optional[User]:
+        """Authenticate user by username or email"""
+        # Try username first
+        user = UserService.get_user_by_username(db, username_or_email)
+        
+        # If not found, try email
+        if not user:
+            user = UserService.get_user_by_email(db, username_or_email)
+        
+        # If still not found or password incorrect
+        if not user:
+            return None
+        if not verify_password(password, user.hashed_password):
+            return None
+        return user
+    
+    @staticmethod
     def change_password(db: Session, user_id: int, old_password: str, new_password: str) -> bool:
         """Change user password"""
         db_user = UserService.get_user_by_id(db, user_id)

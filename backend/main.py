@@ -22,10 +22,17 @@ app = FastAPI(
 # CORS Middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Cho phép tất cả origins trong development
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5173",  # Vite dev server
+        "http://127.0.0.1:5173",
+        "*"  # Fallback cho development
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Include routers (match frontend API paths)
@@ -78,8 +85,14 @@ async def startup_event():
             print("✅ Auto-seed completed!")
         else:
             print(f"📊 Database already has {user_count} users. Skipping auto-seed.")
+        
+        # Initialize default system configurations
+        from app.services.system_config_service import SystemConfigService
+        SystemConfigService.initialize_default_configs(db)
+        print("✅ System configurations initialized!")
+        
     except Exception as e:
-        print(f"⚠️  Auto-seed error: {str(e)}")
+        print(f"⚠️  Startup error: {str(e)}")
     finally:
         db.close()
 

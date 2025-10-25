@@ -14,7 +14,8 @@ class AuthService {
       const response = await authAPI.register(userData);
       return response;
     } catch (error) {
-      throw this.handleError(error);
+      // Throw lỗi trực tiếp để giữ nguyên structure
+      throw error;
     }
   }
 
@@ -26,7 +27,8 @@ class AuthService {
       const response = await authAPI.login(credentials);
       return response;
     } catch (error) {
-      throw this.handleError(error);
+      // Throw lỗi trực tiếp để giữ nguyên structure
+      throw error;
     }
   }
 

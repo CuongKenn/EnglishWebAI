@@ -39,3 +39,6 @@ logs/
 # Database
 *.sqlite
 *.sqlite3
+
+# Temp folder
+temp/
