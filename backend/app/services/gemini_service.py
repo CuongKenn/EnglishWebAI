@@ -303,6 +303,510 @@ Level: {level}"""
             # Get fallback or default
             type_fallbacks = fallback_topics.get(writing_type, fallback_topics["essay"])
             return type_fallbacks.get(level, type_fallbacks["intermediate"])
+    
+    async def generate_reading_passage(
+        self,
+        reading_type: str = "article",
+        level: str = "intermediate",
+        topic: str = None
+    ) -> Dict:
+        """
+        Generate a reading passage with comprehension questions
+        
+        Args:
+            reading_type: Type of reading (story, article, news, essay, letter)
+            level: English level (beginner, intermediate, advanced)
+            topic: Optional specific topic
+            
+        Returns:
+            Dict with passage, questions, and metadata
+        """
+        try:
+            level_specs = {
+                "beginner": {
+                    "word_count": "150-200",
+                    "vocabulary": "simple, common words (A1-A2 level)",
+                    "grammar": "simple present, past, and future tenses",
+                    "sentence_structure": "short, simple sentences"
+                },
+                "intermediate": {
+                    "word_count": "250-350",
+                    "vocabulary": "varied vocabulary (B1-B2 level)",
+                    "grammar": "mix of tenses, some conditionals and passive voice",
+                    "sentence_structure": "mix of simple and compound sentences"
+                },
+                "advanced": {
+                    "word_count": "400-500",
+                    "vocabulary": "sophisticated, academic vocabulary (C1-C2 level)",
+                    "grammar": "complex tenses, conditionals, passive constructions",
+                    "sentence_structure": "complex sentences with subordinate clauses"
+                }
+            }
+            
+            specs = level_specs.get(level, level_specs["intermediate"])
+            topic_instruction = f" about {topic}" if topic else ""
+            
+            prompt = f"""Generate a {level} level English reading passage for {reading_type}{topic_instruction}.
+
+Specifications:
+- Word count: {specs['word_count']}
+- Vocabulary level: {specs['vocabulary']}
+- Grammar: {specs['grammar']}
+- Sentence structure: {specs['sentence_structure']}
+
+Create 8 comprehension questions with DIFFERENT FORMATS:
+
+QUESTION FORMATS (use variety):
+1. Multiple Choice (4 options A/B/C/D) - for main idea, inference, detail
+2. True/False - for factual statements
+3. Fill in the Blank - for vocabulary/grammar (provide the sentence with _____ and ask for the missing word)
+
+CONTENT TYPES to cover:
+- Main Idea (1 question)
+- Specific Details (2 questions)
+- Inference/Conclusion (1 question)  
+- Vocabulary in Context (2 questions - at least 1 fill-in-blank)
+- True/False factual statement (2 questions)
+
+Return a JSON object with this EXACT structure:
+{{
+    "title": "Engaging title for the passage",
+    "passage": "The full reading passage text here",
+    "questions": [
+        {{
+            "question": "Question text (for fill_blank, use _____ to mark the blank)",
+            "question_format": "multiple_choice|true_false|fill_blank",
+            "question_type": "main_idea|detail|inference|vocabulary",
+            "options": ["Option A", "Option B", "Option C", "Option D"],
+            "correct_answer": 0,
+            "acceptable_answers": ["answer1", "answer2"]
+        }}
+    ],
+    "word_count": actual_word_count_number,
+    "estimated_time": estimated_reading_time_in_minutes
+}}
+
+FORMAT RULES:
+- multiple_choice: options array with 4 items, correct_answer is index (0-3)
+- true_false: options array with ["True", "False"], correct_answer is 0 or 1
+- fill_blank: options is null, correct_answer is the main answer (string), acceptable_answers is array of acceptable variations
+
+Example fill_blank question:
+{{
+    "question": "The weather was _____ and warm.",
+    "question_format": "fill_blank",
+    "question_type": "vocabulary",
+    "options": null,
+    "correct_answer": "sunny",
+    "acceptable_answers": ["sunny", "bright", "clear"]
+}}
+
+IMPORTANT:
+- Mix 4-5 multiple_choice, 2 true_false, 1-2 fill_blank
+- Make questions interesting and test real comprehension
+- For fill_blank, choose words that appear in the passage
+- Ensure correct answers are definitively right"""
+
+            response = self.model.generate_content(prompt)
+            result_text = response.text.strip()
+            
+            print(f"[AI Reading] Raw response from Gemini (first 500 chars): {result_text[:500]}")
+            
+            # Parse JSON from response
+            import json
+            # Remove markdown code blocks if present
+            if "```json" in result_text:
+                result_text = result_text.split("```json")[1].split("```")[0].strip()
+            elif "```" in result_text:
+                result_text = result_text.split("```")[1].split("```")[0].strip()
+            
+            print(f"[AI Reading] Cleaned JSON (first 300 chars): {result_text[:300]}")
+            
+            reading_data = json.loads(result_text)
+            
+            # Validate structure
+            if not reading_data.get('questions'):
+                raise ValueError("No questions in response")
+            
+            # Ensure all questions have required fields
+            for idx, q in enumerate(reading_data.get('questions', [])):
+                if not q.get('question'):
+                    raise ValueError(f"Question {idx} missing 'question' field")
+                if not q.get('question_format'):
+                    q['question_format'] = 'multiple_choice'  # default
+            
+            # Add level and type to response
+            reading_data["level"] = level
+            reading_data["reading_type"] = reading_type
+            
+            print(f"[AI Reading] Successfully generated passage with {len(reading_data['questions'])} questions")
+            
+            return reading_data
+            
+        except Exception as e:
+            print(f"Error generating reading passage: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            print(f"[AI Reading] Using fallback passage for level: {level}")
+            # Return fallback passage based on level
+            fallback_passages = {
+                "beginner": {
+                    "title": "A Day at the Beach",
+                    "passage": "Last Sunday, my family and I went to the beach. The weather was sunny and warm. We arrived at 10 o'clock in the morning. My brother and I played volleyball on the sand. My parents sat under a big umbrella and read books. At noon, we ate sandwiches and drank cold juice. In the afternoon, we swam in the sea. The water was cool and clear. We saw many small fish. We had a wonderful time at the beach. We came back home at 5 o'clock. Everyone was tired but happy.",
+                    "questions": [
+                        {
+                            "question": "What is this passage mainly about?",
+                            "question_format": "multiple_choice",
+                            "question_type": "main_idea",
+                            "options": ["A family trip to the beach", "How to play volleyball", "The writer's parents", "Swimming lessons"],
+                            "correct_answer": 0
+                        },
+                        {
+                            "question": "The family went to the beach last Sunday.",
+                            "question_format": "true_false",
+                            "question_type": "detail",
+                            "options": ["True", "False"],
+                            "correct_answer": 0
+                        },
+                        {
+                            "question": "The weather was _____ and warm.",
+                            "question_format": "fill_blank",
+                            "question_type": "vocabulary",
+                            "options": None,
+                            "correct_answer": "sunny",
+                            "acceptable_answers": ["sunny", "bright", "clear", "nice"]
+                        },
+                        {
+                            "question": "What did the writer and their brother do?",
+                            "question_format": "multiple_choice",
+                            "question_type": "detail",
+                            "options": ["Read books", "Played volleyball", "Swam only", "Ate sandwiches"],
+                            "correct_answer": 1
+                        },
+                        {
+                            "question": "They saw fish while swimming in the sea.",
+                            "question_format": "true_false",
+                            "question_type": "detail",
+                            "options": ["True", "False"],
+                            "correct_answer": 0
+                        },
+                        {
+                            "question": "We had a _____ time at the beach.",
+                            "question_format": "fill_blank",
+                            "question_type": "vocabulary",
+                            "options": None,
+                            "correct_answer": "wonderful",
+                            "acceptable_answers": ["wonderful", "great", "good", "amazing", "fantastic"]
+                        },
+                        {
+                            "question": "Why did the family probably feel happy at the end?",
+                            "question_format": "multiple_choice",
+                            "question_type": "inference",
+                            "options": ["They were bored", "They enjoyed the day", "They were hungry", "They were angry"],
+                            "correct_answer": 1
+                        },
+                        {
+                            "question": "Everyone came home before 5 o'clock.",
+                            "question_format": "true_false",
+                            "question_type": "detail",
+                            "options": ["True", "False"],
+                            "correct_answer": 1
+                        }
+                    ],
+                    "word_count": 120,
+                    "estimated_time": 3,
+                    "level": level,
+                    "reading_type": reading_type
+                },
+                "intermediate": {
+                    "title": "The Benefits of Reading",
+                    "passage": "Reading is one of the most beneficial activities we can engage in. Whether you prefer fiction, non-fiction, or poetry, reading offers numerous advantages for both your mind and personal growth. First and foremost, reading improves your vocabulary and language skills. When you encounter new words in context, you naturally expand your linguistic knowledge. Additionally, reading enhances your concentration and focus. In our fast-paced digital world, the ability to sit quietly and focus on a single task is becoming increasingly rare. Furthermore, reading stimulates your imagination and creativity. Unlike watching television or movies, reading requires your brain to create the images and scenarios described in the text. This mental exercise strengthens your creative thinking abilities. Studies have also shown that regular reading can reduce stress levels. Getting lost in a good book can transport you to another world, providing a healthy escape from daily pressures. Moreover, reading before bedtime has been proven to improve sleep quality. Finally, reading expands your knowledge and understanding of the world. Through books, you can explore different cultures, historical periods, and perspectives without leaving your home.",
+                    "questions": [
+                        {
+                            "question": "What is the main idea of this passage?",
+                            "question_format": "multiple_choice",
+                            "question_type": "main_idea",
+                            "options": [
+                                "Reading is boring and old-fashioned",
+                                "Reading has many benefits for the mind and personal growth",
+                                "People should only read fiction books",
+                                "Reading is only good for children"
+                            ],
+                            "correct_answer": 1
+                        },
+                        {
+                            "question": "Reading improves vocabulary and language skills.",
+                            "question_format": "true_false",
+                            "question_type": "detail",
+                            "options": ["True", "False"],
+                            "correct_answer": 0
+                        },
+                        {
+                            "question": "Reading _____ your imagination and creativity.",
+                            "question_format": "fill_blank",
+                            "question_type": "vocabulary",
+                            "options": None,
+                            "correct_answer": "stimulates",
+                            "acceptable_answers": ["stimulates", "enhances", "improves", "boosts", "encourages"]
+                        },
+                        {
+                            "question": "According to the passage, how does reading help with language skills?",
+                            "question_format": "multiple_choice",
+                            "question_type": "detail",
+                            "options": [
+                                "By watching TV shows",
+                                "By encountering new words in context",
+                                "By listening to music",
+                                "By playing video games"
+                            ],
+                            "correct_answer": 1
+                        },
+                        {
+                            "question": "Reading before bedtime can reduce stress levels.",
+                            "question_format": "true_false",
+                            "question_type": "detail",
+                            "options": ["True", "False"],
+                            "correct_answer": 0
+                        },
+                        {
+                            "question": "In our fast-paced digital world, the ability to _____ is becoming rare.",
+                            "question_format": "fill_blank",
+                            "question_type": "vocabulary",
+                            "options": None,
+                            "correct_answer": "focus",
+                            "acceptable_answers": ["focus", "concentrate", "focus on a single task"]
+                        },
+                        {
+                            "question": "Based on the passage, what can you conclude about modern life?",
+                            "question_format": "multiple_choice",
+                            "question_type": "inference",
+                            "options": [
+                                "People find it easy to focus on one task",
+                                "The digital world makes concentration more challenging",
+                                "Everyone reads books every day",
+                                "Television is better than reading"
+                            ],
+                            "correct_answer": 1
+                        },
+                        {
+                            "question": "Reading can help you explore different cultures without traveling.",
+                            "question_format": "true_false",
+                            "question_type": "detail",
+                            "options": ["True", "False"],
+                            "correct_answer": 0
+                        }
+                    ],
+                    "word_count": 245,
+                    "estimated_time": 5,
+                    "level": level,
+                    "reading_type": reading_type
+                },
+                "advanced": {
+                    "title": "The Impact of Artificial Intelligence on Society",
+                    "passage": "Artificial Intelligence (AI) has emerged as one of the most transformative technologies of the 21st century, fundamentally reshaping various aspects of human society. From healthcare diagnostics to autonomous vehicles, AI applications are proliferating at an unprecedented rate, prompting both excitement and apprehension about their long-term implications. The integration of machine learning algorithms and neural networks has enabled computers to perform tasks that were once exclusively within the human domain, such as recognizing patterns, making predictions, and even engaging in creative endeavors. However, this technological revolution raises profound questions about employment, privacy, and the very nature of human intelligence. Critics argue that the widespread adoption of AI could lead to significant job displacement, particularly in sectors involving routine cognitive tasks. Manufacturing, customer service, and even certain professional services face potential automation, necessitating a fundamental reevaluation of education and workforce training programs. Conversely, proponents contend that AI will create new categories of employment and enhance human productivity rather than replace it entirely. The ethical dimensions of AI development are equally concerning. Issues surrounding algorithmic bias, data privacy, and autonomous decision-making in critical scenarios demand careful consideration. As AI systems become increasingly sophisticated, the question of accountability becomes more complex. When an autonomous vehicle causes an accident or an AI-driven medical diagnosis proves incorrect, determining responsibility becomes a legal and moral quandary. Nevertheless, the potential benefits of AI are substantial. In healthcare, AI algorithms can analyze medical images with remarkable accuracy, potentially detecting diseases earlier than human practitioners. In environmental science, machine learning models can predict climate patterns and optimize resource allocation. The challenge lies in harnessing these capabilities while mitigating the associated risks through thoughtful regulation and ethical frameworks.",
+                    "questions": [
+                        {
+                            "question": "What is the central theme of this passage?",
+                            "question_format": "multiple_choice",
+                            "question_type": "main_idea",
+                            "options": [
+                                "The history of artificial intelligence development",
+                                "The transformative impact of AI on society with both benefits and concerns",
+                                "Why AI should be banned from all industries",
+                                "The technical specifications of AI systems"
+                            ],
+                            "correct_answer": 1
+                        },
+                        {
+                            "question": "AI applications are proliferating at an unprecedented rate.",
+                            "question_format": "true_false",
+                            "question_type": "detail",
+                            "options": ["True", "False"],
+                            "correct_answer": 0
+                        },
+                        {
+                            "question": "According to the passage, AI could lead to job _____ in routine cognitive tasks.",
+                            "question_format": "fill_blank",
+                            "question_type": "vocabulary",
+                            "options": None,
+                            "correct_answer": "displacement",
+                            "acceptable_answers": ["displacement", "loss", "replacement", "elimination"]
+                        },
+                        {
+                            "question": "What can be inferred about the author's view on AI regulation?",
+                            "question_format": "multiple_choice",
+                            "question_type": "inference",
+                            "options": [
+                                "Regulation is unnecessary for AI development",
+                                "Thoughtful regulation and ethical frameworks are needed",
+                                "AI should be completely unregulated",
+                                "Only technical experts should decide AI policy"
+                            ],
+                            "correct_answer": 1
+                        },
+                        {
+                            "question": "The passage discusses only the benefits of AI, not the risks.",
+                            "question_format": "true_false",
+                            "question_type": "detail",
+                            "options": ["True", "False"],
+                            "correct_answer": 1
+                        },
+                        {
+                            "question": "What does the word 'proliferating' in the first paragraph most likely mean?",
+                            "question_format": "multiple_choice",
+                            "question_type": "vocabulary",
+                            "options": [
+                                "Decreasing rapidly",
+                                "Remaining constant",
+                                "Spreading or increasing rapidly",
+                                "Becoming obsolete"
+                            ],
+                            "correct_answer": 2
+                        },
+                        {
+                            "question": "In healthcare, AI algorithms can analyze medical _____ with remarkable accuracy.",
+                            "question_format": "fill_blank",
+                            "question_type": "detail",
+                            "options": None,
+                            "correct_answer": "images",
+                            "acceptable_answers": ["images", "data", "scans", "pictures"]
+                        },
+                        {
+                            "question": "Both critics and proponents agree on AI's impact on employment.",
+                            "question_format": "true_false",
+                            "question_type": "inference",
+                            "options": ["True", "False"],
+                            "correct_answer": 1
+                        }
+                    ],
+                    "word_count": 385,
+                    "estimated_time": 7,
+                    "level": level,
+                    "reading_type": reading_type
+                }
+            }
+            
+            return fallback_passages.get(level, fallback_passages["intermediate"])
+    
+    async def check_reading_answers(
+        self,
+        passage_title: str,
+        questions: List[Dict],
+        user_answers: List
+    ) -> Dict:
+        """
+        Check reading comprehension answers and provide feedback
+        Supports multiple question formats: multiple_choice, true_false, fill_blank
+        
+        Args:
+            passage_title: Title of the reading passage
+            questions: List of questions with correct answers
+            user_answers: List of user's answers (can be int or str)
+            
+        Returns:
+            Dict with score, feedback, and recommendations
+        """
+        try:
+            total_questions = len(questions)
+            correct_count = 0
+            results = []
+            
+            for idx, (question, user_answer) in enumerate(zip(questions, user_answers)):
+                question_format = question.get('question_format', 'multiple_choice')
+                correct_answer = question.get('correct_answer')
+                acceptable_answers = question.get('acceptable_answers', [])
+                
+                is_correct = False
+                explanation = ""
+                
+                # Check answer based on question format
+                if question_format in ['multiple_choice', 'true_false']:
+                    # For MC and T/F, answer is index
+                    is_correct = user_answer == correct_answer
+                    
+                    if is_correct:
+                        explanation = "Correct! Well done."
+                    else:
+                        if question.get('options'):
+                            explanation = f"The correct answer is '{question['options'][correct_answer]}'."
+                        else:
+                            explanation = f"Incorrect. The correct answer is: {correct_answer}"
+                            
+                elif question_format == 'fill_blank':
+                    # For fill-in-blank, answer is string - check against acceptable answers
+                    user_answer_lower = str(user_answer).lower().strip()
+                    correct_answer_lower = str(correct_answer).lower().strip()
+                    
+                    # Check if answer matches any acceptable answer
+                    if acceptable_answers:
+                        is_correct = any(
+                            user_answer_lower == acceptable.lower().strip() 
+                            for acceptable in acceptable_answers
+                        )
+                    else:
+                        is_correct = user_answer_lower == correct_answer_lower
+                    
+                    if is_correct:
+                        explanation = f"Correct! '{user_answer}' is a valid answer."
+                    else:
+                        if acceptable_answers:
+                            explanation = f"Incorrect. Acceptable answers: {', '.join(acceptable_answers)}"
+                        else:
+                            explanation = f"Incorrect. The correct answer is: {correct_answer}"
+                
+                if is_correct:
+                    correct_count += 1
+                
+                results.append({
+                    "question_index": idx,
+                    "is_correct": is_correct,
+                    "user_answer": user_answer,
+                    "correct_answer": correct_answer,
+                    "explanation": explanation,
+                    "acceptable_answers": acceptable_answers if question_format == 'fill_blank' else None
+                })
+            
+            score = int((correct_count / total_questions) * 100)
+            
+            # Determine level recommendation
+            level_recommendation = None
+            if score >= 90:
+                level_recommendation = "Excellent! Consider trying advanced level passages."
+            elif score >= 70:
+                level_recommendation = "Good job! You're doing well at this level."
+            elif score >= 50:
+                level_recommendation = "Keep practicing at this level to improve."
+            else:
+                level_recommendation = "Consider trying an easier level to build confidence."
+            
+            # Generate personalized feedback
+            feedback = f"You scored {score}% ({correct_count}/{total_questions} correct). "
+            if score >= 80:
+                feedback += "Outstanding performance! Your reading comprehension skills are excellent."
+            elif score >= 60:
+                feedback += "Good work! You understood most of the passage well."
+            else:
+                feedback += "Keep practicing! Try reading more slowly and carefully."
+            
+            return {
+                "score": score,
+                "total_questions": total_questions,
+                "correct_answers": correct_count,
+                "results": results,
+                "level_recommendation": level_recommendation,
+                "feedback": feedback
+            }
+            
+        except Exception as e:
+            print(f"Error checking reading answers: {str(e)}")
+            return {
+                "score": 0,
+                "total_questions": len(questions),
+                "correct_answers": 0,
+                "results": [],
+                "level_recommendation": "Error occurred while checking answers",
+                "feedback": "Sorry, we couldn't check your answers. Please try again."
+            }
 
 
 # Create a singleton instance

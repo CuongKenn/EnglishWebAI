@@ -1017,6 +1017,32 @@ export const aiAPI = {
       throw error.response ? error.response.data : error;
     }
   },
+
+  // Generate reading passage
+  generateReadingPassage: async (level = 'intermediate', readingType = 'article', topic = null) => {
+    try {
+      const response = await apiClient.post('/api/v1/ai/reading/generate', {
+        level,
+        reading_type: readingType,
+        topic
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Check reading answers
+  checkReadingAnswers: async (answers) => {
+    try {
+      const response = await apiClient.post('/api/v1/ai/reading/check-answers', {
+        answers
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
 };
 
 // Export default apiClient for custom requests
