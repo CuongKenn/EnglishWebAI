@@ -37,6 +37,8 @@ import AdminDashboard from './pages/Admin/AdminDashboard/AdminDashboard';
 // Import Teacher Pages
 import TeacherDashboard from './pages/Teacher/TeacherDashboard/TeacherDashboard';
 import TeacherDashboardNew from './pages/Teacher/TeacherDashboard/TeacherDashboardNew';
+import TeacherDashboardV2 from './pages/Teacher/TeacherDashboardV2/TeacherDashboardV2';
+import TeacherDashboardV3 from './pages/Teacher/TeacherDashboardV3/TeacherDashboardV3';
 import TeacherMaterials from './pages/Teacher/TeacherMaterials/TeacherMaterials';
 
 // Import Parent Pages
@@ -303,9 +305,29 @@ function App() {
         }
       />
 
-      {/* Teacher Dashboard New - Protected with Nested Routes */}
+      {/* Teacher Dashboard V3 - NEW Beautiful Design with Full Features */}
       <Route
         path="/teacher-dashboard/*"
+        element={
+          <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="teacher">
+            <TeacherDashboardV3 />
+          </ProtectedRoute>
+        }
+      />
+      
+      {/* Teacher Dashboard V2 - Backup */}
+      <Route
+        path="/teacher-dashboard-v2/*"
+        element={
+          <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="teacher">
+            <TeacherDashboardV2 />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Teacher Dashboard New - Backup (Old Beautiful) */}
+      <Route
+        path="/teacher-dashboard-old"
         element={
           <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="teacher">
             <TeacherDashboardNew />
@@ -313,9 +335,9 @@ function App() {
         }
       />
 
-      {/* Teacher Dashboard Old (Legacy) - Protected */}
+      {/* Teacher Dashboard Legacy - Very Old */}
       <Route
-        path="/teacher-dashboard-old"
+        path="/teacher-dashboard-legacy"
         element={
           <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="teacher">
             <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
