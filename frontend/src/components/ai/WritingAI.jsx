@@ -1,104 +1,87 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
 import { Card } from "../ui/card";
 import { Badge } from "../ui/badge";
-import { PenTool, Sparkles, CheckCircle2, AlertCircle, RefreshCw } from "lucide-react";
+import { PenTool, Sparkles, CheckCircle2, AlertCircle, RefreshCw, Loader2, RotateCcw, Send } from "lucide-react";
 import { Progress } from "../ui/progress";
-import { getWritingPrompt, submitWriting } from "../../services/aiService";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { ScrollArea } from "../ui/scroll-area";
+import { aiAPI } from "../../services/api";
 
 export function WritingAI() {
-  const [selectedLevel, setSelectedLevel] = useState("intermediate");
-  const [selectedType, setSelectedType] = useState("essay");
+  const [text, setText] = useState("");
+  const [writingType, setWritingType] = useState("general");
+  const [level, setLevel] = useState("intermediate");
+  const [feedback, setFeedback] = useState(null);
+  const [isChecking, setIsChecking] = useState(false);
   const [topic, setTopic] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [essay, setEssay] = useState("");
-  const [analyzed, setAnalyzed] = useState(false);
-  const [analyzing, setAnalyzing] = useState(false);
+  const [isLoadingTopic, setIsLoadingTopic] = useState(false);
 
-  useEffect(() => {
-    loadPrompt();
-  }, [selectedLevel, selectedType]);
-
-  const loadPrompt = async () => {
-    setLoading(true);
+  const handleGenerateTopic = async () => {
+    setIsLoadingTopic(true);
     try {
-      const data = await getWritingPrompt(selectedLevel, selectedType);
-      setTopic(data);
-      setEssay("");
-      setAnalyzed(false);
+      const generatedTopic = await aiAPI.generateWritingTopic(writingType, level);
+      setTopic(generatedTopic);
+      setText(""); // Clear text when new topic is generated
+      setFeedback(null); // Clear previous feedback
     } catch (error) {
-      console.error("Error loading prompt:", error);
-      // Fallback to mock data
-      setTopic({
-        title: "Technology and Education",
-        prompt: "Do you agree or disagree with the following statement? Technology has made learning more accessible and effective. Use specific reasons and examples to support your answer.",
-        type: "Opinion Essay",
-        wordCount: "250-300 words",
-      });
+      console.error('Failed to generate topic:', error);
+      alert('Failed to generate topic. Please try again.');
     } finally {
-      setLoading(false);
+      setIsLoadingTopic(false);
     }
   };
 
-  const handleAnalyze = async () => {
-    if (essay.trim().length < 100) return;
-    
-    setAnalyzing(true);
+  const handleCheck = async () => {
+    if (text.trim().length < 10) {
+      alert("Please write at least 10 characters");
+      return;
+    }
+
+    setIsChecking(true);
     try {
-      const result = await submitWriting(topic.prompt, essay);
-      setAnalysis(result);
-      setAnalyzed(true);
+      const result = await aiAPI.checkWriting(text, writingType, level);
+      setFeedback(result);
     } catch (error) {
-      console.error("Error analyzing essay:", error);
-      // Fallback to mock analysis
-      setAnalyzed(true);
+      console.error('Failed to check writing:', error);
+      alert('Failed to check your writing. Please try again.');
     } finally {
-      setAnalyzing(false);
+      setIsChecking(false);
     }
   };
 
-  const [analysis, setAnalysis] = useState({
-    score: 85,
-    grammar: 90,
-    vocabulary: 85,
-    coherence: 80,
-    taskResponse: 88,
-    suggestions: [
-      "Excellent use of linking words and transitions",
-      "Strong argumentation with relevant examples",
-      "Consider adding more variety in sentence structures",
-      "Good vocabulary range, but could include more academic terms",
-    ],
-    errors: [
-      { text: "tecnology", correction: "technology", type: "spelling" },
-      { text: "more easier", correction: "easier", type: "grammar" },
-    ],
-  });
+  const handleReset = () => {
+    setText("");
+    setFeedback(null);
+    setTopic(null);
+  };
 
-  const wordCount = essay.trim().split(/\s+/).filter(Boolean).length;
+  const getScoreColor = (score) => {
+    if (score >= 80) return "text-green-600";
+    if (score >= 60) return "text-yellow-600";
+    return "text-red-600";
+  };
 
-  if (loading) {
-    return (
-      <div className="flex h-96 items-center justify-center">
-        <div className="text-center">
-          <RefreshCw className="mx-auto h-12 w-12 animate-spin text-orange-600" />
-          <p className="mt-4 text-gray-600">Đang tải đề bài...</p>
-        </div>
-      </div>
-    );
-  }
+  const writingTypes = [
+    { value: "general", label: "General Writing" },
+    { value: "essay", label: "Essay" },
+    { value: "email", label: "Email" },
+    { value: "letter", label: "Letter" },
+    { value: "story", label: "Story" },
+    { value: "article", label: "Article" },
+  ];
 
-  if (!topic) {
-    return (
-      <div className="flex h-96 items-center justify-center">
-        <p className="text-gray-600">Không thể tải đề bài. Vui lòng thử lại.</p>
-      </div>
-    );
-  }
+  const levels = [
+    { value: "beginner", label: "Beginner (A1-A2)" },
+    { value: "intermediate", label: "Intermediate (B1-B2)" },
+    { value: "advanced", label: "Advanced (C1-C2)" },
+  ];
+
+  const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
 
   return (
-    <div className="space-y-6">
+    <div className="flex h-full flex-col space-y-6">
       {/* Header */}
       <div>
         <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-red-500 px-4 py-2 text-white shadow-lg">
@@ -107,230 +90,357 @@ export function WritingAI() {
         </div>
         <h1 className="mb-2">Luyện viết AI ✍️</h1>
         <p className="text-gray-600">
-          AI chấm bài và đưa ra phản hồi chi tiết giúp bạn cải thiện kỹ năng viết
+          Viết tiếng Anh và nhận phản hồi chi tiết từ AI về ngữ pháp, từ vựng và cấu trúc
         </p>
       </div>
 
-      {/* Topic Card */}
-      <Card className="overflow-hidden">
-        <div className="bg-gradient-to-r from-orange-500 to-red-500 p-6 text-white">
-          <div className="mb-2 flex items-center gap-2">
-            <Badge className="bg-white/20 hover:bg-white/30">
-              {topic.type}
-            </Badge>
-            <Badge className="bg-white/20 hover:bg-white/30">
-              📝 {topic.wordCount}
-            </Badge>
-          </div>
-          <h2 className="mb-2 text-white">{topic.title}</h2>
-          <p className="text-sm opacity-90">{topic.prompt}</p>
-        </div>
-      </Card>
-
-      {/* Writing Area */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <Card className="p-6">
-            <div className="mb-4 flex items-center justify-between">
-              <h3>✍️ Viết bài của bạn</h3>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-600">
-                  {wordCount} từ
-                </span>
-                <div className={`h-2 w-2 rounded-full ${
-                  wordCount >= 250 && wordCount <= 300
-                    ? "bg-green-500"
-                    : "bg-orange-500"
-                }`} />
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Writing Area */}
+        <Card className="flex flex-col">
+          <div className="border-b bg-gradient-to-r from-orange-500 to-red-500 p-4 text-white">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <PenTool className="h-5 w-5" />
+                <span className="font-medium">Your Writing</span>
               </div>
+              <span className="text-sm opacity-90">
+                {wordCount} words
+              </span>
             </div>
-            <Textarea
-              value={essay}
-              onChange={(e) => setEssay(e.target.value)}
-              placeholder="Start writing your essay here..."
-              className="min-h-[400px] resize-none"
-            />
-            <div className="mt-4 flex items-center justify-between">
-              <div className="text-sm text-gray-500">
-                Mục tiêu: 250-300 từ
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline">
-                  Lưu nháp
-                </Button>
-                <Button
-                  onClick={handleAnalyze}
-                  className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
-                  disabled={wordCount < 100 || analyzing}
-                >
-                  {analyzing ? (
-                    <>
-                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                      Đang phân tích...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="mr-2 h-4 w-4" />
-                      Chấm bài AI
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-          </Card>
-        </div>
-
-        {/* Tips Sidebar */}
-        <div className="space-y-4">
-          <Card className="overflow-hidden">
-            <div className="border-b border-orange-200 bg-gradient-to-r from-orange-100 to-red-100 p-4">
-              <h4 className="flex items-center gap-2 font-bold text-gray-900">
-                💡 Mẹo viết hay
-              </h4>
-            </div>
-            <div className="p-4">
-              <ul className="space-y-2 text-sm text-gray-800">
-                <li className="flex gap-2">
-                  <span className="font-bold text-green-600">✓</span>
-                  <span>Lập dàn ý trước khi viết</span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="font-bold text-green-600">✓</span>
-                  <span>Sử dụng từ nối để liên kết ý</span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="font-bold text-green-600">✓</span>
-                  <span>Đưa ra ví dụ cụ thể</span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="font-bold text-green-600">✓</span>
-                  <span>Kiểm tra lỗi chính tả</span>
-                </li>
-              </ul>
-            </div>
-          </Card>
-
-          <Card className="overflow-hidden">
-            <div className="border-b border-orange-200 bg-gradient-to-r from-orange-100 to-red-100 p-4">
-              <h4 className="flex items-center gap-2 font-bold text-gray-900">
-                📚 Từ vựng gợi ý
-              </h4>
-            </div>
-            <div className="p-4">
-              <div className="flex flex-wrap gap-2">
-                {[
-                  "Furthermore",
-                  "Moreover",
-                  "However",
-                  "In addition",
-                  "Consequently",
-                  "Nevertheless",
-                ].map((word, index) => (
-                  <Badge key={index} variant="outline" className="cursor-pointer border-orange-300 bg-white text-gray-900 hover:border-orange-500 hover:bg-orange-50">
-                    {word}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          </Card>
-        </div>
-      </div>
-
-      {/* AI Analysis */}
-      {analyzed && (
-        <Card className="overflow-hidden">
-          <div className="bg-gradient-to-r from-orange-500 to-red-500 p-6 text-white">
-            <h2 className="mb-2 flex items-center gap-2 text-white">
-              <Sparkles className="h-6 w-6" />
-              Phân tích AI của bài viết
-            </h2>
-            <p className="text-sm opacity-90">
-              Dựa trên các tiêu chí IELTS Writing
-            </p>
           </div>
 
-          <div className="p-6">
-            {/* Overall Score */}
-            <div className="mb-6 text-center">
-              <div className="mb-2 inline-flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-r from-orange-500 to-red-500 text-3xl font-bold text-white">
-                {analysis.score}
-              </div>
-              <p className="text-gray-600">Điểm tổng thể</p>
-            </div>
-
-            {/* Detailed Scores */}
-            <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {[
-                { label: "Ngữ pháp", score: analysis.grammar },
-                { label: "Từ vựng", score: analysis.vocabulary },
-                { label: "Mạch lạc", score: analysis.coherence },
-                { label: "Hoàn thành", score: analysis.taskResponse },
-              ].map((item, index) => (
-                <div key={index} className="rounded-lg bg-gray-50 p-4">
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="text-sm font-medium">{item.label}</span>
-                    <span className="text-lg font-bold text-orange-600">
-                      {item.score}
-                    </span>
-                  </div>
-                  <Progress value={item.score} className="h-2" />
-                </div>
-              ))}
-            </div>
-
-            {/* Suggestions */}
-            <div className="mb-6 overflow-hidden rounded-xl border-2 border-green-200 bg-green-50">
-              <div className="border-b border-green-200 bg-green-100 p-4">
-                <h4 className="flex items-center gap-2 font-bold text-green-900">
-                  <CheckCircle2 className="h-5 w-5" />
-                  Điểm mạnh
-                </h4>
-              </div>
-              <div className="p-4">
-                <ul className="space-y-2">
-                  {analysis.suggestions.map((suggestion, index) => (
-                    <li key={index} className="flex gap-2 text-sm text-green-900">
-                      <span className="font-bold">✓</span>
-                      <span>{suggestion}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-
-            {/* Errors */}
-            {analysis.errors.length > 0 && (
-              <div className="overflow-hidden rounded-xl border-2 border-orange-200 bg-orange-50">
-                <div className="border-b border-orange-200 bg-orange-100 p-4">
-                  <h4 className="flex items-center gap-2 font-bold text-orange-900">
-                    <AlertCircle className="h-5 w-5" />
-                    Lỗi cần sửa
-                  </h4>
-                </div>
-                <div className="p-4">
-                  <ul className="space-y-3">
-                    {analysis.errors.map((error, index) => (
-                      <li key={index} className="text-sm">
-                        <span className="font-mono rounded-md bg-red-200 px-2 py-1 text-red-900 line-through">
-                          {error.text}
-                        </span>
-                        <span className="mx-2 font-bold text-gray-900">→</span>
-                        <span className="font-mono rounded-md bg-green-200 px-2 py-1 text-green-900">
-                          {error.correction}
-                        </span>
-                        <Badge variant="outline" className="ml-2 border-orange-400 text-xs text-orange-900">
-                          {error.type}
-                        </Badge>
-                      </li>
+          <div className="flex-1 p-4">
+            <div className="mb-4 flex gap-4">
+              <div className="flex-1">
+                <label className="mb-2 block text-sm font-medium text-gray-700">
+                  Writing Type
+                </label>
+                <Select value={writingType} onValueChange={setWritingType}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {writingTypes.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {type.label}
+                      </SelectItem>
                     ))}
-                  </ul>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex-1">
+                <label className="mb-2 block text-sm font-medium text-gray-700">
+                  Your Level
+                </label>
+                <Select value={level} onValueChange={setLevel}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {levels.map((lvl) => (
+                      <SelectItem key={lvl.value} value={lvl.value}>
+                        {lvl.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Generate Topic Button */}
+            <div className="mb-4">
+              <Button
+                onClick={handleGenerateTopic}
+                variant="outline"
+                className="w-full border-orange-300 hover:bg-orange-50"
+                disabled={isLoadingTopic || isChecking}
+              >
+                {isLoadingTopic ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Đang tạo đề bài...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    AI sinh đề bài tự động
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {/* Generated Topic Card */}
+            {topic && (
+              <div className="mb-4 rounded-lg border-2 border-orange-200 bg-orange-50 p-4">
+                <div className="mb-2 flex items-center gap-2">
+                  <Badge className="bg-orange-500">{writingType}</Badge>
+                  <Badge variant="outline" className="border-orange-400">
+                    {topic.word_count}
+                  </Badge>
                 </div>
+                <h3 className="mb-2 font-semibold text-orange-900">{topic.title}</h3>
+                <p className="mb-3 text-sm text-gray-700">{topic.prompt}</p>
+                {topic.tips && topic.tips.length > 0 && (
+                  <div className="border-t border-orange-200 pt-3">
+                    <p className="mb-2 text-xs font-medium text-orange-800">💡 Tips:</p>
+                    <ul className="space-y-1">
+                      {topic.tips.map((tip, idx) => (
+                        <li key={idx} className="flex items-start gap-2 text-xs text-gray-600">
+                          <span className="text-orange-500">•</span>
+                          <span>{tip}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <Textarea
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="Write your text in English here... (minimum 10 characters)"
+              className="min-h-[300px] resize-none font-mono"
+              disabled={isChecking}
+            />
+
+            <div className="mt-4 flex gap-2">
+              <Button
+                onClick={handleCheck}
+                className="flex-1 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
+                disabled={isChecking || text.length < 10}
+              >
+                {isChecking ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Đang chấm bài... (có thể mất 30-60s)
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Chấm bài AI
+                  </>
+                )}
+              </Button>
+              <Button
+                onClick={handleReset}
+                variant="outline"
+                disabled={isChecking}
+              >
+                <RotateCcw className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            {isChecking && (
+              <div className="mt-2 flex items-center gap-2 text-sm text-orange-600">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>AI đang phân tích bài viết của bạn, vui lòng đợi...</span>
               </div>
             )}
           </div>
         </Card>
-      )}
+
+        {/* Feedback Area */}
+        <Card className="flex flex-col">
+          <div className="border-b bg-gradient-to-r from-orange-500 to-red-500 p-4 text-white">
+            <div className="flex items-center gap-3">
+              <Sparkles className="h-5 w-5" />
+              <span className="font-medium">AI Feedback</span>
+            </div>
+          </div>
+
+          <ScrollArea className="flex-1 p-4">
+            {isChecking ? (
+              <div className="flex h-full items-center justify-center text-gray-400">
+                <div className="text-center">
+                  <Loader2 className="mx-auto mb-4 h-16 w-16 animate-spin text-orange-500" />
+                  <p className="text-lg font-medium text-gray-700">AI đang phân tích...</p>
+                  <p className="mt-2 text-sm">Đang kiểm tra ngữ pháp, từ vựng và cấu trúc</p>
+                  <p className="mt-1 text-xs text-gray-500">(Quá trình này có thể mất 30-60 giây)</p>
+                </div>
+              </div>
+            ) : !feedback ? (
+              <div className="flex h-full items-center justify-center text-gray-400">
+                <div className="text-center">
+                  <PenTool className="mx-auto mb-4 h-16 w-16 opacity-20" />
+                  <p>Write something and click "Chấm bài AI"</p>
+                  <p className="mt-2 text-sm">AI will analyze your writing</p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Overall Score */}
+                <div className="rounded-lg bg-gradient-to-br from-orange-50 to-red-50 p-6">
+                  <div className="mb-4 flex items-center justify-between">
+                    <span className="text-lg font-semibold text-gray-700">
+                      Overall Score
+                    </span>
+                    <span className={`text-4xl font-bold ${getScoreColor(feedback.overall_score)}`}>
+                      {feedback.overall_score}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <div className="mb-1 flex items-center justify-between text-sm">
+                        <span className="text-gray-600">Grammar</span>
+                        <span className={`font-medium ${getScoreColor(feedback.grammar_score)}`}>
+                          {feedback.grammar_score}
+                        </span>
+                      </div>
+                      <Progress value={feedback.grammar_score} className="h-2" />
+                    </div>
+
+                    <div>
+                      <div className="mb-1 flex items-center justify-between text-sm">
+                        <span className="text-gray-600">Vocabulary</span>
+                        <span className={`font-medium ${getScoreColor(feedback.vocabulary_score)}`}>
+                          {feedback.vocabulary_score}
+                        </span>
+                      </div>
+                      <Progress value={feedback.vocabulary_score} className="h-2" />
+                    </div>
+
+                    <div>
+                      <div className="mb-1 flex items-center justify-between text-sm">
+                        <span className="text-gray-600">Structure</span>
+                        <span className={`font-medium ${getScoreColor(feedback.structure_score)}`}>
+                          {feedback.structure_score}
+                        </span>
+                      </div>
+                      <Progress value={feedback.structure_score} className="h-2" />
+                    </div>
+
+                    <div>
+                      <div className="mb-1 flex items-center justify-between text-sm">
+                        <span className="text-gray-600">Coherence</span>
+                        <span className={`font-medium ${getScoreColor(feedback.coherence_score)}`}>
+                          {feedback.coherence_score}
+                        </span>
+                      </div>
+                      <Progress value={feedback.coherence_score} className="h-2" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Overall Comment */}
+                <div className="rounded-lg border-l-4 border-orange-500 bg-orange-50 p-4">
+                  <div className="flex items-start gap-3">
+                    <Sparkles className="mt-1 h-5 w-5 text-orange-600" />
+                    <div>
+                      <p className="font-medium text-orange-900">AI Comment</p>
+                      <p className="mt-1 text-sm text-orange-800">{feedback.overall_comment}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Grammar Errors */}
+                {feedback.grammar_errors && feedback.grammar_errors.length > 0 && (
+                  <div>
+                    <h3 className="mb-3 flex items-center gap-2 font-semibold text-gray-800">
+                      <AlertCircle className="h-5 w-5 text-red-500" />
+                      Grammar Errors ({feedback.grammar_errors.length})
+                    </h3>
+                    <div className="space-y-3">
+                      {feedback.grammar_errors.map((error, idx) => (
+                        <div key={idx} className="rounded-lg border border-red-200 bg-red-50 p-3">
+                          <div className="mb-2 flex items-start gap-2">
+                            <Badge variant="destructive" className="mt-0.5">Error</Badge>
+                            <span className="flex-1 text-sm line-through">{error.error}</span>
+                          </div>
+                          <div className="mb-2 flex items-start gap-2">
+                            <CheckCircle2 className="mt-0.5 h-4 w-4 text-green-600" />
+                            <span className="flex-1 text-sm font-medium text-green-700">{error.correction}</span>
+                          </div>
+                          <p className="ml-6 text-xs text-gray-600">{error.explanation}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Vocabulary Suggestions */}
+                {feedback.vocabulary_suggestions && feedback.vocabulary_suggestions.length > 0 && (
+                  <div>
+                    <h3 className="mb-3 flex items-center gap-2 font-semibold text-gray-800">
+                      <Sparkles className="h-5 w-5 text-yellow-500" />
+                      Vocabulary Improvements ({feedback.vocabulary_suggestions.length})
+                    </h3>
+                    <div className="space-y-3">
+                      {feedback.vocabulary_suggestions.map((suggestion, idx) => (
+                        <div key={idx} className="rounded-lg border border-yellow-200 bg-yellow-50 p-3">
+                          <div className="mb-2 flex items-center gap-2 flex-wrap">
+                            <Badge className="bg-yellow-500">Original</Badge>
+                            <span className="text-sm">{suggestion.original}</span>
+                            <span className="text-gray-400">→</span>
+                            <Badge className="bg-green-500">Better</Badge>
+                            <span className="text-sm font-medium text-green-700">{suggestion.suggestion}</span>
+                          </div>
+                          <p className="text-xs text-gray-600">{suggestion.reason}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Strengths */}
+                {feedback.strengths && feedback.strengths.length > 0 && (
+                  <div>
+                    <h3 className="mb-3 flex items-center gap-2 font-semibold text-gray-800">
+                      <CheckCircle2 className="h-5 w-5 text-green-500" />
+                      Strengths
+                    </h3>
+                    <ul className="space-y-2">
+                      {feedback.strengths.map((strength, idx) => (
+                        <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
+                          <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-500" />
+                          <span>{strength}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Improvements */}
+                {feedback.improvements && feedback.improvements.length > 0 && (
+                  <div>
+                    <h3 className="mb-3 flex items-center gap-2 font-semibold text-gray-800">
+                      <AlertCircle className="h-5 w-5 text-blue-500" />
+                      Areas for Improvement
+                    </h3>
+                    <ul className="space-y-2">
+                      {feedback.improvements.map((improvement, idx) => (
+                        <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
+                          <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-500" />
+                          <span>{improvement}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Corrected Text */}
+                {feedback.corrected_text && (
+                  <div>
+                    <h3 className="mb-3 flex items-center gap-2 font-semibold text-gray-800">
+                      <CheckCircle2 className="h-5 w-5 text-green-500" />
+                      Corrected Version
+                    </h3>
+                    <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+                      <p className="whitespace-pre-wrap font-mono text-sm text-gray-800">
+                        {feedback.corrected_text}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </ScrollArea>
+        </Card>
+      </div>
     </div>
   );
 }
+
 

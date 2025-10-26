@@ -17,6 +17,7 @@ import News from './pages/News/News';
 import Lessons from './pages/Lessons/Lessons';
 import ClassContent from './pages/ClassContent/ClassContent';
 import AIPractice from './pages/student/AIPractice';
+import { WritingAI } from './components/ai/WritingAI';
 import CourseContentPage from './pages/CourseContentPage/CourseContentPage';
 import MyCourses from './pages/MyCourses/MyCourses';
 import StudyPlan from './pages/StudyPlan/StudyPlan';
@@ -163,6 +164,14 @@ function App() {
         element={
           <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
             <AIPractice />
+          </Layout>
+        } 
+      />
+      <Route 
+        path="/ai-writing" 
+        element={
+          <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+            <WritingAI />
           </Layout>
         } 
       />

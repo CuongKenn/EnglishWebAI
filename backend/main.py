@@ -7,7 +7,7 @@ from app.routers import auth, users, otp, parent, test
 from app.routers import admin as admin_router
 from app.routers import classes, lessons, exercises, materials, discussions, news, notifications, messages
 from app.routers import courses as courses_router
-from app.routers import ai_conversation
+from app.routers import ai_conversation, ai_writing
 from app.models import User
 
 # Create database tables
@@ -56,6 +56,7 @@ app.include_router(notifications.router, prefix=f"{settings.API_PREFIX}/notifica
 app.include_router(messages.router, prefix=f"{settings.API_PREFIX}/messages", tags=["Messages"])
 app.include_router(courses_router.router, prefix=f"{settings.API_PREFIX}/courses", tags=["Courses"])
 app.include_router(ai_conversation.router, tags=["AI Conversation"])
+app.include_router(ai_writing.router, tags=["AI Writing"])
 
 # Serve media files if available (e.g., uploaded materials)
 try:

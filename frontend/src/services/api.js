@@ -29,7 +29,7 @@ const API_USERS = `${BASE_URL}/api/users`;
 // Create axios instance with default config
 const apiClient = axios.create({
   baseURL: BASE_URL,
-  timeout: 10000,
+  timeout: 60000, // Increase to 60 seconds for AI requests
   headers: {
     'Content-Type': 'application/json',
   },
@@ -38,7 +38,7 @@ const apiClient = axios.create({
 // Create axios instance for /api/v1 endpoints
 const apiV1Client = axios.create({
   baseURL: API_V1,
-  timeout: 10000,
+  timeout: 60000, // Increase to 60 seconds for AI requests
   headers: {
     'Content-Type': 'application/json',
   },
@@ -984,6 +984,33 @@ export const aiAPI = {
     try {
       const response = await apiClient.post('/api/v1/ai/conversation/suggestions', {
         topic
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Check writing
+  checkWriting: async (text, writingType = 'general', level = 'intermediate') => {
+    try {
+      const response = await apiClient.post('/api/v1/ai/writing/check', {
+        text,
+        writing_type: writingType,
+        level
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Generate writing topic
+  generateWritingTopic: async (writingType = 'general', level = 'intermediate') => {
+    try {
+      const response = await apiClient.post('/api/v1/ai/writing/generate-topic', {
+        writing_type: writingType,
+        level
       });
       return response.data;
     } catch (error) {
