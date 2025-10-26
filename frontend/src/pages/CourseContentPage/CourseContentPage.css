@@ -117,7 +117,8 @@
 .lesson-title { font-weight: 500; }
 .lesson-actions {
   display: flex;
-  gap: 16px;
+  align-items: center;
+  gap: 12px;
 }
 .action-icon {
   color: #adb5bd;
@@ -125,6 +126,32 @@
 }
 .action-icon:hover { color: #343a40; }
 .action-icon.completed { color: #28a745; }
+
+/* Start Lesson Button */
+.start-lesson-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.start-lesson-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.start-lesson-btn:active {
+  transform: translateY(0);
+}
 
 
 /* --- Sidebar Phải --- */

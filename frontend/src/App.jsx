@@ -30,6 +30,9 @@ import VocabularyDemo from './pages/VocabularyDemo/VocabularyDemo';
 import VocabularyTest from './pages/VocabularyTest/VocabularyTest';
 import SpeakingExerciseDemo from './pages/SpeakingExercise/SpeakingExerciseDemo';
 import SpeakingExerciseShowcase from './pages/SpeakingExercise/SpeakingExerciseShowcase';
+import ReadingExercise from './pages/ReadingExercise/ReadingExercise';
+import WritingExercise from './pages/WritingExercise/WritingExercise';
+import ListeningExercise from './pages/ListeningExercise/ListeningExercise';
 
 // Import Admin Pages
 import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute';
@@ -220,15 +223,6 @@ function App() {
       />
 
       <Route
-        path="/speaking/:courseId"
-        element={
-          <ProtectedRoute isLoggedIn={isLoggedIn}>
-            <SpeakingExercise />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
         path="/learn/:courseId"
         element={
           <ProtectedRoute isLoggedIn={isLoggedIn}>
@@ -298,6 +292,42 @@ function App() {
             <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
               <CourseContentPage />
             </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/reading-exercise/:courseId/:lessonId"
+        element={
+          <ProtectedRoute isLoggedIn={isLoggedIn}>
+            <ReadingExercise />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/writing-exercise/:courseId/:lessonId"
+        element={
+          <ProtectedRoute isLoggedIn={isLoggedIn}>
+            <WritingExercise />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/speaking-exercise/:courseId/:lessonId"
+        element={
+          <ProtectedRoute isLoggedIn={isLoggedIn}>
+            <SpeakingExercise />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/listening-exercise/:courseId/:lessonId"
+        element={
+          <ProtectedRoute isLoggedIn={isLoggedIn}>
+            <ListeningExercise />
           </ProtectedRoute>
         }
       />

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
-  BookOpen, Award, CheckCircle, Clock, Target,
+  BookOpen, Award, CheckCircle, Clock,
   TrendingUp, Star, Lock, Play, ChevronRight,
   Home, Calendar, User, GraduationCap
 } from 'lucide-react';
@@ -41,7 +41,6 @@ const MyCourses = () => {
     { id: 'overview', label: 'Tổng quan', icon: Home, path: '/lessons' },
     { id: 'study-plan', label: 'Kế hoạch học tập', icon: Calendar, path: '/study-plan' },
     { id: 'my-courses', label: 'Khóa học của tôi', icon: BookOpen, path: '/my-courses' },
-    { id: 'practice', label: 'Luyện tập', icon: Target, path: '/lessons/practice' },
     { id: 'profile', label: 'Hồ sơ học tập', icon: User, path: '/learning-profile' }
   ];
 
