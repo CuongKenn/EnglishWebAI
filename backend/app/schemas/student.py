@@ -243,6 +243,8 @@ class MaterialListResponse(BaseModel):
 class DiscussionThreadCreate(BaseModel):
     title: str
     class_id: Optional[int] = None
+    subject: Optional[str] = None  # Kĩ năng nghe/nói/đọc/viết (label hiển thị)
+    content: Optional[str] = None  # Nội dung câu hỏi ban đầu (tạo post đầu tiên)
 
 class DiscussionPostCreate(BaseModel):
     content: str
