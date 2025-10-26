@@ -13,6 +13,7 @@ import Settings from '../Settings/Settings';
 import Backup from '../Backup/Backup';
 import AISettings from '../AISettings/AISettings';
 import AIAnalytics from '../AIAnalytics/AIAnalytics';
+import Logs from '../Logs/Logs';
 
 
 const AdminDashboard = () => {
