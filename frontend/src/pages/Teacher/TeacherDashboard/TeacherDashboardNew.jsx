@@ -14,6 +14,7 @@ import GradingFeedback from '../GradingFeedback/GradingFeedback';
 import StatisticsReports from '../StatisticsReports/StatisticsReports';
 import OnlineTeaching from '../OnlineTeaching/OnlineTeaching';
 import TeacherOverview from '../TeacherOverview/TeacherOverview';
+import CoursesManage from '../CoursesManage/CoursesManage';
 
 const TeacherDashboardNew = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -87,6 +88,15 @@ const TeacherDashboardNew = () => {
                 >
                   <span className="link-icon">🏫</span>
                   <span className="link-text">Quản lý lớp học</span>
+                </Link>
+              </li>
+              <li className="sidebar-menu-item">
+                <Link 
+                  to="/teacher-dashboard/courses" 
+                  className={`sidebar-link ${isActive('/teacher-dashboard/courses') ? 'active' : ''}`}
+                >
+                  <span className="link-icon">📚</span>
+                  <span className="link-text">Khoá học công khai</span>
                 </Link>
               </li>
               <li className="sidebar-menu-item">
@@ -204,6 +214,7 @@ const TeacherDashboardNew = () => {
             <Route path="/" element={<Navigate to="overview" replace />} />
             <Route path="/overview" element={<TeacherOverview />} />
             <Route path="/classes" element={<ClassManagement />} />
+            <Route path="/courses" element={<CoursesManage />} />
             <Route path="/materials" element={<MaterialsManagement />} />
             <Route path="/news" element={<ManageNews />} />
             <Route path="/question-bank" element={<QuestionBank />} />

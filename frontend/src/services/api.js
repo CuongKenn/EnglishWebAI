@@ -538,6 +538,103 @@ export const materialsAPI = {
   },
 };
 
+// ==================== Courses (Public Catalog) APIs ====================
+export const coursesAPI = {
+  // List public courses (auth required for progress)
+  getCourses: async (params = {}) => {
+    try {
+      const response = await apiClient.get('/api/v1/courses/', { params });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Create a course (teacher/admin)
+  createCourse: async (data) => {
+    try {
+      const response = await apiClient.post('/api/v1/courses/', data);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // List exercises in a course
+  getCourseExercises: async (courseId) => {
+    try {
+      const response = await apiClient.get(`/api/v1/courses/${courseId}/exercises`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Course detail
+  getCourse: async (courseId) => {
+    try {
+      const response = await apiClient.get(`/api/v1/courses/${courseId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Create an exercise (teacher/admin)
+  createCourseExercise: async (courseId, data) => {
+    try {
+      const response = await apiClient.post(`/api/v1/courses/${courseId}/exercises`, data);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Submit exercise (student)
+  submitCourseExercise: async (courseId, exerciseId, submission) => {
+    try {
+      const response = await apiClient.post(`/api/v1/courses/${courseId}/exercises/${exerciseId}/submit`, submission);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Units (Lessons)
+  getUnits: async (courseId) => {
+    try {
+      const response = await apiClient.get(`/api/v1/courses/${courseId}/units`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+  createUnit: async (courseId, data) => {
+    try {
+      const response = await apiClient.post(`/api/v1/courses/${courseId}/units`, data);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+  getQuestions: async (unitId) => {
+    try {
+      const response = await apiClient.get(`/api/v1/courses/units/${unitId}/questions`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+  createQuestion: async (unitId, data) => {
+    try {
+      const response = await apiClient.post(`/api/v1/courses/units/${unitId}/questions`, data);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+};
+
 // ==================== Discussions APIs ====================
 export const discussionsAPI = {
   // Lấy danh sách thảo luận

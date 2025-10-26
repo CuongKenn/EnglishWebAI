@@ -1,124 +1,135 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { BookOpen, BarChart2, Star, ChevronRight, Crown, ArrowUp, Trophy, Film, ClipboardCheck, PenSquare, HelpCircle, CheckCircle } from 'lucide-react';
+import { BookOpen, BarChart2, Star, Film, PenSquare, CheckCircle, Headphones } from 'lucide-react';
 import './CourseContentPage.css';
-
-// --- MOCK DATA: Dữ liệu chi tiết cho từng khóa học ---
-// Trong thực tế, bạn sẽ fetch dữ liệu này từ API dựa trên courseId
-const mockCourseDetails = {
-  'en1_phonics_adventure': {
-    title: 'Phonics Adventure: Học phát âm qua trò chơi',
-    weeks: [
-      {
-        title: 'Tuần 1: The Alphabet',
-        lessons: [
-          { title: 'Bài 1: a - c', hasVideo: true, hasPractice: true, hasTest: true, isCompleted: true },
-          { title: 'Bài 2: d - f', hasVideo: true, hasPractice: true, hasTest: false, isCompleted: true },
-          { title: 'Bài 3: g - i', hasVideo: true, hasPractice: false, hasTest: false, isCompleted: false },
-          { type: 'worksheet', title: 'Phiếu bài tập cuối tuần 1 - Tự luận' }
-        ]
-      },
-      {
-        title: 'Tuần 2: Short Vowels',
-        lessons: [
-          { title: 'Bài 4: Short a (cat, bat)', hasVideo: true, hasPractice: true, hasTest: true, isCompleted: false },
-          { title: 'Bài 5: Short e (pen, web)', hasVideo: true, hasPractice: true, hasTest: true, isCompleted: false },
-          { title: 'Bài 6: Ôn tập', hasVideo: false, hasPractice: true, hasTest: true, isCompleted: false },
-          { type: 'worksheet', title: 'Phiếu bài tập cuối tuần 2 - Tự luận' }
-        ]
-      },
-    ]
-  },
-  // Thêm dữ liệu cho các khóa học khác nếu cần
-  'default': {
-    title: 'Chương trình Tiếng Anh toàn diện',
-    weeks: [ { title: 'Tuần 1', lessons: [{ title: 'Bài 1: Introduction', hasVideo: true, hasPractice: true, hasTest: false, isCompleted: false }] } ]
-  }
-};
-
-const leaderboardData = [
-  { rank: 1, name: 'Phạm Duy Tiên', score: 999, avatar: 'PD' },
-  { rank: 2, name: 'Đỗ Minh Hiếu', score: 557, avatar: 'ĐM' },
-  { rank: 3, name: 'Nguyễn Lê An Nhiên', score: 453, avatar: 'NA' },
-];
+import { coursesAPI } from '../../services/api';
 
 const CourseContentPage = () => {
-  const { courseId } = useParams(); // Lấy ID khóa học từ URL
-  const [courseData, setCourseData] = useState(null);
+  const { courseId } = useParams();
+  const cid = useMemo(() => {
+    try {
+      const s = String(courseId ?? '').trim();
+      const onlyDigits = s.replace(/[^0-9]/g, '');
+      const n = parseInt(onlyDigits, 10);
+      return Number.isFinite(n) && n > 0 ? n : null;
+    } catch { return null; }
+  }, [courseId]);
+  const [title, setTitle] = useState('Khóa học');
+  const [units, setUnits] = useState([]);
+  const [openUnitId, setOpenUnitId] = useState(null);
+  const [questions, setQuestions] = useState({}); // { [unitId]: [] }
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    // Tìm dữ liệu khóa học tương ứng. Nếu không có, dùng dữ liệu mặc định.
-    const data = mockCourseDetails[courseId] || mockCourseDetails['default'];
-    setCourseData(data);
-  }, [courseId]);
+    const load = async () => {
+      setLoading(true); setError('');
+      try {
+        if (!cid) throw new Error('ID khóa học không hợp lệ');
+        const course = await coursesAPI.getCourse(cid);
+        setTitle(course?.title || 'Khóa học');
+        const us = await coursesAPI.getUnits(cid);
+        setUnits(Array.isArray(us) ? us : []);
+      } catch (e) { setError(e?.detail || 'Không tải được nội dung khóa học'); }
+      finally { setLoading(false); }
+    };
+    load();
+  }, [cid]);
 
-  if (!courseData) {
-    return <div>Đang tải nội dung khóa học...</div>; // Hoặc một component loading đẹp hơn
-  }
+  const weeks = useMemo(() => {
+    const map = new Map();
+    for (const u of units) {
+      const w = u.week_index || 1;
+      if (!map.has(w)) map.set(w, []);
+      map.get(w).push(u);
+    }
+    return Array.from(map.entries()).sort((a,b)=>a[0]-b[0]).map(([week, list])=>({ week, list }));
+  }, [units]);
+
+  const loadQuestions = async (unitId) => {
+    try { const data = await coursesAPI.getQuestions(unitId); setQuestions((p)=>({ ...p, [unitId]: data })); }
+    catch { /* ignore */ }
+  };
 
   return (
     <div className="course-content-page">
-      {/* ===== Sidebar Trái: Điều hướng trong khóa học ===== */}
       <aside className="course-sidebar-left">
         <nav className="course-nav">
           <ul>
             <li><Link to="#" className="active">Nội dung khóa học</Link></li>
-            <li><Link to="#">Hướng dẫn khóa học hè 2024</Link></li>
             <li><Link to="#">Thi kiểm tra</Link></li>
             <li><Link to="#">Hỏi đáp</Link></li>
           </ul>
-          <div className="course-meta-info">
-            <span className="info-title">Xem lịch sử học tập</span>
-            <div className="qr-code">
-                {/* Giả sử bạn có ảnh QR code */}
-                <img src="/images/qr-code.png" alt="QR Code" />
-            </div>
-          </div>
         </nav>
       </aside>
 
-      {/* ===== Nội dung chính: Danh sách bài học ===== */}
       <main className="course-main-content">
-        <h1 className="course-page-title">{courseData.title}</h1>
-        <div className="lessons-container">
-          {courseData.weeks.map((week, weekIndex) => (
-            <div key={weekIndex} className="week-section">
-              <h2 className="week-title">{week.title}</h2>
-              <ul className="lessons-list">
-                {week.lessons.map((lesson, lessonIndex) => (
-                  <li key={lessonIndex} className={`lesson-item ${lesson.type === 'worksheet' ? 'worksheet-item' : ''}`}>
-                    <div className="lesson-info">
-                      {lesson.type === 'worksheet' ? (
-                        <PenSquare size={18} className="lesson-icon" />
-                      ) : (
+        <h1 className="course-page-title">{title}</h1>
+        {loading && <div>Đang tải nội dung...</div>}
+        {!loading && error && <div style={{ color: '#b91c1c' }}>{error}</div>}
+        {!loading && !error && (
+          <div className="lessons-container">
+            {weeks.length === 0 && (
+              <div className="empty" style={{ padding: 16, color: '#64748b' }}>
+                Chưa có bài (Unit) nào trong khóa học này. Hãy vào Trang giáo viên → Khoá học công khai → Cài đặt để thêm bài.
+              </div>
+            )}
+            {weeks.map(({ week, list }) => (
+              <div key={week} className="week-section">
+                <h2 className="week-title">Tuần {week}</h2>
+                <ul className="lessons-list">
+                  {list.map((u) => (
+                    <li key={u.id} className="lesson-item">
+                      <div className="lesson-info" onClick={async ()=>{ setOpenUnitId(openUnitId===u.id?null:u.id); if (!questions[u.id]) await loadQuestions(u.id); }} style={{ cursor: 'pointer' }}>
                         <BookOpen size={18} className="lesson-icon" />
-                      )}
-                      <span className="lesson-title">{lesson.title}</span>
-                    </div>
-                    {lesson.type !== 'worksheet' && (
-                      <div className="lesson-actions">
-                        {lesson.hasVideo && <Film size={20} className="action-icon video" title="Bài giảng video" />}
-                        {lesson.hasPractice && <ClipboardCheck size={20} className="action-icon practice" title="Luyện tập" />}
-                        {lesson.hasTest && <PenSquare size={20} className="action-icon test" title="Kiểm tra" />}
-                        {lesson.isCompleted && <CheckCircle size={20} className="action-icon completed" title="Đã hoàn thành" />}
+                        <span className="lesson-title">{u.title}</span>
                       </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
+                      <div className="lesson-actions">
+                        <span className="badge">{u.questions} câu hỏi</span>
+                      </div>
+
+                      {openUnitId === u.id && (
+                        <div className="questions-panel">
+                          {(questions[u.id]||[]).map((q)=> (
+                            <div key={q.id} className="question-item">
+                              <div className="q-header">
+                                {q.type === 'mcq' && <PenSquare size={16} />}
+                                {q.type === 'mcq-audio' && <Headphones size={16} />}
+                                {q.type === 'prompt' && <PenSquare size={16} />}
+                                {q.type === 'essay' && <PenSquare size={16} />}
+                                <span>{q.prompt}</span>
+                              </div>
+                              {q.media_url && (
+                                <audio controls src={q.media_url} style={{ marginTop: 8 }} />
+                              )}
+                              {Array.isArray(q.options) && q.options.length > 0 && (
+                                <ul className="options-list">
+                                  {q.options.map((opt, idx)=> (
+                                    <li key={idx} className={q?.answer?.correct===idx? 'correct':''}>{String.fromCharCode(65+idx)}. {opt}</li>
+                                  ))}
+                                </ul>
+                              )}
+                            </div>
+                          ))}
+                          {(questions[u.id]?.length||0)===0 && (<div className="empty">Chưa có câu hỏi</div>)}
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
       </main>
 
-      {/* ===== Sidebar Phải: Khóa học liên quan & Xếp hạng ===== */}
       <aside className="course-sidebar-right">
         <div className="related-courses-card">
             <h4><BookOpen size={16}/> KHÓA HỌC LIÊN QUAN</h4>
             <div className="related-course-item">
-                <img src="/images/courses/default.png" alt="Course thumbnail"/>
+                <img src="/vite.svg" alt="Course thumbnail"/>
                 <div className="related-course-info">
-                    <h5>Toán lớp 1 (Hỗ trợ học bộ...)</h5>
+                    <h5>Course mẫu</h5>
                 </div>
             </div>
         </div>
@@ -127,32 +138,20 @@ const CourseContentPage = () => {
                 <h4><BarChart2 size={18} /> XẾP HẠNG TRONG KHÓA HỌC</h4>
                 <Link to="#" className="details-link">Chi tiết</Link>
             </div>
-            <div className="leaderboard-filters">
-                <button className="filter-btn active">Tuần này</button>
-            </div>
             <ul className="leaderboard-list">
-                {leaderboardData.map(user => (
-                  <li key={user.rank}>
+                {[{rank:1,name:'Học sinh A',score:120},{rank:2,name:'Học sinh B',score:90}].map(u => (
+                  <li key={u.rank}>
                     <div className="leaderboard-user-info">
-                      <div className={`rank-badge rank-${user.rank}`}>{user.rank}</div>
-                      <span className="name">{user.name}</span>
+                      <div className={`rank-badge rank-${u.rank}`}>{u.rank}</div>
+                      <span className="name">{u.name}</span>
                     </div>
                     <div className="score-col">
-                      <span className="score">{user.score}</span>
+                      <span className="score">{u.score}</span>
                       <Star size={14} className="star-icon" />
                     </div>
                   </li>
                 ))}
             </ul>
-        </div>
-        <div className="user-profile-card redesigned">
-            <div className="user-info">
-                <div className="user-avatar">HT</div>
-                <div className="user-details">
-                    <span className="user-name">Hoàng Trần</span>
-                </div>
-            </div>
-            <div className="user-score"><Star size={18} /><span>0</span></div>
         </div>
       </aside>
     </div>
@@ -160,3 +159,4 @@ const CourseContentPage = () => {
 };
 
 export default CourseContentPage;
+

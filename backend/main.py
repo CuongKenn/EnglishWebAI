@@ -6,6 +6,7 @@ from app.core.database import engine, Base, SessionLocal
 from app.routers import auth, users, otp, parent, test
 from app.routers import admin as admin_router
 from app.routers import classes, lessons, exercises, materials, discussions, news, notifications, messages
+from app.routers import courses as courses_router
 from app.models import User
 
 # Create database tables
@@ -22,12 +23,12 @@ app = FastAPI(
 # CORS Middleware
 app.add_middleware(
     CORSMiddleware,
+    # NOTE: do not include "*" when allow_credentials=True to avoid browser blocking
     allow_origins=[
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         "http://localhost:5173",  # Vite dev server
         "http://127.0.0.1:5173",
-        "*"  # Fallback cho development
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
@@ -52,6 +53,7 @@ app.include_router(discussions.router, prefix=f"{settings.API_PREFIX}/discussion
 app.include_router(news.router, prefix=f"{settings.API_PREFIX}/news", tags=["News"])
 app.include_router(notifications.router, prefix=f"{settings.API_PREFIX}/notifications", tags=["Notifications"])
 app.include_router(messages.router, prefix=f"{settings.API_PREFIX}/messages", tags=["Messages"])
+app.include_router(courses_router.router, prefix=f"{settings.API_PREFIX}/courses", tags=["Courses"])
 
 # Serve media files if available (e.g., uploaded materials)
 try:
@@ -86,11 +88,19 @@ async def startup_event():
             print("✅ Auto-seed completed!")
         else:
             print(f"📊 Database already has {user_count} users. Skipping auto-seed.")
-        
+
         # Initialize default system configurations
         from app.services.system_config_service import SystemConfigService
         SystemConfigService.initialize_default_configs(db)
         print("✅ System configurations initialized!")
+
+        # Seed public courses if none exist
+        try:
+            from app.utils.seed import seed_courses, seed_course_units_questions
+            seed_courses(db)
+            seed_course_units_questions(db)
+        except Exception as se:
+            print(f"⚠️  Course seeding skipped: {se}")
         
     except Exception as e:
         print(f"⚠️  Startup error: {str(e)}")

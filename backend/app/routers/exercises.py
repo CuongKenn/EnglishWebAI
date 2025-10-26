@@ -10,7 +10,12 @@ from app.models.exercise import Exercise
 from app.models.submission import Submission
 from app.models.enrollment import Enrollment
 from app.models.classroom import Classroom
-from app.schemas.student import ExerciseListResponse, ExerciseResponse
+from app.schemas.student import (
+    ExerciseListResponse,
+    ExerciseResponse,
+    ExerciseCreate,
+    ExerciseUpdate,
+)
 from pydantic import BaseModel
 
 router = APIRouter()
@@ -417,3 +422,131 @@ async def get_exercise_statistics(
         "average_score": round(average_score, 2),
         "late_submissions": late_submissions
     }
+
+
+# ===================== Teacher/Admin: CRUD Exercises =====================
+
+def _ensure_can_manage_class(db: Session, current_user: User, class_id: int) -> Classroom:
+    classroom: Optional[Classroom] = db.query(Classroom).filter(Classroom.id == class_id).first()
+    if not classroom:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy lớp học")
+    if current_user.role in (UserRole.ADMIN, UserRole.SUPERADMIN):
+        return classroom
+    if current_user.role == UserRole.TEACHER and classroom.teacher_id == current_user.id:
+        return classroom
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Không có quyền quản lý lớp học này")
+
+
+def _get_exercise_class_id(db: Session, exercise: Exercise) -> Optional[int]:
+    if exercise.class_id:
+        return exercise.class_id
+    if exercise.lesson_id:
+        from app.models.lesson import Lesson  # local import to avoid cycles
+        lesson = db.query(Lesson).filter(Lesson.id == exercise.lesson_id).first()
+        if lesson:
+            return lesson.class_id
+    return None
+
+
+@router.get("/by-class/{class_id}", response_model=List[ExerciseResponse])
+async def list_exercises_by_class_teacher(
+    class_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    _ensure_can_manage_class(db, current_user, class_id)
+    rows = db.query(Exercise).filter(Exercise.class_id == class_id).all()
+    return rows
+
+
+@router.get("/by-lesson/{lesson_id}", response_model=List[ExerciseResponse])
+async def list_exercises_by_lesson_teacher(
+    lesson_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    from app.models.lesson import Lesson
+    lesson = db.query(Lesson).filter(Lesson.id == lesson_id).first()
+    if not lesson:
+        raise HTTPException(status_code=404, detail="Không tìm thấy bài học")
+    _ensure_can_manage_class(db, current_user, int(lesson.class_id))
+    rows = db.query(Exercise).filter(Exercise.lesson_id == lesson_id).all()
+    return rows
+
+
+@router.post("/", response_model=ExerciseResponse, status_code=status.HTTP_201_CREATED)
+async def create_exercise_teacher(
+    payload: ExerciseCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if not payload.class_id and not payload.lesson_id:
+        raise HTTPException(status_code=400, detail="Cần cung cấp class_id hoặc lesson_id")
+
+    class_id: Optional[int] = payload.class_id
+    if payload.lesson_id and not class_id:
+        from app.models.lesson import Lesson
+        lesson = db.query(Lesson).filter(Lesson.id == payload.lesson_id).first()
+        if not lesson:
+            raise HTTPException(status_code=404, detail="Không tìm thấy bài học")
+        class_id = int(lesson.class_id)
+    if class_id is None:
+        raise HTTPException(status_code=400, detail="Không xác định được lớp học cho bài tập")
+
+    _ensure_can_manage_class(db, current_user, int(class_id))
+    ex = Exercise(
+        class_id=class_id,
+        lesson_id=payload.lesson_id,
+        title=payload.title,
+        description=payload.description,
+        type=payload.type or "assignment",
+        max_score=payload.max_score,
+    )
+    db.add(ex)
+    db.commit()
+    db.refresh(ex)
+    return ex
+
+
+@router.put("/{exercise_id}", response_model=ExerciseResponse)
+async def update_exercise_teacher(
+    exercise_id: int,
+    payload: ExerciseUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    ex = db.query(Exercise).filter(Exercise.id == exercise_id).first()
+    if not ex:
+        raise HTTPException(status_code=404, detail="Không tìm thấy bài tập")
+    class_id = _get_exercise_class_id(db, ex)
+    if class_id is None:
+        raise HTTPException(status_code=400, detail="Bài tập không gắn lớp hợp lệ")
+    _ensure_can_manage_class(db, current_user, int(class_id))
+
+    if payload.title is not None:
+        ex.title = payload.title
+    if payload.description is not None:
+        ex.description = payload.description
+    if payload.max_score is not None:
+        ex.max_score = payload.max_score
+    db.commit()
+    db.refresh(ex)
+    return ex
+
+
+@router.delete("/{exercise_id}")
+async def delete_exercise_teacher(
+    exercise_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    ex = db.query(Exercise).filter(Exercise.id == exercise_id).first()
+    if not ex:
+        raise HTTPException(status_code=404, detail="Không tìm thấy bài tập")
+    class_id = _get_exercise_class_id(db, ex)
+    if class_id is None:
+        raise HTTPException(status_code=400, detail="Bài tập không gắn lớp hợp lệ")
+    _ensure_can_manage_class(db, current_user, int(class_id))
+    db.delete(ex)
+    db.commit()
+    return {"message": "Đã xóa bài tập"}
