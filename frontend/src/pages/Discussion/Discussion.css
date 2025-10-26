@@ -361,13 +361,14 @@
     justify-content: center;
     gap: 0.25rem;
     padding: 0.5rem 0;
-    border-radius: 8px;
-    background-color: #f9fafb;
-    border: 1px solid #f3f4f6;
-    min-width: 65px;
+    border-radius: 10px;
+    background-color: #ffffff; /* Tăng tương phản với card */
+    border: 1px solid #e5e7eb;
+    min-width: 68px;
     text-align: center;
-    color: #4b5563;
+    color: #111827;
     font-family: inherit;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
 }
 
 .stat-item span, .stat-item-btn span {
@@ -382,7 +383,7 @@
 
 .stat-item-btn:hover {
     background-color: #f3f4f6;
-    border-color: #e5e7eb;
+    border-color: #d1d5db;
 }
 
 .stat-item-btn:active {
@@ -426,31 +427,46 @@
     display: flex;
     gap: 1rem;
     padding: 0.75rem 1.5rem;
+    border-top: 1px solid #f3f4f6; /* phân tách rõ hơn */
+    background: #ffffff; /* làm nền riêng để không chìm với page */
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    margin: 0.75rem 0 0.25rem;
+    opacity: 1 !important;
 }
 
-.action-btn {
-    background: transparent;
-    border: 1px solid #d1d5db;
-    color: #4b5563;
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
+.question-actions .action-btn {
+    background: #ffffff; /* luôn nhìn thấy trên nền card */
+    border: 1px solid #e5e7eb;
+    color: #111827 !important; /* cưỡng bức màu chữ đậm */
+    padding: 0.6rem 1rem;
+    border-radius: 10px;
     cursor: pointer;
-    font-weight: 500;
+    font-weight: 600;
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    transition: all 0.2s;
+    transition: all 0.18s ease;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    opacity: 1 !important; /* tránh bị giảm mờ bởi style toàn cục */
 }
 
-.action-btn:hover {
-    background: #f9fafb;
-    border-color: #9ca3af;
+.question-actions .action-btn:hover {
+    background: #f3f4f6;
+    border-color: #cbd5e1;
+    transform: translateY(-1px);
 }
 
-.action-btn.liked {
-    color: #ef4444;
-    border-color: #fca5a5;
+.question-actions .action-btn.liked {
+    color: #b91c1c;
+    border-color: #fecaca;
     background-color: #fee2e2;
+}
+
+/* đảm bảo icon theo màu chữ, và đậm hơn một chút */
+.question-actions .action-btn svg {
+    color: inherit !important;
+    opacity: 0.9;
 }
 
 /* --- [BẮT ĐẦU] CSS MỚI CHO Ô TRẢ LỜI --- */

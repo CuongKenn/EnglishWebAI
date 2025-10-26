@@ -702,6 +702,16 @@ export const discussionsAPI = {
     }
   },
 
+  // Xóa bình luận
+  deletePost: async (discussionId, postId) => {
+    try {
+      const response = await apiClient.delete(`/api/v1/discussions/${discussionId}/posts/${postId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
   // Like câu hỏi
   likeDiscussion: async (discussionId) => {
     try {
@@ -716,6 +726,16 @@ export const discussionsAPI = {
   unlikeDiscussion: async (discussionId) => {
     try {
       const response = await apiClient.delete(`/api/v1/discussions/${discussionId}/like`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Tăng lượt xem
+  viewThread: async (discussionId) => {
+    try {
+      const response = await apiClient.post(`/api/v1/discussions/${discussionId}/view`);
       return response.data;
     } catch (error) {
       throw error.response ? error.response.data : error;

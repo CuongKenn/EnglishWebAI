@@ -269,7 +269,7 @@ def seed_discussions(db: Session, force: bool = False):
                 post = DiscussionPost(
                     thread_id=thread.id,
                     content=post_data["content"],
-                    created_by=post_data["created_by"],
+                    author_id=post_data["created_by"],
                     created_at=datetime.utcnow() - timedelta(days=len(created_threads), hours=i)
                 )
                 db.add(post)

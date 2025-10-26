@@ -58,6 +58,10 @@ def ensure_enrollments_columns() -> None:
 def ensure_schema() -> None:
     ensure_classes_columns()
     ensure_enrollments_columns()
+    try:
+        ensure_discussions_columns()
+    except Exception as e:
+        print(f"[migrations] ensure discussions columns failed: {e}")
     # Ensure new public courses tables exist (idempotent)
     try:
         from app.models.course import Course, CourseExercise, CourseSubmission
@@ -77,6 +81,21 @@ def ensure_schema() -> None:
         ensure_course_questions_columns()
     except Exception as e:
         print(f"[migrations] ensure courses columns failed: {e}")
+
+
+def ensure_discussions_columns() -> None:
+    """Ensure columns exist for discussion features on local SQLite DBs.
+
+    Adds missing columns to:
+      - discussion_threads: subject (VARCHAR), views (INTEGER DEFAULT 0)
+    Safe to run multiple times.
+    """
+    with engine.begin() as conn:
+        t = "discussion_threads"
+        if not _has_column(t, "subject"):
+            conn.execute(text("ALTER TABLE discussion_threads ADD COLUMN subject VARCHAR"))
+        if not _has_column(t, "views"):
+            conn.execute(text("ALTER TABLE discussion_threads ADD COLUMN views INTEGER DEFAULT 0"))
 
 
 def ensure_courses_columns() -> None:
