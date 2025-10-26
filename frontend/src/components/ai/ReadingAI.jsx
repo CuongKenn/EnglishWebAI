@@ -1,6 +1,6 @@
 ﻿import { useState } from 'react';
 import { Book, Loader2, Check, X, Award, TrendingUp, Sparkles } from 'lucide-react';
-import { aiAPI } from '../../services/api';
+import { aiAPI, aiUsageAPI } from '../../services/api';
 
 export function ReadingAI() {
   const [level, setLevel] = useState('intermediate');
@@ -47,6 +47,8 @@ export function ReadingAI() {
         q.question_format === 'fill_blank' ? '' : -1
       );
       setUserAnswers(initialAnswers);
+      // Log usage: generate passage
+      aiUsageAPI.logUsage('reading', { action: 'generate', level, readingType, hasTopic: !!topic });
     } catch (error) {
       console.error('Error generating passage:', error);
       alert('Không thể tạo bài đọc. Vui lòng thử lại!');
@@ -91,9 +93,11 @@ export function ReadingAI() {
     try {
       const data = await aiAPI.checkReadingAnswers(userAnswers);
       setResults(data);
+      aiUsageAPI.logUsage('reading', { action: 'submit', level, readingType, total: data?.total_questions, correct: data?.correct_answers, score: data?.score });
     } catch (error) {
       console.error('Error checking answers:', error);
       alert('Không thể chấm bài. Vui lòng thử lại!');
+      aiUsageAPI.logUsage('reading', { action: 'submit', level, readingType, status: 'error' });
     } finally {
       setIsChecking(false);
     }

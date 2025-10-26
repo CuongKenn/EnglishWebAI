@@ -4,6 +4,7 @@ Handles AI-powered reading comprehension practice
 """
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
 from typing import Dict, List
 from app.schemas.ai_reading import (
     GenerateReadingRequest,
@@ -14,6 +15,8 @@ from app.schemas.ai_reading import (
 )
 from app.services.gemini_service import gemini_service
 from app.core.dependencies import get_current_user
+from app.core.database import get_db
+from app.services.ai_analytics_service import AIAnalyticsService
 from app.models.user import User
 
 router = APIRouter()
@@ -25,7 +28,8 @@ passage_cache: Dict[int, Dict] = {}
 @router.post("/generate", response_model=GenerateReadingResponse)
 async def generate_reading_passage(
     request: GenerateReadingRequest,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
 ):
     """
     Generate a reading passage with comprehension questions based on level and type
@@ -65,6 +69,12 @@ async def generate_reading_passage(
             estimated_time=result.get('estimated_time', 5)
         )
         
+        # Log usage (non-blocking)
+        try:
+            AIAnalyticsService.log_usage(db, user_id=current_user.id, feature="reading", metadata={"action": "generate", "reading_type": request.reading_type, "level": request.level})
+        except Exception:
+            pass
+
         return response
         
     except Exception as e:
@@ -80,7 +90,8 @@ async def generate_reading_passage(
 @router.post("/check-answers", response_model=CheckAnswersResponse)
 async def check_reading_answers(
     request: CheckAnswersRequest,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
 ):
     """
     Check user's answers to reading comprehension questions
@@ -122,6 +133,12 @@ async def check_reading_answers(
             feedback=result.get('feedback', '')
         )
         
+        # Log usage (non-blocking)
+        try:
+            AIAnalyticsService.log_usage(db, user_id=current_user.id, feature="reading", metadata={"action": "submit"})
+        except Exception:
+            pass
+
         return response
         
     except HTTPException:

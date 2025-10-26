@@ -5,7 +5,7 @@ import { Card } from "../ui/card";
 import { Avatar, AvatarFallback } from "../ui/avatar";
 import { MessageCircle, Send, Mic, Volume2, Loader2 } from "lucide-react";
 import { ScrollArea } from "../ui/scroll-area";
-import { aiAPI } from "../../services/api";
+import { aiAPI, aiUsageAPI } from "../../services/api";
 
 export function ConversationAI() {
   const [messages, setMessages] = useState([
@@ -49,6 +49,13 @@ export function ConversationAI() {
           timestamp: new Date(),
         };
         setMessages(prev => [...prev, aiMessage]);
+
+        // Log usage (success)
+        aiUsageAPI.logUsage('conversation', {
+          action: 'send',
+          status: 'success',
+          message_length: currentMessage.length,
+        });
       } catch (error) {
         console.error('Failed to get AI response:', error);
         
@@ -59,6 +66,13 @@ export function ConversationAI() {
           timestamp: new Date(),
         };
         setMessages(prev => [...prev, errorMessage]);
+
+        // Log usage (error)
+        aiUsageAPI.logUsage('conversation', {
+          action: 'send',
+          status: 'error',
+          message_length: currentMessage.length,
+        });
       } finally {
         setIsLoading(false);
       }

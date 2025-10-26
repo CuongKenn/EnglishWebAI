@@ -78,3 +78,9 @@ export const adminOverviewStats = async () => {
   const res = await apiV1.get('/admin/stats/overview');
   return res.data;
 };
+
+// -------- AI Analytics --------
+export const adminGetAIAnalytics = async (range = '30d') => {
+  const res = await apiV1.get('/admin/ai/analytics', { params: { range } });
+  return res.data;
+};

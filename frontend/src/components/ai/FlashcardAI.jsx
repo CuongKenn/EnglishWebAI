@@ -5,6 +5,7 @@ import { Badge } from "../ui/badge";
 import { Layers, Check, X, Volume2, Star, GraduationCap, RefreshCw } from "lucide-react";
 import { Progress } from "../ui/progress";
 import { getFlashcards, saveFlashcardProgress } from "../../services/aiService";
+import { aiUsageAPI } from "../../services/api";
 
 export function FlashcardAI() {
   const [selectedLevel, setSelectedLevel] = useState("B1");
@@ -43,11 +44,13 @@ export function FlashcardAI() {
       // This ensures flashcards always display
       const mockCards = getMockFlashcards();
       setAllFlashcards(mockCards);
+      aiUsageAPI.logUsage('flashcard', { action: 'load' });
       
     } catch (error) {
       console.error("Error loading flashcards:", error);
       // Always fallback to mock data
       setAllFlashcards(getMockFlashcards());
+      aiUsageAPI.logUsage('flashcard', { action: 'load', status: 'error' });
     } finally {
       setLoading(false);
     }
@@ -291,8 +294,10 @@ export function FlashcardAI() {
       // Lưu tiến độ lên server
       try {
         await saveFlashcardProgress(currentCard.id, true);
+        aiUsageAPI.logUsage('flashcard', { action: 'know', level: selectedLevel });
       } catch (error) {
         console.error("Error saving progress:", error);
+        aiUsageAPI.logUsage('flashcard', { action: 'know', level: selectedLevel, status: 'error' });
       }
     }
     handleNext();

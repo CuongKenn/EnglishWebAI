@@ -7,7 +7,7 @@ import { PenTool, Sparkles, CheckCircle2, AlertCircle, RefreshCw, Loader2, Rotat
 import { Progress } from "../ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { ScrollArea } from "../ui/scroll-area";
-import { aiAPI } from "../../services/api";
+import { aiAPI, aiUsageAPI } from "../../services/api";
 
 export function WritingAI() {
   const [text, setText] = useState("");
@@ -25,6 +25,8 @@ export function WritingAI() {
       setTopic(generatedTopic);
       setText(""); // Clear text when new topic is generated
       setFeedback(null); // Clear previous feedback
+      // Log usage: generate topic
+      aiUsageAPI.logUsage('writing', { action: 'generate_topic', writingType, level });
     } catch (error) {
       console.error('Failed to generate topic:', error);
       alert('Failed to generate topic. Please try again.');
@@ -43,9 +45,11 @@ export function WritingAI() {
     try {
       const result = await aiAPI.checkWriting(text, writingType, level);
       setFeedback(result);
+      aiUsageAPI.logUsage('writing', { action: 'check', writingType, level, length: text.length });
     } catch (error) {
       console.error('Failed to check writing:', error);
       alert('Failed to check your writing. Please try again.');
+      aiUsageAPI.logUsage('writing', { action: 'check', status: 'error', writingType, level, length: text.length });
     } finally {
       setIsChecking(false);
     }
