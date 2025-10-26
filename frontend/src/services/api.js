@@ -1065,6 +1065,26 @@ export const aiAPI = {
   },
 };
 
+// ===========================
+// AI Usage Logging API
+// ===========================
+export const aiUsageAPI = {
+  // Log a usage event for AI features
+  logUsage: async (feature, metadata = {}) => {
+    try {
+      const response = await apiClient.post('/api/v1/ai/usage', {
+        feature,
+        metadata,
+      });
+      return response.data;
+    } catch (error) {
+      // Do not throw to avoid breaking UX; surface optional debugging
+      // console.warn('AI usage log failed', error);
+      return null;
+    }
+  },
+};
+
 // Export default apiClient for custom requests
 export default apiClient;
 

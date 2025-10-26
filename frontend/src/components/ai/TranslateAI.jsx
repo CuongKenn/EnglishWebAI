@@ -3,6 +3,7 @@ import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
 import { Card } from "../ui/card";
 import { Languages, ArrowRightLeft, Volume2, Copy, Check } from "lucide-react";
+import { aiUsageAPI } from "../../services/api";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 
 export function TranslateAI() {
@@ -13,10 +14,15 @@ export function TranslateAI() {
   const [copied, setCopied] = useState(false);
 
   const handleTranslate = () => {
-    // Mock translation
-    if (sourceText.trim()) {
-      setTranslatedText("This is a sample AI translation. In a real application, this would call an AI translation API.");
-    }
+    if (!sourceText.trim()) return;
+    // Mock translation (no backend yet)
+    setTranslatedText("This is a sample AI translation. In a real application, this would call an AI translation API.");
+    // Log usage (non-blocking)
+    aiUsageAPI.logUsage('translate', {
+      source: sourceLang,
+      target: targetLang,
+      length: sourceText.length,
+    });
   };
 
   const handleSwapLanguages = () => {

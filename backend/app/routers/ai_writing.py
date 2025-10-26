@@ -4,6 +4,7 @@ Handles AI-powered writing check and feedback
 """
 
 from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
 from app.schemas.ai_writing import (
     WritingCheckRequest, 
     WritingCheckResponse,
@@ -12,6 +13,8 @@ from app.schemas.ai_writing import (
 )
 from app.services.gemini_service import gemini_service
 from app.core.dependencies import get_current_user
+from app.core.database import get_db
+from app.services.ai_analytics_service import AIAnalyticsService
 from app.models.user import User
 
 router = APIRouter(prefix="/api/v1/ai/writing")
@@ -20,7 +23,8 @@ router = APIRouter(prefix="/api/v1/ai/writing")
 @router.post("/check", response_model=WritingCheckResponse)
 async def check_writing(
     request: WritingCheckRequest,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """
     Check English writing and provide detailed feedback
@@ -40,6 +44,11 @@ async def check_writing(
         writing_type=request.writing_type,
         level=request.level
     )
+    # Log usage (non-blocking)
+    try:
+        AIAnalyticsService.log_usage(db, user_id=current_user.id, feature="writing", metadata={"action": "check", "writing_type": request.writing_type, "level": request.level})
+    except Exception:
+        pass
     
     return WritingCheckResponse(**feedback)
 
@@ -47,7 +56,8 @@ async def check_writing(
 @router.post("/generate-topic", response_model=WritingTopicResponse)
 async def generate_topic(
     request: WritingTopicRequest,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """
     Generate a writing topic/prompt based on type and level
@@ -66,5 +76,10 @@ async def generate_topic(
         writing_type=request.writing_type,
         level=request.level
     )
+    # Log usage (non-blocking)
+    try:
+        AIAnalyticsService.log_usage(db, user_id=current_user.id, feature="writing", metadata={"action": "generate_topic", "writing_type": request.writing_type, "level": request.level})
+    except Exception:
+        pass
     
     return WritingTopicResponse(**topic_data)

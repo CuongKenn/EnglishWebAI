@@ -4,6 +4,7 @@ Handles AI-powered conversation endpoints
 """
 
 from fastapi import APIRouter, HTTPException, Depends
+from sqlalchemy.orm import Session
 from app.schemas.ai_conversation import (
     ConversationRequest,
     ConversationResponse,
@@ -13,6 +14,8 @@ from app.schemas.ai_conversation import (
 from app.services.gemini_service import gemini_service
 from app.models.user import User
 from app.core.dependencies import get_current_user
+from app.core.database import get_db
+from app.services.ai_analytics_service import AIAnalyticsService
 
 router = APIRouter(prefix="/api/v1/ai", tags=["AI Conversation"])
 
@@ -20,7 +23,8 @@ router = APIRouter(prefix="/api/v1/ai", tags=["AI Conversation"])
 @router.post("/conversation", response_model=ConversationResponse)
 async def chat_with_ai(
     request: ConversationRequest,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """
     Chat with AI using Gemini
@@ -41,6 +45,13 @@ async def chat_with_ai(
             system_prompt=request.system_prompt
         )
         
+        # Log usage
+        try:
+            AIAnalyticsService.log_usage(db, user_id=current_user.id, feature="conversation", metadata={"action": "chat"})
+        except Exception:
+            # Do not block response on logging errors
+            pass
+
         return ConversationResponse(
             response=ai_response,
             success=True
