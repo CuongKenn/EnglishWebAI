@@ -19,7 +19,6 @@ const ManageClasses = () => {
     code: '',
     teacherId: '',
     grade: '',
-    skill: 'listening',
     maxStudents: 30,
     schedule: '',
     status: 'active',
@@ -80,7 +79,6 @@ const ManageClasses = () => {
         code: classData.code,
         teacherId: classData.teacherId,
         grade: classData.grade || '',
-        skill: classData.skill || 'listening',
         maxStudents: classData.maxStudents,
         schedule: classData.schedule,
         status: classData.status,
@@ -92,7 +90,6 @@ const ManageClasses = () => {
         code: '',
         teacherId: '',
         grade: '',
-        skill: 'listening',
         maxStudents: 30,
         schedule: '',
         status: 'active',
@@ -115,7 +112,6 @@ const ManageClasses = () => {
         code: formData.code,
         teacherId: formData.teacherId ? parseInt(formData.teacherId) : null,
         grade: formData.grade ? parseInt(formData.grade) : null,
-        skill: formData.skill || null,
         maxStudents: formData.maxStudents ? parseInt(formData.maxStudents) : null,
         schedule: formData.schedule,
         status: formData.status,
@@ -345,19 +341,6 @@ const ManageClasses = () => {
                     {Array.from({ length: 12 }, (_, i) => i + 1).map((g) => (
                       <option key={g} value={g}>Lớp {g}</option>
                     ))}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Kỹ năng</label>
-                  <select
-                    required
-                    value={formData.skill}
-                    onChange={(e) => setFormData({ ...formData, skill: e.target.value })}
-                  >
-                    <option value="listening">Listening</option>
-                    <option value="speaking">Speaking</option>
-                    <option value="reading">Reading</option>
-                    <option value="writing">Writing</option>
                   </select>
                 </div>
               </div>

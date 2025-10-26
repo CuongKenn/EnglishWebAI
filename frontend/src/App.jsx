@@ -35,6 +35,7 @@ import SpeakingExerciseShowcase from './pages/SpeakingExercise/SpeakingExerciseS
 // Import Admin Pages
 import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute';
 import AdminDashboard from './pages/Admin/AdminDashboard/AdminDashboard';
+import AdminDashboardV2 from './pages/Admin/AdminDashboardV2/AdminDashboardV2';
 
 // Import Teacher Pages
 import TeacherDashboard from './pages/Teacher/TeacherDashboard/TeacherDashboard';
@@ -318,7 +319,7 @@ function App() {
         path="/admin-dashboard/*"
         element={
           <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="admin">
-            <AdminDashboard />
+            <AdminDashboardV2 />
           </ProtectedRoute>
         }
       />
