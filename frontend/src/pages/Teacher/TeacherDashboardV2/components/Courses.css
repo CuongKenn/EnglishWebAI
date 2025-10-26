@@ -1,0 +1,260 @@
+.courses-page {
+  padding: 32px;
+  max-width: 1400px;
+}
+
+.courses-header {
+  margin-bottom: 32px;
+}
+
+.page-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 8px 0;
+}
+
+.page-subtitle {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0;
+}
+
+.courses-controls {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.search-input {
+  flex: 1;
+  padding: 10px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.search-input:focus {
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.controls-right {
+  display: flex;
+  gap: 12px;
+}
+
+.filter-select {
+  padding: 10px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+  cursor: pointer;
+  outline: none;
+}
+
+.create-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: #1e293b;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.create-btn:hover {
+  background: #0f172a;
+  transform: translateY(-1px);
+}
+
+.courses-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.tab-btn {
+  padding: 8px 16px;
+  border: 1px solid #e2e8f0;
+  background: white;
+  color: #64748b;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.tab-btn:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.tab-btn.active {
+  background: #8b5cf6;
+  color: white;
+  border-color: #8b5cf6;
+}
+
+.courses-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+}
+
+.course-card {
+  border-radius: 16px;
+  padding: 24px;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.course-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+}
+
+.course-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+}
+
+.course-level {
+  padding: 4px 12px;
+  background: #f97316;
+  color: white;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.course-illustration {
+  font-size: 80px;
+  text-align: center;
+  margin: 20px 0;
+}
+
+.course-content {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.course-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 12px 0;
+}
+
+.course-meta {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.course-badge {
+  padding: 4px 10px;
+  background: #3b82f6;
+  color: white;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.course-grade {
+  padding: 4px 10px;
+  background: #f1f5f9;
+  color: #475569;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.course-stats {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.course-progress {
+  margin-bottom: 16px;
+}
+
+.progress-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+
+.progress-bar {
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #1e293b;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.course-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.action-btn {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #e2e8f0;
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-btn:hover {
+  background: #f8fafc;
+  transform: translateY(-1px);
+}
+
+.view-btn:hover {
+  border-color: #3b82f6;
+  color: #3b82f6;
+}
+
+.edit-btn:hover {
+  border-color: #8b5cf6;
+  color: #8b5cf6;
+}
+
+.delete-btn:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+

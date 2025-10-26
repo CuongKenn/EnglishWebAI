@@ -1,0 +1,138 @@
+.exercises-page {
+  padding: 32px;
+  max-width: 1400px;
+}
+
+.exercises-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.exercises-controls {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.ai-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.ai-btn:hover {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  transform: translateY(-1px);
+}
+
+.exercises-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.exercise-card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s;
+}
+
+.exercise-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.exercise-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.exercise-left {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.class-badge,
+.status-badge,
+.type-badge {
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.type-badge {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.exercise-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.grade-btn {
+  color: #10b981;
+}
+
+.grade-btn:hover {
+  background: #dcfce7;
+  border-color: #10b981;
+}
+
+.exercise-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 16px 0;
+}
+
+.exercise-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.meta-label {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.meta-value {
+  font-size: 14px;
+  color: #1e293b;
+  font-weight: 500;
+}
+
+.exercise-progress {
+  /* Progress bar styles (reused) */
+}
+
