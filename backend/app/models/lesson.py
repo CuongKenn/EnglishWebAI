@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Date
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.core.database import Base
@@ -12,6 +12,8 @@ class Lesson(Base):
     title = Column(String, nullable=False)
     content = Column(Text, nullable=True)
     order_index = Column(Integer, nullable=True)
+    session_number = Column(Integer, nullable=True)  # Buổi học thứ mấy
+    lesson_date = Column(Date, nullable=True)  # Ngày học
     published_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

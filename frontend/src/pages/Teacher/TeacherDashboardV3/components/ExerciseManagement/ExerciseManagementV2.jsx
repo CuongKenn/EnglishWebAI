@@ -1,0 +1,424 @@
+import { useState } from 'react';
+import { Plus, Eye, Download, FileText, Clock, Award, Users, Sparkles, Headphones, BookOpen, PenTool, Mic, Search, Filter, ChevronDown } from 'lucide-react';
+import { Card } from '../../../../../components/ui/card';
+import CreateExerciseModalComplete from './CreateExerciseModalComplete';
+import ExerciseDetailModal from './ExerciseDetailModal';
+
+export default function ExerciseManagementV2() {
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedExercise, setSelectedExercise] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterType, setFilterType] = useState('');
+  const [filterClass, setFilterClass] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
+  const [exercises, setExercises] = useState([
+    {
+      id: 1,
+      title: 'Bài tập Nghe Hiểu - Unit 5',
+      type: 'skill_exercise',
+      skill: 'listening',
+      class: 'Lớp 10A1',
+      dueDate: '2025-11-05',
+      maxScore: 10,
+      submissions: 15,
+      totalStudents: 25,
+      status: 'active',
+      content: {
+        audio_url: '/uploads/audio/listening1.mp3',
+        transcript: 'This is a sample transcript...',
+        questions: [
+          {
+            id: 1,
+            type: 'multiple_choice',
+            question: 'What is the main topic?',
+            options: ['A. Travel', 'B. Food', 'C. Sports', 'D. Music'],
+            correct_answer: 'A',
+            points: 2
+          }
+        ]
+      }
+    },
+    {
+      id: 2,
+      title: 'Bài tập Đọc - Climate Change',
+      type: 'skill_exercise',
+      skill: 'reading',
+      class: 'Lớp 10A2',
+      dueDate: '2025-11-08',
+      maxScore: 10,
+      submissions: 18,
+      totalStudents: 22,
+      status: 'active',
+      content: {
+        passage: 'Climate change is one of the most pressing issues...',
+        word_count: 450,
+        questions: []
+      }
+    },
+    {
+      id: 3,
+      title: 'Kiểm tra 15 phút - Unit 6',
+      type: 'test_15min',
+      skill: 'writing',
+      class: 'Lớp 11B1',
+      dueDate: '2025-11-10',
+      maxScore: 10,
+      submissions: 20,
+      totalStudents: 28,
+      status: 'active',
+      content: {
+        prompt: 'Write about your favorite hobby...',
+        word_limit: { min: 150, max: 200 }
+      }
+    },
+    {
+      id: 4,
+      title: 'Kiểm tra Giữa kì - HK1',
+      type: 'midterm',
+      class: 'Lớp 10A1',
+      dueDate: '2025-11-15',
+      maxScore: 100,
+      submissions: 25,
+      totalStudents: 25,
+      status: 'active',
+      content: {
+        file_url: '/uploads/tests/midterm_hk1.pdf'
+      }
+    }
+  ]);
+
+  const handleCreateExercise = (newExercise) => {
+    setExercises([...exercises, { ...newExercise, id: Date.now() }]);
+    setShowCreateModal(false);
+  };
+
+  const handleViewDetail = (exercise) => {
+    setSelectedExercise(exercise);
+    setShowDetailModal(true);
+  };
+
+  const handleUpdateExercise = (updatedExercise) => {
+    setExercises(exercises.map(ex => 
+      ex.id === updatedExercise.id ? updatedExercise : ex
+    ));
+    setShowDetailModal(false);
+  };
+
+  const handleDeleteExercise = (exerciseId) => {
+    if (confirm('Bạn có chắc muốn xóa bài tập này?')) {
+      setExercises(exercises.filter(ex => ex.id !== exerciseId));
+      setShowDetailModal(false);
+    }
+  };
+
+  const getSkillIcon = (skill) => {
+    const icons = {
+      listening: Headphones,
+      speaking: Mic,
+      reading: BookOpen,
+      writing: PenTool
+    };
+    return icons[skill] || FileText;
+  };
+
+  const getTypeLabel = (type) => {
+    const labels = {
+      skill_exercise: 'Bài tập Kỹ năng',
+      test_15min: 'Kiểm tra 15 phút',
+      midterm: 'Kiểm tra Giữa kì',
+      final: 'Kiểm tra Cuối kì'
+    };
+    return labels[type] || type;
+  };
+
+  const getTypeColor = (type) => {
+    const colors = {
+      skill_exercise: 'bg-blue-100 text-blue-800',
+      test_15min: 'bg-yellow-100 text-yellow-800',
+      midterm: 'bg-orange-100 text-orange-800',
+      final: 'bg-red-100 text-red-800'
+    };
+    return colors[type] || 'bg-gray-100 text-gray-800';
+  };
+
+  const getSkillColor = (skill) => {
+    const colors = {
+      listening: 'bg-blue-100 text-blue-800',
+      speaking: 'bg-purple-100 text-purple-800',
+      reading: 'bg-green-100 text-green-800',
+      writing: 'bg-orange-100 text-orange-800'
+    };
+    return colors[skill] || 'bg-gray-100 text-gray-800';
+  };
+
+  // Filter logic
+  const filteredExercises = exercises.filter(exercise => {
+    const matchesSearch = !searchTerm || 
+      exercise.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      exercise.class.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesType = !filterType || exercise.type === filterType;
+    const matchesClass = !filterClass || exercise.class === filterClass;
+    const matchesStatus = !filterStatus || exercise.status === filterStatus;
+    
+    return matchesSearch && matchesType && matchesClass && matchesStatus;
+  });
+
+  return (
+    <div className="p-8">
+      {/* Header Section - Match Courses style */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Quản lý Bài tập & Kiểm tra</h1>
+            <p className="text-gray-600">Tạo bài tập 4 kỹ năng với upload file, AI, hoặc Ngân hàng câu hỏi</p>
+          </div>
+          <button 
+            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
+            onClick={() => setShowCreateModal(true)}
+          >
+            <Plus size={18} />
+            Tạo bài tập mới
+          </button>
+        </div>
+      </div>
+
+      {/* Stats Grid - Match Courses style */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <Card className="p-6">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-gray-600 text-sm mb-1">Tổng bài tập</p>
+              <p className="text-3xl font-bold text-gray-900">{exercises.length}</p>
+            </div>
+            <div className="bg-purple-500 p-3 rounded-lg">
+              <FileText className="w-6 h-6 text-white" />
+            </div>
+          </div>
+        </Card>
+        
+        <Card className="p-6">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-gray-600 text-sm mb-1">Đang mở</p>
+              <p className="text-3xl font-bold text-gray-900">{exercises.filter(ex => ex.status === 'active').length}</p>
+            </div>
+            <div className="bg-pink-500 p-3 rounded-lg">
+              <Clock className="w-6 h-6 text-white" />
+            </div>
+          </div>
+        </Card>
+        
+        <Card className="p-6">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-gray-600 text-sm mb-1">Bài nộp</p>
+              <p className="text-3xl font-bold text-gray-900">{exercises.reduce((sum, ex) => sum + ex.submissions, 0)}</p>
+            </div>
+            <div className="bg-blue-500 p-3 rounded-lg">
+              <Award className="w-6 h-6 text-white" />
+            </div>
+          </div>
+        </Card>
+        
+        <Card className="p-6">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-gray-600 text-sm mb-1">Học sinh</p>
+              <p className="text-3xl font-bold text-gray-900">{exercises.reduce((sum, ex) => sum + ex.totalStudents, 0)}</p>
+            </div>
+            <div className="bg-green-500 p-3 rounded-lg">
+              <Users className="w-6 h-6 text-white" />
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Search and Filter */}
+      <div className="mb-6">
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+          <div className="flex flex-col sm:flex-row gap-4 flex-1">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <input
+                type="text"
+                placeholder="Tìm kiếm bài tập..."
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            
+            <div className="flex gap-3">
+              <select
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
+              >
+                <option value="">Tất cả loại</option>
+                <option value="skill_exercise">Bài tập Kỹ năng</option>
+                <option value="test_15min">Kiểm tra 15 phút</option>
+                <option value="midterm">Kiểm tra Giữa kì</option>
+                <option value="final">Kiểm tra Cuối kì</option>
+              </select>
+              
+              <select
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                value={filterClass}
+                onChange={(e) => setFilterClass(e.target.value)}
+              >
+                <option value="">Tất cả lớp</option>
+                <option value="Lớp 10A1">Lớp 10A1</option>
+                <option value="Lớp 10A2">Lớp 10A2</option>
+                <option value="Lớp 11B1">Lớp 11B1</option>
+              </select>
+              
+              <select
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+              >
+                <option value="">Tất cả trạng thái</option>
+                <option value="active">Đang mở</option>
+                <option value="closed">Đã đóng</option>
+                <option value="draft">Bản nháp</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Exercises Grid - Match Courses style */}
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Danh sách Bài tập & Kiểm tra</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredExercises.map((exercise) => {
+            const SkillIcon = getSkillIcon(exercise.skill);
+            const progressPercentage = exercise.totalStudents > 0 ? (exercise.submissions / exercise.totalStudents) * 100 : 0;
+            
+            return (
+              <Card key={exercise.id} className="p-6 hover:shadow-lg transition-shadow">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex gap-2">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(exercise.type)}`}>
+                      {getTypeLabel(exercise.type)}
+                    </span>
+                    {exercise.skill && (
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getSkillColor(exercise.skill)}`}>
+                        {exercise.skill.toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => handleViewDetail(exercise)}
+                      className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      <Eye size={16} />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteExercise(exercise.id)}
+                      className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                    >
+                      <Download size={16} />
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2">
+                    {exercise.title}
+                  </h3>
+                  
+                  <div className="space-y-2 text-sm text-gray-600">
+                    <div className="flex items-center gap-2">
+                      <Users className="w-4 h-4" />
+                      <span>{exercise.class}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4" />
+                      <span>Hạn: {exercise.dueDate}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Award className="w-4 h-4" />
+                      <span>{exercise.maxScore} điểm</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="mb-4">
+                  <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
+                    <span>Đã nộp: {exercise.submissions}/{exercise.totalStudents}</span>
+                    <span>{Math.round(progressPercentage)}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-purple-600 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${progressPercentage}%` }}
+                    ></div>
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                    Đang mở
+                  </span>
+                  <div className="flex items-center gap-2">
+                    {exercise.skill && <SkillIcon className="w-4 h-4 text-gray-400" />}
+                    <span className="text-xs text-gray-500">
+                      {exercise.type === 'skill_exercise' ? 'Kỹ năng' : 'Kiểm tra'}
+                    </span>
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+        
+        {filteredExercises.length === 0 && (
+          <div className="text-center py-12">
+            <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-500">Chưa có bài tập nào</p>
+          </div>
+        )}
+      </div>
+
+      {/* Info Box */}
+      <Card className="p-6 bg-blue-50 border-blue-200">
+        <div className="flex items-start gap-3">
+          <div className="bg-blue-500 p-2 rounded-lg">
+            <Sparkles className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h4 className="font-semibold text-blue-900 mb-2">💡 Hướng dẫn tạo bài tập</h4>
+            <ul className="text-sm text-blue-800 space-y-1">
+              <li><strong>Listening:</strong> Upload file audio (.mp3, .wav) + câu hỏi</li>
+              <li><strong>Speaking:</strong> Đề bài text + hướng dẫn</li>
+              <li><strong>Reading:</strong> Upload file (.pdf, .docx) hoặc paste text + câu hỏi</li>
+              <li><strong>Writing:</strong> Đề bài text + yêu cầu số từ</li>
+              <li><strong>AI:</strong> Sinh đề từ files hoặc từ Ngân hàng câu hỏi</li>
+              <li><strong>Download:</strong> Xuất đề ra PDF để in hoặc chia sẻ</li>
+            </ul>
+          </div>
+        </div>
+      </Card>
+
+      {/* Modals */}
+      {showCreateModal && (
+        <CreateExerciseModalComplete
+          onClose={() => setShowCreateModal(false)}
+          onCreate={handleCreateExercise}
+        />
+      )}
+
+      {showDetailModal && selectedExercise && (
+        <ExerciseDetailModal
+          exercise={selectedExercise}
+          onClose={() => setShowDetailModal(false)}
+          onUpdate={handleUpdateExercise}
+          onDelete={() => handleDeleteExercise(selectedExercise.id)}
+        />
+      )}
+    </div>
+  );
+}

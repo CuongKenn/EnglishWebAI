@@ -4,8 +4,9 @@ import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import ClassManagement from './components/ClassManagement';
 import Courses from './components/Courses';
-import QuestionBank from './components/QuestionBank';
+import QuestionBank from './components/QuestionBankV2';
 import ExercisesTests from './components/ExercisesTests';
+import ExerciseManagement from './components/ExerciseManagement/ExerciseManagementV2';
 import GradingFeedback from './components/GradingFeedback';
 import Statistics from './components/Statistics';
 import Materials from './components/Materials';
@@ -14,6 +15,11 @@ import Settings from './components/Settings';
 import NewsArticles from './components/NewsArticles';
 import OnlineTeaching from './components/OnlineTeaching';
 import Schedule from './components/Schedule';
+import MyClassesTeacher from './components/MyClassesTeacher';
+import WorksheetGenerator from './components/WorksheetGenerator';
+import StudentAnalytics from './components/StudentAnalytics';
+import SupportGroups from './components/SupportGroups';
+import ExportReports from './components/ExportReports';
 import Navbar from '../../../components/Navbar/Navbar';
 import authService from '../../../services/authService';
 import './TeacherDashboardV3.css';
@@ -42,11 +48,19 @@ const TeacherDashboardV3 = () => {
       case 'news-articles':
         return <NewsArticles />;
       case 'exercises-tests':
-        return <ExercisesTests />;
+        return <ExerciseManagement />;
       case 'grading-feedback':
         return <GradingFeedback />;
+      case 'worksheet-generator':
+        return <WorksheetGenerator />;
+      case 'student-analytics':
+        return <StudentAnalytics />;
+      case 'support-groups':
+        return <SupportGroups />;
       case 'statistics':
         return <Statistics />;
+      case 'export-reports':
+        return <ExportReports />;
       case 'materials':
         return <Materials />;
       case 'online-teaching':

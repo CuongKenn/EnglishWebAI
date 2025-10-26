@@ -1,7 +1,7 @@
 // src/App.jsx
 
 import React, { useState } from 'react'; // 1. Import useState
-import { Routes, Route, useNavigate } from 'react-router-dom';
+import { Routes, Route, useNavigate, Navigate } from 'react-router-dom';
 
 // Import Layout và các trang
 import Layout from './components/Layout/Layout';
@@ -17,6 +17,9 @@ import News from './pages/News/News';
 import Lessons from './pages/Lessons/Lessons';
 import ClassContent from './pages/ClassContent/ClassContent';
 import AIPractice from './pages/student/AIPractice';
+import MyClasses from './pages/student/MyClasses/MyClasses';
+import ExerciseHub from './pages/student/ExerciseHub/ExerciseHub';
+import DoExercise from './pages/student/DoExercise/DoExercise';
 import CourseContentPage from './pages/CourseContentPage/CourseContentPage';
 import MyCourses from './pages/MyCourses/MyCourses';
 import StudyPlan from './pages/StudyPlan/StudyPlan';
@@ -145,14 +148,8 @@ function App() {
       />
 
       {/* Student Routes */}
-      <Route
-        path="/join-class"
-        element={
-          <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
-            <JoinClass />
-          </Layout>
-        }
-      />
+      {/* Redirect old route to new design */}
+      <Route path="/join-class" element={<Navigate to="/my-classes" replace />} />
       <Route
         path="/materials"
         element={
@@ -169,14 +166,32 @@ function App() {
           </Layout>
         } 
       />
-      <Route
-        path="/exercises"
+      <Route 
+        path="/my-classes" 
         element={
           <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
-            <Exercises />
+            <MyClasses />
           </Layout>
-        }
+        } 
       />
+      <Route 
+        path="/exercise-hub" 
+        element={
+          <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+            <ExerciseHub />
+          </Layout>
+        } 
+      />
+      <Route 
+        path="/exercise/:exerciseId" 
+        element={
+          <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+            <DoExercise />
+          </Layout>
+        } 
+      />
+      {/* Redirect old route to new design */}
+      <Route path="/exercises" element={<Navigate to="/exercise-hub" replace />} />
       <Route
         path="/discussion"
         element={

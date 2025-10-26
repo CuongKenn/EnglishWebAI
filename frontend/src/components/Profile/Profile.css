@@ -88,10 +88,16 @@
 .profile-ipad-container {
   position: relative;
   z-index: 2;
-  max-width: 1200px;
-  width: 90%;
+  max-width: 1400px;
+  width: 95%;
   margin: auto;
   animation: fadeInUp 0.8s ease-out;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  padding: 1rem 0;
+  padding-top: 2rem;
 }
 
 @keyframes fadeInUp {
@@ -148,9 +154,11 @@
   background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
   border-radius: 16px;
   overflow: hidden;
-  height: calc(100vh - 12rem);
-  max-height: 750px;
-  min-height: 550px;
+  height: 700px;
+  max-height: 700px;
+  min-height: 700px;
+  width: 1300px;
+  max-width: 1300px;
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: row;
@@ -338,12 +346,13 @@
 .info-item {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 1.25rem;
+  gap: 1.25rem;
+  padding: 1.5rem;
   background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
   border: 2px solid #e9ecef;
   border-radius: 12px;
   transition: all 0.3s ease;
+  min-height: 80px;
 }
 
 .info-item:hover {
@@ -353,8 +362,8 @@
 }
 
 .info-icon {
-  width: 48px;
-  height: 48px;
+  width: 52px;
+  height: 52px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -367,26 +376,31 @@
 .info-content {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .info-content label {
   display: block;
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: 0.75rem;
+  font-weight: 700;
   color: #6c757d;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 0.25rem;
+  letter-spacing: 0.8px;
+  margin-bottom: 0.5rem;
+  line-height: 1.2;
 }
 
 .info-content p {
-  font-size: 1rem;
+  font-size: 1.1rem;
   font-weight: 600;
   color: #212529;
   margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  line-height: 1.4;
 }
 
 /* Settings Tab */
@@ -400,8 +414,24 @@
 
 .settings-header {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 1.5rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.settings-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #212529;
+  margin: 0;
+}
+
+.settings-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
 }
 
 .edit-btn,
@@ -433,6 +463,7 @@
 .edit-actions {
   display: flex;
   gap: 0.75rem;
+  align-items: center;
 }
 
 .save-btn {
@@ -458,10 +489,26 @@
 .settings-form {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 1rem;
+  gap: 1.5rem;
   flex: 1;
   overflow-y: auto;
-  padding-right: 0.5rem;
+  padding: 1rem 0;
+}
+
+.settings-form-section {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid #e9ecef;
+}
+
+.settings-form-section h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #495057;
+  margin: 0 0 1rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #dee2e6;
 }
 
 .form-group.full-width {
@@ -675,12 +722,18 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
 }
 
 .form-group label {
   font-size: 0.9rem;
   font-weight: 600;
   color: #495057;
+  margin-bottom: 0.25rem;
 }
 
 .form-group input,
@@ -771,25 +824,29 @@
 /* Responsive */
 @media (max-width: 1024px) {
   .profile-ipad-container {
-    max-width: 95%;
+    max-width: 98%;
+    padding-top: 1.5rem;
   }
 
   .ipad-screen {
-    height: calc(100vh - 10rem);
-    flex-direction: column;
+    height: 650px;
+    max-height: 650px;
+    min-height: 650px;
+    width: 1100px;
+    max-width: 1100px;
+    flex-direction: row;
   }
 
   .profile-header-section {
-    width: 100%;
-    order: 1;
+    width: 35%;
+    order: 2;
     padding: 2rem 1.5rem;
   }
 
   .profile-content-container {
-    width: 100%;
-    order: 2;
-    border-right: none;
-    border-top: 1px solid #e9ecef;
+    width: 65%;
+    order: 1;
+    border-right: 1px solid #e9ecef;
   }
 
   .info-grid {
@@ -809,6 +866,7 @@
   .profile-ipad-container {
     width: 98%;
     margin: auto;
+    padding-top: 1rem;
   }
 
   .ipad-frame {
@@ -817,22 +875,24 @@
   }
 
   .ipad-screen {
-    height: calc(100vh - 6rem);
-    min-height: 500px;
-    flex-direction: column;
+    height: 600px;
+    max-height: 600px;
+    min-height: 600px;
+    width: 950px;
+    max-width: 950px;
+    flex-direction: row;
   }
 
   .profile-header-section {
-    width: 100%;
+    width: 40%;
     padding: 1.5rem 1rem;
-    order: 1;
+    order: 2;
   }
 
   .profile-content-container {
-    width: 100%;
-    order: 2;
-    border-right: none;
-    border-top: 1px solid #e9ecef;
+    width: 60%;
+    order: 1;
+    border-right: 1px solid #e9ecef;
   }
 
   .info-grid {
@@ -885,17 +945,29 @@
 
   .settings-header {
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+
+  .settings-title {
+    font-size: 1.1rem;
+  }
+
+  .settings-actions {
+    width: 100%;
+    justify-content: flex-end;
   }
 
   .edit-actions {
-    flex-direction: column;
+    flex-direction: row;
+    width: 100%;
+    gap: 0.5rem;
   }
 
   .edit-btn,
   .save-btn,
   .cancel-btn {
-    width: 100%;
+    flex: 1;
     justify-content: center;
   }
 
@@ -918,6 +990,7 @@
     max-width: 100%;
     width: 100%;
     margin: auto;
+    padding-top: 0.5rem;
   }
 
   .ipad-frame {
@@ -939,12 +1012,24 @@
   }
 
   .ipad-screen {
-    height: calc(100vh - 3rem);
-    min-height: 450px;
+    height: 550px;
+    max-height: 550px;
+    min-height: 550px;
+    width: 850px;
+    max-width: 850px;
+    flex-direction: row;
   }
 
   .profile-header-section {
-    padding: 1.25rem 1rem;
+    width: 35%;
+    padding: 1.25rem 0.75rem;
+    order: 2;
+  }
+
+  .profile-content-container {
+    width: 65%;
+    order: 1;
+    border-right: 1px solid #e9ecef;
   }
 
   .profile-avatar-wrapper {
@@ -1000,5 +1085,33 @@
   .resend-btn {
     width: 100%;
     justify-content: center;
+  }
+}
+
+/* Ultra small screens - still horizontal */
+@media (max-width: 320px) {
+  .profile-ipad-container {
+    padding-top: 0.25rem;
+  }
+
+  .ipad-screen {
+    height: 500px;
+    max-height: 500px;
+    min-height: 500px;
+    width: 750px;
+    max-width: 750px;
+    flex-direction: row;
+  }
+
+  .profile-header-section {
+    width: 35%;
+    order: 2;
+    padding: 1rem 0.75rem;
+  }
+
+  .profile-content-container {
+    width: 65%;
+    order: 1;
+    border-right: 1px solid #e9ecef;
   }
 }
