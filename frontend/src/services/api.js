@@ -784,6 +784,26 @@ export const newsAPI = {
       throw error.response ? error.response.data : error;
     }
   },
+
+  // Thích tin tức (yêu cầu đăng nhập)
+  likeNews: async (newsId) => {
+    try {
+      const response = await apiClient.post(`/api/v1/news/${newsId}/like`);
+      return response.data; // { likes }
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Bỏ thích tin tức (yêu cầu đăng nhập)
+  unlikeNews: async (newsId) => {
+    try {
+      const response = await apiClient.delete(`/api/v1/news/${newsId}/like`);
+      return response.data; // { likes }
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
 };
 
 // ==================== Users APIs ====================

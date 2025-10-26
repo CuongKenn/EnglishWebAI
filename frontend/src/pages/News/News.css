@@ -258,6 +258,13 @@
   font-weight: 600;
 }
 
+.stat-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.25rem;
+}
+
 .stat-item i {
   color: #667eea;
 }
@@ -809,9 +816,7 @@
   font-size: 0.9rem;
 }
 
-.stat-item-detail i {
-  color: #9ca3af;
-}
+.stat-item-detail .stat-icon { color: #9ca3af; }
 
 .news-detail-image {
   width: 100%;

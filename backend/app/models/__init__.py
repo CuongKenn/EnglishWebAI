@@ -14,6 +14,7 @@ from app.models.submission import Submission
 from app.models.discussion import DiscussionThread, DiscussionPost
 from app.models.discussion_like import DiscussionLike
 from app.models.news import NewsPost
+from app.models.news_like import NewsLike
 from app.models.attendance import AttendanceRecord
 from app.models.otp import OTP
 from app.models.notification import Notification
@@ -33,6 +34,7 @@ __all__ = [
     "DiscussionPost",
     "DiscussionLike",
     "NewsPost",
+    "NewsLike",
     "AttendanceRecord",
     "OTP",
     "Notification",

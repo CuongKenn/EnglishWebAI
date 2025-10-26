@@ -14,6 +14,7 @@ import Materials from './pages/Materials/Materials';
 import Discussion from './pages/Discussion/Discussion';
 import Exercises from './pages/Exercises/Exercises';
 import News from './pages/News/News';
+import NewsDetail from './pages/News/NewsDetail';
 import Lessons from './pages/Lessons/Lessons';
 import ClassContent from './pages/ClassContent/ClassContent';
 import AIPractice from './pages/student/AIPractice';
@@ -134,6 +135,14 @@ function App() {
         element={
           <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
             <News />
+          </Layout>
+        }
+      />
+      <Route
+        path="/news/:newsId"
+        element={
+          <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+            <NewsDetail />
           </Layout>
         }
       />
