@@ -961,6 +961,37 @@ export const adminAPI = {
   },
 };
 
+// ===========================
+// AI Conversation API
+// ===========================
+export const aiAPI = {
+  // Chat with AI
+  sendMessage: async (message, chatHistory = null, systemPrompt = null) => {
+    try {
+      const response = await apiClient.post('/api/v1/ai/conversation', {
+        message,
+        chat_history: chatHistory,
+        system_prompt: systemPrompt
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Get conversation suggestions
+  getConversationSuggestions: async (topic = null) => {
+    try {
+      const response = await apiClient.post('/api/v1/ai/conversation/suggestions', {
+        topic
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+};
+
 // Export default apiClient for custom requests
 export default apiClient;
 

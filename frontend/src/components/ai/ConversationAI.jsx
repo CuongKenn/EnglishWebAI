@@ -3,8 +3,9 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Card } from "../ui/card";
 import { Avatar, AvatarFallback } from "../ui/avatar";
-import { MessageCircle, Send, Mic, Volume2 } from "lucide-react";
+import { MessageCircle, Send, Mic, Volume2, Loader2 } from "lucide-react";
 import { ScrollArea } from "../ui/scroll-area";
+import { aiAPI } from "../../services/api";
 
 export function ConversationAI() {
   const [messages, setMessages] = useState([
@@ -15,28 +16,52 @@ export function ConversationAI() {
     },
   ]);
   const [inputText, setInputText] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSend = () => {
-    if (inputText.trim()) {
+  const handleSend = async () => {
+    if (inputText.trim() && !isLoading) {
       // Add user message
       const userMessage = {
         role: "user",
         content: inputText,
         timestamp: new Date(),
       };
-      setMessages([...messages, userMessage]);
+      const updatedMessages = [...messages, userMessage];
+      setMessages(updatedMessages);
+      const currentMessage = inputText;
+      setInputText("");
+      setIsLoading(true);
 
-      // Mock AI response
-      setTimeout(() => {
+      try {
+        // Prepare chat history for API (exclude the current message)
+        const chatHistory = messages.map(msg => ({
+          role: msg.role,
+          content: msg.content
+        }));
+
+        // Call AI conversation API using aiAPI
+        const response = await aiAPI.sendMessage(currentMessage, chatHistory);
+
+        // Add AI response
         const aiMessage = {
           role: "ai",
-          content: "That's a great question! In a real application, this would be an AI-generated response based on your input. The AI would help you practice conversation naturally.",
+          content: response.response,
           timestamp: new Date(),
         };
-        setMessages((prev) => [...prev, aiMessage]);
-      }, 1000);
-
-      setInputText("");
+        setMessages(prev => [...prev, aiMessage]);
+      } catch (error) {
+        console.error('Failed to get AI response:', error);
+        
+        // Add error message
+        const errorMessage = {
+          role: "ai",
+          content: "I'm sorry, I'm having trouble responding right now. Please try again in a moment.",
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, errorMessage]);
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -150,13 +175,33 @@ export function ConversationAI() {
                 </div>
               </div>
             ))}
+            
+            {/* Typing Indicator */}
+            {isLoading && (
+              <div className="flex gap-3">
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+                    AI
+                  </AvatarFallback>
+                </Avatar>
+                <div className="max-w-[70%]">
+                  <div className="rounded-2xl bg-gradient-to-r from-purple-50 to-pink-50 p-4">
+                    <div className="flex items-center gap-1">
+                      <div className="h-2 w-2 animate-bounce rounded-full bg-purple-400" style={{ animationDelay: '0ms' }}></div>
+                      <div className="h-2 w-2 animate-bounce rounded-full bg-purple-400" style={{ animationDelay: '150ms' }}></div>
+                      <div className="h-2 w-2 animate-bounce rounded-full bg-purple-400" style={{ animationDelay: '300ms' }}></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </ScrollArea>
 
         {/* Input Area */}
         <div className="border-t bg-gray-50 p-4">
           <div className="flex gap-2">
-            <Button variant="outline" size="icon" className="rounded-full">
+            <Button variant="outline" size="icon" className="rounded-full" disabled={isLoading}>
               <Mic className="h-4 w-4" />
             </Button>
             <Input
@@ -165,17 +210,23 @@ export function ConversationAI() {
               onKeyPress={handleKeyPress}
               placeholder="Nhập tin nhắn bằng tiếng Anh..."
               className="flex-1"
+              disabled={isLoading}
             />
             <Button
               onClick={handleSend}
               className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
               size="icon"
+              disabled={isLoading}
             >
-              <Send className="h-4 w-4" />
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
             </Button>
           </div>
           <p className="mt-2 text-xs text-gray-500">
-            💡 Mẹo: Nhấn Enter để gửi tin nhắn
+            {isLoading ? "🤖 AI đang suy nghĩ..." : "💡 Mẹo: Nhấn Enter để gửi tin nhắn"}
           </p>
         </div>
       </Card>

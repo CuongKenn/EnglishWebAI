@@ -33,6 +33,10 @@ class Settings(BaseSettings):
     OTP_EXPIRE_MINUTES: int = int(os.getenv("OTP_EXPIRE_MINUTES", "5"))
     OTP_LENGTH: int = int(os.getenv("OTP_LENGTH", "6"))
     
+    # AI Configuration
+    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+    
     class Config:
         env_file = ".env"
         case_sensitive = True
