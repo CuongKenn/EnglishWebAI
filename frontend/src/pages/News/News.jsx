@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { newsAPI } from '../../services/api';
 import { useNews } from '../../hooks';
 import './News.css';
 
@@ -35,12 +36,52 @@ const News = () => {
     return colors[category] || '#667eea';
   };
 
-  const handleOpenDetail = (post) => {
+  const handleOpenDetail = async (post) => {
     setSelectedNews(post);
+    try {
+      // Fetch detail to increase view count and update views
+      const data = await newsAPI.getNewsDetail(post.id);
+      setSelectedNews(prev => prev ? { ...prev, views: data.views } : { ...post, views: data.views });
+    } catch (e) {
+      // ignore if detail fetch fails; still show modal
+    }
   };
 
   const handleCloseDetail = () => {
     setSelectedNews(null);
+  };
+
+  const handleLike = async () => {
+    if (!selectedNews) return;
+    try {
+      const res = await newsAPI.likeNews(selectedNews.id);
+      setSelectedNews({ ...selectedNews, likes: res.likes });
+    } catch (err) {
+      alert(err?.detail || 'Vui lòng đăng nhập để thích bài viết');
+    }
+  };
+
+  const handleShare = async () => {
+    if (!selectedNews) return;
+    const shareUrl = `${window.location.origin}/news/${selectedNews.id}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: selectedNews.title, text: selectedNews.description, url: shareUrl });
+      } else if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+        alert('Đã sao chép liên kết bài viết');
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = shareUrl;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        alert('Đã sao chép liên kết bài viết');
+      }
+    } catch (err) {
+      alert('Không thể chia sẻ. Hãy sao chép liên kết: ' + shareUrl);
+    }
   };
 
   return (
@@ -126,16 +167,16 @@ const News = () => {
                       </div>
                       <div className="post-stats">
                         <span className="stat-item">
-                          <i className="far fa-clock"></i> {featuredPost.reading_time || 5} phút đọc
+                          <span className="stat-icon">⏱️</span> {featuredPost.reading_time || 5} phút đọc
                         </span>
                         <span className="stat-item">
-                          <i className="far fa-eye"></i> {featuredPost.views || 0}
+                          <span className="stat-icon">👁️</span> {featuredPost.views || 0}
                         </span>
                         <span className="stat-item">
-                          <i className="far fa-heart"></i> {featuredPost.likes || 0}
+                          <span className="stat-icon">❤️</span> {featuredPost.likes || 0}
                         </span>
                         <span className="stat-item">
-                          <i className="far fa-calendar"></i> {featuredPost.date}
+                          <span className="stat-icon">📅</span> {featuredPost.date}
                         </span>
                       </div>
                     </div>
@@ -198,7 +239,7 @@ const News = () => {
                     <div className="trending-meta">
                       <span className="trending-author">{post.author_name || 'Admin'}</span>
                       <span className="trending-stats">
-                        <i className="far fa-eye"></i> {post.views || 0}
+                        <span className="stat-icon">👁️</span> {post.views || 0}
                       </span>
                     </div>
                   </div>
@@ -275,18 +316,10 @@ const News = () => {
                   </div>
                 </div>
                 <div className="post-stats-detail">
-                  <span className="stat-item-detail">
-                    <i className="far fa-clock"></i> {selectedNews.reading_time || 5} phút đọc
-                  </span>
-                  <span className="stat-item-detail">
-                    <i className="far fa-eye"></i> {selectedNews.views || 0}
-                  </span>
-                  <span className="stat-item-detail">
-                    <i className="far fa-heart"></i> {selectedNews.likes || 0}
-                  </span>
-                  <span className="stat-item-detail">
-                    <i className="far fa-calendar"></i> {selectedNews.date}
-                  </span>
+                <span className="stat-item-detail"><span className="stat-icon">⏱️</span> {selectedNews.reading_time || 5} phút đọc</span>
+                <span className="stat-item-detail"><span className="stat-icon">👁️</span> {selectedNews.views || 0}</span>
+                <span className="stat-item-detail"><span className="stat-icon">❤️</span> {selectedNews.likes || 0}</span>
+                <span className="stat-item-detail"><span className="stat-icon">📅</span> {selectedNews.date}</span>
                 </div>
               </div>
             </div>
@@ -304,10 +337,10 @@ const News = () => {
             </div>
 
             <div className="news-detail-actions">
-              <button className="action-btn like-btn">
+              <button className="action-btn like-btn" onClick={handleLike}>
                 <i className="far fa-heart"></i> Thích ({selectedNews.likes || 0})
               </button>
-              <button className="action-btn share-btn">
+              <button className="action-btn share-btn" onClick={handleShare}>
                 <i className="fas fa-share"></i> Chia sẻ
               </button>
             </div>

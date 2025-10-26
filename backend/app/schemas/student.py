@@ -316,6 +316,8 @@ class NewsPostResponse(BaseModel):
     status: str
     published_at: Optional[datetime]
     created_at: datetime
+    views: Optional[int] = 0
+    likes: Optional[int] = 0
 
     class Config:
         from_attributes = True
@@ -358,3 +360,39 @@ class NewsUpdate(BaseModel):
     category: Optional[str] = None
     image: Optional[str] = None
     status: Optional[str] = None
+
+
+# ============= News Management (Admin/Teacher) =============
+
+class NewsStatusUpdate(BaseModel):
+    status: str  # draft | published | archived
+
+
+class NewsManageItem(BaseModel):
+    id: int
+    title: str
+    description: Optional[str]
+    content: str
+    category: str
+    icon: Optional[str] = None
+    type: Optional[str] = None
+    image: Optional[str] = None
+    status: str
+    views: int = 0
+    likes: int = 0
+    reading_time: Optional[int] = 5
+    author_name: Optional[str] = None
+    author_id: Optional[int] = None
+    published_at: Optional[datetime] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class NewsManageListResponse(BaseModel):
+    items: List[NewsManageItem]
+    total: int
+    skip: int
+    limit: int
