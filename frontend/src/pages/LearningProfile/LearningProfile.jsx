@@ -1,24 +1,28 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { 
-  Home, BookOpen, GraduationCap, Target, User, Calendar,
+  Calendar, GraduationCap, BookOpen, Target,
   Award, TrendingUp, Clock, CheckCircle, Star, Trophy,
   Zap, Heart, Book, MessageCircle, ChevronRight, BarChart3
 } from 'lucide-react';
+import ConsistentSidebarLayout from '../../components/Layout/ConsistentSidebarLayout';
 import './LearningProfile.css';
 
 const LearningProfile = () => {
   const navigate = useNavigate();
   const [activeMenuItem, setActiveMenuItem] = useState('profile');
   const [selectedPeriod, setSelectedPeriod] = useState('all-time');
+  const [isContentPushed, setIsContentPushed] = useState(false);
 
-  const menuItems = [
-    { id: 'overview', label: 'Tổng quan', icon: Home, path: '/lessons' },
-    { id: 'study-plan', label: 'Kế hoạch học tập', icon: Calendar, path: '/study-plan' },
-    { id: 'my-courses', label: 'Khóa học của tôi', icon: BookOpen, path: '/my-courses' },
-    { id: 'practice', label: 'Luyện tập', icon: Target, path: '/lessons/practice' },
-    { id: 'profile', label: 'Hồ sơ học tập', icon: User, path: '/learning-profile' }
-  ];
+  const handleMenuItemClick = (itemId) => {
+    setActiveMenuItem(itemId);
+    setIsContentPushed(true);
+    
+    // Reset animation after completion
+    setTimeout(() => {
+      setIsContentPushed(false);
+    }, 300);
+  };
 
   // Dữ liệu thống kê tổng quan
   const overallStats = {
@@ -67,40 +71,14 @@ const LearningProfile = () => {
   ];
 
   return (
-    <div className="learning-profile-wrapper">
-      {/* Sidebar Trái */}
-      <aside className="profile-sidebar-left">
-        <div className="sidebar-menu">
-          <div className="program-selector">
-            <div className="program-badge">
-              <GraduationCap size={20} />
-              <span>Tiếng Anh Lớp 8</span>
-            </div>
-          </div>
-          
-          <nav className="menu-nav">
-            {menuItems.map(item => (
-              <Link
-                key={item.id}
-                to={item.path}
-                className={`menu-item ${activeMenuItem === item.id ? 'active' : ''}`}
-              >
-                <item.icon size={20} />
-                <span>{item.label}</span>
-              </Link>
-            ))}
-          </nav>
-
-          <div className="sidebar-footer">
-            <button className="back-to-home-btn" onClick={() => navigate('/')}>
-              ← Trở về trang chủ
-            </button>
-          </div>
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <main className="profile-main">
+    <ConsistentSidebarLayout 
+      activeMenuItem={activeMenuItem}
+      onMenuItemClick={handleMenuItemClick}
+      courseTitle="Tiếng Anh Lớp 8"
+    >
+      <div className={`profile-content-wrapper ${isContentPushed ? 'pushed-out' : ''}`}>
+        {/* Main Content */}
+        <main className="profile-main">
         {/* Header */}
         <div className="profile-header">
           <div className="header-content">
@@ -113,10 +91,6 @@ const LearningProfile = () => {
                 <span className="user-grade">
                   <GraduationCap size={16} />
                   Lớp 8
-                </span>
-                <span className="user-rank">
-                  <Trophy size={16} />
-                  {overallStats.rank} Member
                 </span>
                 <span className="user-level">
                   <Star size={16} />
@@ -318,6 +292,7 @@ const LearningProfile = () => {
         </div>
       </main>
     </div>
+    </ConsistentSidebarLayout>
   );
 };
 

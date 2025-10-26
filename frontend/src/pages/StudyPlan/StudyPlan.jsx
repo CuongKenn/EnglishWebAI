@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { 
-  Home, BookOpen, GraduationCap, Target, User, Calendar,
-  Award, CheckCircle, Clock, ChevronRight
+  Award, CheckCircle, Clock, ChevronRight, Calendar
 } from 'lucide-react';
+import ConsistentSidebarLayout from '../../components/Layout/ConsistentSidebarLayout';
 import './StudyPlan.css';
 
 // Dữ liệu giả cho kế hoạch học
@@ -177,14 +177,7 @@ const StudyPlan = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [activeMenuItem, setActiveMenuItem] = useState('study-plan');
   const [selectedMonth, setSelectedMonth] = useState('2025-04');
-
-  const menuItems = [
-    { id: 'overview', label: 'Tổng quan', icon: Home, path: '/lessons' },
-    { id: 'study-plan', label: 'Kế hoạch học tập', icon: Calendar, path: '/study-plan' },
-    { id: 'my-courses', label: 'Khóa học của tôi', icon: BookOpen, path: '/my-courses' },
-    { id: 'practice', label: 'Luyện tập', icon: Target, path: '/lessons/practice' },
-    { id: 'profile', label: 'Hồ sơ học tập', icon: User, path: '/learning-profile' }
-  ];
+  const [isContentPushed, setIsContentPushed] = useState(false);
 
   const months = Object.keys(studyPlanData);
   const currentMonthData = studyPlanData[selectedMonth];
@@ -202,41 +195,23 @@ const StudyPlan = () => {
     return `Buổi ${sessionNumber}`;
   };
 
+  const handleMenuItemClick = (itemId) => {
+    setActiveMenuItem(itemId);
+    setIsContentPushed(true);
+    
+    // Reset animation after completion
+    setTimeout(() => {
+      setIsContentPushed(false);
+    }, 300);
+  };
+
   return (
-    <div className="study-plan-wrapper">
-      {/* Sidebar Trái */}
-      <aside className="study-plan-sidebar-left">
-        <div className="sidebar-menu">
-          <div className="program-selector">
-            <div className="program-badge">
-              <GraduationCap size={20} />
-              <span>Tiếng Anh Lớp 8</span>
-            </div>
-          </div>
-          
-          <nav className="menu-nav">
-            {menuItems.map(item => (
-              <Link
-                key={item.id}
-                to={item.path}
-                className={`menu-item ${activeMenuItem === item.id ? 'active' : ''}`}
-              >
-                <item.icon size={20} />
-                <span>{item.label}</span>
-              </Link>
-            ))}
-          </nav>
-
-          <div className="sidebar-footer">
-            <button className="back-to-home-btn" onClick={() => navigate('/')}>
-              ← Trở về trang chủ
-            </button>
-          </div>
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <main className="study-plan-main">
+    <ConsistentSidebarLayout 
+      activeMenuItem={activeMenuItem}
+      onMenuItemClick={handleMenuItemClick}
+      courseTitle="Tiếng Anh Lớp 8"
+    >
+      <div className={`study-plan-content-wrapper ${isContentPushed ? 'pushed-out' : ''}`}>
         {/* Header */}
         <div className="study-plan-header">
           <div className="header-tabs">
@@ -362,8 +337,8 @@ const StudyPlan = () => {
             })}
           </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </ConsistentSidebarLayout>
   );
 };
 
