@@ -1,8 +1,9 @@
 /* ManageAccounts.css */
 .admin-container {
-  min-height: 100vh;
+  min-height: 100%;
   background: transparent;
-  padding: 30px;
+  padding: 0 !important;
+  margin: 0 !important;
   color: #1f2937;
 }
 
@@ -11,61 +12,59 @@
 }
 
 .admin-content {
-  max-width: 1400px;
-  margin: 0 auto;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 .admin-header {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  padding: 35px;
-  border-radius: 20px;
-  margin-bottom: 35px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  background: white;
+  padding: 2rem;
+  border-radius: 16px;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e5e7eb;
 }
 
 .admin-header h1 {
   color: #1f2937 !important;
-  margin: 0 0 12px 0;
-  font-size: 36px;
-  font-weight: 700;
-  letter-spacing: 0.3px;
+  margin: 0 0 0.5rem 0 !important;
+  font-size: 1.75rem !important;
+  font-weight: 700 !important;
+  letter-spacing: normal !important;
 }
 
 .admin-header p {
   color: #6b7280 !important;
-  margin: 0;
-  font-size: 17px;
-  font-weight: 500;
+  margin: 0 !important;
+  font-size: 0.95rem !important;
+  font-weight: normal !important;
 }
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 24px;
-  margin-bottom: 35px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
 }
 
 .stat-card {
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(20px);
-  padding: 30px;
-  border-radius: 20px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  border: 2px solid rgba(255, 255, 255, 0.25);
+  background: white !important;
+  padding: 1.5rem !important;
+  border-radius: 16px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+  border: 1px solid #e5e7eb !important;
   transition: all 0.3s ease;
-  min-height: 140px;
+  min-height: 120px;
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 1.25rem;
+  backdrop-filter: none !important;
 }
 
 .stat-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
-  border-color: rgba(255, 255, 255, 0.4);
-  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
 }
 
 .stat-icon-box {
@@ -129,35 +128,40 @@
 }
 
 .main-content {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  padding: 30px;
-  border-radius: 20px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  background: white;
+  padding: 1.5rem;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e5e7eb;
 }
 
 .content-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 25px;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid #f3f4f6;
   flex-wrap: wrap;
-  gap: 15px;
+  gap: 1.5rem;
 }
 
 .content-title {
-  font-size: 22px;
+  font-size: 1.5rem;
   font-weight: 700;
   color: #1f2937 !important;
   margin: 0;
-  letter-spacing: 0.3px;
+  letter-spacing: normal;
+  flex-shrink: 0;
 }
 
 .header-actions {
   display: flex;
-  gap: 12px;
+  align-items: center;
+  gap: 1rem;
   flex-wrap: wrap;
+  width: 100%;
+  justify-content: space-between;
 }
 
 .search-box {
@@ -191,19 +195,26 @@
 }
 
 .filter-select {
-  padding: 10px 15px;
-  border: 2px solid #e5e7eb;
+  padding: 0.75rem 1rem;
+  border: 1px solid #d1d5db;
   border-radius: 8px;
-  font-size: 14px;
-  background: white;
+  font-size: 0.95rem;
+  background: white !important;
   cursor: pointer;
-  transition: border-color 0.3s ease;
+  transition: all 0.2s;
   color: #1f2937 !important;
+}
+
+.filter-select option {
+  background: white !important;
+  color: #1f2937 !important;
+  padding: 0.5rem;
 }
 
 .filter-select:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
 .btn-primary {
@@ -419,34 +430,39 @@
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  padding: 20px;
+  padding: 2rem;
 }
 
 .modal-content {
   background: white;
-  border-radius: 12px;
-  padding: 30px;
-  max-width: 500px;
+  border-radius: 16px;
+  padding: 2rem;
+  max-width: 600px;
   width: 100%;
-  max-height: 90vh;
+  max-height: 85vh;
   overflow-y: auto;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #f3f4f6;
 }
 
 .modal-header h2 {
   margin: 0;
-  color: #1f2937;
-  font-size: 24px;
+  color: #1f2937 !important;
+  font-size: 1.5rem;
+  font-weight: 700;
 }
 
 .close-btn {
@@ -470,40 +486,53 @@
 }
 
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: 1.25rem;
 }
 
 .form-group label {
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 0.5rem;
   color: #374151;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 
 .form-group input,
 .form-group select {
   width: 100%;
-  padding: 10px 15px;
-  border: 2px solid #e5e7eb;
+  padding: 0.75rem 1rem;
+  border: 1px solid #d1d5db;
   border-radius: 8px;
-  font-size: 14px;
-  transition: border-color 0.3s ease;
+  font-size: 0.95rem;
+  transition: all 0.2s;
   color: #1f2937 !important;
-  background: white;
+  background: white !important;
+}
+
+.form-group select {
+  cursor: pointer;
+}
+
+.form-group select option {
+  background: white !important;
+  color: #1f2937 !important;
+  padding: 0.5rem;
 }
 
 .form-group input:focus,
 .form-group select:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
 .modal-actions {
   display: flex;
-  gap: 12px;
+  gap: 1rem;
   justify-content: flex-end;
-  margin-top: 25px;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 2px solid #f3f4f6;
 }
 
 .pagination {

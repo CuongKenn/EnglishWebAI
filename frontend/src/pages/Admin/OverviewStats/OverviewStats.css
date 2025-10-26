@@ -1,8 +1,9 @@
 /* OverviewStats.css */
 .admin-container {
-  min-height: 100vh;
+  min-height: 100%;
   background: transparent;
-  padding: 30px;
+  padding: 0;
+  margin: 0;
 }
 
 /* Force dark text color for all elements */
@@ -14,18 +15,45 @@
 }
 
 .admin-content {
-  max-width: 1400px;
-  margin: 0 auto;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 .admin-header {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
-  padding: 35px;
-  border-radius: 20px;
-  margin-bottom: 35px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  padding: 2rem;
+  border-radius: 16px;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.header-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.refresh-btn {
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.refresh-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
 
 .admin-header h1 {
@@ -45,28 +73,39 @@
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 24px;
-  margin-bottom: 35px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+@media (max-width: 1200px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .stat-card {
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(20px);
-  padding: 30px;
-  border-radius: 20px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  border: 2px solid rgba(255, 255, 255, 0.25);
+  background: white;
+  padding: 1.5rem;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e5e7eb;
   transition: all 0.3s ease;
-  min-height: 140px;
+  min-height: 120px;
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 1.25rem;
 }
 
 .stat-card,
 .stat-card * {
-  color: #ffffff !important;
+  color: #1f2937 !important;
 }
 
 .stat-card:hover {
@@ -112,7 +151,7 @@
 }
 
 .stat-title {
-  color: rgba(255, 255, 255, 0.85) !important;
+  color: #6b7280 !important;
   font-size: 14px;
   font-weight: 600;
   margin-bottom: 8px;
@@ -122,15 +161,15 @@
 .stat-value {
   font-size: 42px;
   font-weight: 700;
-  color: #ffffff !important;
+  color: #1f2937 !important;
   margin-bottom: 6px;
   line-height: 1;
   display: block;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  text-shadow: none;
 }
 
 .stat-subtitle {
-  color: rgba(255, 255, 255, 0.75) !important;
+  color: #9ca3af !important;
   font-size: 14px;
   font-weight: 500;
   display: block;
