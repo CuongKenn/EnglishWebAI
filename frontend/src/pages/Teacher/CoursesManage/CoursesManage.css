@@ -1,0 +1,39 @@
+/* Simple styles for course management */
+.courses-manage-wrapper { padding: 20px; }
+.page-title { font-size: 22px; margin-bottom: 4px; }
+.page-subtitle { color: #64748b; margin-bottom: 16px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; }
+.card-title { font-size: 18px; margin-bottom: 12px; }
+.course-form { display: flex; flex-direction: column; gap: 12px; }
+.form-field { display: flex; flex-direction: column; gap: 6px; }
+.form-field > span { font-size: 13px; color: #475569; }
+.form-field input, .form-field textarea, .form-field select { padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.actions { margin-top: 4px; }
+.btn-primary { background: #2563eb; color: white; padding: 8px 12px; border-radius: 8px; border: none; cursor: pointer; }
+.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+.filters { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+.filters select, .filters input { padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 8px; }
+.btn { padding: 6px 10px; border: 1px solid #cbd5e1; background: #f8fafc; border-radius: 8px; cursor: pointer; }
+.course-list { display: flex; flex-direction: column; gap: 8px; }
+.course-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border: 1px solid #e5e7eb; border-radius: 10px; }
+.course-name { font-weight: 600; }
+.course-meta { display: flex; gap: 8px; color: #475569; font-size: 13px; }
+.badge { background: #f1f5f9; border-radius: 999px; padding: 2px 8px; }
+.status.completed { background: #dcfce7; }
+.status.in-progress { background: #dbeafe; }
+.status[title="not-started"], .status.not-started { background: #f1f5f9; }
+.course-stats { display: flex; gap: 12px; color: #334155; font-size: 13px; }
+.empty { color: #64748b; text-align: center; padding: 20px; }
+.alert { margin-top: 8px; padding: 8px 10px; border-radius: 8px; font-size: 14px; }
+.alert-success { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+.alert-error { background: #fef2f2; color: #7f1d1d; border: 1px solid #fecaca; }
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.35); display: flex; align-items: center; justify-content: center; }
+.modal-content { width: 720px; max-width: 95vw; background: #fff; border-radius: 12px; border: 1px solid #e5e7eb; padding: 16px; }
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.close-btn { border: none; background: transparent; font-size: 22px; cursor: pointer; }
+
+@media (max-width: 1024px) {
+  .grid-2 { grid-template-columns: 1fr; }
+}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   BookOpen, Award, CheckCircle, Clock, Target,
@@ -6,316 +6,9 @@ import {
   Home, Calendar, User, GraduationCap
 } from 'lucide-react';
 import './MyCourses.css';
+import { coursesAPI } from '../../services/api';
 
-// Dữ liệu giả đầy đủ cho các khóa học từ lớp 1-12
-const coursesData = {
-  'Lớp 1': [
-    {
-      id: 'g1_vocab_foundation',
-      name: 'Nền Tảng Từ Vựng',
-      category: 'vocabulary',
-      totalUnits: 18,
-      completedUnits: 18,
-      cupsEarned: 40,
-      totalCups: 30,
-      status: 'completed',
-      instructor: '👩‍🏫',
-      level: 'Beginner'
-    },
-    {
-      id: 'g1_phonics',
-      name: 'Phát Âm Cơ Bản',
-      category: 'pronunciation',
-      totalUnits: 18,
-      completedUnits: 12,
-      cupsEarned: 28,
-      totalCups: 36,
-      status: 'in-progress',
-      instructor: '👨‍🏫',
-      level: 'Beginner'
-    },
-    {
-      id: 'g1_listening',
-      name: 'Nghe Chép Chính Tả',
-      category: 'listening',
-      totalUnits: 15,
-      completedUnits: 0,
-      cupsEarned: 1,
-      totalCups: 30,
-      status: 'not-started',
-      instructor: '👩‍🏫',
-      level: 'Beginner'
-    },
-    {
-      id: 'g1_speaking',
-      name: 'Ngữ Pháp Cơ Bản',
-      category: 'grammar',
-      totalUnits: 20,
-      completedUnits: 0,
-      cupsEarned: 0,
-      totalCups: 34,
-      status: 'locked',
-      instructor: '👨‍🏫',
-      level: 'Beginner'
-    }
-  ],
-  'Lớp 2': [
-    {
-      id: 'g2_vocab',
-      name: 'Từ Vựng Nâng Cao',
-      category: 'vocabulary',
-      totalUnits: 20,
-      completedUnits: 15,
-      cupsEarned: 35,
-      totalCups: 40,
-      status: 'in-progress',
-      instructor: '👩‍🏫',
-      level: 'Elementary'
-    },
-    {
-      id: 'g2_reading',
-      name: 'Đọc Hiểu Cơ Bản',
-      category: 'reading',
-      totalUnits: 16,
-      completedUnits: 8,
-      cupsEarned: 18,
-      totalCups: 32,
-      status: 'in-progress',
-      instructor: '👨‍🏫',
-      level: 'Elementary'
-    },
-    {
-      id: 'g2_writing',
-      name: 'Viết Câu Đơn Giản',
-      category: 'writing',
-      totalUnits: 14,
-      completedUnits: 0,
-      cupsEarned: 0,
-      totalCups: 28,
-      status: 'not-started',
-      instructor: '👩‍🏫',
-      level: 'Elementary'
-    },
-    {
-      id: 'g2_grammar',
-      name: 'Ngữ Pháp Tiếp Theo',
-      category: 'grammar',
-      totalUnits: 18,
-      completedUnits: 0,
-      cupsEarned: 0,
-      totalCups: 36,
-      status: 'locked',
-      instructor: '👨‍🏫',
-      level: 'Elementary'
-    }
-  ],
-  'Lớp 3': [
-    {
-      id: 'g3_speaking',
-      name: 'Speaking Cơ Bản Plus',
-      category: 'speaking',
-      totalUnits: 24,
-      completedUnits: 20,
-      cupsEarned: 42,
-      totalCups: 48,
-      status: 'in-progress',
-      instructor: '👩‍🏫',
-      level: 'Pre-Intermediate'
-    },
-    {
-      id: 'g3_writing',
-      name: 'Writing Cơ Bản Plus 2',
-      category: 'writing',
-      totalUnits: 26,
-      completedUnits: 12,
-      cupsEarned: 24,
-      totalCups: 52,
-      status: 'in-progress',
-      instructor: '👨‍🏫',
-      level: 'Pre-Intermediate'
-    },
-    {
-      id: 'g3_reading',
-      name: 'Reading Cơ Bản',
-      category: 'reading',
-      totalUnits: 20,
-      completedUnits: 5,
-      cupsEarned: 10,
-      totalCups: 40,
-      status: 'in-progress',
-      instructor: '👩‍🏫',
-      level: 'Pre-Intermediate'
-    },
-    {
-      id: 'g3_grammar',
-      name: 'Từ Vựng Cơ Bản Plus',
-      category: 'vocabulary',
-      totalUnits: 22,
-      completedUnits: 0,
-      cupsEarned: 1,
-      totalCups: 44,
-      status: 'not-started',
-      instructor: '👨‍🏫',
-      level: 'Pre-Intermediate'
-    }
-  ],
-  'Lớp 4': [
-    {
-      id: 'g4_vocab',
-      name: 'Từ Vựng Trung Cấp',
-      category: 'vocabulary',
-      totalUnits: 25,
-      completedUnits: 18,
-      cupsEarned: 38,
-      totalCups: 50,
-      status: 'in-progress',
-      instructor: '👩‍🏫',
-      level: 'Intermediate'
-    },
-    {
-      id: 'g4_grammar',
-      name: 'Ngữ Pháp Trung Cấp',
-      category: 'grammar',
-      totalUnits: 28,
-      completedUnits: 10,
-      cupsEarned: 22,
-      totalCups: 56,
-      status: 'in-progress',
-      instructor: '👨‍🏫',
-      level: 'Intermediate'
-    },
-    {
-      id: 'g4_listening',
-      name: 'Listening Skills',
-      category: 'listening',
-      totalUnits: 20,
-      completedUnits: 0,
-      cupsEarned: 0,
-      totalCups: 40,
-      status: 'not-started',
-      instructor: '👩‍🏫',
-      level: 'Intermediate'
-    }
-  ],
-  'Lớp 5': [
-    {
-      id: 'g5_reading',
-      name: 'Reading Comprehension',
-      category: 'reading',
-      totalUnits: 30,
-      completedUnits: 25,
-      cupsEarned: 52,
-      totalCups: 60,
-      status: 'in-progress',
-      instructor: '👩‍🏫',
-      level: 'Upper-Intermediate'
-    },
-    {
-      id: 'g5_writing',
-      name: 'Essay Writing Basics',
-      category: 'writing',
-      totalUnits: 24,
-      completedUnits: 15,
-      cupsEarned: 32,
-      totalCups: 48,
-      status: 'in-progress',
-      instructor: '👨‍🏫',
-      level: 'Upper-Intermediate'
-    },
-    {
-      id: 'g5_speaking',
-      name: 'Conversation Skills',
-      category: 'speaking',
-      totalUnits: 22,
-      completedUnits: 8,
-      cupsEarned: 16,
-      totalCups: 44,
-      status: 'in-progress',
-      instructor: '👩‍🏫',
-      level: 'Upper-Intermediate'
-    }
-  ],
-  'Lớp 6': [
-    {
-      id: 'g6_grammar',
-      name: 'Grammar Mastery',
-      category: 'grammar',
-      totalUnits: 32,
-      completedUnits: 28,
-      cupsEarned: 58,
-      totalCups: 64,
-      status: 'in-progress',
-      instructor: '👨‍🏫',
-      level: 'Advanced'
-    },
-    {
-      id: 'g6_vocab',
-      name: 'Academic Vocabulary',
-      category: 'vocabulary',
-      totalUnits: 28,
-      completedUnits: 20,
-      cupsEarned: 42,
-      totalCups: 56,
-      status: 'in-progress',
-      instructor: '👩‍🏫',
-      level: 'Advanced'
-    },
-    {
-      id: 'g6_writing',
-      name: 'Advanced Writing',
-      category: 'writing',
-      totalUnits: 26,
-      completedUnits: 12,
-      cupsEarned: 25,
-      totalCups: 52,
-      status: 'in-progress',
-      instructor: '👨‍🏫',
-      level: 'Advanced'
-    }
-  ]
-};
-
-// Generate data for grades 7-12
-for (let grade = 7; grade <= 12; grade++) {
-  coursesData[`Lớp ${grade}`] = [
-    {
-      id: `g${grade}_comprehensive`,
-      name: `Tiếng Anh Toàn Diện Lớp ${grade}`,
-      category: 'general',
-      totalUnits: 35 + grade,
-      completedUnits: Math.floor(Math.random() * (35 + grade)),
-      cupsEarned: Math.floor(Math.random() * 70),
-      totalCups: 70 + grade * 2,
-      status: Math.random() > 0.3 ? 'in-progress' : 'not-started',
-      instructor: grade % 2 === 0 ? '👩‍🏫' : '👨‍🏫',
-      level: grade <= 8 ? 'Advanced' : 'Expert'
-    },
-    {
-      id: `g${grade}_reading`,
-      name: `Reading Advanced Level ${grade}`,
-      category: 'reading',
-      totalUnits: 30,
-      completedUnits: Math.floor(Math.random() * 30),
-      cupsEarned: Math.floor(Math.random() * 60),
-      totalCups: 60,
-      status: Math.random() > 0.5 ? 'in-progress' : 'not-started',
-      instructor: '👩‍🏫',
-      level: grade <= 8 ? 'Advanced' : 'Expert'
-    },
-    {
-      id: `g${grade}_writing`,
-      name: `Writing Skills Lớp ${grade}`,
-      category: 'writing',
-      totalUnits: 28,
-      completedUnits: Math.floor(Math.random() * 28),
-      cupsEarned: Math.floor(Math.random() * 56),
-      totalCups: 56,
-      status: Math.random() > 0.4 ? 'in-progress' : 'not-started',
-      instructor: '👨‍🏫',
-      level: grade <= 8 ? 'Advanced' : 'Expert'
-    }
-  ];
-}
+// Loại bỏ toàn bộ mock data; sẽ load từ API public courses
 
 const categoryColors = {
   vocabulary: { bg: '#fef3c7', text: '#92400e', accent: '#f59e0b' },
@@ -340,6 +33,9 @@ const MyCourses = () => {
   const [selectedGrade, setSelectedGrade] = useState('Lớp 3');
   const [filterCategory, setFilterCategory] = useState('all');
   const [activeMenuItem, setActiveMenuItem] = useState('my-courses');
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const menuItems = [
     { id: 'overview', label: 'Tổng quan', icon: Home, path: '/lessons' },
@@ -349,18 +45,37 @@ const MyCourses = () => {
     { id: 'profile', label: 'Hồ sơ học tập', icon: User, path: '/learning-profile' }
   ];
 
-  const grades = Object.keys(coursesData);
-  const currentCourses = coursesData[selectedGrade] || [];
-  
-  const filteredCourses = filterCategory === 'all' 
-    ? currentCourses 
-    : currentCourses.filter(c => c.category === filterCategory);
+  // Fixed 12 grades for selector
+  const grades = Array.from({ length: 12 }, (_, i) => `Lớp ${i + 1}`);
+
+  // Load courses from backend when grade/category changes
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const g = parseInt(selectedGrade.replace('Lớp ', ''));
+        const params = { grade: g };
+        if (filterCategory !== 'all') params.skill = filterCategory;
+        const data = await coursesAPI.getCourses(params);
+        setCourses(Array.isArray(data) ? data : []);
+      } catch (e) {
+        setCourses([]);
+        setError(e?.detail || 'Không tải được danh sách khoá học');
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, [selectedGrade, filterCategory]);
+
+  const filteredCourses = useMemo(() => courses, [courses]);
 
   const stats = {
-    total: currentCourses.length,
-    completed: currentCourses.filter(c => c.status === 'completed').length,
-    inProgress: currentCourses.filter(c => c.status === 'in-progress').length,
-    totalCups: currentCourses.reduce((sum, c) => sum + c.cupsEarned, 0)
+    total: filteredCourses.length,
+    completed: filteredCourses.filter(c => c.status === 'completed').length,
+    inProgress: filteredCourses.filter(c => c.status === 'in-progress').length,
+    totalCups: filteredCourses.reduce((sum, c) => sum + (c.cupsEarned || 0), 0)
   };
 
   return (
@@ -371,7 +86,7 @@ const MyCourses = () => {
           <div className="program-selector">
             <div className="program-badge">
               <GraduationCap size={20} />
-              <span>Tiếng Anh Lớp 8</span>
+              <span>Tiếng Anh {selectedGrade}</span>
             </div>
           </div>
           
@@ -483,7 +198,7 @@ const MyCourses = () => {
           ))}
         </div>
 
-        {/* Category Filter */}
+        {/* Category Filter (4 kỹ năng) */}
         <div className="category-filter">
           <button
             className={`filter-btn ${filterCategory === 'all' ? 'active' : ''}`}
@@ -492,16 +207,16 @@ const MyCourses = () => {
             Tất cả
           </button>
           <button
-            className={`filter-btn ${filterCategory === 'vocabulary' ? 'active' : ''}`}
-            onClick={() => setFilterCategory('vocabulary')}
+            className={`filter-btn ${filterCategory === 'listening' ? 'active' : ''}`}
+            onClick={() => setFilterCategory('listening')}
           >
-            Từ vựng
+            Nghe
           </button>
           <button
-            className={`filter-btn ${filterCategory === 'grammar' ? 'active' : ''}`}
-            onClick={() => setFilterCategory('grammar')}
+            className={`filter-btn ${filterCategory === 'speaking' ? 'active' : ''}`}
+            onClick={() => setFilterCategory('speaking')}
           >
-            Ngữ pháp
+            Nói
           </button>
           <button
             className={`filter-btn ${filterCategory === 'reading' ? 'active' : ''}`}
@@ -515,21 +230,27 @@ const MyCourses = () => {
           >
             Viết
           </button>
-          <button
-            className={`filter-btn ${filterCategory === 'speaking' ? 'active' : ''}`}
-            onClick={() => setFilterCategory('speaking')}
-          >
-            Nói
-          </button>
         </div>
       </div>
 
-      {/* Courses Grid */}
+        {/* Courses Grid */}
       <div className="courses-grid">
-        {filteredCourses.map(course => {
-          const colors = categoryColors[course.category];
-          const progress = (course.completedUnits / course.totalUnits) * 100;
-          const cupProgress = (course.cupsEarned / course.totalCups) * 100;
+        {loading && (
+          <div className="empty-state">
+            <BookOpen size={64} className="empty-icon" />
+            <h3>Đang tải khoá học...</h3>
+          </div>
+        )}
+        {(!loading && error) && (
+          <div className="empty-state">
+            <BookOpen size={64} className="empty-icon" />
+            <h3>{error}</h3>
+          </div>
+        )}
+        {!loading && !error && filteredCourses.map(course => {
+          const colors = categoryColors[course.category] || { bg: '#e2e8f0', text: '#1e293b', accent: '#64748b' };
+          const progress = course.totalUnits ? (course.completedUnits / course.totalUnits) * 100 : 0;
+          const cupProgress = course.totalCups ? (course.cupsEarned / course.totalCups) * 100 : 0;
 
           return (
             <div key={course.id} className="course-card">
@@ -614,27 +335,8 @@ const MyCourses = () => {
                   }}
                   onClick={() => {
                     if (course.status === 'locked') return;
-                    console.log('=== DEBUG INFO ===');
-                    console.log('Course category:', course.category);
-                    console.log('Course ID:', course.id);
-                    console.log('Course name:', course.name);
-                    console.log('Is speaking?', course.category === 'speaking');
-                    let targetUrl;
-                    if (course.category === 'speaking') {
-                      targetUrl = `/speaking/${course.id}`;
-                    } else if (course.category === 'writing') {
-                      targetUrl = `/writing/${course.id}`;
-                    } else if (course.category === 'vocabulary') {
-                      targetUrl = `/vocabulary/${course.id}`;
-                    } else {
-                      targetUrl = `/learn/${course.id}`;
-                    }
-                    console.log('Target URL:', targetUrl);
-                    console.log('Current URL:', window.location.href);
-                    console.log('==================');
-                    
-                    // Force navigation
-                    window.location.href = targetUrl;
+                    // Điều hướng tới trang nội dung khoá học tiêu chuẩn
+                    navigate(`/course/${course.id}`);
                   }}
                 >
                   {course.status === 'completed' && 'Xem lại'}

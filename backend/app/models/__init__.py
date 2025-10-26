@@ -19,6 +19,7 @@ from app.models.otp import OTP
 from app.models.notification import Notification
 from app.models.message import Message
 from app.models.system_config import SystemConfig
+from app.models.course import Course, CourseExercise, CourseSubmission, CourseUnit, CourseQuestion
 
 __all__ = [
     "User",
@@ -37,4 +38,9 @@ __all__ = [
     "Notification",
     "Message",
     "SystemConfig",
+    "Course",
+    "CourseExercise",
+    "CourseSubmission",
+    "CourseUnit",
+    "CourseQuestion",
 ]
