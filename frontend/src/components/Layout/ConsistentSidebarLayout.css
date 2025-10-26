@@ -58,43 +58,21 @@
   text-decoration: none;
   color: #64748b;
   border-radius: 8px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
-}
-
-.menu-item::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.5s;
 }
 
 .menu-item:hover {
   background: #f1f5f9;
   color: #334155;
-  transform: translateX(4px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.menu-item:hover::before {
-  left: 100%;
 }
 
 .menu-item.active {
   background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
   color: white;
-  transform: translateX(8px);
   box-shadow: 0 6px 20px rgba(59, 130, 246, 0.3);
   border-left: 4px solid #1e40af;
-}
-
-.menu-item.active::before {
-  left: 100%;
 }
 
 .sidebar-footer {
@@ -110,26 +88,34 @@
   color: #475569;
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.2s;
 }
 
 .back-to-home-btn:hover {
   background: #e2e8f0;
 }
 
-/* ===== MAIN CONTENT - Vị trí cố định ===== */
+/* Fix text cutoff issues - Enhanced */
 .consistent-main-content {
   flex: 1;
   margin-left: 280px;
   padding: 24px;
   min-height: 100vh;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  transform-origin: left center;
+  overflow-x: hidden;
+  overflow-y: auto;
+  box-sizing: border-box;
+  position: relative;
+  z-index: 1;
+}
+
+/* Ensure all text is visible */
+.consistent-main-content * {
+  overflow: visible !important;
+  text-overflow: unset !important;
+  white-space: normal !important;
 }
 
 /* Push out animation cho main content */
 .consistent-main-content.pushed-out {
-  transform: translateX(20px) scale(0.98);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
   border-radius: 12px;
   background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
@@ -145,10 +131,24 @@
 
   .consistent-main-content {
     margin-left: 0;
+    padding: 16px;
   }
 
   .consistent-sidebar-layout {
     flex-direction: column;
+  }
+}
+
+/* Fix text cutoff issues */
+@media (max-width: 1200px) {
+  .consistent-main-content {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .consistent-main-content {
+    padding: 16px;
   }
 }
 

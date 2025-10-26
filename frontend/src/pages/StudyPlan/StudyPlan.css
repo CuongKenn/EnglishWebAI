@@ -1,12 +1,41 @@
 /* StudyPlan.css - Updated for Consistent Layout */
 
+/* Ensure no black backgrounds */
+.study-plan-content-wrapper * {
+  background-color: transparent !important;
+}
+
+.study-plan-content-wrapper .study-plan-header,
+.study-plan-content-wrapper .study-plan-content,
+.study-plan-content-wrapper .session-card,
+.study-plan-content-wrapper .tab-btn,
+.study-plan-content-wrapper .view-calendar-btn,
+.study-plan-content-wrapper .view-grid-btn,
+.study-plan-content-wrapper .view-list-btn,
+.study-plan-content-wrapper .month-btn {
+  background-color: white !important;
+}
+
+.study-plan-content-wrapper .tab-btn.active {
+  background-color: #3b82f6 !important;
+}
+
+.study-plan-content-wrapper .view-grid-btn.active {
+  background-color: #3b82f6 !important;
+}
+
+.study-plan-content-wrapper .month-btn.active {
+  background-color: #3b82f6 !important;
+}
+
 .study-plan-content-wrapper {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  transform-origin: left center;
+  min-height: 100vh;
+  background: #f8fafc;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .study-plan-content-wrapper.pushed-out {
-  transform: translateX(20px) scale(0.98);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
   border-radius: 12px;
   background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
@@ -16,7 +45,16 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 32px;
+  background: white !important;
+  padding: 20px 24px;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(226, 232, 240, 0.5);
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .header-tabs {
@@ -32,7 +70,6 @@
   color: #64748b;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
 }
 
 .tab-btn:hover {
@@ -59,7 +96,6 @@
   border-radius: 6px;
   color: #64748b;
   cursor: pointer;
-  transition: all 0.2s;
 }
 
 .view-grid-btn.active {
@@ -70,16 +106,15 @@
 
 .study-plan-content {
   background: white;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
   position: relative;
   overflow: hidden;
+  border: 1px solid rgba(226, 232, 240, 0.5);
 }
 
 .study-plan-main.pushed-out .study-plan-content {
-  transform: translateX(10px);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
   background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
 }
@@ -92,99 +127,93 @@
   right: 0;
   height: 4px;
   background: linear-gradient(90deg, #3b82f6, #1d4ed8, #3b82f6);
-  background-size: 200% 100%;
-  animation: shimmer 2s infinite;
-}
-
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
 }
 
 .month-selector {
   display: flex;
-  gap: 12px;
-  margin-bottom: 24px;
+  gap: 16px;
+  margin-bottom: 32px;
   flex-wrap: wrap;
+  justify-content: center;
 }
 
 .month-btn {
-  padding: 8px 16px;
-  border: 1px solid #e2e8f0;
+  padding: 12px 24px;
+  border: 2px solid #e2e8f0;
   background: white;
-  border-radius: 6px;
+  border-radius: 12px;
   color: #64748b;
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 14px;
   cursor: pointer;
-  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .month-btn:hover {
   background: #f8fafc;
+  border-color: #3b82f6;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .month-btn.active {
-  background: #3b82f6;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
   color: white;
   border-color: #3b82f6;
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
 }
 
 .month-title {
-  font-size: 24px;
-  font-weight: 600;
+  font-size: 28px;
+  font-weight: 700;
   color: #1e293b;
-  margin-bottom: 24px;
+  margin-bottom: 32px;
+  text-align: center;
+  background: linear-gradient(135deg, #1e293b 0%, #475569 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .sessions-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 24px;
+  padding: 8px 0;
 }
 
 .session-card {
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 20px;
+  border: 2px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 24px;
   background: white;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
-}
-
-.session-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.05), transparent);
-  transition: left 0.6s;
+  height: 260px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .session-card:hover {
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
   border-color: #3b82f6;
-}
-
-.session-card:hover::before {
-  left: 100%;
 }
 
 .session-completed {
   border-color: #10b981;
-  background: #f0fdf4;
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.15);
 }
 
 .session-in-progress {
   border-color: #f59e0b;
-  background: #fffbeb;
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.15);
 }
 
 .session-not-started {
   border-color: #e2e8f0;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
 }
 
 .session-header {
@@ -198,11 +227,13 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 12px;
-  border-radius: 20px;
+  padding: 8px 16px;
+  border-radius: 24px;
   color: white;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
 }
 
 .check-icon {
@@ -216,6 +247,10 @@
 
 .session-content {
   margin-bottom: 16px;
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .session-indicator {
@@ -236,59 +271,85 @@
   font-weight: 500;
   color: #1e293b;
   flex: 1;
+  line-height: 1.4;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-height: none;
+  overflow: visible;
+  text-overflow: unset;
+  display: block;
+  white-space: normal;
 }
 
 .session-category {
   display: inline-block;
-  padding: 4px 8px;
-  border-radius: 4px;
+  padding: 6px 12px;
+  border-radius: 8px;
   font-size: 12px;
-  font-weight: 500;
-  border: 1px solid;
-  margin-bottom: 8px;
+  font-weight: 600;
+  border: 2px solid;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .completion-message,
 .session-message {
-  font-size: 14px;
+  font-size: 12px;
   color: #64748b;
   margin: 8px 0 0 0;
+  line-height: 1.4;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-height: none;
+  overflow: visible;
+  text-overflow: unset;
+  display: block;
+  white-space: normal;
 }
 
 .session-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-top: auto;
 }
 
 .cups-indicator {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   color: #f59e0b;
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 6px 12px;
+  background: rgba(245, 158, 11, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(245, 158, 11, 0.2);
 }
 
 .cup-icon {
   color: #f59e0b;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
 }
 
 .session-action-btn {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 16px;
-  background: #3b82f6;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
   color: white;
   border: none;
-  border-radius: 6px;
-  font-weight: 500;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
   cursor: pointer;
-  transition: background 0.2s;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .session-action-btn:hover {
-  background: #2563eb;
+  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
 }
 
 /* Responsive */
@@ -309,5 +370,91 @@
 
   .sessions-grid {
     grid-template-columns: 1fr;
+    gap: 16px;
   }
+
+  .session-card {
+    height: auto;
+    min-height: 240px;
+  }
+
+  .study-plan-header {
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px;
+  }
+
+  .month-selector {
+    gap: 8px;
+  }
+
+  .month-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+
+  .study-plan-content {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .sessions-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .session-card {
+    padding: 16px;
+  }
+
+  .month-title {
+    font-size: 24px;
+  }
+}
+
+/* Force all text to be visible and prevent black backgrounds */
+.study-plan-content-wrapper * {
+  color: #1e293b !important;
+  overflow: visible !important;
+  text-overflow: unset !important;
+  white-space: normal !important;
+}
+
+/* Prevent text cutoff */
+.study-plan-header,
+.study-plan-content,
+.session-card,
+.tab-btn,
+.view-calendar-btn,
+.view-grid-btn,
+.view-list-btn,
+.month-btn {
+  overflow: visible !important;
+  text-overflow: unset !important;
+  white-space: normal !important;
+}
+
+.study-plan-content-wrapper .tab-btn.active,
+.study-plan-content-wrapper .view-grid-btn.active,
+.study-plan-content-wrapper .month-btn.active {
+  color: white !important;
+}
+
+.study-plan-content-wrapper .session-date,
+.study-plan-content-wrapper .completion-message,
+.study-plan-content-wrapper .session-message {
+  color: #64748b !important;
+}
+
+/* Prevent any black elements */
+.study-plan-content-wrapper .study-plan-header,
+.study-plan-content-wrapper .study-plan-content,
+.study-plan-content-wrapper .session-card,
+.study-plan-content-wrapper .tab-btn,
+.study-plan-content-wrapper .view-calendar-btn,
+.study-plan-content-wrapper .view-grid-btn,
+.study-plan-content-wrapper .view-list-btn,
+.study-plan-content-wrapper .month-btn {
+  background-color: white !important;
 }

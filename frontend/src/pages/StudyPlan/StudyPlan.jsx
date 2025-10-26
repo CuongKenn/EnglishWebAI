@@ -21,7 +21,7 @@ const studyPlanData = {
         status: 'completed',
         cupsEarned: 3,
         totalCups: 3,
-        completedDate: 'Đã Hoàn Thành: Thứ Bảy, 21 Tháng 6'
+        completedDate: 'Hoàn thành: 21/6'
       },
       {
         id: 2,
@@ -45,19 +45,19 @@ const studyPlanData = {
         status: 'completed',
         cupsEarned: 3,
         totalCups: 3,
-        completedDate: 'Đã Hoàn Thành Trước Khi Khởi Tạo Study Plan'
+        completedDate: 'Hoàn thành trước'
       },
       {
         id: 4,
         sessionNumber: 4,
         date: 'Th 7, 26 Thg 4',
         fullDate: '2025-04-26',
-        title: 'Thế giới từ nhiên',
+        title: 'Thế giới tự nhiên',
         category: 'Vocabulary',
         status: 'completed',
         cupsEarned: 2,
         totalCups: 3,
-        completedDate: 'Đã Hoàn Thành: Thứ Tư, 2 Tháng 7'
+        completedDate: 'Hoàn thành: 2/7'
       },
       {
         id: 5,
@@ -93,7 +93,7 @@ const studyPlanData = {
         status: 'completed',
         cupsEarned: 2,
         totalCups: 3,
-        completedDate: 'Đã Hoàn Thành Trước Khi Khởi Tạo Study Plan'
+        completedDate: 'Hoàn thành trước'
       },
       {
         id: 8,
@@ -105,7 +105,7 @@ const studyPlanData = {
         status: 'completed',
         cupsEarned: 3,
         totalCups: 3,
-        completedDate: 'Đã Hoàn Thành: Thứ Năm, 3 Tháng 7'
+        completedDate: 'Hoàn thành: 3/7'
       },
       {
         id: 9,
@@ -198,11 +198,6 @@ const StudyPlan = () => {
   const handleMenuItemClick = (itemId) => {
     setActiveMenuItem(itemId);
     setIsContentPushed(true);
-    
-    // Reset animation after completion
-    setTimeout(() => {
-      setIsContentPushed(false);
-    }, 300);
   };
 
   return (
@@ -267,11 +262,11 @@ const StudyPlan = () => {
           </div>
 
           {/* Month Title */}
-          <h2 className="month-title">{currentMonthData.month}</h2>
+          <h2 className="month-title">{currentMonthData?.month || 'Tháng 4 Năm 2025'}</h2>
 
           {/* Sessions Grid */}
           <div className="sessions-grid">
-            {currentMonthData.sessions.map(session => {
+            {currentMonthData?.sessions?.map(session => {
               const categoryStyle = categoryStyles[session.category] || categoryStyles.Vocabulary;
               
               return (
@@ -289,7 +284,7 @@ const StudyPlan = () => {
                       }}
                     >
                       {getSessionBadgeText(session.sessionNumber)}
-                      {session.status === 'completed' && <CheckCircle size={14} className="check-icon" />}
+                      {(session.status === 'completed' || session.cupsEarned > 0) && <CheckCircle size={14} className="check-icon" />}
                     </div>
                     <span className="session-date">{session.date}</span>
                   </div>
@@ -313,9 +308,6 @@ const StudyPlan = () => {
                     </div>
 
                     {/* Status Messages */}
-                    {session.status === 'completed' && session.completedDate && (
-                      <p className="completion-message">{session.completedDate}</p>
-                    )}
                     {session.message && (
                       <p className="session-message">{session.message}</p>
                     )}
@@ -328,13 +320,14 @@ const StudyPlan = () => {
                       <span className="cups-text">{session.cupsEarned}/{session.totalCups}</span>
                     </div>
                     <button className="session-action-btn">
-                      {session.status === 'completed' ? 'Xem lại' : 'Bắt đầu'}
+                      {session.cupsEarned === session.totalCups ? 'Xem lại' : 
+                       session.cupsEarned > 0 ? 'Tiếp tục' : 'Bắt đầu'}
                       <ChevronRight size={16} />
                     </button>
                   </div>
                 </div>
               );
-            })}
+            }) || []}
           </div>
         </div>
       </div>
