@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Routes, Route, Link, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import './AdminDashboard.css';
-import ProfileDropdown from '../../../components/ProfileDropdown/ProfileDropdown';
+import Navbar from '../../../components/Navbar/Navbar';
 import authService from '../../../services/authService';
 
 // Import admin pages
@@ -11,7 +11,6 @@ import ManageNews from '../ManageNews/ManageNews';
 import OverviewStats from '../OverviewStats/OverviewStats';
 import Settings from '../Settings/Settings';
 import Backup from '../Backup/Backup';
-import Logs from '../Logs/Logs';
 import AISettings from '../AISettings/AISettings';
 import AIAnalytics from '../AIAnalytics/AIAnalytics';
 
@@ -32,29 +31,8 @@ const AdminDashboard = () => {
 
   return (
     <>
-      {/* Top Navbar */}
-      <nav className="admin-top-navbar">
-        <div className="admin-navbar-left">
-          <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span className="admin-navbar-logo">🎓</span>
-            <h1 className="admin-navbar-title">English AI</h1>
-          </Link>
-        </div>
-        <div className="admin-navbar-center">
-          <Link to="/lessons" className="admin-navbar-link">Học bài</Link>
-          <Link to="/news" className="admin-navbar-link">Tin tức</Link>
-          <Link to="/join-class" className="admin-navbar-link">Lớp học của tôi</Link>
-          <Link to="/materials" className="admin-navbar-link">Học liệu cơ bản</Link>
-          <Link to="/exercises" className="admin-navbar-link">Làm bài tập</Link>
-          <Link to="/discussion" className="admin-navbar-link">Hỏi đáp</Link>
-          <Link to="/admin-dashboard" className="admin-navbar-link admin-navbar-link-special">Quản lý</Link>
-        </div>
-        <div className="admin-navbar-right">
-          <button className="admin-navbar-icon-btn" title="Tìm kiếm">🔍</button>
-          <button className="admin-navbar-icon-btn" title="Thông báo">🔔</button>
-          <ProfileDropdown onLogout={handleLogout} />
-        </div>
-      </nav>
+      {/* Top Navbar - Đồng bộ với template chung */}
+      <Navbar userRole="admin" isLoggedIn={true} onLogout={handleLogout} />
 
       <div className="admin-dashboard-wrapper">
       {/* Sidebar */}

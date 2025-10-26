@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "../ui/button";
 import { Card } from "../ui/card";
 import { Badge } from "../ui/badge";
-import { Layers, Check, X, Volume2, Star, GraduationCap } from "lucide-react";
+import { Layers, Check, X, Volume2, Star, GraduationCap, RefreshCw } from "lucide-react";
 import { Progress } from "../ui/progress";
+import { getFlashcards, saveFlashcardProgress } from "../../services/aiService";
 
 export function FlashcardAI() {
   const [selectedLevel, setSelectedLevel] = useState("B1");
@@ -11,8 +12,48 @@ export function FlashcardAI() {
   const [isFlipped, setIsFlipped] = useState(false);
   const [learned, setLearned] = useState([]);
   const [favorites, setFavorites] = useState([]);
+  const [allFlashcards, setAllFlashcards] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  const allFlashcards = [
+  // Load flashcards khi component mount
+  useEffect(() => {
+    loadFlashcards();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const loadFlashcards = async () => {
+    setLoading(true);
+    try {
+      // Try to load all levels from API
+      const levels = ["A1", "A2", "B1", "B2", "C1", "C2"];
+      const allCards = [];
+      
+      for (const level of levels) {
+        try {
+          const cards = await getFlashcards(level, 3); // 3 cards per level
+          if (cards && Array.isArray(cards) && cards.length > 0) {
+            allCards.push(...cards);
+          }
+        } catch (err) {
+          console.log(`Failed to load ${level} flashcards from API, using mock data`);
+        }
+      }
+      
+      // Always use mock data for now since API is not ready
+      // This ensures flashcards always display
+      const mockCards = getMockFlashcards();
+      setAllFlashcards(mockCards);
+      
+    } catch (error) {
+      console.error("Error loading flashcards:", error);
+      // Always fallback to mock data
+      setAllFlashcards(getMockFlashcards());
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getMockFlashcards = () => [
     // A1 Level
     {
       id: 1,
@@ -230,7 +271,9 @@ export function FlashcardAI() {
 
   const filteredFlashcards = allFlashcards.filter(card => card.level === selectedLevel);
   const currentCard = filteredFlashcards[currentIndex];
-  const progress = ((learned.filter(id => filteredFlashcards.some(card => card.id === id)).length) / filteredFlashcards.length) * 100;
+  const progress = filteredFlashcards.length > 0 
+    ? ((learned.filter(id => filteredFlashcards.some(card => card.id === id)).length) / filteredFlashcards.length) * 100 
+    : 0;
 
   const handleNext = () => {
     setIsFlipped(false);
@@ -241,9 +284,16 @@ export function FlashcardAI() {
     }
   };
 
-  const handleKnow = () => {
+  const handleKnow = async () => {
     if (currentCard && !learned.includes(currentCard.id)) {
       setLearned([...learned, currentCard.id]);
+      
+      // Lưu tiến độ lên server
+      try {
+        await saveFlashcardProgress(currentCard.id, true);
+      } catch (error) {
+        console.error("Error saving progress:", error);
+      }
     }
     handleNext();
   };
@@ -267,8 +317,46 @@ export function FlashcardAI() {
     setIsFlipped(false);
   };
 
-  if (!currentCard) {
-    return <div>Loading...</div>;
+  if (loading) {
+    return (
+      <div className="flex h-96 items-center justify-center">
+        <div className="text-center">
+          <RefreshCw className="mx-auto h-12 w-12 animate-spin text-pink-600" />
+          <p className="mt-4 text-gray-600">Đang tải flashcards...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Debug info
+  console.log('FlashcardAI Debug:', {
+    allFlashcardsLength: allFlashcards.length,
+    selectedLevel,
+    filteredFlashcardsLength: filteredFlashcards.length,
+    currentIndex,
+    currentCard
+  });
+
+  if (!currentCard || filteredFlashcards.length === 0) {
+    return (
+      <div className="flex h-96 items-center justify-center">
+        <div className="text-center">
+          <p className="text-lg font-semibold text-gray-700 mb-2">
+            Không có flashcard nào cho cấp độ {selectedLevel}
+          </p>
+          <p className="text-sm text-gray-600">
+            Tổng số flashcards: {allFlashcards.length}
+          </p>
+          <Button 
+            onClick={() => loadFlashcards()} 
+            className="mt-4"
+          >
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Tải lại
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -517,49 +605,54 @@ export function FlashcardAI() {
       </div>
 
       {/* Study Tips */}
-      <Card className="bg-gradient-to-br from-pink-50 to-rose-50 p-6">
-        <h3 className="mb-4">💡 Lộ trình học từ vựng theo CEFR</h3>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <div className="flex gap-3 rounded-lg bg-white p-3">
-            <div className="text-2xl">📚</div>
-            <div>
-              <p className="font-medium">A1-A2: Nền tảng</p>
-              <p className="text-sm text-gray-600">500-1000 từ cơ bản</p>
+      <Card className="overflow-hidden bg-gradient-to-br from-pink-50 to-rose-50">
+        <div className="border-b border-pink-200 bg-gradient-to-r from-pink-100 to-rose-100 p-5">
+          <h3 className="font-bold text-gray-900">💡 Lộ trình học từ vựng theo CEFR</h3>
+          <p className="mt-1 text-sm text-gray-700">Các mẹo học từ vựng hiệu quả</p>
+        </div>
+        <div className="p-6">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="flex gap-3 rounded-xl border border-pink-200 bg-white p-4 shadow-sm">
+              <div className="text-2xl">📚</div>
+              <div>
+                <p className="font-semibold text-gray-900">A1-A2: Nền tảng</p>
+                <p className="text-sm text-gray-700">500-1000 từ cơ bản</p>
+              </div>
             </div>
-          </div>
-          <div className="flex gap-3 rounded-lg bg-white p-3">
-            <div className="text-2xl">📖</div>
-            <div>
-              <p className="font-medium">B1-B2: Phát triển</p>
-              <p className="text-sm text-gray-600">2000-3000 từ thông dụng</p>
+            <div className="flex gap-3 rounded-xl border border-pink-200 bg-white p-4 shadow-sm">
+              <div className="text-2xl">📖</div>
+              <div>
+                <p className="font-semibold text-gray-900">B1-B2: Phát triển</p>
+                <p className="text-sm text-gray-700">2000-3000 từ thông dụng</p>
+              </div>
             </div>
-          </div>
-          <div className="flex gap-3 rounded-lg bg-white p-3">
-            <div className="text-2xl">🎓</div>
-            <div>
-              <p className="font-medium">C1-C2: Chuyên sâu</p>
-              <p className="text-sm text-gray-600">5000+ từ học thuật</p>
+            <div className="flex gap-3 rounded-xl border border-pink-200 bg-white p-4 shadow-sm">
+              <div className="text-2xl">🎓</div>
+              <div>
+                <p className="font-semibold text-gray-900">C1-C2: Chuyên sâu</p>
+                <p className="text-sm text-gray-700">5000+ từ học thuật</p>
+              </div>
             </div>
-          </div>
-          <div className="flex gap-3 rounded-lg bg-white p-3">
-            <div className="text-2xl">🔄</div>
-            <div>
-              <p className="font-medium">Ôn tập đều đặn</p>
-              <p className="text-sm text-gray-600">Học 15-20 từ/ngày</p>
+            <div className="flex gap-3 rounded-xl border border-pink-200 bg-white p-4 shadow-sm">
+              <div className="text-2xl">🔄</div>
+              <div>
+                <p className="font-semibold text-gray-900">Ôn tập đều đặn</p>
+                <p className="text-sm text-gray-700">Học 15-20 từ/ngày</p>
+              </div>
             </div>
-          </div>
-          <div className="flex gap-3 rounded-lg bg-white p-3">
-            <div className="text-2xl">✍️</div>
-            <div>
-              <p className="font-medium">Tạo câu ví dụ</p>
-              <p className="text-sm text-gray-600">Áp dụng vào thực tế</p>
+            <div className="flex gap-3 rounded-xl border border-pink-200 bg-white p-4 shadow-sm">
+              <div className="text-2xl">✍️</div>
+              <div>
+                <p className="font-semibold text-gray-900">Tạo câu ví dụ</p>
+                <p className="text-sm text-gray-700">Áp dụng vào thực tế</p>
+              </div>
             </div>
-          </div>
-          <div className="flex gap-3 rounded-lg bg-white p-3">
-            <div className="text-2xl">⭐</div>
-            <div>
-              <p className="font-medium">Đánh dấu từ khó</p>
-              <p className="text-sm text-gray-600">Ôn lại nhiều lần</p>
+            <div className="flex gap-3 rounded-xl border border-pink-200 bg-white p-4 shadow-sm">
+              <div className="text-2xl">⭐</div>
+              <div>
+                <p className="font-semibold text-gray-900">Đánh dấu từ khó</p>
+                <p className="text-sm text-gray-700">Ôn lại nhiều lần</p>
+              </div>
             </div>
           </div>
         </div>

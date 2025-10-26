@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Routes, Route, Link, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import './TeacherDashboardNew.css';
-import ProfileDropdown from '../../../components/ProfileDropdown/ProfileDropdown';
+import Navbar from '../../../components/Navbar/Navbar';
 import authService from '../../../services/authService';
 
 // Import teacher pages
@@ -31,29 +31,8 @@ const TeacherDashboardNew = () => {
 
   return (
     <div className="teacher-dashboard-new-wrapper">
-      {/* Top Navbar */}
-      <nav className="teacher-top-navbar">
-        <div className="navbar-left">
-          <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span className="navbar-logo">🎓</span>
-            <h1 className="navbar-title">English AI</h1>
-          </Link>
-        </div>
-        <div className="navbar-center">
-          <Link to="/lessons" className="navbar-link">Học bài</Link>
-          <Link to="/news" className="navbar-link">Tin tức</Link>
-          <Link to="/join-class" className="navbar-link">Lớp học của tôi</Link>
-          <Link to="/materials" className="navbar-link">Học liệu cơ bản</Link>
-          <Link to="/exercises" className="navbar-link">Làm bài tập</Link>
-          <Link to="/discussion" className="navbar-link">Hỏi đáp</Link>
-          <Link to="/teacher-dashboard" className="navbar-link navbar-link-special">Quản lý</Link>
-        </div>
-        <div className="navbar-right">
-          <button className="navbar-icon-btn" title="Tìm kiếm">🔍</button>
-          <button className="navbar-icon-btn" title="Thông báo">🔔</button>
-          <ProfileDropdown onLogout={handleLogout} />
-        </div>
-      </nav>
+      {/* Top Navbar - Đồng bộ với template chung */}
+      <Navbar userRole="teacher" isLoggedIn={true} onLogout={handleLogout} />
 
       {/* Dashboard Body (Sidebar + Content) */}
       <div className="teacher-dashboard-body">

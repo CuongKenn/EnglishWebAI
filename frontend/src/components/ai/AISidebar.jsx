@@ -47,24 +47,24 @@ export function AISidebar({ activeTab, onTabChange }) {
   ];
 
   return (
-    <div className="flex h-screen w-72 flex-col border-r bg-gradient-to-b from-slate-50 to-slate-100">
+    <div className="flex h-full w-72 flex-col border-r border-gray-200 bg-gradient-to-b from-slate-50 to-white shadow-lg">
       {/* Header */}
-      <div className="border-b bg-white p-6">
+      <div className="border-b border-gray-200 bg-white p-5 shadow-sm">
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 shadow-lg">
             <Bot className="h-7 w-7 text-white" />
           </div>
           <div>
-            <h2 className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            <h2 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               AI Practice
             </h2>
-            <p className="text-xs text-gray-500">Thực hành tiếng Anh</p>
+            <p className="text-xs text-gray-600 font-medium">Thực hành tiếng Anh</p>
           </div>
         </div>
       </div>
 
-      {/* Menu Items */}
-      <div className="flex-1 overflow-y-auto p-4">
+      {/* Menu Items - với padding thích hợp */}
+      <div className="flex-1 overflow-y-auto p-3">
         <div className="space-y-2">
           {menuItems.map((item) => {
             const Icon = item.icon;
@@ -74,10 +74,10 @@ export function AISidebar({ activeTab, onTabChange }) {
               <button
                 key={item.id}
                 onClick={() => onTabChange(item.id)}
-                className={`group relative w-full overflow-hidden rounded-xl p-4 text-left transition-all duration-300 ${
+                className={`group relative w-full overflow-hidden rounded-xl p-3.5 text-left transition-all duration-300 ${
                   isActive
-                    ? "bg-white shadow-lg scale-105"
-                    : "bg-white/50 hover:bg-white hover:shadow-md hover:scale-102"
+                    ? "bg-white shadow-lg scale-[1.02] border border-gray-200"
+                    : "bg-white/60 hover:bg-white hover:shadow-md hover:scale-[1.01] border border-transparent"
                 }`}
               >
                 {/* Gradient background for active state */}
@@ -93,8 +93,8 @@ export function AISidebar({ activeTab, onTabChange }) {
                   
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-xl">{item.emoji}</span>
-                      <span className={`font-medium transition-colors ${
+                      <span className="text-lg">{item.emoji}</span>
+                      <span className={`text-sm font-semibold transition-colors ${
                         isActive ? "text-gray-900" : "text-gray-700"
                       }`}>
                         {item.label}
@@ -104,7 +104,7 @@ export function AISidebar({ activeTab, onTabChange }) {
 
                   {/* Active indicator */}
                   {isActive && (
-                    <div className={`h-2 w-2 rounded-full bg-gradient-to-r ${item.gradient}`} />
+                    <div className={`h-2 w-2 rounded-full bg-gradient-to-r shadow-sm ${item.gradient}`} />
                   )}
                 </div>
               </button>
@@ -113,13 +113,18 @@ export function AISidebar({ activeTab, onTabChange }) {
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="border-t bg-white p-4">
-        <div className="rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 p-4 text-white">
-          <p className="mb-1 text-sm font-medium">💡 Mẹo học tập</p>
-          <p className="text-xs opacity-90">
-            Học 30 phút mỗi ngày để tiến bộ nhanh chóng!
-          </p>
+      {/* Footer - Fixed Bottom với design đẹp hơn */}
+      <div className="border-t border-gray-200 bg-gradient-to-br from-blue-50 to-purple-50 p-4">
+        <div className="rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 p-4 text-white shadow-md">
+          <div className="flex items-start gap-2">
+            <span className="text-xl">💡</span>
+            <div className="flex-1">
+              <p className="mb-1.5 text-sm font-bold">Mẹo học tập</p>
+              <p className="text-xs leading-relaxed opacity-95">
+                Học đều đặn 30 phút mỗi ngày để tiến bộ nhanh chóng!
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

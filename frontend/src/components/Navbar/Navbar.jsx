@@ -8,14 +8,14 @@ const Navbar = ({ userRole = 'student', isLoggedIn = false, onLogout }) => {
   const location = useLocation();
 
   const getNavigationItems = () => {
-    // Menu cơ bản cho student và user
+    // Menu cơ bản cho student
     const studentMenu = [
-      { path: '/lessons', label: 'Học bài' },
-      { path: '/news', label: 'Tin tức' },
-      { path: '/join-class', label: 'Lớp học của tôi' },
-      { path: '/ai-practice', label: 'Thực hành AI' },
-      { path: '/exercises', label: 'Làm bài tập' },
-      { path: '/discussion', label: 'Hỏi đáp' }
+      { path: '/lessons', label: 'Học bài', icon: 'fa-book-open' },
+      { path: '/news', label: 'Tin tức', icon: 'fa-newspaper' },
+      { path: '/join-class', label: 'Lớp học của tôi', icon: 'fa-chalkboard-teacher' },
+      { path: '/ai-practice', label: 'Thực hành AI', icon: 'fa-robot' },
+      { path: '/exercises', label: 'Làm bài tập', icon: 'fa-pen-to-square' },
+      { path: '/discussion', label: 'Hỏi đáp', icon: 'fa-comments' }
     ];
 
     switch (userRole) {
@@ -24,25 +24,27 @@ const Navbar = ({ userRole = 'student', isLoggedIn = false, onLogout }) => {
         return studentMenu;
       
       case 'teacher':
-        // Teacher có menu student + menu giáo viên
+        // Teacher: menu student + Dashboard cuối
         return [
           ...studentMenu,
-          { path: '/teacher-dashboard', label: 'Trang giáo viên', special: true }
+          { path: '/teacher-dashboard', label: 'Dashboard', icon: 'fa-gauge-high', special: true }
         ];
       
       case 'parent':
+        // Parent: Dashboard + các trang theo dõi
         return [
-          { path: '/track-progress', label: 'Theo dõi kết quả học tập' },
-          { path: '/notifications', label: 'Nhận thông báo' },
-          { path: '/teacher-communication', label: 'Trao đổi với giáo viên' }
+          { path: '/parent-dashboard', label: 'Dashboard', icon: 'fa-gauge-high', special: true },
+          { path: '/track-progress', label: 'Theo dõi tiến độ', icon: 'fa-chart-line' },
+          { path: '/notifications', label: 'Thông báo', icon: 'fa-bell' },
+          { path: '/teacher-communication', label: 'Trao đổi', icon: 'fa-message' }
         ];
       
       case 'admin':
       case 'superadmin':
-        // Admin có menu student + menu quản lý
+        // Admin: menu student + Dashboard cuối
         return [
           ...studentMenu,
-          { path: '/admin-dashboard', label: 'Quản lý', special: true }
+          { path: '/admin-dashboard', label: 'Dashboard', icon: 'fa-gauge-high', special: true }
         ];
       
       default:
@@ -57,10 +59,16 @@ const Navbar = ({ userRole = 'student', isLoggedIn = false, onLogout }) => {
   };
 
   const isActive = (path) => {
-    // Cải tiến logic `isActive` để highlight đúng tab "Lớp học của tôi"
-    if (path.startsWith('/join-class')) {
+    // Logic isActive với hỗ trợ nested routes
+    if (path === '/join-class') {
       return location.pathname === '/join-class';
     }
+    
+    // Dashboard routes - match với cả nested routes
+    if (path === '/admin-dashboard' || path === '/teacher-dashboard' || path === '/parent-dashboard') {
+      return location.pathname.startsWith(path);
+    }
+    
     return location.pathname === path;
   };
 
@@ -82,8 +90,10 @@ const Navbar = ({ userRole = 'student', isLoggedIn = false, onLogout }) => {
               key={index}
               to={item.path}
               className={`nav-link ${isActive(item.path) ? 'active' : ''} ${item.special ? 'special-link' : ''}`}
+              title={item.label}
             >
-              {item.label}
+              {item.icon && <i className={`fas ${item.icon}`}></i>}
+              <span>{item.label}</span>
             </Link>
           ))}
         </div>
@@ -94,13 +104,13 @@ const Navbar = ({ userRole = 'student', isLoggedIn = false, onLogout }) => {
             <ProfileDropdown onLogout={onLogout} />
           ) : (
             <div className="auth-buttons">
-              <Link to="/login" className="login-btn">
+              <Link to="/login" className="login-btn" title="Đăng nhập vào hệ thống">
                 <i className="fas fa-sign-in-alt"></i>
-                Đăng nhập
+                <span>Đăng nhập</span>
               </Link>
-              <Link to="/register" className="register-btn">
+              <Link to="/register" className="register-btn" title="Đăng ký tài khoản mới">
                 <i className="fas fa-user-plus"></i>
-                Đăng ký
+                <span>Đăng ký</span>
               </Link>
             </div>
           )}
@@ -119,10 +129,11 @@ const Navbar = ({ userRole = 'student', isLoggedIn = false, onLogout }) => {
             <Link
               key={index}
               to={item.path}
-              className={`mobile-nav-link ${isActive(item.path) ? 'active' : ''}`}
+              className={`mobile-nav-link ${isActive(item.path) ? 'active' : ''} ${item.special ? 'special-link' : ''}`}
               onClick={() => setIsMenuOpen(false)}
             >
-              {item.label}
+              {item.icon && <i className={`fas ${item.icon}`}></i>}
+              <span>{item.label}</span>
             </Link>
           ))}
         </div>

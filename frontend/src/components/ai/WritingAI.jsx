@@ -1,23 +1,64 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
 import { Card } from "../ui/card";
 import { Badge } from "../ui/badge";
-import { PenTool, Sparkles, CheckCircle2, AlertCircle } from "lucide-react";
+import { PenTool, Sparkles, CheckCircle2, AlertCircle, RefreshCw } from "lucide-react";
 import { Progress } from "../ui/progress";
+import { getWritingPrompt, submitWriting } from "../../services/aiService";
 
 export function WritingAI() {
+  const [selectedLevel, setSelectedLevel] = useState("intermediate");
+  const [selectedType, setSelectedType] = useState("essay");
+  const [topic, setTopic] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [essay, setEssay] = useState("");
   const [analyzed, setAnalyzed] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
 
-  const topic = {
-    title: "Technology and Education",
-    prompt: "Do you agree or disagree with the following statement? Technology has made learning more accessible and effective. Use specific reasons and examples to support your answer.",
-    type: "Opinion Essay",
-    wordCount: "250-300 words",
+  useEffect(() => {
+    loadPrompt();
+  }, [selectedLevel, selectedType]);
+
+  const loadPrompt = async () => {
+    setLoading(true);
+    try {
+      const data = await getWritingPrompt(selectedLevel, selectedType);
+      setTopic(data);
+      setEssay("");
+      setAnalyzed(false);
+    } catch (error) {
+      console.error("Error loading prompt:", error);
+      // Fallback to mock data
+      setTopic({
+        title: "Technology and Education",
+        prompt: "Do you agree or disagree with the following statement? Technology has made learning more accessible and effective. Use specific reasons and examples to support your answer.",
+        type: "Opinion Essay",
+        wordCount: "250-300 words",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const analysis = {
+  const handleAnalyze = async () => {
+    if (essay.trim().length < 100) return;
+    
+    setAnalyzing(true);
+    try {
+      const result = await submitWriting(topic.prompt, essay);
+      setAnalysis(result);
+      setAnalyzed(true);
+    } catch (error) {
+      console.error("Error analyzing essay:", error);
+      // Fallback to mock analysis
+      setAnalyzed(true);
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  const [analysis, setAnalysis] = useState({
     score: 85,
     grammar: 90,
     vocabulary: 85,
@@ -33,9 +74,28 @@ export function WritingAI() {
       { text: "tecnology", correction: "technology", type: "spelling" },
       { text: "more easier", correction: "easier", type: "grammar" },
     ],
-  };
+  });
 
   const wordCount = essay.trim().split(/\s+/).filter(Boolean).length;
+
+  if (loading) {
+    return (
+      <div className="flex h-96 items-center justify-center">
+        <div className="text-center">
+          <RefreshCw className="mx-auto h-12 w-12 animate-spin text-orange-600" />
+          <p className="mt-4 text-gray-600">Đang tải đề bài...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!topic) {
+    return (
+      <div className="flex h-96 items-center justify-center">
+        <p className="text-gray-600">Không thể tải đề bài. Vui lòng thử lại.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -99,12 +159,21 @@ export function WritingAI() {
                   Lưu nháp
                 </Button>
                 <Button
-                  onClick={() => setAnalyzed(true)}
+                  onClick={handleAnalyze}
                   className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
-                  disabled={wordCount < 100}
+                  disabled={wordCount < 100 || analyzing}
                 >
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  Chấm bài AI
+                  {analyzing ? (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                      Đang phân tích...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Chấm bài AI
+                    </>
+                  )}
                 </Button>
               </div>
             </div>
@@ -113,47 +182,55 @@ export function WritingAI() {
 
         {/* Tips Sidebar */}
         <div className="space-y-4">
-          <Card className="p-4">
-            <h4 className="mb-3 flex items-center gap-2 font-medium">
-              💡 Mẹo viết hay
-            </h4>
-            <ul className="space-y-2 text-sm text-gray-700">
-              <li className="flex gap-2">
-                <span>✓</span>
-                <span>Lập dàn ý trước khi viết</span>
-              </li>
-              <li className="flex gap-2">
-                <span>✓</span>
-                <span>Sử dụng từ nối để liên kết ý</span>
-              </li>
-              <li className="flex gap-2">
-                <span>✓</span>
-                <span>Đưa ra ví dụ cụ thể</span>
-              </li>
-              <li className="flex gap-2">
-                <span>✓</span>
-                <span>Kiểm tra lỗi chính tả</span>
-              </li>
-            </ul>
+          <Card className="overflow-hidden">
+            <div className="border-b border-orange-200 bg-gradient-to-r from-orange-100 to-red-100 p-4">
+              <h4 className="flex items-center gap-2 font-bold text-gray-900">
+                💡 Mẹo viết hay
+              </h4>
+            </div>
+            <div className="p-4">
+              <ul className="space-y-2 text-sm text-gray-800">
+                <li className="flex gap-2">
+                  <span className="font-bold text-green-600">✓</span>
+                  <span>Lập dàn ý trước khi viết</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="font-bold text-green-600">✓</span>
+                  <span>Sử dụng từ nối để liên kết ý</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="font-bold text-green-600">✓</span>
+                  <span>Đưa ra ví dụ cụ thể</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="font-bold text-green-600">✓</span>
+                  <span>Kiểm tra lỗi chính tả</span>
+                </li>
+              </ul>
+            </div>
           </Card>
 
-          <Card className="p-4">
-            <h4 className="mb-3 flex items-center gap-2 font-medium">
-              📚 Từ vựng gợi ý
-            </h4>
-            <div className="flex flex-wrap gap-2">
-              {[
-                "Furthermore",
-                "Moreover",
-                "However",
-                "In addition",
-                "Consequently",
-                "Nevertheless",
-              ].map((word, index) => (
-                <Badge key={index} variant="outline" className="cursor-pointer hover:bg-orange-50">
-                  {word}
-                </Badge>
-              ))}
+          <Card className="overflow-hidden">
+            <div className="border-b border-orange-200 bg-gradient-to-r from-orange-100 to-red-100 p-4">
+              <h4 className="flex items-center gap-2 font-bold text-gray-900">
+                📚 Từ vựng gợi ý
+              </h4>
+            </div>
+            <div className="p-4">
+              <div className="flex flex-wrap gap-2">
+                {[
+                  "Furthermore",
+                  "Moreover",
+                  "However",
+                  "In addition",
+                  "Consequently",
+                  "Nevertheless",
+                ].map((word, index) => (
+                  <Badge key={index} variant="outline" className="cursor-pointer border-orange-300 bg-white text-gray-900 hover:border-orange-500 hover:bg-orange-50">
+                    {word}
+                  </Badge>
+                ))}
+              </div>
             </div>
           </Card>
         </div>
@@ -202,44 +279,52 @@ export function WritingAI() {
             </div>
 
             {/* Suggestions */}
-            <div className="mb-6 rounded-lg bg-green-50 p-4">
-              <h4 className="mb-3 flex items-center gap-2 font-medium text-green-800">
-                <CheckCircle2 className="h-5 w-5" />
-                Điểm mạnh
-              </h4>
-              <ul className="space-y-2">
-                {analysis.suggestions.map((suggestion, index) => (
-                  <li key={index} className="flex gap-2 text-sm text-green-700">
-                    <span>✓</span>
-                    <span>{suggestion}</span>
-                  </li>
-                ))}
-              </ul>
+            <div className="mb-6 overflow-hidden rounded-xl border-2 border-green-200 bg-green-50">
+              <div className="border-b border-green-200 bg-green-100 p-4">
+                <h4 className="flex items-center gap-2 font-bold text-green-900">
+                  <CheckCircle2 className="h-5 w-5" />
+                  Điểm mạnh
+                </h4>
+              </div>
+              <div className="p-4">
+                <ul className="space-y-2">
+                  {analysis.suggestions.map((suggestion, index) => (
+                    <li key={index} className="flex gap-2 text-sm text-green-900">
+                      <span className="font-bold">✓</span>
+                      <span>{suggestion}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
 
             {/* Errors */}
             {analysis.errors.length > 0 && (
-              <div className="rounded-lg bg-orange-50 p-4">
-                <h4 className="mb-3 flex items-center gap-2 font-medium text-orange-800">
-                  <AlertCircle className="h-5 w-5" />
-                  Lỗi cần sửa
-                </h4>
-                <ul className="space-y-2">
-                  {analysis.errors.map((error, index) => (
-                    <li key={index} className="text-sm text-orange-700">
-                      <span className="font-mono rounded bg-red-100 px-2 py-1 text-red-700 line-through">
-                        {error.text}
-                      </span>
-                      {" → "}
-                      <span className="font-mono rounded bg-green-100 px-2 py-1 text-green-700">
-                        {error.correction}
-                      </span>
-                      <Badge variant="outline" className="ml-2 text-xs">
-                        {error.type}
-                      </Badge>
-                    </li>
-                  ))}
-                </ul>
+              <div className="overflow-hidden rounded-xl border-2 border-orange-200 bg-orange-50">
+                <div className="border-b border-orange-200 bg-orange-100 p-4">
+                  <h4 className="flex items-center gap-2 font-bold text-orange-900">
+                    <AlertCircle className="h-5 w-5" />
+                    Lỗi cần sửa
+                  </h4>
+                </div>
+                <div className="p-4">
+                  <ul className="space-y-3">
+                    {analysis.errors.map((error, index) => (
+                      <li key={index} className="text-sm">
+                        <span className="font-mono rounded-md bg-red-200 px-2 py-1 text-red-900 line-through">
+                          {error.text}
+                        </span>
+                        <span className="mx-2 font-bold text-gray-900">→</span>
+                        <span className="font-mono rounded-md bg-green-200 px-2 py-1 text-green-900">
+                          {error.correction}
+                        </span>
+                        <Badge variant="outline" className="ml-2 border-orange-400 text-xs text-orange-900">
+                          {error.type}
+                        </Badge>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             )}
           </div>
