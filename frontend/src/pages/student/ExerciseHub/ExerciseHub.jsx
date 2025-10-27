@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FileText, Trophy, BarChart3, CheckCircle, Clock, AlertCircle, Award, Star, Calendar, Eye, Edit3, Headphones, MessageSquare, BookOpen, PenTool, Target } from 'lucide-react';
 import './ExerciseHub.css';
 import { apiV1 } from '../../../services/api';
@@ -111,6 +112,7 @@ function ExerciseSidebar({ activeTab, onTabChange }) {
 }
 
 export default function ExerciseHub() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('all');
   const [exercises, setExercises] = useState([]);
   const [tests, setTests] = useState([]);
@@ -132,7 +134,14 @@ export default function ExerciseHub() {
       ]);
       
       const allExercises = exercisesRes.data;
-      setExercises(allExercises.filter(e => e.type === 'assignment'));
+      console.log('All exercises from API:', allExercises);
+      // Filter: exercises include assignment, skill_exercise, and items without type
+      // Tests include quiz and test types
+      setExercises(allExercises.filter(e => 
+        e.type === 'assignment' || 
+        e.type === 'skill_exercise' || 
+        !e.type
+      ));
       setTests(allExercises.filter(e => e.type === 'quiz' || e.type === 'test'));
       setStatistics(statsRes.data);
       
@@ -257,12 +266,18 @@ export default function ExerciseHub() {
 
         <div className="card-actions-new">
           {!hasSubmission ? (
-            <button className="btn-primary-new">
+            <button 
+              className="btn-primary-new"
+              onClick={() => navigate(`/exercise/${exercise.id}`)}
+            >
               <FileText size={16} />
               <span>Bắt đầu làm</span>
             </button>
           ) : score !== null ? (
-            <button className="btn-success-new">
+            <button 
+              className="btn-success-new"
+              onClick={() => navigate(`/exercise/${exercise.id}`)}
+            >
               <Trophy size={16} />
               <span>Xem kết quả</span>
             </button>
@@ -272,7 +287,10 @@ export default function ExerciseHub() {
                 <Clock size={16} />
                 <span>Chờ chấm</span>
               </button>
-              <button className="btn-secondary-new">
+              <button 
+                className="btn-secondary-new"
+                onClick={() => navigate(`/exercise/${exercise.id}`)}
+              >
                 <Edit3 size={16} />
                 <span>Sửa bài</span>
               </button>

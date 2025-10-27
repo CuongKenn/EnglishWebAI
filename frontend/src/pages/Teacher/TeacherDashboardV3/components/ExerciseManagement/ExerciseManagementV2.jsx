@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Eye, Download, FileText, Clock, Award, Users, Sparkles, Headphones, BookOpen, PenTool, Mic, Search, Filter, ChevronDown } from 'lucide-react';
 import { Card } from '../../../../../components/ui/card';
+import { apiV1 } from '../../../../../services/api';
 import CreateExerciseModalComplete from './CreateExerciseModalComplete';
 import ExerciseDetailModal from './ExerciseDetailModal';
 
@@ -12,85 +13,85 @@ export default function ExerciseManagementV2() {
   const [filterType, setFilterType] = useState('');
   const [filterClass, setFilterClass] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
-  const [exercises, setExercises] = useState([
-    {
-      id: 1,
-      title: 'Bài tập Nghe Hiểu - Unit 5',
-      type: 'skill_exercise',
-      skill: 'listening',
-      class: 'Lớp 10A1',
-      dueDate: '2025-11-05',
-      maxScore: 10,
-      submissions: 15,
-      totalStudents: 25,
-      status: 'active',
-      content: {
-        audio_url: '/uploads/audio/listening1.mp3',
-        transcript: 'This is a sample transcript...',
-        questions: [
-          {
-            id: 1,
-            type: 'multiple_choice',
-            question: 'What is the main topic?',
-            options: ['A. Travel', 'B. Food', 'C. Sports', 'D. Music'],
-            correct_answer: 'A',
-            points: 2
-          }
-        ]
-      }
-    },
-    {
-      id: 2,
-      title: 'Bài tập Đọc - Climate Change',
-      type: 'skill_exercise',
-      skill: 'reading',
-      class: 'Lớp 10A2',
-      dueDate: '2025-11-08',
-      maxScore: 10,
-      submissions: 18,
-      totalStudents: 22,
-      status: 'active',
-      content: {
-        passage: 'Climate change is one of the most pressing issues...',
-        word_count: 450,
-        questions: []
-      }
-    },
-    {
-      id: 3,
-      title: 'Kiểm tra 15 phút - Unit 6',
-      type: 'test_15min',
-      skill: 'writing',
-      class: 'Lớp 11B1',
-      dueDate: '2025-11-10',
-      maxScore: 10,
-      submissions: 20,
-      totalStudents: 28,
-      status: 'active',
-      content: {
-        prompt: 'Write about your favorite hobby...',
-        word_limit: { min: 150, max: 200 }
-      }
-    },
-    {
-      id: 4,
-      title: 'Kiểm tra Giữa kì - HK1',
-      type: 'midterm',
-      class: 'Lớp 10A1',
-      dueDate: '2025-11-15',
-      maxScore: 100,
-      submissions: 25,
-      totalStudents: 25,
-      status: 'active',
-      content: {
-        file_url: '/uploads/tests/midterm_hk1.pdf'
-      }
-    }
-  ]);
+  const [exercises, setExercises] = useState([]);
+  const [classes, setClasses] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleCreateExercise = (newExercise) => {
-    setExercises([...exercises, { ...newExercise, id: Date.now() }]);
-    setShowCreateModal(false);
+  useEffect(() => {
+    fetchClasses();
+    fetchExercises();
+  }, []);
+
+  const fetchClasses = async () => {
+    try {
+      const response = await apiV1.get('/classes/teaching');
+      setClasses(response.data);
+    } catch (error) {
+      console.error('Error fetching classes:', error);
+    }
+  };
+
+  const fetchExercises = async () => {
+    try {
+      setLoading(true);
+      const classesResponse = await apiV1.get('/classes/teaching');
+      let allExercises = [];
+      
+      for (const cls of classesResponse.data) {
+        try {
+          const response = await apiV1.get(`/exercises/by-class/${cls.id}`);
+          const exercisesWithClass = response.data.map(ex => ({
+            id: ex.id,
+            title: ex.title,
+            type: ex.type || 'skill_exercise',
+            skill: ex.skill_type,
+            class: cls.name,
+            classId: cls.id,
+            dueDate: ex.due_at,
+            maxScore: ex.max_score || 10,
+            submissions: 0, // TODO: get from submissions API
+            totalStudents: cls.student_count || 0,
+            status: 'active',
+            content: ex.content || {}
+          }));
+          allExercises = [...allExercises, ...exercisesWithClass];
+        } catch (error) {
+          console.error(`Error fetching exercises for class ${cls.id}:`, error);
+        }
+      }
+      
+      setExercises(allExercises);
+    } catch (error) {
+      console.error('Error fetching exercises:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateExercise = async (newExercise) => {
+    try {
+      // Call API to create exercise
+      const response = await apiV1.post('/exercises/', {
+        class_id: parseInt(newExercise.classId),
+        title: newExercise.title,
+        description: newExercise.description || '',
+        type: newExercise.type || 'skill_exercise',
+        skill_type: newExercise.skill,
+        max_score: newExercise.maxScore || 10,
+        due_at: newExercise.dueDate || null,
+        content: newExercise.content || {},
+        enable_ai_grading: false
+      });
+      
+      console.log('Exercise created successfully:', response.data);
+      
+      // Refresh exercises list
+      await fetchExercises();
+      setShowCreateModal(false);
+    } catch (error) {
+      console.error('Error creating exercise:', error);
+      alert(`Không thể tạo bài tập: ${error.response?.data?.detail || error.message}`);
+    }
   };
 
   const handleViewDetail = (exercise) => {
@@ -268,9 +269,9 @@ export default function ExerciseManagementV2() {
                 onChange={(e) => setFilterClass(e.target.value)}
               >
                 <option value="">Tất cả lớp</option>
-                <option value="Lớp 10A1">Lớp 10A1</option>
-                <option value="Lớp 10A2">Lớp 10A2</option>
-                <option value="Lớp 11B1">Lớp 11B1</option>
+                {classes.map(cls => (
+                  <option key={cls.id} value={cls.name}>{cls.name}</option>
+                ))}
               </select>
               
               <select
