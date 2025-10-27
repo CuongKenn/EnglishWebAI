@@ -14,11 +14,13 @@ from app.models.submission import Submission
 from app.models.discussion import DiscussionThread, DiscussionPost
 from app.models.discussion_like import DiscussionLike
 from app.models.news import NewsPost
+from app.models.news_like import NewsLike
 from app.models.attendance import AttendanceRecord
 from app.models.otp import OTP
 from app.models.notification import Notification
 from app.models.message import Message
 from app.models.system_config import SystemConfig
+from app.models.course import Course, CourseExercise, CourseSubmission, CourseUnit, CourseQuestion
 
 __all__ = [
     "User",
@@ -32,9 +34,15 @@ __all__ = [
     "DiscussionPost",
     "DiscussionLike",
     "NewsPost",
+    "NewsLike",
     "AttendanceRecord",
     "OTP",
     "Notification",
     "Message",
     "SystemConfig",
+    "Course",
+    "CourseExercise",
+    "CourseSubmission",
+    "CourseUnit",
+    "CourseQuestion",
 ]

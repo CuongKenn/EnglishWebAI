@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDiscussions } from '../../hooks';
 import { authAPI } from '../../services/api';
-import { MessageSquarePlus, Search, MessageSquare, Eye, Heart, Share, ThumbsUp, Send, Paperclip } from 'lucide-react';
+import { MessageSquarePlus, Search, MessageSquare, Eye, Heart, Share, ThumbsUp, Send, Paperclip, Trash2 } from 'lucide-react';
 import './Discussion.css';
 
 
@@ -22,15 +22,32 @@ const Discussion = () => {
     const [loadingPosts, setLoadingPosts] = useState(false);
     // --- [KẾT THÚC] CODE MỚI ---
 
+    // Toast đơn giản cho trang Discussion
+    const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
+    const showToast = (message, type = 'success', duration = 2500) => {
+        setToast({ visible: true, message, type });
+        window.clearTimeout(showToast._t);
+        showToast._t = window.setTimeout(() => setToast({ visible: false, message: '', type }), duration);
+    };
+
+    // Confirm modal tối giản
+    const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
+    const askConfirm = (message, onConfirm) => {
+        setConfirmState({ open: true, message, onConfirm });
+    };
+    const closeConfirm = () => setConfirmState({ open: false, message: '', onConfirm: null });
+
+    const params = { subject: selectedSubject !== 'all' ? selectedSubject : undefined };
     const { 
         discussions: questions, 
         loading, 
         error, 
         createDiscussion,
+        deleteDiscussion,
         likeDiscussion,
         unlikeDiscussion,
         refetch 
-    } = useDiscussions();
+    } = useDiscussions(params);
 
     // Lấy thông tin user hiện tại
     useEffect(() => {
@@ -61,11 +78,11 @@ const Discussion = () => {
                     subject: newQuestion.subject,
                     tags: newQuestion.tags.split(',').map(tag => tag.trim())
                 });
-                alert('Câu hỏi của bạn đã được gửi!');
+                showToast('Đăng câu hỏi thành công!', 'success');
                 setNewQuestion({ title: '', content: '', subject: '', tags: '' });
                 setShowAskForm(false);
             } catch (err) {
-                alert(err.message || 'Có lỗi xảy ra khi gửi câu hỏi');
+                showToast(err?.detail || 'Có lỗi xảy ra khi gửi câu hỏi', 'error');
             }
         }
     };
@@ -79,7 +96,7 @@ const Discussion = () => {
             }
         } catch (err) {
             console.error('Error toggling like:', err);
-            alert('Có lỗi xảy ra khi thích/bỏ thích câu hỏi');
+            showToast('Có lỗi xảy ra khi thích/bỏ thích câu hỏi', 'error');
         }
     };
 
@@ -91,6 +108,10 @@ const Discussion = () => {
         } else {
             setReplyingTo(questionId); // Mở ô trả lời cho câu hỏi này
             setCommentText(""); // Xóa nội dung cũ khi mở
+            // Tăng lượt xem khi mở ô trả lời
+            import('../../services/api').then(({ discussionsAPI }) => {
+                discussionsAPI.viewThread(questionId).catch(() => {});
+            });
         }
     };
 
@@ -114,10 +135,10 @@ const Discussion = () => {
                 // Sau khi gửi, đóng ô trả lời và xóa nội dung
                 setReplyingTo(null);
                 setCommentText("");
-                alert('Đã gửi câu trả lời thành công!');
+                showToast('Gửi câu trả lời thành công!', 'success');
             } catch (err) {
                 console.error('Error submitting reply:', err);
-                alert(err?.detail || 'Có lỗi xảy ra khi gửi trả lời');
+                showToast(err?.detail || 'Có lỗi xảy ra khi gửi trả lời', 'error');
             }
         }
     };
@@ -134,7 +155,7 @@ const Discussion = () => {
             }));
         } catch (err) {
             console.error('Error fetching posts:', err);
-            alert('Không thể tải các câu trả lời');
+            showToast('Không thể tải các câu trả lời', 'error');
         } finally {
             setLoadingPosts(false);
         }
@@ -144,12 +165,34 @@ const Discussion = () => {
     const handleToggleViewReplies = async (questionId) => {
         if (expandedQuestion === questionId) {
             setExpandedQuestion(null);
+            if (replyingTo === questionId) setReplyingTo(null);
         } else {
             setExpandedQuestion(questionId);
+            // Tăng lượt xem khi mở danh sách trả lời
+            try {
+                const { discussionsAPI } = await import('../../services/api');
+                await discussionsAPI.viewThread(questionId);
+            } catch (_) {}
             // Load posts nếu chưa có trong cache
             if (!questionPosts[questionId]) {
                 await fetchPosts(questionId);
             }
+        }
+    };
+
+    // Mở replies và đồng thời mở ô nhập trả lời khi bấm vào bong bóng comment
+    const handleOpenRepliesAndReply = async (questionId) => {
+        if (expandedQuestion !== questionId) {
+            setExpandedQuestion(questionId);
+        }
+        setReplyingTo(questionId);
+        setCommentText("");
+        try {
+            const { discussionsAPI } = await import('../../services/api');
+            await discussionsAPI.viewThread(questionId);
+        } catch (_) {}
+        if (!questionPosts[questionId]) {
+            await fetchPosts(questionId);
         }
     };
     // --- [KẾT THÚC] CODE MỚI ---
@@ -164,6 +207,34 @@ const Discussion = () => {
     return (
         <div className="discussion-page">
             <div className="page-content">
+                {toast.visible && (
+                    <div
+                        className={`ewai-toast center ${toast.type}`}
+                        role="alert"
+                        aria-live="polite"
+                        onClick={() => setToast({ visible: false, message: '', type: toast.type })}
+                        title="Bấm để đóng"
+                    >
+                        {toast.message}
+                    </div>
+                )}
+                {confirmState.open && (
+                    <div className="ewai-modal-overlay" onClick={closeConfirm}>
+                        <div className="ewai-modal" onClick={(e) => e.stopPropagation()}>
+                            <div className="ewai-modal-title">Xác nhận</div>
+                            <div className="ewai-modal-message">{confirmState.message}</div>
+                            <div className="ewai-modal-actions">
+                                <button className="ewai-btn secondary" onClick={closeConfirm}>Hủy</button>
+                                <button
+                                    className="ewai-btn danger"
+                                    onClick={() => { try { confirmState.onConfirm?.(); } finally { closeConfirm(); } }}
+                                >
+                                    Đồng ý
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
                 {/* ... (Các phần code không đổi) ... */}
                 <div className="ask-section">
                     <div className="ask-header-text">
@@ -273,6 +344,25 @@ const Discussion = () => {
                                                 <span className="author-role">{question.authorRole || question.author_role || 'Học sinh'}</span>
                                             </div>
                                             <span className="question-time">{question.createdAt || question.created_at || 'Vừa xong'}</span>
+                                            {currentUser && (['admin','teacher'].includes(currentUser.role) || currentUser.username === question.authorUsername) && (
+                                                <button
+                                                    title="Xóa câu hỏi"
+                                                    onClick={() => {
+                                                        askConfirm('Bạn có chắc chắn muốn xóa câu hỏi này? Hành động này không thể hoàn tác.', async () => {
+                                                            try {
+                                                                await deleteDiscussion(question.id);
+                                                                await refetch();
+                                                                showToast('Đã xóa câu hỏi', 'success');
+                                                            } catch (err) {
+                                                                showToast(err?.detail || 'Không thể xóa câu hỏi', 'error');
+                                                            }
+                                                        });
+                                                    }}
+                                                    style={{ border: 'none', background: 'transparent', cursor: 'pointer', marginLeft: '8px' }}
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            )}
                                         </div>
                                         <div className="question-content">
                                             <h3 className="question-title">{question.title}</h3>
@@ -283,10 +373,14 @@ const Discussion = () => {
                                         </div>
                                         <div className="question-footer-internal">
                                             <div className="question-stats">
-                                                <div className="stat-item">
+                                                <button
+                                                    className="stat-item-btn"
+                                                    onClick={() => handleOpenRepliesAndReply(question.id)}
+                                                    title="Xem và trả lời"
+                                                >
                                                     <MessageSquare size={20} />
                                                     <span>{question.answers}</span>
-                                                </div>
+                                                </button>
                                                 <div className="stat-item">
                                                     <Eye size={20} />
                                                     <span>{question.views}</span>
@@ -327,6 +421,21 @@ const Discussion = () => {
                                         <button className="action-btn">
                                             <Share size={16}/> Chia sẻ
                                         </button>
+                                            {currentUser && (['admin','teacher'].includes(currentUser.role) || currentUser.username === question.authorUsername) && (
+                                                <button className="action-btn" onClick={() => {
+                                                    askConfirm('Bạn có chắc chắn muốn xóa câu hỏi này? Hành động này không thể hoàn tác.', async () => {
+                                                        try {
+                                                            await deleteDiscussion(question.id);
+                                                            await refetch();
+                                                            showToast('Đã xóa câu hỏi', 'success');
+                                                        } catch (err) {
+                                                            showToast(err?.detail || 'Không thể xóa câu hỏi', 'error');
+                                                        }
+                                                    });
+                                                }}>
+                                                    <Trash2 size={16}/> Xóa câu hỏi
+                                                </button>
+                                            )}
                                     </div>
 
                                     {/* --- [BẮT ĐẦU] CODE MỚI: Ô TRẢ LỜI HIỂN THỊ CÓ ĐIỀU KIỆN --- */}
@@ -373,6 +482,26 @@ const Discussion = () => {
                                                             <div className="reply-content">
                                                                 {post.content}
                                                             </div>
+                                                            {currentUser && (['admin','teacher'].includes(currentUser.role) || post.author_id === currentUser.id) && (
+                                                                <div style={{ marginTop: '0.5rem', textAlign: 'right' }}>
+                                                                    <button
+                                                                        className="action-btn"
+                                                                        onClick={async () => {
+                                                                            try {
+                                                                                const { discussionsAPI } = await import('../../services/api');
+                                                                                await discussionsAPI.deletePost(question.id, post.id);
+                                                                                await fetchPosts(question.id);
+                                                                                await refetch();
+                                                                                showToast('Đã xóa bình luận', 'success');
+                                                                            } catch (err) {
+                                                                                showToast(err?.detail || 'Không thể xóa bình luận', 'error');
+                                                                            }
+                                                                        }}
+                                                                    >
+                                                                        <Trash2 size={14}/> Xóa bình luận
+                                                                    </button>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     ))}
                                                 </div>

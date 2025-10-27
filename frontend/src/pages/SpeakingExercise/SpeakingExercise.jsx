@@ -1,487 +1,528 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
-  X, Play, Pause, RotateCcw, RotateCw, Volume2, 
-  Settings, CheckCircle, AlertCircle, Mic, MicOff,
-  ChevronLeft, ChevronRight, Star, Award, Clock,
-  Target, Zap, Trophy, Heart, Sparkles, ArrowRight
+  ArrowLeft, 
+  Clock, 
+  CheckCircle, 
+  RotateCcw,
+  HelpCircle,
+  Target,
+  Award,
+  Star,
+  BookOpen,
+  Mic,
+  MicOff,
+  Play,
+  Pause,
+  Volume2,
+  VolumeX,
+  Settings,
+  AlertCircle,
+  ThumbsUp,
+  ThumbsDown,
+  RefreshCw
 } from 'lucide-react';
 import './SpeakingExercise.css';
 
-// Mock data cho các bài tập speaking
-const speakingExercises = {
-  'g3_speaking': {
-    title: 'Speaking Cơ Bản Plus',
-    exercises: [
+const SpeakingExercise = () => {
+  const { courseId, lessonId } = useParams();
+  const navigate = useNavigate();
+  
+  // State management
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const [timeSpent, setTimeSpent] = useState(0);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [audioBlob, setAudioBlob] = useState(null);
+  const [audioUrl, setAudioUrl] = useState(null);
+  const [showHint, setShowHint] = useState(false);
+  
+  // Refs
+  const mediaRecorderRef = useRef(null);
+  const audioRef = useRef(null);
+  const timerRef = useRef(null);
+
+  // Mock data cho bài speaking - sẽ được thay thế bằng API call
+  const speakingData = {
+    id: lessonId || '1',
+    title: 'Speaking Unit 1',
+    courseTitle: 'Speaking Lớp 3',
+    difficulty: 'Beginner',
+    estimatedTime: 10, // minutes
+    totalQuestions: 4,
+    questions: [
       {
         id: 1,
-        title: 'Exercise 1: Ghi âm cách bạn đọc các từ sau',
-        type: 'word-pronunciation',
-        words: ['Hello', 'World', 'English', 'Learning', 'Practice'],
-        currentWord: 'Hello',
-        userRecording: null,
-        score: 0,
-        isCompleted: false,
-        difficulty: 'Beginner'
+        question: "Are you a student?",
+        instruction: "Ghi âm câu trả lời của bạn cho câu hỏi IELTS Speaking sau đây",
+        timeLimit: 60, // seconds
+        minSentences: 2,
+        audioUrl: null // Will be loaded from backend
       },
       {
         id: 2,
-        title: 'Exercise 2: Đọc câu hoàn chỉnh',
-        type: 'sentence-reading',
-        sentences: [
-          'I love learning English.',
-          'This is a beautiful day.',
-          'How are you today?'
-        ],
-        currentSentence: 'I love learning English.',
-        userRecording: null,
-        score: 0,
-        isCompleted: false,
-        difficulty: 'Intermediate'
+        question: "What type of films do you like best?",
+        instruction: "Ghi âm câu trả lời của bạn cho câu hỏi IELTS Speaking sau đây",
+        timeLimit: 60,
+        minSentences: 2,
+        audioUrl: null
       },
       {
         id: 3,
-        title: 'Exercise 3: Trả lời câu hỏi',
-        type: 'question-answer',
-        questions: [
-          'What is your favorite color?',
-          'Where do you live?',
-          'What do you like to do in your free time?'
-        ],
-        currentQuestion: 'What is your favorite color?',
-        userRecording: null,
-        score: 0,
-        isCompleted: false,
-        difficulty: 'Advanced'
+        question: "Do you prefer to study alone or with others?",
+        instruction: "Ghi âm câu trả lời của bạn cho câu hỏi IELTS Speaking sau đây",
+        timeLimit: 60,
+        minSentences: 2,
+        audioUrl: null
       },
       {
         id: 4,
-        title: 'Exercise 4: Mô tả hình ảnh',
-        type: 'picture-description',
-        image: '/images/speaking/park-scene.jpg',
-        description: 'Describe what you see in this picture',
-        userRecording: null,
-        score: 0,
-        isCompleted: false,
-        difficulty: 'Intermediate'
-      },
-      {
-        id: 5,
-        title: 'Exercise 5: Đối thoại tình huống',
-        type: 'conversation',
-        scenario: 'You are at a restaurant. Order food and ask questions about the menu.',
-        userRecording: null,
-        score: 0,
-        isCompleted: false,
-        difficulty: 'Advanced'
+        question: "What is your favorite subject?",
+        instruction: "Ghi âm câu trả lời của bạn cho câu hỏi IELTS Speaking sau đây",
+        timeLimit: 60,
+        minSentences: 2,
+        audioUrl: null
       }
     ]
-  },
-  'g5_speaking': {
-    title: 'Conversation Skills',
-    exercises: [
-      {
-        id: 1,
-        title: 'Exercise 1: Phát âm từ khó',
-        type: 'word-pronunciation',
-        words: ['Pronunciation', 'Communication', 'Conversation', 'Opportunity', 'Environment'],
-        currentWord: 'Pronunciation',
-        userRecording: null,
-        score: 0,
-        isCompleted: false,
-        difficulty: 'Advanced'
-      },
-      {
-        id: 2,
-        title: 'Exercise 2: Thuyết trình ngắn',
-        type: 'presentation',
-        topic: 'Talk about your favorite hobby for 2 minutes',
-        userRecording: null,
-        score: 0,
-        isCompleted: false,
-        difficulty: 'Advanced'
-      }
-    ]
-  },
-  'default': {
-    title: 'Speaking Exercise',
-    exercises: [
-      {
-        id: 1,
-        title: 'Exercise 1: Ghi âm cách bạn đọc các từ sau',
-        type: 'word-pronunciation',
-        words: ['Life', 'Love', 'Learn', 'Live', 'Laugh'],
-        currentWord: 'Life',
-        userRecording: null,
-        score: 0,
-        isCompleted: false,
-        difficulty: 'Beginner'
-      }
-    ]
-  }
-};
+  };
 
-const SpeakingExercise = () => {
-  const { courseId } = useParams();
-  const navigate = useNavigate();
-  
-  console.log('SpeakingExercise loaded with courseId:', courseId);
-  
-  const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
-  const [isRecording, setIsRecording] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [score, setScore] = useState(0);
-  const [showResults, setShowResults] = useState(false);
-  const [userAnswer, setUserAnswer] = useState('');
-  
-  const audioRef = useRef(null);
-  const mediaRecorderRef = useRef(null);
-  const chunksRef = useRef([]);
-  
-  const exerciseData = speakingExercises[courseId] || speakingExercises['default'];
-  const currentExercise = exerciseData.exercises[currentExerciseIndex];
-  const progress = ((currentExerciseIndex + 1) / exerciseData.exercises.length) * 100;
+  // Mock results data - sẽ được thay thế bằng API response
+  const mockResults = {
+    transcription: "Yeah, I'm student. I'm studying information and technologies in Information and Technologies University in Thanh Nguyen City.",
+    score: 75,
+    feedback: {
+      generalComments: 6,
+      goodExpressions: 1,
+      errors: 9
+    },
+    detailedFeedback: [
+      { type: 'error', text: 'student', position: 1, suggestion: 'a student' },
+      { type: 'good', text: 'I\'m studying information', position: 2 },
+      { type: 'error', text: 'and technologies', position: 3, suggestion: 'technology' },
+      { type: 'error', text: 'in Information and', position: 4, suggestion: 'at' },
+      { type: 'error', text: 'Technologies', position: 5, suggestion: 'Technology' },
+      { type: 'error', text: 'University', position: 6, suggestion: 'University' }
+    ],
+    pronunciation: 7.5,
+    fluency: 6.8,
+    grammar: 7.2,
+    vocabulary: 7.0
+  };
 
-  // Mock audio duration (trong thực tế sẽ lấy từ file audio)
+  // Timer effect
   useEffect(() => {
-    setDuration(3); // 3 giây như trong hình
-  }, [currentExercise]);
+    const timer = setInterval(() => {
+      setTimeSpent(prev => prev + 1);
+    }, 1000);
 
-  const handleStartRecording = () => {
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      navigator.mediaDevices.getUserMedia({ audio: true })
-        .then(stream => {
-          mediaRecorderRef.current = new MediaRecorder(stream);
-          chunksRef.current = [];
-          
-          mediaRecorderRef.current.ondataavailable = (event) => {
-            chunksRef.current.push(event.data);
-          };
-          
-          mediaRecorderRef.current.onstop = () => {
-            const blob = new Blob(chunksRef.current, { type: 'audio/wav' });
-            const audioUrl = URL.createObjectURL(blob);
-            setUserAnswer(audioUrl);
-            // Mock score calculation
-            const mockScore = Math.floor(Math.random() * 40) + 60; // 60-100
-            setScore(mockScore);
-          };
-          
-          mediaRecorderRef.current.start();
-          setIsRecording(true);
-        })
-        .catch(err => {
-          console.error('Error accessing microphone:', err);
-          alert('Không thể truy cập microphone. Vui lòng kiểm tra quyền truy cập.');
+    return () => clearInterval(timer);
+  }, []);
+
+  // Recording timer effect
+  useEffect(() => {
+    if (isRecording) {
+      timerRef.current = setInterval(() => {
+        setRecordingTime(prev => {
+          if (prev >= speakingData.questions[currentQuestion].timeLimit) {
+            stopRecording();
+          }
+          return prev + 1;
         });
+      }, 1000);
     } else {
-      alert('Trình duyệt không hỗ trợ ghi âm.');
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    }
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [isRecording, currentQuestion]);
+
+  // Format time
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Start recording
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      const chunks = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        chunks.push(event.data);
+      };
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'audio/wav' });
+        setAudioBlob(blob);
+        setAudioUrl(URL.createObjectURL(blob));
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorderRef.current = mediaRecorder;
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingTime(0);
+    } catch (error) {
+      console.error('Error accessing microphone:', error);
+      alert('Không thể truy cập microphone. Vui lòng kiểm tra quyền truy cập.');
     }
   };
 
-  const handleStopRecording = () => {
+  // Stop recording
+  const stopRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
-      
-      // Stop all audio tracks
-      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
     }
   };
 
-  const handlePlayRecording = () => {
-    if (userAnswer) {
-      if (audioRef.current) {
-        if (isPlaying) {
-          audioRef.current.pause();
-          setIsPlaying(false);
-        } else {
-          audioRef.current.play();
-          setIsPlaying(true);
-        }
-      }
-    }
-  };
-
-  const handlePauseRecording = () => {
+  // Play audio
+  const playAudio = () => {
     if (audioRef.current) {
-      audioRef.current.pause();
-      setIsPlaying(false);
+      if (isPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
     }
   };
 
-  const handleNextExercise = () => {
-    if (currentExerciseIndex < exerciseData.exercises.length - 1) {
-      setCurrentExerciseIndex(currentExerciseIndex + 1);
-      setUserAnswer('');
-      setScore(0);
+  // Submit recording
+  const submitRecording = async () => {
+    if (!audioBlob) {
+      alert('Vui lòng ghi âm trước khi nộp bài');
+      return;
+    }
+
+    // TODO: API call to submit recording
+    console.log('Submitting recording:', audioBlob);
+    
+    // Simulate API response
+    setTimeout(() => {
+      setShowResults(true);
+      setIsCompleted(true);
+    }, 2000);
+  };
+
+  // Next question
+  const nextQuestion = () => {
+    if (currentQuestion < speakingData.questions.length - 1) {
+      setCurrentQuestion(prev => prev + 1);
       setShowResults(false);
+      setAudioBlob(null);
+      setAudioUrl(null);
+      setRecordingTime(0);
     } else {
-      // Kết thúc tất cả bài tập
-      setShowResults(true);
+      setIsCompleted(true);
     }
   };
 
-  const handlePreviousExercise = () => {
-    if (currentExerciseIndex > 0) {
-      setCurrentExerciseIndex(currentExerciseIndex - 1);
-      setUserAnswer('');
-      setScore(0);
-      setShowResults(false);
-    }
+  // Reset exercise
+  const resetExercise = () => {
+    setCurrentQuestion(0);
+    setIsRecording(false);
+    setIsCompleted(false);
+    setShowResults(false);
+    setAudioBlob(null);
+    setAudioUrl(null);
+    setRecordingTime(0);
+    setTimeSpent(0);
   };
 
-  const handleSubmitExercise = () => {
-    if (userAnswer) {
-      setShowResults(true);
-    }
-  };
-
-  const handleExit = () => {
-    if (window.confirm('Bạn có chắc muốn thoát? Tiến độ sẽ được lưu.')) {
-      navigate('/my-courses');
-    }
-  };
-
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const getScoreStatus = (score) => {
-    if (score >= 80) return { status: 'Đạt', color: '#10b981' };
-    if (score >= 60) return { status: 'Cần cải thiện', color: '#f59e0b' };
-    return { status: 'Chưa đạt', color: '#ef4444' };
-  };
-
-  const scoreStatus = getScoreStatus(score);
+  const currentQuestionData = speakingData.questions[currentQuestion];
 
   return (
     <div className="speaking-exercise-page">
-      {/* Header với kết quả */}
-      {showResults && (
-        <div className="result-header">
-          <div className="result-info">
-            <div className="result-icon">
-              <CheckCircle size={24} />
-            </div>
-            <span className="result-text">Đạt</span>
+      {/* Header */}
+      <div className="speaking-header">
+        <div className="header-left">
+          <button 
+            className="speaking-back-btn"
+            onClick={() => navigate(-1)}
+          >
+            <ArrowLeft size={20} />
+            Quay lại
+          </button>
+        </div>
+        
+        <div className="course-info">
+          <h1 className="course-title">{speakingData.courseTitle}</h1>
+          <p className="course-subtitle">{speakingData.title}</p>
+        </div>
+        
+        <div className="header-right">
+          <div className="timer-info">
+            <Clock size={16} />
+            <span>{formatTime(timeSpent)}</span>
           </div>
-          <div className="score-info">
-            <span className="score-label">Số Questions đúng</span>
-            <span className="score-value">6/10</span>
+          <div className="difficulty-badge">
+            {speakingData.difficulty}
           </div>
         </div>
-      )}
-
-      {/* AI Grading Badge */}
-      <div className="ai-grading-badge">
-        <Sparkles size={16} />
-        <span>Bài được chấm bởi AI</span>
       </div>
 
-      {/* Main Content Container */}
-      <div className="main-content-container">
-        {/* Exercise Header */}
-        <div className="exercise-header-section">
-          <div className="exercise-progress-badge">
-            Bài tập hiện tại: {currentExerciseIndex + 1}/{exerciseData.exercises.length}
-          </div>
-          <h1 className="exercise-title">{currentExercise.title}</h1>
-          <p className="exercise-instruction">
-            {currentExercise.type === 'word-pronunciation' && 'Nghe và luyện tập phát âm các từ khó'}
-            {currentExercise.type === 'sentence-reading' && 'Đọc câu hoàn chỉnh với phát âm chính xác'}
-            {currentExercise.type === 'question-answer' && 'Trả lời câu hỏi một cách tự nhiên'}
-            {currentExercise.type === 'picture-description' && 'Mô tả hình ảnh bằng tiếng Anh'}
-            {currentExercise.type === 'conversation' && 'Thực hành đối thoại trong tình huống thực tế'}
-            {currentExercise.type === 'presentation' && 'Thuyết trình về chủ đề được giao'}
-          </p>
-        </div>
-
-        {/* Pronunciation Task Card */}
-        <div className="exercise-card">
-          <div className="card-icon-wrapper speaker">
-            <Volume2 size={24} color="white" />
-          </div>
-          <div className="card-content">
-            <div className="card-title">Pronunciation</div>
-            <div className="card-subtitle">Câu trả lời của bạn</div>
-          </div>
-        </div>
-
-        {/* Current Word/Question Display */}
-        <div className="current-item-display">
-          {currentExercise.currentWord || currentExercise.currentSentence || currentExercise.currentQuestion || currentExercise.topic || currentExercise.scenario}
-        </div>
-
-        {/* Picture for picture description */}
-        {currentExercise.type === 'picture-description' && currentExercise.image && (
-          <div className="exercise-image-container">
-            <img 
-              src={currentExercise.image} 
-              alt="Exercise visual" 
-              className="exercise-image"
-              onError={(e) => {
-                e.target.style.display = 'none';
-              }}
-            />
-          </div>
-        )}
-
-        {/* Description for picture description */}
-        {currentExercise.type === 'picture-description' && currentExercise.description && (
-          <div className="exercise-description">
-            <p>{currentExercise.description}</p>
-          </div>
-        )}
-
-        {/* Audio Player Card */}
-        <div className="exercise-card">
-          <div className="card-icon-wrapper play">
-            <Play size={24} color="white" />
-          </div>
-          <div className="card-content">
-            <div className="audio-player-controls">
-              <button className="audio-control-btn" onClick={handlePlayRecording}>
-                {isPlaying ? <Pause size={20} /> : <Play size={20} />}
+      {/* Main Content */}
+      <div className="speaking-content">
+        {/* Question Section */}
+        <div className="question-section">
+          <div className="question-header">
+            <h2 className="question-title">Questions {currentQuestion + 1} - {speakingData.totalQuestions}</h2>
+            <div className="question-controls">
+              <button 
+                className="hint-btn"
+                onClick={() => setShowHint(!showHint)}
+              >
+                <HelpCircle size={16} />
+                Hint
               </button>
-              <div className="audio-progress-bar-container">
-                <div 
-                  className="audio-progress-fill" 
-                  style={{ 
-                    width: duration > 0 ? `${(currentTime / duration) * 100}%` : '0%' 
-                  }}
-                ></div>
-              </div>
-              <div className="audio-time-display">
-                {formatTime(currentTime)} / {formatTime(duration)}
-              </div>
             </div>
           </div>
+
+          <div className="question-content">
+            <div className="question-instruction">
+              <p>{currentQuestionData.instruction}</p>
+            </div>
+
+            <div className="question-prompt">
+              <div className="question-number">
+                <span>{currentQuestion + 1}</span>
+              </div>
+              <p>{currentQuestionData.question}</p>
+            </div>
+
+            {showHint && (
+              <div className="hint-content">
+                <div className="hint-header">
+                  <AlertCircle size={16} />
+                  <span>Gợi ý</span>
+                </div>
+                <div className="hint-tips">
+                  <h4>Mẹo trả lời:</h4>
+                  <ul>
+                    <li>Trả lời tối thiểu {currentQuestionData.minSentences} câu</li>
+                    <li>Nói rõ ràng và tự nhiên</li>
+                    <li>Sử dụng từ vựng phong phú</li>
+                    <li>Tránh im lặng quá lâu</li>
+                  </ul>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Recording Controls */}
-        <div className="record-button-container">
-          {!userAnswer ? (
-            <button 
-              className={`record-button ${isRecording ? 'recording' : ''}`}
-              onClick={isRecording ? handleStopRecording : handleStartRecording}
-            >
-              <Mic size={20} className="mic-icon" />
-              {isRecording ? 'Dừng ghi âm' : 'Bắt đầu ghi âm'}
-            </button>
-          ) : (
-            <div className="recording-result">
-              <div className="recording-info">
-                <CheckCircle size={20} className="success-icon" />
-                <span>Đã ghi âm thành công!</span>
+        {/* Recording Section */}
+        {!showResults && (
+          <div className="recording-section">
+            <div className="recording-header">
+              <h3 className="recording-title">Câu trả lời của bạn</h3>
+            </div>
+
+            <div className="recording-interface">
+              <div className="recording-button-container">
                 <button 
-                  className="re-record-btn"
-                  onClick={() => {
-                    setUserAnswer('');
-                    setScore(0);
-                    setShowResults(false);
-                  }}
+                  className={`recording-btn ${isRecording ? 'recording' : ''}`}
+                  onClick={isRecording ? stopRecording : startRecording}
+                  disabled={isCompleted}
                 >
-                  <Mic size={16} />
-                  Ghi âm lại
+                  {isRecording ? <MicOff size={32} /> : <Mic size={32} />}
+                </button>
+                <p className="recording-instruction">
+                  {isRecording ? 'Đang ghi âm...' : 'Nhấn để bắt đầu ghi âm'}
+                </p>
+                <p className="recording-limit">
+                  Giới hạn ghi âm là {formatTime(currentQuestionData.timeLimit)}
+                </p>
+                <p className="recording-timer">
+                  {formatTime(recordingTime)}
+                </p>
+              </div>
+
+              <div className="recording-info">
+                <p>Hệ thống sẽ tự động xử lý bài nói của bạn</p>
+              </div>
+
+              <div className="recording-note">
+                <AlertCircle size={16} />
+                <span>Lưu ý: Bạn nên trả lời tối thiểu {currentQuestionData.minSentences} câu</span>
+              </div>
+            </div>
+
+            {/* Audio Player (if recorded) */}
+            {audioUrl && (
+              <div className="audio-player">
+                <div className="audio-controls">
+                  <button 
+                    className="play-btn"
+                    onClick={playAudio}
+                  >
+                    {isPlaying ? <Pause size={20} /> : <Play size={20} />}
+                  </button>
+                  <div className="audio-info">
+                    <span>Bản ghi âm của bạn</span>
+                    <span>{formatTime(recordingTime)}</span>
+                  </div>
+                </div>
+                <audio 
+                  ref={audioRef}
+                  src={audioUrl}
+                  onEnded={() => setIsPlaying(false)}
+                />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Results Section */}
+        {showResults && (
+          <div className="results-section">
+            <div className="results-header">
+              <h3 className="results-title">Kết quả</h3>
+              <div className="results-tabs">
+                <button className="tab-btn active">Nhận xét chung</button>
+                <button className="tab-btn">
+                  <span className="tab-number good">{mockResults.feedback.goodExpressions}</span>
+                  Diễn đạt hay
+                </button>
+                <button className="tab-btn">
+                  <span className="tab-number error">{mockResults.feedback.errors}</span>
+                  Lỗi trong bài
                 </button>
               </div>
             </div>
+
+            <div className="results-content">
+              <div className="transcription-section">
+                <p className="transcription-text">
+                  {mockResults.detailedFeedback.map((item, index) => (
+                    <span 
+                      key={index}
+                      className={`transcription-word ${item.type}`}
+                      title={item.suggestion || ''}
+                    >
+                      {item.text}
+                      {item.position && <sup>{item.position}</sup>}
+                    </span>
+                  ))}
+                </p>
+              </div>
+
+              <div className="feedback-summary">
+                <p>{mockResults.feedback.generalComments} nhận xét trên nội dung bài nói</p>
+              </div>
+
+              <div className="score-breakdown">
+                <div className="score-item">
+                  <span className="score-label">Pronunciation</span>
+                  <div className="score-bar">
+                    <div 
+                      className="score-fill" 
+                      style={{ width: `${(mockResults.pronunciation / 10) * 100}%` }}
+                    ></div>
+                  </div>
+                  <span className="score-value">{mockResults.pronunciation}/10</span>
+                </div>
+                <div className="score-item">
+                  <span className="score-label">Fluency</span>
+                  <div className="score-bar">
+                    <div 
+                      className="score-fill" 
+                      style={{ width: `${(mockResults.fluency / 10) * 100}%` }}
+                    ></div>
+                  </div>
+                  <span className="score-value">{mockResults.fluency}/10</span>
+                </div>
+                <div className="score-item">
+                  <span className="score-label">Grammar</span>
+                  <div className="score-bar">
+                    <div 
+                      className="score-fill" 
+                      style={{ width: `${(mockResults.grammar / 10) * 100}%` }}
+                    ></div>
+                  </div>
+                  <span className="score-value">{mockResults.grammar}/10</span>
+                </div>
+                <div className="score-item">
+                  <span className="score-label">Vocabulary</span>
+                  <div className="score-bar">
+                    <div 
+                      className="score-fill" 
+                      style={{ width: `${(mockResults.vocabulary / 10) * 100}%` }}
+                    ></div>
+                  </div>
+                  <span className="score-value">{mockResults.vocabulary}/10</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Action Buttons */}
+      <div className="exercise-actions">
+        <div className="action-buttons">
+          <button 
+            className="reset-btn"
+            onClick={resetExercise}
+            disabled={isCompleted}
+          >
+            <RotateCcw size={16} />
+            Reset
+          </button>
+          
+          {!showResults ? (
+            <button 
+              className="submit-btn"
+              onClick={submitRecording}
+              disabled={!audioBlob || isCompleted}
+            >
+              <Target size={16} />
+              Nộp bài
+            </button>
+          ) : (
+            <button 
+              className="next-btn"
+              onClick={nextQuestion}
+            >
+              <RefreshCw size={16} />
+              {currentQuestion < speakingData.questions.length - 1 ? 'Câu tiếp theo' : 'Hoàn thành'}
+            </button>
           )}
         </div>
-
-        {/* Score Display */}
-        {showResults && (
-          <div className="score-display">
-            <div className="score-badge" style={{ backgroundColor: scoreStatus.color }}>
-              <Trophy size={20} />
-              <span className="score-text">Điểm số {score} / {scoreStatus.status}</span>
-            </div>
-          </div>
-        )}
-
-        {/* Pronunciation Results */}
-        {showResults && (
-          <div className="pronunciation-results-section">
-            <h3 className="pronunciation-results-title">Kết quả chấm phát âm</h3>
-            <div className="pronunciation-legend">
-              <div className="legend-item">
-                <div className="legend-color green"></div>
-                <span>Đúng</span>
-              </div>
-              <div className="legend-item">
-                <div className="legend-color yellow"></div>
-                <span>Cần cải thiện</span>
-              </div>
-              <div className="legend-item">
-                <div className="legend-color red"></div>
-                <span>Chưa đúng</span>
-              </div>
-            </div>
-            
-            <div className="word-pronunciation-list">
-              <div className="word-pronunciation-item correct">
-                {currentExercise.currentWord || currentExercise.currentSentence || currentExercise.currentQuestion}
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* Navigation */}
-      <div className="navigation-controls">
-        <button 
-          className="nav-button prev"
-          onClick={handlePreviousExercise}
-          disabled={currentExerciseIndex === 0}
-        >
-          <ChevronLeft size={20} />
-          Trước
-        </button>
-
-        <div className="progress-dots">
-          {exerciseData.exercises.map((_, index) => (
-            <div 
-              key={index} 
-              className={`dot ${index <= currentExerciseIndex ? 'active' : ''}`}
-            />
-          ))}
+      {/* Completion Message */}
+      {isCompleted && (
+        <div className="completion-message">
+          <div className="completion-content">
+            <Award size={32} />
+            <h3>Chúc mừng!</h3>
+            <p>Bạn đã hoàn thành bài Speaking thành công.</p>
+            <div className="completion-stats">
+              <div className="stat-item">
+                <BookOpen size={20} />
+                <span>{speakingData.totalQuestions} câu hỏi</span>
+              </div>
+              <div className="stat-item">
+                <Clock size={20} />
+                <span>{formatTime(timeSpent)}</span>
+              </div>
+            </div>
+          </div>
         </div>
-
-        {!showResults ? (
-          <button 
-            className="nav-button next"
-            onClick={handleSubmitExercise}
-            disabled={!userAnswer}
-          >
-            <Zap size={20} />
-            Nộp bài
-            <ArrowRight size={20} />
-          </button>
-        ) : (
-          <button 
-            className="nav-button next"
-            onClick={handleNextExercise}
-          >
-            {currentExerciseIndex < exerciseData.exercises.length - 1 ? 'Tiếp theo' : 'Hoàn thành'}
-            <ArrowRight size={20} />
-          </button>
-        )}
-      </div>
-
-      {/* Exit Button - Removed as requested */}
-
-      {/* Hidden Audio Element */}
-      <audio 
-        ref={audioRef}
-        src={userAnswer}
-        onEnded={() => setIsPlaying(false)}
-        onTimeUpdate={(e) => setCurrentTime(e.target.currentTime)}
-      />
+      )}
     </div>
   );
 };

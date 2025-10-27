@@ -1,0 +1,171 @@
+/* Consistent Sidebar Layout - Đảm bảo vị trí đồng nhất */
+
+.consistent-sidebar-layout {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f8fafc;
+}
+
+/* ===== SIDEBAR TRÁI - Vị trí cố định ===== */
+.consistent-sidebar-left {
+  width: 280px;
+  background: white;
+  border-right: 1px solid #e2e8f0;
+  padding: 24px 0;
+  position: fixed;
+  height: 100vh;
+  overflow-y: auto;
+  z-index: 100;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
+}
+
+.sidebar-menu {
+  padding: 0 20px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.program-selector {
+  margin-bottom: 32px;
+}
+
+.program-badge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  border-radius: 8px;
+  color: white;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.menu-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 32px;
+  flex: 1;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  text-decoration: none;
+  color: #64748b;
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.menu-item:hover {
+  background: #f1f5f9;
+  color: #334155;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.menu-item.active {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: white;
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.3);
+  border-left: 4px solid #1e40af;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+}
+
+.back-to-home-btn {
+  width: 100%;
+  padding: 12px 16px;
+  background: #f1f5f9;
+  border: none;
+  border-radius: 8px;
+  color: #475569;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.back-to-home-btn:hover {
+  background: #e2e8f0;
+}
+
+/* Fix text cutoff issues - Enhanced */
+.consistent-main-content {
+  flex: 1;
+  margin-left: 280px;
+  padding: 24px;
+  min-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  box-sizing: border-box;
+  position: relative;
+  z-index: 1;
+}
+
+/* Ensure all text is visible */
+.consistent-main-content * {
+  overflow: visible !important;
+  text-overflow: unset !important;
+  white-space: normal !important;
+}
+
+/* Push out animation cho main content */
+.consistent-main-content.pushed-out {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  border-radius: 12px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .consistent-sidebar-left {
+    width: 100%;
+    position: relative;
+    height: auto;
+  }
+
+  .consistent-main-content {
+    margin-left: 0;
+    padding: 16px;
+  }
+
+  .consistent-sidebar-layout {
+    flex-direction: column;
+  }
+}
+
+/* Fix text cutoff issues */
+@media (max-width: 1200px) {
+  .consistent-main-content {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .consistent-main-content {
+    padding: 16px;
+  }
+}
+
+/* Scrollbar styling cho sidebar */
+.consistent-sidebar-left::-webkit-scrollbar {
+  width: 6px;
+}
+
+.consistent-sidebar-left::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.consistent-sidebar-left::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 3px;
+}
+
+.consistent-sidebar-left::-webkit-scrollbar-thumb:hover {
+  background: #a0aec0;
+}

@@ -4,12 +4,14 @@ from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
 import os
 
-# Create database directory if it doesn't exist
-db_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data')
+# Create database directory in a stable, absolute location (inside backend)
+_base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))  # .../backend
+db_dir = os.path.join(_base_dir, 'data')
 os.makedirs(db_dir, exist_ok=True)
 
-# SQLite database URL
-SQLALCHEMY_DATABASE_URL = "sqlite:///./data/englishwebai.db"
+# Absolute SQLite database path to avoid CWD issues
+abs_db_path = os.path.join(db_dir, 'englishwebai.db')
+SQLALCHEMY_DATABASE_URL = f"sqlite:///{abs_db_path}"
 
 # Create database engine
 engine = create_engine(

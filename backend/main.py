@@ -1,0 +1,136 @@
+from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
+from app.core.config import settings
+from app.core.database import engine, Base, SessionLocal
+from app.routers import auth, users, otp, parent, test
+from app.routers import admin as admin_router
+from app.routers import classes, lessons, exercises, materials, discussions, news, notifications, messages
+from app.routers import courses as courses_router
+from app.routers import ai_conversation, ai_writing, ai_reading
+from app.routers import ai_usage, ai_analytics
+from app.models import User
+
+# Create database tables
+Base.metadata.create_all(bind=engine)
+
+app = FastAPI(
+    title=settings.APP_NAME,
+    version=settings.APP_VERSION,
+    docs_url=f"{settings.API_PREFIX}/docs",
+    redoc_url=f"{settings.API_PREFIX}/redoc",
+    openapi_url=f"{settings.API_PREFIX}/openapi.json"
+)
+
+# CORS Middleware
+app.add_middleware(
+    CORSMiddleware,
+    # NOTE: do not include "*" when allow_credentials=True to avoid browser blocking
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5173",  # Vite dev server
+        "http://127.0.0.1:5173",
+    ],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allow_headers=["*"],
+    expose_headers=["*"],
+)
+
+# Include routers (match frontend API paths)
+app.include_router(auth.router, prefix="/api/users", tags=["Authentication"])
+app.include_router(users.router, prefix=f"{settings.API_PREFIX}/users", tags=["Users"])
+app.include_router(admin_router.router, prefix=f"{settings.API_PREFIX}/admin", tags=["Admin"])
+app.include_router(test.router, prefix=f"{settings.API_PREFIX}/test", tags=["Test"])
+app.include_router(otp.router, prefix=f"{settings.API_PREFIX}/otp", tags=["OTP"])
+app.include_router(parent.router, prefix=f"{settings.API_PREFIX}/parent", tags=["Parent"])
+
+# Student routers
+app.include_router(classes.router, prefix=f"{settings.API_PREFIX}/classes", tags=["Classes"])
+app.include_router(lessons.router, prefix=f"{settings.API_PREFIX}/lessons", tags=["Lessons"])
+app.include_router(exercises.router, prefix=f"{settings.API_PREFIX}/exercises", tags=["Exercises"])
+app.include_router(materials.router, prefix=f"{settings.API_PREFIX}/materials", tags=["Materials"])
+app.include_router(discussions.router, prefix=f"{settings.API_PREFIX}/discussions", tags=["Discussions"])
+app.include_router(news.router, prefix=f"{settings.API_PREFIX}/news", tags=["News"])
+app.include_router(notifications.router, prefix=f"{settings.API_PREFIX}/notifications", tags=["Notifications"])
+app.include_router(messages.router, prefix=f"{settings.API_PREFIX}/messages", tags=["Messages"])
+app.include_router(courses_router.router, prefix=f"{settings.API_PREFIX}/courses", tags=["Courses"])
+app.include_router(ai_conversation.router, tags=["AI Conversation"])
+app.include_router(ai_writing.router, tags=["AI Writing"])
+app.include_router(ai_reading.router, prefix=f"{settings.API_PREFIX}/ai/reading", tags=["AI Reading"])
+app.include_router(ai_usage.router, tags=["AI Usage"])
+app.include_router(ai_analytics.router, tags=["AI Analytics (Admin)"])
+
+# Serve media files if available (e.g., uploaded materials)
+try:
+    app.mount("/media", StaticFiles(directory="media", check_dir=False), name="media")
+except Exception:
+    # If StaticFiles fails due to version mismatch or other issues, skip mounting
+    pass
+
+@app.on_event("startup")
+async def startup_event():
+    """Run on application startup"""
+    print("🚀 Starting EnglishWebAI Backend...")
+    
+    # Auto-migrate lightweight schema (SQLite add columns if missing)
+    try:
+        from app.utils.db_migrations import ensure_schema
+        ensure_schema()
+        print("✅ Schema ensured (light migration)")
+    except Exception as e:
+        print(f"⚠️  Schema ensure failed: {e}")
+
+    # Auto-seed database if empty
+    from app.utils.seed import seed_users
+    from app.models.user import User
+    
+    db = SessionLocal()
+    try:
+        user_count = db.query(User).count()
+        if user_count == 0:
+            print("📊 Database is empty. Running auto-seed...")
+            seed_users(db, force=False)
+            print("✅ Auto-seed completed!")
+        else:
+            print(f"📊 Database already has {user_count} users. Skipping auto-seed.")
+
+        # Initialize default system configurations
+        from app.services.system_config_service import SystemConfigService
+        SystemConfigService.initialize_default_configs(db)
+        print("✅ System configurations initialized!")
+
+        # Seed public courses if none exist
+        try:
+            from app.utils.seed import seed_courses, seed_course_units_questions
+            seed_courses(db)
+            seed_course_units_questions(db)
+        except Exception as se:
+            print(f"⚠️  Course seeding skipped: {se}")
+        
+    except Exception as e:
+        print(f"⚠️  Startup error: {str(e)}")
+    finally:
+        db.close()
+
+@app.get("/")
+async def root():
+    return {
+        "message": "Welcome to EnglishWebAI API",
+        "version": settings.APP_VERSION,
+        "docs": f"{settings.API_PREFIX}/docs"
+    }
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy"}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True
+    )

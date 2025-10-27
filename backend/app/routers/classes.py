@@ -596,6 +596,47 @@ async def list_class_exercises(
     return rows
 
 
+@router.post("/{class_id}/lessons/ensure-default", response_model=LessonResponse, status_code=201)
+async def ensure_default_lesson(
+    class_id: int,
+    title: str = "Bài 1",
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Tạo một bài mặc định nếu lớp chưa có bài nào."""
+    _ensure_can_manage_class(db, current_user, class_id)
+    existing = db.query(Lesson).filter(Lesson.class_id == class_id).order_by(Lesson.order_index.asc()).first()
+    if existing:
+        return existing
+    max_idx = db.query(func.max(Lesson.order_index)).filter(Lesson.class_id == class_id).scalar() or 0
+    lesson = Lesson(class_id=class_id, title=title, order_index=(max_idx + 1))
+    db.add(lesson)
+    db.commit()
+    db.refresh(lesson)
+    return lesson
+
+
+@router.post("/{class_id}/lessons/{lesson_id}/assign-ungrouped")
+async def assign_ungrouped_to_lesson(
+    class_id: int,
+    lesson_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Chuyển tất cả học liệu/bài tập chưa gán bài của lớp về bài chỉ định."""
+    _ensure_can_manage_class(db, current_user, class_id)
+    lesson = db.query(Lesson).filter(Lesson.id == lesson_id, Lesson.class_id == class_id).first()
+    if not lesson:
+        raise HTTPException(status_code=404, detail="Không tìm thấy bài học")
+
+    # Update materials
+    db.query(Material).filter(Material.class_id == class_id, Material.lesson_id.is_(None)).update({Material.lesson_id: lesson_id})
+    # Update exercises
+    db.query(Exercise).filter(Exercise.class_id == class_id, Exercise.lesson_id.is_(None)).update({Exercise.lesson_id: lesson_id})
+    db.commit()
+    return {"message": "Đã gán các mục chưa phân loại vào bài", "lesson_id": lesson_id}
+
+
 @router.get("/{class_id}/lessons", response_model=List[LessonResponse])
 async def list_class_lessons(
     class_id: int,

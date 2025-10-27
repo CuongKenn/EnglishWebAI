@@ -29,7 +29,7 @@ const API_USERS = `${BASE_URL}/api/users`;
 // Create axios instance with default config
 const apiClient = axios.create({
   baseURL: BASE_URL,
-  timeout: 10000,
+  timeout: 60000, // Increase to 60 seconds for AI requests
   headers: {
     'Content-Type': 'application/json',
   },
@@ -38,7 +38,7 @@ const apiClient = axios.create({
 // Create axios instance for /api/v1 endpoints
 const apiV1Client = axios.create({
   baseURL: API_V1,
-  timeout: 10000,
+  timeout: 60000, // Increase to 60 seconds for AI requests
   headers: {
     'Content-Type': 'application/json',
   },
@@ -538,6 +538,103 @@ export const materialsAPI = {
   },
 };
 
+// ==================== Courses (Public Catalog) APIs ====================
+export const coursesAPI = {
+  // List public courses (auth required for progress)
+  getCourses: async (params = {}) => {
+    try {
+      const response = await apiClient.get('/api/v1/courses/', { params });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Create a course (teacher/admin)
+  createCourse: async (data) => {
+    try {
+      const response = await apiClient.post('/api/v1/courses/', data);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // List exercises in a course
+  getCourseExercises: async (courseId) => {
+    try {
+      const response = await apiClient.get(`/api/v1/courses/${courseId}/exercises`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Course detail
+  getCourse: async (courseId) => {
+    try {
+      const response = await apiClient.get(`/api/v1/courses/${courseId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Create an exercise (teacher/admin)
+  createCourseExercise: async (courseId, data) => {
+    try {
+      const response = await apiClient.post(`/api/v1/courses/${courseId}/exercises`, data);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Submit exercise (student)
+  submitCourseExercise: async (courseId, exerciseId, submission) => {
+    try {
+      const response = await apiClient.post(`/api/v1/courses/${courseId}/exercises/${exerciseId}/submit`, submission);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Units (Lessons)
+  getUnits: async (courseId) => {
+    try {
+      const response = await apiClient.get(`/api/v1/courses/${courseId}/units`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+  createUnit: async (courseId, data) => {
+    try {
+      const response = await apiClient.post(`/api/v1/courses/${courseId}/units`, data);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+  getQuestions: async (unitId) => {
+    try {
+      const response = await apiClient.get(`/api/v1/courses/units/${unitId}/questions`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+  createQuestion: async (unitId, data) => {
+    try {
+      const response = await apiClient.post(`/api/v1/courses/units/${unitId}/questions`, data);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+};
+
 // ==================== Discussions APIs ====================
 export const discussionsAPI = {
   // Lấy danh sách thảo luận
@@ -605,6 +702,16 @@ export const discussionsAPI = {
     }
   },
 
+  // Xóa bình luận
+  deletePost: async (discussionId, postId) => {
+    try {
+      const response = await apiClient.delete(`/api/v1/discussions/${discussionId}/posts/${postId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
   // Like câu hỏi
   likeDiscussion: async (discussionId) => {
     try {
@@ -619,6 +726,16 @@ export const discussionsAPI = {
   unlikeDiscussion: async (discussionId) => {
     try {
       const response = await apiClient.delete(`/api/v1/discussions/${discussionId}/like`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Tăng lượt xem
+  viewThread: async (discussionId) => {
+    try {
+      const response = await apiClient.post(`/api/v1/discussions/${discussionId}/view`);
       return response.data;
     } catch (error) {
       throw error.response ? error.response.data : error;
@@ -683,6 +800,26 @@ export const newsAPI = {
     try {
       const response = await apiClient.delete(`/api/v1/news/${newsId}`);
       return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Thích tin tức (yêu cầu đăng nhập)
+  likeNews: async (newsId) => {
+    try {
+      const response = await apiClient.post(`/api/v1/news/${newsId}/like`);
+      return response.data; // { likes }
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Bỏ thích tin tức (yêu cầu đăng nhập)
+  unlikeNews: async (newsId) => {
+    try {
+      const response = await apiClient.delete(`/api/v1/news/${newsId}/like`);
+      return response.data; // { likes }
     } catch (error) {
       throw error.response ? error.response.data : error;
     }
@@ -860,6 +997,110 @@ export const adminAPI = {
       return response.data;
     } catch (error) {
       throw error.response ? error.response.data : error;
+    }
+  },
+};
+
+// ===========================
+// AI Conversation API
+// ===========================
+export const aiAPI = {
+  // Chat with AI
+  sendMessage: async (message, chatHistory = null, systemPrompt = null) => {
+    try {
+      const response = await apiClient.post('/api/v1/ai/conversation', {
+        message,
+        chat_history: chatHistory,
+        system_prompt: systemPrompt
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Get conversation suggestions
+  getConversationSuggestions: async (topic = null) => {
+    try {
+      const response = await apiClient.post('/api/v1/ai/conversation/suggestions', {
+        topic
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Check writing
+  checkWriting: async (text, writingType = 'general', level = 'intermediate') => {
+    try {
+      const response = await apiClient.post('/api/v1/ai/writing/check', {
+        text,
+        writing_type: writingType,
+        level
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Generate writing topic
+  generateWritingTopic: async (writingType = 'general', level = 'intermediate') => {
+    try {
+      const response = await apiClient.post('/api/v1/ai/writing/generate-topic', {
+        writing_type: writingType,
+        level
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Generate reading passage
+  generateReadingPassage: async (level = 'intermediate', readingType = 'article', topic = null) => {
+    try {
+      const response = await apiClient.post('/api/v1/ai/reading/generate', {
+        level,
+        reading_type: readingType,
+        topic
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Check reading answers
+  checkReadingAnswers: async (answers) => {
+    try {
+      const response = await apiClient.post('/api/v1/ai/reading/check-answers', {
+        answers
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+};
+
+// ===========================
+// AI Usage Logging API
+// ===========================
+export const aiUsageAPI = {
+  // Log a usage event for AI features
+  logUsage: async (feature, metadata = {}) => {
+    try {
+      const response = await apiClient.post('/api/v1/ai/usage', {
+        feature,
+        metadata,
+      });
+      return response.data;
+    } catch (error) {
+      // Do not throw to avoid breaking UX; surface optional debugging
+      // console.warn('AI usage log failed', error);
+      return null;
     }
   },
 };

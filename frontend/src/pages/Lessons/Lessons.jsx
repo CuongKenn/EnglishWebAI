@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { 
-  Home, BookOpen, GraduationCap, Target, User, 
+import { useNavigate, Link } from 'react-router-dom';
+import {
   TrendingUp, Clock, Award, CheckCircle, Circle,
-  Calendar, BarChart3, Sparkles, Play, ChevronRight
+  Calendar, BarChart3, Sparkles, Play, ChevronRight, BookOpen, Target
 } from 'lucide-react';
+import ConsistentSidebarLayout from '../../components/Layout/ConsistentSidebarLayout';
 import './Lessons.css';
 
 const Lessons = () => {
   const navigate = useNavigate();
   const [activeMenuItem, setActiveMenuItem] = useState('overview');
+  const [isContentPushed, setIsContentPushed] = useState(false);
   
   // Dữ liệu mô phỏng
   const userInfo = {
@@ -52,61 +53,25 @@ const Lessons = () => {
     { id: 3, title: 'Unit 17: Future Tenses', status: 'locked', score: null }
   ];
 
-  const menuItems = [
-    { id: 'overview', label: 'Tổng quan', icon: Home, path: '/lessons' },
-    { id: 'study-plan', label: 'Kế hoạch học tập', icon: Calendar, path: '/study-plan' },
-    { id: 'my-courses', label: 'Khóa học của tôi', icon: BookOpen, path: '/my-courses' },
-    { id: 'practice', label: 'Luyện tập', icon: Target, path: '/lessons/practice' },
-    { id: 'profile', label: 'Hồ sơ học tập', icon: User, path: '/learning-profile' }
-  ];
+  const handleMenuItemClick = (itemId) => {
+    setActiveMenuItem(itemId);
+    setIsContentPushed(true);
+    
+    // Reset animation after completion
+    setTimeout(() => {
+      setIsContentPushed(false);
+    }, 300);
+  };
 
   return (
-    <div className="lessons-dashboard">
-      {/* Sidebar Trái: Menu điều hướng */}
-      <aside className="dashboard-sidebar-left">
-        <div className="sidebar-menu">
-          <div className="program-selector">
-            <div className="program-badge">
-              <GraduationCap size={20} />
-              <span>Tiếng Anh {userInfo.grade}</span>
-            </div>
-          </div>
-          
-          <nav className="menu-nav">
-            {menuItems.map(item => (
-              item.path ? (
-                <Link
-                  key={item.id}
-                  to={item.path}
-                  className={`menu-item ${activeMenuItem === item.id ? 'active' : ''}`}
-                  onClick={() => setActiveMenuItem(item.id)}
-                >
-                  <item.icon size={20} />
-                  <span>{item.label}</span>
-          </Link>
-              ) : (
-                <button
-                  key={item.id}
-                  className={`menu-item ${activeMenuItem === item.id ? 'active' : ''}`}
-                  onClick={() => setActiveMenuItem(item.id)}
-                >
-                  <item.icon size={20} />
-                  <span>{item.label}</span>
-                </button>
-              )
-            ))}
-          </nav>
-
-          <div className="sidebar-footer">
-            <button className="back-to-home-btn" onClick={() => navigate('/')}>
-              ← Trở về trang chủ
-            </button>
-          </div>
-            </div>
-      </aside>
-
-      {/* Nội dung chính */}
-      <main className="dashboard-main">
+    <ConsistentSidebarLayout 
+      activeMenuItem={activeMenuItem}
+      onMenuItemClick={handleMenuItemClick}
+      courseTitle={`Tiếng Anh ${userInfo.grade}`}
+    >
+      <div className={`lessons-content-wrapper ${isContentPushed ? 'pushed-out' : ''}`}>
+        {/* Nội dung chính */}
+        <main className="dashboard-main">
         {/* Welcome Banner */}
         <div className="welcome-banner">
           <div className="banner-content">
@@ -119,10 +84,10 @@ const Lessons = () => {
                 <span className="mascot-emoji">🎓</span>
                 <Sparkles className="sparkle sparkle-1" size={20} />
                 <Sparkles className="sparkle sparkle-2" size={16} />
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
         {/* Mục tiêu hôm nay */}
         <section className="today-goal-section">
@@ -557,8 +522,8 @@ const Lessons = () => {
               <div className="level-item">
                 <div className="level-label">Mục tiêu</div>
                 <div className="level-value target">{userInfo.targetLevel}</div>
-        </div>
-      </div>
+              </div>
+            </div>
           </div>
 
           <div className="learning-summary">
@@ -585,6 +550,7 @@ const Lessons = () => {
         </div>
       </aside>
     </div>
+  </ConsistentSidebarLayout>
   );
 };
 

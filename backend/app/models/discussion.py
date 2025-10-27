@@ -12,6 +12,10 @@ class DiscussionThread(Base):
     title = Column(String, nullable=False)
     created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    # Optional subject/skill label shown in UI (e.g., "Kĩ năng nghe")
+    subject = Column(String, nullable=True)
+    # Views counter for the thread
+    views = Column(Integer, nullable=False, default=0)
 
     classroom = relationship("Classroom", back_populates="discussions")
     posts = relationship("DiscussionPost", back_populates="thread", cascade="all, delete-orphan")

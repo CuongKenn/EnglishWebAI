@@ -37,12 +37,27 @@ async def get_discussions(
     # Apply filters
     if search:
         query = query.filter(DiscussionThread.title.ilike(f"%{search}%"))
+
+    # Filter by subject/skill if provided (match stored thread subject label)
+    if subject:
+        query = query.filter(DiscussionThread.subject == subject)
     
     # Order by created_at desc and apply pagination
     threads = query.order_by(desc(DiscussionThread.created_at)).offset(skip).limit(limit).all()
     
     # Format response with user and post count
     result = []
+    def _skill_label(skill: str | None) -> str:
+        if not skill:
+            return "Chung"
+        mapping = {
+            "listening": "Kĩ năng nghe",
+            "speaking": "Kĩ năng nói",
+            "reading": "Kĩ năng đọc",
+            "writing": "Kĩ năng viết",
+        }
+        return mapping.get(skill, skill)
+
     for thread in threads:
         # Get post count (answers)
         post_count = db.query(func.count(DiscussionPost.id)).filter(
@@ -78,11 +93,12 @@ async def get_discussions(
             "author": creator.full_name or creator.username if creator else "Unknown",
             "authorUsername": creator.username if creator else "Unknown",  # For comparison in frontend
             "authorRole": creator.role.value if creator else "user",
-            "subject": classroom.subject if classroom else "Chung",
-            "grade": classroom.name if classroom else "",
+            # Prefer thread.subject; fallback to classroom.skill label
+            "subject": thread.subject if getattr(thread, "subject", None) else (_skill_label(getattr(classroom, "skill", None)) if classroom else "Chung"),
+            "grade": getattr(classroom, "grade", None) if classroom else None,
             "tags": [],  # Can be added later if needed
             "answers": post_count,
-            "views": 0,  # Can be added later with a views tracking system
+            "views": getattr(thread, "views", 0) or 0,
             "likes": like_count,
             "isLiked": user_liked,  # Flag to check if current user liked
             "createdAt": thread.created_at.strftime("%Y-%m-%d %H:%M") if thread.created_at else "",
@@ -105,12 +121,29 @@ async def create_discussion(
     thread = DiscussionThread(
         title=thread_data.title,
         class_id=thread_data.class_id,
-        created_by=current_user.id
+        created_by=current_user.id,
+        subject=thread_data.subject
     )
     
     db.add(thread)
     db.commit()
     db.refresh(thread)
+
+    # If content provided, create initial post for the thread
+    if getattr(thread_data, "content", None):
+        first_post = DiscussionPost(
+            thread_id=thread.id,
+            author_id=current_user.id,
+            content=thread_data.content,
+            parent_post_id=None
+        )
+        db.add(first_post)
+        # Increase views because a comment is effectively added
+        try:
+            thread.views = (thread.views or 0) + 1
+        except Exception:
+            pass
+        db.commit()
     
     return {
         "id": thread.id,
@@ -217,6 +250,11 @@ async def create_discussion_post(
     )
     
     db.add(post)
+    # Increase view when someone comments
+    try:
+        thread.views = (thread.views or 0) + 1
+    except Exception:
+        pass
     db.commit()
     db.refresh(post)
     
@@ -298,7 +336,7 @@ async def delete_discussion_post(
             detail="Không tìm thấy bình luận"
         )
     
-    if post.author_id != current_user.id and current_user.role.value not in ["admin", "superadmin"]:
+    if post.author_id != current_user.id and current_user.role.value not in ["admin", "superadmin", "teacher"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Bạn không có quyền xóa bình luận này"
@@ -326,7 +364,7 @@ async def delete_discussion(
             detail="Không tìm thấy câu hỏi"
         )
     
-    if thread.created_by != current_user.id and current_user.role.value not in ["admin", "superadmin"]:
+    if thread.created_by != current_user.id and current_user.role.value not in ["admin", "superadmin", "teacher"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Bạn không có quyền xóa câu hỏi này"
@@ -373,6 +411,11 @@ async def like_discussion(
     )
     
     db.add(like)
+    # Increase view when someone likes
+    try:
+        thread.views = (thread.views or 0) + 1
+    except Exception:
+        pass
     db.commit()
     
     # Get total likes
@@ -384,6 +427,25 @@ async def like_discussion(
         "message": "Đã thích câu hỏi",
         "likes": total_likes
     }
+
+@router.post("/{thread_id}/view")
+async def add_view(
+    thread_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Tăng lượt xem cho câu hỏi (không yêu cầu đăng nhập)
+    """
+    thread = db.query(DiscussionThread).filter(DiscussionThread.id == thread_id).first()
+    if not thread:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy câu hỏi")
+    try:
+        thread.views = (thread.views or 0) + 1
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    return {"message": "Đã tăng lượt xem", "views": thread.views}
 
 @router.delete("/{thread_id}/like")
 async def unlike_discussion(

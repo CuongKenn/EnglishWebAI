@@ -14,12 +14,15 @@ import Materials from './pages/Materials/Materials';
 import Discussion from './pages/Discussion/Discussion';
 import Exercises from './pages/Exercises/Exercises';
 import News from './pages/News/News';
+import NewsDetail from './pages/News/NewsDetail';
 import Lessons from './pages/Lessons/Lessons';
 import ClassContent from './pages/ClassContent/ClassContent';
 import AIPractice from './pages/student/AIPractice';
 import MyClasses from './pages/student/MyClasses/MyClasses';
 import ExerciseHub from './pages/student/ExerciseHub/ExerciseHub';
 import DoExercise from './pages/student/DoExercise/DoExercise';
+import { WritingAI } from './components/ai/WritingAI';
+import { ReadingAI } from './components/ai/ReadingAI';
 import CourseContentPage from './pages/CourseContentPage/CourseContentPage';
 import MyCourses from './pages/MyCourses/MyCourses';
 import StudyPlan from './pages/StudyPlan/StudyPlan';
@@ -32,6 +35,9 @@ import VocabularyDemo from './pages/VocabularyDemo/VocabularyDemo';
 import VocabularyTest from './pages/VocabularyTest/VocabularyTest';
 import SpeakingExerciseDemo from './pages/SpeakingExercise/SpeakingExerciseDemo';
 import SpeakingExerciseShowcase from './pages/SpeakingExercise/SpeakingExerciseShowcase';
+import ReadingExercise from './pages/ReadingExercise/ReadingExercise';
+import WritingExercise from './pages/WritingExercise/WritingExercise';
+import ListeningExercise from './pages/ListeningExercise/ListeningExercise';
 
 // Import Admin Pages
 import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute';
@@ -139,6 +145,14 @@ function App() {
         }
       />
       <Route
+        path="/news/:newsId"
+        element={
+          <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+            <NewsDetail />
+          </Layout>
+        }
+      />
+      <Route
         path="/lessons"
         element={
           <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
@@ -163,6 +177,22 @@ function App() {
         element={
           <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
             <AIPractice />
+          </Layout>
+        } 
+      />
+      <Route 
+        path="/ai-writing" 
+        element={
+          <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+            <WritingAI />
+          </Layout>
+        } 
+      />
+      <Route 
+        path="/ai-reading" 
+        element={
+          <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+            <ReadingAI />
           </Layout>
         } 
       />
@@ -225,15 +255,6 @@ function App() {
           <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
             <LearningProfile />
           </Layout>
-        }
-      />
-
-      <Route
-        path="/speaking/:courseId"
-        element={
-          <ProtectedRoute isLoggedIn={isLoggedIn}>
-            <SpeakingExercise />
-          </ProtectedRoute>
         }
       />
 
@@ -307,6 +328,42 @@ function App() {
             <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
               <CourseContentPage />
             </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/reading-exercise/:courseId/:lessonId"
+        element={
+          <ProtectedRoute isLoggedIn={isLoggedIn}>
+            <ReadingExercise />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/writing-exercise/:courseId/:lessonId"
+        element={
+          <ProtectedRoute isLoggedIn={isLoggedIn}>
+            <WritingExercise />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/speaking-exercise/:courseId/:lessonId"
+        element={
+          <ProtectedRoute isLoggedIn={isLoggedIn}>
+            <SpeakingExercise />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/listening-exercise/:courseId/:lessonId"
+        element={
+          <ProtectedRoute isLoggedIn={isLoggedIn}>
+            <ListeningExercise />
           </ProtectedRoute>
         }
       />

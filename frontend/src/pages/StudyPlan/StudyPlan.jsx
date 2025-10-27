@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { 
-  Home, BookOpen, GraduationCap, Target, User, Calendar,
-  Award, CheckCircle, Clock, ChevronRight
+  Award, CheckCircle, Clock, ChevronRight, Calendar
 } from 'lucide-react';
+import ConsistentSidebarLayout from '../../components/Layout/ConsistentSidebarLayout';
 import './StudyPlan.css';
 
 // Dữ liệu giả cho kế hoạch học
@@ -21,7 +21,7 @@ const studyPlanData = {
         status: 'completed',
         cupsEarned: 3,
         totalCups: 3,
-        completedDate: 'Đã Hoàn Thành: Thứ Bảy, 21 Tháng 6'
+        completedDate: 'Hoàn thành: 21/6'
       },
       {
         id: 2,
@@ -45,19 +45,19 @@ const studyPlanData = {
         status: 'completed',
         cupsEarned: 3,
         totalCups: 3,
-        completedDate: 'Đã Hoàn Thành Trước Khi Khởi Tạo Study Plan'
+        completedDate: 'Hoàn thành trước'
       },
       {
         id: 4,
         sessionNumber: 4,
         date: 'Th 7, 26 Thg 4',
         fullDate: '2025-04-26',
-        title: 'Thế giới từ nhiên',
+        title: 'Thế giới tự nhiên',
         category: 'Vocabulary',
         status: 'completed',
         cupsEarned: 2,
         totalCups: 3,
-        completedDate: 'Đã Hoàn Thành: Thứ Tư, 2 Tháng 7'
+        completedDate: 'Hoàn thành: 2/7'
       },
       {
         id: 5,
@@ -93,7 +93,7 @@ const studyPlanData = {
         status: 'completed',
         cupsEarned: 2,
         totalCups: 3,
-        completedDate: 'Đã Hoàn Thành Trước Khi Khởi Tạo Study Plan'
+        completedDate: 'Hoàn thành trước'
       },
       {
         id: 8,
@@ -105,7 +105,7 @@ const studyPlanData = {
         status: 'completed',
         cupsEarned: 3,
         totalCups: 3,
-        completedDate: 'Đã Hoàn Thành: Thứ Năm, 3 Tháng 7'
+        completedDate: 'Hoàn thành: 3/7'
       },
       {
         id: 9,
@@ -177,14 +177,7 @@ const StudyPlan = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [activeMenuItem, setActiveMenuItem] = useState('study-plan');
   const [selectedMonth, setSelectedMonth] = useState('2025-04');
-
-  const menuItems = [
-    { id: 'overview', label: 'Tổng quan', icon: Home, path: '/lessons' },
-    { id: 'study-plan', label: 'Kế hoạch học tập', icon: Calendar, path: '/study-plan' },
-    { id: 'my-courses', label: 'Khóa học của tôi', icon: BookOpen, path: '/my-courses' },
-    { id: 'practice', label: 'Luyện tập', icon: Target, path: '/lessons/practice' },
-    { id: 'profile', label: 'Hồ sơ học tập', icon: User, path: '/learning-profile' }
-  ];
+  const [isContentPushed, setIsContentPushed] = useState(false);
 
   const months = Object.keys(studyPlanData);
   const currentMonthData = studyPlanData[selectedMonth];
@@ -202,41 +195,18 @@ const StudyPlan = () => {
     return `Buổi ${sessionNumber}`;
   };
 
+  const handleMenuItemClick = (itemId) => {
+    setActiveMenuItem(itemId);
+    setIsContentPushed(true);
+  };
+
   return (
-    <div className="study-plan-wrapper">
-      {/* Sidebar Trái */}
-      <aside className="study-plan-sidebar-left">
-        <div className="sidebar-menu">
-          <div className="program-selector">
-            <div className="program-badge">
-              <GraduationCap size={20} />
-              <span>Tiếng Anh Lớp 8</span>
-            </div>
-          </div>
-          
-          <nav className="menu-nav">
-            {menuItems.map(item => (
-              <Link
-                key={item.id}
-                to={item.path}
-                className={`menu-item ${activeMenuItem === item.id ? 'active' : ''}`}
-              >
-                <item.icon size={20} />
-                <span>{item.label}</span>
-              </Link>
-            ))}
-          </nav>
-
-          <div className="sidebar-footer">
-            <button className="back-to-home-btn" onClick={() => navigate('/')}>
-              ← Trở về trang chủ
-            </button>
-          </div>
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <main className="study-plan-main">
+    <ConsistentSidebarLayout 
+      activeMenuItem={activeMenuItem}
+      onMenuItemClick={handleMenuItemClick}
+      courseTitle="Tiếng Anh Lớp 8"
+    >
+      <div className={`study-plan-content-wrapper ${isContentPushed ? 'pushed-out' : ''}`}>
         {/* Header */}
         <div className="study-plan-header">
           <div className="header-tabs">
@@ -292,11 +262,11 @@ const StudyPlan = () => {
           </div>
 
           {/* Month Title */}
-          <h2 className="month-title">{currentMonthData.month}</h2>
+          <h2 className="month-title">{currentMonthData?.month || 'Tháng 4 Năm 2025'}</h2>
 
           {/* Sessions Grid */}
           <div className="sessions-grid">
-            {currentMonthData.sessions.map(session => {
+            {currentMonthData?.sessions?.map(session => {
               const categoryStyle = categoryStyles[session.category] || categoryStyles.Vocabulary;
               
               return (
@@ -314,7 +284,7 @@ const StudyPlan = () => {
                       }}
                     >
                       {getSessionBadgeText(session.sessionNumber)}
-                      {session.status === 'completed' && <CheckCircle size={14} className="check-icon" />}
+                      {(session.status === 'completed' || session.cupsEarned > 0) && <CheckCircle size={14} className="check-icon" />}
                     </div>
                     <span className="session-date">{session.date}</span>
                   </div>
@@ -338,9 +308,6 @@ const StudyPlan = () => {
                     </div>
 
                     {/* Status Messages */}
-                    {session.status === 'completed' && session.completedDate && (
-                      <p className="completion-message">{session.completedDate}</p>
-                    )}
                     {session.message && (
                       <p className="session-message">{session.message}</p>
                     )}
@@ -353,17 +320,18 @@ const StudyPlan = () => {
                       <span className="cups-text">{session.cupsEarned}/{session.totalCups}</span>
                     </div>
                     <button className="session-action-btn">
-                      {session.status === 'completed' ? 'Xem lại' : 'Bắt đầu'}
+                      {session.cupsEarned === session.totalCups ? 'Xem lại' : 
+                       session.cupsEarned > 0 ? 'Tiếp tục' : 'Bắt đầu'}
                       <ChevronRight size={16} />
                     </button>
                   </div>
                 </div>
               );
-            })}
+            }) || []}
           </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </ConsistentSidebarLayout>
   );
 };
 
