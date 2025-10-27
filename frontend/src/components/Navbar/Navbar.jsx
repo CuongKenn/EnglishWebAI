@@ -12,9 +12,9 @@ const Navbar = ({ userRole = 'student', isLoggedIn = false, onLogout }) => {
     const studentMenu = [
       { path: '/lessons', label: 'Học bài', icon: 'fa-book-open' },
       { path: '/news', label: 'Tin tức', icon: 'fa-newspaper' },
-      { path: '/join-class', label: 'Lớp học của tôi', icon: 'fa-chalkboard-teacher' },
+      { path: '/my-classes', label: 'Lớp học của tôi', icon: 'fa-chalkboard-teacher' },
       { path: '/ai-practice', label: 'Thực hành AI', icon: 'fa-robot' },
-      { path: '/exercises', label: 'Làm bài tập', icon: 'fa-pen-to-square' },
+      { path: '/exercise-hub', label: 'Làm bài tập', icon: 'fa-pen-to-square' },
       { path: '/discussion', label: 'Hỏi đáp', icon: 'fa-comments' }
     ];
 
@@ -60,8 +60,12 @@ const Navbar = ({ userRole = 'student', isLoggedIn = false, onLogout }) => {
 
   const isActive = (path) => {
     // Logic isActive với hỗ trợ nested routes
-    if (path === '/join-class') {
-      return location.pathname === '/join-class';
+    if (path === '/my-classes') {
+      return location.pathname === '/my-classes';
+    }
+    
+    if (path === '/exercise-hub') {
+      return location.pathname === '/exercise-hub';
     }
     
     // Dashboard routes - match với cả nested routes
