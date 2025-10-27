@@ -341,103 +341,112 @@ const Profile = () => {
               ) : (
                 <div className="profile-settings-tab">
                   <div className="settings-header">
-                    {!isEditing ? (
-                      <button className="edit-btn" onClick={handleEdit}>
-                        <Edit2 size={18} />
-                        Chỉnh sửa
-                      </button>
-                    ) : (
-                      <div className="edit-actions">
-                        <button className="save-btn" onClick={handleSave}>
-                          <Save size={18} />
-                          Lưu
+                    <h3 className="settings-title">Cài đặt tài khoản</h3>
+                    <div className="settings-actions">
+                      {!isEditing ? (
+                        <button className="edit-btn" onClick={handleEdit}>
+                          <Edit2 size={18} />
+                          Chỉnh sửa
                         </button>
-                        <button className="cancel-btn" onClick={handleCancel}>
-                          <X size={18} />
-                          Hủy
-                        </button>
-                      </div>
-                    )}
+                      ) : (
+                        <div className="edit-actions">
+                          <button className="save-btn" onClick={handleSave}>
+                            <Save size={18} />
+                            Lưu
+                          </button>
+                          <button className="cancel-btn" onClick={handleCancel}>
+                            <X size={18} />
+                            Hủy
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div className="settings-form">
-                    <div className="form-group">
-                      <label>Tên hiển thị</label>
-                      <input
-                        type="text"
-                        value={editedUser.username || ''}
-                        onChange={(e) => handleInputChange('username', e.target.value)}
-                        disabled={!isEditing}
-                        placeholder="Nhập tên hiển thị"
-                      />
+                    <div className="settings-form-section">
+                      <h4>Thông tin cơ bản</h4>
+                      <div className="form-group">
+                        <label>Tên hiển thị</label>
+                        <input
+                          type="text"
+                          value={editedUser.username || ''}
+                          onChange={(e) => handleInputChange('username', e.target.value)}
+                          disabled={!isEditing}
+                          placeholder="Nhập tên hiển thị"
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label>Email đăng nhập</label>
+                        <input
+                          type="email"
+                          value={editedUser.email || ''}
+                          disabled
+                          placeholder="Email"
+                        />
+                        <small>Email không thể thay đổi</small>
+                      </div>
+
+                      <div className="form-group">
+                        <label>Họ và tên</label>
+                        <input
+                          type="text"
+                          value={editedUser.full_name || ''}
+                          onChange={(e) => handleInputChange('full_name', e.target.value)}
+                          disabled={!isEditing}
+                          placeholder="Nhập họ và tên đầy đủ"
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label>Số điện thoại</label>
+                        <input
+                          type="tel"
+                          value={editedUser.phone || ''}
+                          onChange={(e) => handleInputChange('phone', e.target.value)}
+                          disabled={!isEditing}
+                          placeholder="Nhập số điện thoại"
+                        />
+                      </div>
                     </div>
 
-                    <div className="form-group">
-                      <label>Email đăng nhập</label>
-                      <input
-                        type="email"
-                        value={editedUser.email || ''}
-                        disabled
-                        placeholder="Email"
-                      />
-                      <small>Email không thể thay đổi</small>
-                    </div>
+                    <div className="settings-form-section">
+                      <h4>Thông tin bổ sung</h4>
+                      <div className="form-group">
+                        <label>Địa chỉ</label>
+                        <input
+                          type="text"
+                          value={editedUser.address || ''}
+                          onChange={(e) => handleInputChange('address', e.target.value)}
+                          disabled={!isEditing}
+                          placeholder="Nhập địa chỉ"
+                        />
+                      </div>
 
-                    <div className="form-group">
-                      <label>Họ và tên</label>
-                      <input
-                        type="text"
-                        value={editedUser.full_name || ''}
-                        onChange={(e) => handleInputChange('full_name', e.target.value)}
-                        disabled={!isEditing}
-                        placeholder="Nhập họ và tên đầy đủ"
-                      />
-                    </div>
+                      <div className="form-group">
+                        <label>Ngày sinh</label>
+                        <input
+                          type="date"
+                          value={editedUser.date_of_birth || ''}
+                          onChange={(e) => handleInputChange('date_of_birth', e.target.value)}
+                          disabled={!isEditing}
+                        />
+                      </div>
 
-                    <div className="form-group">
-                      <label>Số điện thoại</label>
-                      <input
-                        type="tel"
-                        value={editedUser.phone || ''}
-                        onChange={(e) => handleInputChange('phone', e.target.value)}
-                        disabled={!isEditing}
-                        placeholder="Nhập số điện thoại"
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label>Địa chỉ</label>
-                      <input
-                        type="text"
-                        value={editedUser.address || ''}
-                        onChange={(e) => handleInputChange('address', e.target.value)}
-                        disabled={!isEditing}
-                        placeholder="Nhập địa chỉ"
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label>Ngày sinh</label>
-                      <input
-                        type="date"
-                        value={editedUser.date_of_birth || ''}
-                        onChange={(e) => handleInputChange('date_of_birth', e.target.value)}
-                        disabled={!isEditing}
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label>Giới tính</label>
-                      <select
-                        value={editedUser.gender || ''}
-                        onChange={(e) => handleInputChange('gender', e.target.value)}
-                        disabled={!isEditing}
-                      >
-                        <option value="">Chọn giới tính</option>
-                        <option value="male">Nam</option>
-                        <option value="female">Nữ</option>
-                        <option value="other">Khác</option>
-                      </select>
+                      <div className="form-group">
+                        <label>Giới tính</label>
+                        <select
+                          value={editedUser.gender || ''}
+                          onChange={(e) => handleInputChange('gender', e.target.value)}
+                          disabled={!isEditing}
+                        >
+                          <option value="">Chọn giới tính</option>
+                          <option value="male">Nam</option>
+                          <option value="female">Nữ</option>
+                          <option value="other">Khác</option>
+                        </select>
+                      </div>
                     </div>
 
                     {/* Email Verification Section */}

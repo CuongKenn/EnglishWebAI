@@ -1,4 +1,4 @@
-import { BarChart3, BookOpen, Calendar, FileText, GraduationCap, Home, MessageSquare, Notebook, PenTool, Settings as SettingsIcon, TrendingUp, Video, MessageCircle, Brain, Sparkles } from 'lucide-react';
+import { BarChart3, BookOpen, Calendar, FileText, GraduationCap, Home, MessageSquare, Notebook, PenTool, Settings as SettingsIcon, TrendingUp, Video, MessageCircle, Brain, Sparkles, Wand2, Upload, Users } from 'lucide-react';
 
 const Sidebar = ({ currentPage, onNavigate }) => {
   const menuSections = [
@@ -25,9 +25,18 @@ const Sidebar = ({ currentPage, onNavigate }) => {
       ]
     },
     {
+      title: 'TRỢ LÝ AI',
+      items: [
+        { id: 'worksheet-generator', label: 'Soạn phiếu học tập', icon: Wand2 },
+        { id: 'student-analytics', label: 'Phân tích tiến độ', icon: TrendingUp },
+        { id: 'support-groups', label: 'Nhóm cần hỗ trợ', icon: Users }
+      ]
+    },
+    {
       title: 'BÁO CÁO & CÔNG CỤ',
       items: [
-        { id: 'statistics', label: 'Thống kê & Báo cáo', icon: TrendingUp },
+        { id: 'statistics', label: 'Thống kê & Báo cáo', icon: BarChart3 },
+        { id: 'export-reports', label: 'Xuất báo cáo', icon: Upload },
         { id: 'online-teaching', label: 'Dạy học trực tuyến', icon: Video }
       ]
     },
