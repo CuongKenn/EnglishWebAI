@@ -1,8 +1,9 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { 
   X, FileText, Clock, Award, Upload, FileAudio, File, 
   Plus, Trash2, Sparkles, Bot, Database, FileUp 
 } from 'lucide-react';
+import { apiV1 } from '../../../../../services/api';
 import './ExerciseManagement.css';
 
 export default function CreateExerciseModal({ onClose, onCreate }) {
@@ -16,6 +17,10 @@ export default function CreateExerciseModal({ onClose, onCreate }) {
   const [classId, setClassId] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [maxScore, setMaxScore] = useState(10);
+  
+  // Classes from API
+  const [classes, setClasses] = useState([]);
+  const [loadingClasses, setLoadingClasses] = useState(true);
   
   // Listening fields
   const [audioFile, setAudioFile] = useState(null);
@@ -61,6 +66,26 @@ export default function CreateExerciseModal({ onClose, onCreate }) {
   const sampleAudioInputRef = useRef(null);
   
   const requiresSkill = testType === 'skill_exercise' || testType === 'test_15min';
+  
+  // Fetch classes on mount
+  useEffect(() => {
+    fetchClasses();
+  }, []);
+  
+  const fetchClasses = async () => {
+    try {
+      setLoadingClasses(true);
+      const response = await apiV1.get('/classes/teaching');
+      setClasses(response.data);
+      if (response.data.length > 0 && !classId) {
+        setClassId(response.data[0].id.toString());
+      }
+    } catch (error) {
+      console.error('Error fetching classes:', error);
+    } finally {
+      setLoadingClasses(false);
+    }
+  };
   
   // File handlers
   const handleAudioUpload = (e) => {
@@ -355,9 +380,13 @@ export default function CreateExerciseModal({ onClose, onCreate }) {
                   <label className="form-label-ex">Lớp học</label>
                   <select className="form-select-ex" value={classId} onChange={(e) => setClassId(e.target.value)}>
                     <option value="">Chọn lớp</option>
-                    <option value="10A1">Lớp 10A1</option>
-                    <option value="10A2">Lớp 10A2</option>
-                    <option value="11B1">Lớp 11B1</option>
+                    {loadingClasses ? (
+                      <option disabled>Đang tải...</option>
+                    ) : (
+                      classes.map(cls => (
+                        <option key={cls.id} value={cls.id}>{cls.name}</option>
+                      ))
+                    )}
                   </select>
                 </div>
                 <div className="form-section-ex">

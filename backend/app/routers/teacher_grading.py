@@ -52,8 +52,11 @@ class SubmissionWithStudent(BaseModel):
     exercise_id: int
     student_id: int
     student_name: str
+    exercise_title: Optional[str] = None
+    exercise_skill_type: Optional[str] = None
     content_text: Optional[str]
     content_url: Optional[str]
+    answers: Optional[dict]
     score: Optional[float]
     ai_score: Optional[float]
     feedback: Optional[str]
@@ -112,7 +115,7 @@ async def get_class_submissions(
     _ensure_teacher_access(db, current_user, class_id)
     
     # Get all exercises in this class
-    query = db.query(Submission, User.full_name, User.username).join(
+    query = db.query(Submission, User.full_name, User.username, Exercise.title, Exercise.skill_type).join(
         Exercise, Exercise.id == Submission.exercise_id
     ).join(
         User, User.id == Submission.student_id
@@ -132,14 +135,17 @@ async def get_class_submissions(
     results = query.all()
     
     submissions = []
-    for sub, full_name, username in results:
+    for sub, full_name, username, ex_title, ex_skill in results:
         submissions.append({
             "id": sub.id,
             "exercise_id": sub.exercise_id,
             "student_id": sub.student_id,
             "student_name": full_name or username,
+            "exercise_title": ex_title,
+            "exercise_skill_type": ex_skill,
             "content_text": sub.content_text,
             "content_url": sub.content_url,
+            "answers": sub.answers,
             "score": sub.score,
             "ai_score": sub.ai_score,
             "feedback": sub.feedback,
