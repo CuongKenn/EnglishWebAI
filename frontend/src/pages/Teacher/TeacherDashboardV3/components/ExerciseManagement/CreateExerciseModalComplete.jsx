@@ -1,16 +1,21 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { 
   X, FileText, Clock, Award, Upload, FileAudio, File, 
   Plus, Trash2, Sparkles, Bot, Database, FileUp, Check
 } from 'lucide-react';
 import './ExerciseManagement.css';
 import QuestionBankSelectorModal from './QuestionBankSelectorModal';
+import { apiV1 } from '../../../../../services/api';
 
 export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   const [testType, setTestType] = useState('skill_exercise');
   const [selectedSkill, setSelectedSkill] = useState('listening');
   const [creationMethod, setCreationMethod] = useState('manual');
   const [aiSource, setAiSource] = useState('files');
+  
+  // Classes from API
+  const [classes, setClasses] = useState([]);
+  const [loadingClasses, setLoadingClasses] = useState(true);
   
   // Form fields
   const [title, setTitle] = useState('');
@@ -67,6 +72,26 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   // Logic helpers
   const requiresSkill = testType === 'skill_exercise' || testType === 'test_15min';
   const isMidtermOrFinal = testType === 'midterm' || testType === 'final';
+  
+  // Fetch classes on mount
+  useEffect(() => {
+    const fetchClasses = async () => {
+      try {
+        setLoadingClasses(true);
+        const response = await apiV1.get('/classes/teaching');
+        setClasses(response.data);
+        if (response.data.length > 0 && !classId) {
+          setClassId(response.data[0].id);
+        }
+      } catch (error) {
+        console.error('Error fetching classes:', error);
+      } finally {
+        setLoadingClasses(false);
+      }
+    };
+    
+    fetchClasses();
+  }, []);
   
   // File handlers
   const handleTestFileUpload = (e) => {
@@ -170,22 +195,12 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
     const exercise = {
       title,
       type: testType,
-      skill_type: requiresSkill ? selectedSkill : null,
-      class_id: classId,
-      due_date: dueDate,
-      max_score: maxScore,
-      creation_method: creationMethod,
-      status: 'active',
+      skill: requiresSkill ? selectedSkill : null,
+      classId: classId,
+      dueDate: dueDate,
+      maxScore: maxScore,
+      description: '',
       content: {},
-      
-      // Files (for backend to handle)
-      files: {
-        test_file: testFile,
-        import_file: importFile,
-        audio_file: audioFile,
-        passage_file: passageFile,
-        ai_files: aiFiles
-      }
     };
     
     // Add content based on creation method
@@ -397,9 +412,9 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
                   <label className="form-label-ex">Lớp học</label>
                   <select className="form-select-ex" value={classId} onChange={(e) => setClassId(e.target.value)}>
                     <option value="">Chọn lớp</option>
-                    <option value="10A1">Lớp 10A1</option>
-                    <option value="10A2">Lớp 10A2</option>
-                    <option value="11B1">Lớp 11B1</option>
+                    {classes.map(cls => (
+                      <option key={cls.id} value={cls.id}>{cls.name}</option>
+                    ))}
                   </select>
                 </div>
                 <div className="form-section-ex">
@@ -851,8 +866,9 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
             <label className="form-label-ex">Lớp học</label>
             <select className="form-select-ex" value={classId} onChange={(e) => setClassId(e.target.value)}>
               <option value="">Chọn lớp</option>
-              <option value="10A1">Lớp 10A1</option>
-              <option value="10A2">Lớp 10A2</option>
+              {classes.map(cls => (
+                <option key={cls.id} value={cls.id}>{cls.name}</option>
+              ))}
             </select>
           </div>
           <div className="form-section-ex">
@@ -940,8 +956,9 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
             <label className="form-label-ex">Lớp học</label>
             <select className="form-select-ex" value={classId} onChange={(e) => setClassId(e.target.value)}>
               <option value="">Chọn lớp</option>
-              <option value="10A1">Lớp 10A1</option>
-              <option value="10A2">Lớp 10A2</option>
+              {classes.map(cls => (
+                <option key={cls.id} value={cls.id}>{cls.name}</option>
+              ))}
             </select>
           </div>
           <div className="form-section-ex">

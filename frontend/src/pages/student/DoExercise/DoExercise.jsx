@@ -44,11 +44,16 @@ export default function DoExercise() {
 
   const fetchExercise = async () => {
     try {
+      console.log('[DoExercise] Fetching exercise ID:', exerciseId);
       const response = await apiV1.get(`/exercises/${exerciseId}`);
+      console.log('[DoExercise] Exercise data received:', response.data);
+      console.log('[DoExercise] Exercise content:', response.data.content);
+      console.log('[DoExercise] Exercise skill_type:', response.data.skill_type);
       setExercise(response.data);
       
       // Initialize answers
-      if (response.data.content.questions) {
+      if (response.data.content && response.data.content.questions) {
+        console.log('[DoExercise] Initializing answers for questions:', response.data.content.questions);
         const initialAnswers = {};
         response.data.content.questions.forEach(q => {
           initialAnswers[q.id] = '';
@@ -58,12 +63,14 @@ export default function DoExercise() {
       
       // Set timer if applicable
       if (response.data.duration) {
+        console.log('[DoExercise] Setting timer:', response.data.duration, 'minutes');
         setTimeRemaining(response.data.duration * 60); // Convert to seconds
       }
       
       setLoading(false);
     } catch (error) {
-      console.error('Error fetching exercise:', error);
+      console.error('[DoExercise] Error fetching exercise:', error);
+      console.error('[DoExercise] Error details:', error.response?.data);
       setLoading(false);
     }
   };
@@ -76,11 +83,13 @@ export default function DoExercise() {
     try {
       await apiV1.post(`/exercises/${exerciseId}/save-draft`, {
         answers,
-        content: exercise.skill_type === 'writing' ? content : null
+        content_text: exercise.skill_type === 'writing' ? content : null,
+        content_url: exercise.skill_type === 'speaking' ? recordedAudio : null
       });
       alert('Đã lưu nháp!');
     } catch (error) {
       console.error('Error saving draft:', error);
+      alert('Lỗi khi lưu nháp!');
     }
   };
 
@@ -92,7 +101,7 @@ export default function DoExercise() {
       const submissionData = {
         answers,
         content_text: exercise.skill_type === 'writing' ? content : null,
-        audio_url: exercise.skill_type === 'speaking' ? recordedAudio : null
+        content_url: exercise.skill_type === 'speaking' ? recordedAudio : null
       };
       
       await apiV1.post(`/exercises/${exerciseId}/submit`, submissionData);
@@ -100,7 +109,7 @@ export default function DoExercise() {
       navigate('/exercise-hub');
     } catch (error) {
       console.error('Error submitting:', error);
-      alert('Lỗi khi nộp bài!');
+      alert('Lỗi khi nộp bài: ' + (error.response?.data?.detail || error.message));
     } finally {
       setIsSubmitting(false);
     }
@@ -172,10 +181,30 @@ export default function DoExercise() {
   }
 
   const renderExerciseContent = () => {
+    console.log('[renderExerciseContent] exercise:', exercise);
+    console.log('[renderExerciseContent] exercise.content:', exercise?.content);
+    console.log('[renderExerciseContent] exercise.skill_type:', exercise?.skill_type);
+    
     const { skill_type, content: exerciseContent } = exercise;
+    
+    console.log('[renderExerciseContent] destructured skill_type:', skill_type);
+    console.log('[renderExerciseContent] destructured exerciseContent:', exerciseContent);
+
+    // Check if content exists
+    if (!exerciseContent) {
+      console.error('[renderExerciseContent] exerciseContent is null or undefined!');
+      return (
+        <div className="error-container">
+          <AlertCircle size={64} />
+          <h2>Bài tập chưa có nội dung</h2>
+          <p>Giáo viên chưa thiết lập nội dung cho bài tập này.</p>
+        </div>
+      );
+    }
 
     // LISTENING
     if (skill_type === 'listening') {
+      console.log('[LISTENING] exerciseContent:', exerciseContent);
       return (
         <div className="listening-exercise">
           <div className="audio-section">
@@ -195,7 +224,7 @@ export default function DoExercise() {
 
           <div className="questions-container">
             <h3>Câu hỏi</h3>
-            {exerciseContent.questions.map((q, idx) => (
+            {exerciseContent.questions && exerciseContent.questions.map((q, idx) => (
               <div key={q.id} className="question-card">
                 <div className="question-header">
                   <span className="question-number">Câu {idx + 1}</span>
@@ -265,6 +294,7 @@ export default function DoExercise() {
 
     // SPEAKING
     if (skill_type === 'speaking') {
+      console.log('[SPEAKING] exerciseContent:', exerciseContent);
       return (
         <div className="speaking-exercise">
           <div className="prompt-section">
@@ -275,7 +305,7 @@ export default function DoExercise() {
           <div className="instructions-box">
             <h4>Hướng dẫn:</h4>
             <ul>
-              {exerciseContent.instructions.map((inst, i) => (
+              {exerciseContent.instructions && exerciseContent.instructions.map((inst, i) => (
                 <li key={i}>{inst}</li>
               ))}
             </ul>
@@ -325,6 +355,7 @@ export default function DoExercise() {
 
     // READING
     if (skill_type === 'reading') {
+      console.log('[READING] exerciseContent:', exerciseContent);
       return (
         <div className="reading-exercise">
           <div className="reading-layout">
@@ -339,7 +370,7 @@ export default function DoExercise() {
 
             <div className="questions-panel">
               <h3>Câu hỏi</h3>
-              {exerciseContent.questions.map((q, idx) => (
+              {exerciseContent.questions && exerciseContent.questions.map((q, idx) => (
                 <div key={q.id} className="question-card">
                   <div className="question-header">
                     <span className="question-number">Câu {idx + 1}</span>
@@ -384,8 +415,25 @@ export default function DoExercise() {
 
     // WRITING
     if (skill_type === 'writing') {
+      console.log('[WRITING] exerciseContent:', exerciseContent);
+      console.log('[WRITING] exerciseContent.word_limit:', exerciseContent?.word_limit);
+      console.log('[WRITING] exerciseContent.prompt:', exerciseContent?.prompt);
+      console.log('[WRITING] exerciseContent.instructions:', exerciseContent?.instructions);
+      
+      if (!exerciseContent || !exerciseContent.word_limit) {
+        console.error('[WRITING] Missing exerciseContent or word_limit!');
+        return (
+          <div className="error-container">
+            <AlertCircle size={64} />
+            <h2>Nội dung bài tập chưa đầy đủ</h2>
+            <p>Vui lòng liên hệ giáo viên để cập nhật nội dung bài tập.</p>
+          </div>
+        );
+      }
+      
       const minWords = exerciseContent.word_limit.min;
       const maxWords = exerciseContent.word_limit.max;
+      console.log('[WRITING] minWords:', minWords, 'maxWords:', maxWords);
       const progress = (wordCount / minWords) * 100;
 
       return (
@@ -398,7 +446,7 @@ export default function DoExercise() {
           <div className="instructions-box">
             <h4>Yêu cầu:</h4>
             <ul>
-              {exerciseContent.instructions.map((inst, i) => (
+              {exerciseContent.instructions && exerciseContent.instructions.map((inst, i) => (
                 <li key={i}>{inst}</li>
               ))}
             </ul>
@@ -441,7 +489,17 @@ export default function DoExercise() {
       );
     }
 
-    return <div>Unsupported exercise type</div>;
+    // Default fallback
+    console.error('[renderExerciseContent] Unknown skill_type:', skill_type);
+    console.error('[renderExerciseContent] exerciseContent:', exerciseContent);
+    return (
+      <div className="error-container">
+        <AlertCircle size={64} />
+        <h2>Loại bài tập không được hỗ trợ</h2>
+        <p>Skill type: {skill_type || 'Không xác định'}</p>
+        <p>Vui lòng liên hệ giáo viên.</p>
+      </div>
+    );
   };
 
   return (
@@ -483,7 +541,7 @@ export default function DoExercise() {
         <button
           className="btn-submit-exercise"
           onClick={handleSubmit}
-          disabled={isSubmitting || (exercise.skill_type === 'writing' && wordCount < exerciseContent.word_limit.min)}
+          disabled={isSubmitting || (exercise.skill_type === 'writing' && exercise.content?.word_limit && wordCount < exercise.content.word_limit.min)}
         >
           <Send size={18} />
           {isSubmitting ? 'Đang nộp...' : 'Nộp bài'}

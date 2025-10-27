@@ -151,20 +151,61 @@ class LessonListResponse(BaseModel):
 
 # ============= Exercise Schemas =============
 
+class QuestionItem(BaseModel):
+    id: str
+    question: str
+    type: str  # multiple_choice | fill_blank | true_false | short_answer
+    options: Optional[List[str]] = None
+    points: int
+    correct_answer: Optional[str] = None  # For teacher/creation only
+
+class ExerciseContentListening(BaseModel):
+    audio_url: str
+    transcript: Optional[str] = None
+    show_transcript: bool = False
+    questions: List[QuestionItem]
+
+class ExerciseContentSpeaking(BaseModel):
+    prompt: str
+    instructions: List[str]
+    prep_time: int  # seconds
+    max_duration: int  # seconds
+    sample_answer: Optional[str] = None
+
+class ExerciseContentReading(BaseModel):
+    passage: str
+    word_count: int
+    questions: List[QuestionItem]
+
+class ExerciseContentWriting(BaseModel):
+    prompt: str
+    instructions: List[str]
+    word_limit: dict  # {"min": 150, "max": 250}
+    sample_essay: Optional[str] = None
+
 class ExerciseBase(BaseModel):
     title: str
     description: Optional[str] = None
-    type: str = "assignment"
-    max_score: Optional[int] = None
+    type: str = "assignment"  # assignment | quiz | test
+    skill_type: Optional[str] = None  # listening | speaking | reading | writing | mixed
+    max_score: Optional[float] = None
+    duration: Optional[int] = None  # minutes
+    content: Optional[dict] = None  # JSON content based on skill_type
 
 class ExerciseCreate(ExerciseBase):
     class_id: Optional[int] = None
     lesson_id: Optional[int] = None
+    due_at: Optional[datetime] = None
+    enable_ai_grading: bool = False
+    rubrics: Optional[dict] = None
 
 class ExerciseUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
-    max_score: Optional[int] = None
+    max_score: Optional[float] = None
+    due_at: Optional[datetime] = None
+    content: Optional[dict] = None
+    duration: Optional[int] = None
 
 class ExerciseResponse(ExerciseBase):
     id: int
@@ -172,6 +213,7 @@ class ExerciseResponse(ExerciseBase):
     lesson_id: Optional[int]
     due_at: Optional[datetime]
     created_at: datetime
+    enable_ai_grading: bool
 
     class Config:
         from_attributes = True

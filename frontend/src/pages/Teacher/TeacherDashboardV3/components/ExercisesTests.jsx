@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '../../../../components/ui/card';
 import { Button } from '../../../../components/ui/button';
 import { Input } from '../../../../components/ui/input';
@@ -11,6 +11,7 @@ import { Label } from '../../../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
 import { Textarea } from '../../../../components/ui/textarea';
 import { Progress } from '../../../../components/ui/progress';
+import { apiV1 } from '../../../../services/api';
 
 const ExercisesTests = () => {
   const [activeTab, setActiveTab] = useState('all');
@@ -21,51 +22,63 @@ const ExercisesTests = () => {
   const [selectedTest, setSelectedTest] = useState(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isGradingOpen, setIsGradingOpen] = useState(false);
+  const [tests, setTests] = useState([]);
+  const [classes, setClasses] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const tests = [
-    {
-      id: '1',
-      title: 'Kiểm tra 15 phút - Unit 6',
-      type: 'quiz',
-      class: '10A1',
-      skills: ['reading', 'vocabulary'],
-      totalQuestions: 20,
-      duration: 15,
-      dueDate: '28/10/2025',
-      status: 'published',
-      totalStudents: 32,
-      completedStudents: 28,
-      createdDate: '20/10/2025'
-    },
-    {
-      id: '2',
-      title: 'Kiểm tra giữa kỳ HK1',
-      type: 'midterm',
-      class: '11B2',
-      skills: ['listening', 'reading', 'writing'],
-      totalQuestions: 50,
-      duration: 90,
-      dueDate: '30/10/2025',
-      status: 'published',
-      totalStudents: 28,
-      completedStudents: 25,
-      createdDate: '15/10/2025'
-    },
-    {
-      id: '3',
-      title: 'Bài tập về nhà - Reading comprehension',
-      type: 'homework',
-      class: '10A3',
-      skills: ['reading'],
-      totalQuestions: 15,
-      duration: 45,
-      dueDate: '01/11/2025',
-      status: 'draft',
-      totalStudents: 30,
-      completedStudents: 0,
-      createdDate: '26/10/2025'
+  useEffect(() => {
+    fetchClasses();
+    fetchTests();
+  }, []);
+
+  const fetchClasses = async () => {
+    try {
+      const response = await apiV1.get('/classes/teaching');
+      setClasses(response.data);
+    } catch (error) {
+      console.error('Error fetching classes:', error);
     }
-  ];
+  };
+
+  const fetchTests = async () => {
+    try {
+      setLoading(true);
+      const classesResponse = await apiV1.get('/classes/teaching');
+      let allTests = [];
+      
+      for (const cls of classesResponse.data) {
+        try {
+          const response = await apiV1.get(`/exercises/by-class/${cls.id}`);
+          const testsWithClass = response.data.map(test => ({
+            id: test.id,
+            title: test.title,
+            type: test.type || 'homework',
+            class: cls.name,
+            classId: cls.id,
+            skills: test.skill_type ? [test.skill_type] : [],
+            totalQuestions: 0,
+            duration: test.duration || 0,
+            dueDate: test.due_at ? new Date(test.due_at).toLocaleDateString('vi-VN') : null,
+            status: 'published',
+            totalStudents: cls.student_count || 0,
+            completedStudents: 0,
+            createdDate: new Date(test.created_at).toLocaleDateString('vi-VN'),
+            maxScore: test.max_score,
+            description: test.description
+          }));
+          allTests = [...allTests, ...testsWithClass];
+        } catch (error) {
+          console.error(`Error fetching exercises for class ${cls.id}:`, error);
+        }
+      }
+      
+      setTests(allTests);
+    } catch (error) {
+      console.error('Error fetching tests:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredTests = tests.filter(test => {
     const matchSearch = test.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -170,9 +183,13 @@ const ExercisesTests = () => {
                         <SelectValue placeholder="Chọn lớp" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="10a1">10A1</SelectItem>
-                        <SelectItem value="10a2">10A2</SelectItem>
-                        <SelectItem value="11b1">11B1</SelectItem>
+                        {classes.length === 0 ? (
+                          <SelectItem value="" disabled>Đang tải...</SelectItem>
+                        ) : (
+                          classes.map(cls => (
+                            <SelectItem key={cls.id} value={cls.id.toString()}>{cls.name}</SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
@@ -247,9 +264,13 @@ const ExercisesTests = () => {
                         <SelectValue placeholder="Chọn lớp" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="10a1">10A1</SelectItem>
-                        <SelectItem value="10a2">10A2</SelectItem>
-                        <SelectItem value="11b1">11B1</SelectItem>
+                        {classes.length === 0 ? (
+                          <SelectItem value="" disabled>Đang tải...</SelectItem>
+                        ) : (
+                          classes.map(cls => (
+                            <SelectItem key={cls.id} value={cls.id.toString()}>{cls.name}</SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
@@ -348,9 +369,13 @@ const ExercisesTests = () => {
                         <SelectValue placeholder="Chọn lớp" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="10a1">10A1</SelectItem>
-                        <SelectItem value="10a2">10A2</SelectItem>
-                        <SelectItem value="11b1">11B1</SelectItem>
+                        {classes.length === 0 ? (
+                          <SelectItem value="" disabled>Đang tải...</SelectItem>
+                        ) : (
+                          classes.map(cls => (
+                            <SelectItem key={cls.id} value={cls.id.toString()}>{cls.name}</SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
@@ -402,7 +427,18 @@ const ExercisesTests = () => {
 
       {/* Tests List */}
       <div className="space-y-4">
-        {filteredTests.map((test) => (
+        {loading ? (
+          <Card className="p-12 text-center">
+            <p className="text-gray-500">Đang tải danh sách bài tập...</p>
+          </Card>
+        ) : filteredTests.length === 0 ? (
+          <Card className="p-12 text-center">
+            <p className="text-gray-500">
+              {searchQuery ? 'Không tìm thấy bài tập nào' : 'Chưa có bài tập nào. Hãy tạo bài tập mới!'}
+            </p>
+          </Card>
+        ) : (
+          filteredTests.map((test) => (
           <Card key={test.id} className="p-6 hover:shadow-md transition-shadow">
             <div className="flex gap-4">
               <div className="flex-1">
@@ -491,7 +527,8 @@ const ExercisesTests = () => {
               </div>
             </div>
           </Card>
-        ))}
+          ))
+        )}
       </div>
 
       {/* Test Detail Dialog */}

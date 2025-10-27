@@ -16,6 +16,7 @@ class Exercise(Base):
     skill_type = Column(String, nullable=True)  # reading | writing | listening | speaking | mixed
     max_score = Column(Float, nullable=True)  # Changed to Float for decimal scores
     due_at = Column(DateTime(timezone=True), nullable=True)
+    duration = Column(Integer, nullable=True)  # Time limit in minutes
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     enable_ai_grading = Column(Boolean, default=False)  # Enable AI grading for this exercise
     rubrics = Column(JSON, nullable=True)  # Rubrics for grading (4 skills)

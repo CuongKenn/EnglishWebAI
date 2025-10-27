@@ -12,6 +12,7 @@ class Submission(Base):
     student_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     content_text = Column(Text, nullable=True)
     content_url = Column(String, nullable=True)  # For file uploads or audio recordings
+    answers = Column(JSON, nullable=True)  # Student's answers to questions {question_id: answer_value}
     score = Column(Float, nullable=True)  # Changed to Float for decimal scores
     feedback = Column(Text, nullable=True)  # Teacher's final feedback
     ai_feedback = Column(Text, nullable=True)  # AI-generated feedback
@@ -22,6 +23,7 @@ class Submission(Base):
     submitted_at = Column(DateTime(timezone=True), server_default=func.now())
     graded_at = Column(DateTime(timezone=True), nullable=True)
     ai_graded_at = Column(DateTime(timezone=True), nullable=True)
+    duration = Column(Integer, nullable=True)  # Time limit in minutes
 
     exercise = relationship("Exercise", back_populates="submissions")
 
