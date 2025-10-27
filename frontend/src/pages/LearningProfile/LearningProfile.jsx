@@ -74,7 +74,7 @@ const LearningProfile = () => {
     <ConsistentSidebarLayout 
       activeMenuItem={activeMenuItem}
       onMenuItemClick={handleMenuItemClick}
-      courseTitle="Tiếng Anh Lớp 8"
+      courseTitle="Học bài"
     >
       <div className={`profile-content-wrapper ${isContentPushed ? 'pushed-out' : ''}`}>
         {/* Main Content */}

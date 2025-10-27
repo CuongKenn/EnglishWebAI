@@ -698,6 +698,32 @@
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   max-width: 400px;
   width: 90%;
+  position: relative;
+}
+
+.completion-close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: #f8f9fa;
+  color: #6c757d;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.completion-close-btn:hover {
+  background: #e9ecef;
+  color: #495057;
+  transform: scale(1.1);
 }
 
 .completion-content h3 {

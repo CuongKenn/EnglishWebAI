@@ -1,12 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { 
+import { useNavigate } from 'react-router-dom';
+import {
   BookOpen, Award, CheckCircle, Clock,
   TrendingUp, Star, Lock, Play, ChevronRight,
-  Home, Calendar, User, GraduationCap
+  Home, Calendar, User
 } from 'lucide-react';
 import './MyCourses.css';
 import { coursesAPI } from '../../services/api';
+import ConsistentSidebarLayout from '../../components/Layout/ConsistentSidebarLayout';
 
 // Loại bỏ toàn bộ mock data; sẽ load từ API public courses
 
@@ -78,52 +79,12 @@ const MyCourses = () => {
   };
 
   return (
-    <div className="my-courses-wrapper">
-      {/* Sidebar Trái: Menu điều hướng */}
-      <aside className="courses-sidebar-left">
-        <div className="sidebar-menu">
-          <div className="program-selector">
-            <div className="program-badge">
-              <GraduationCap size={20} />
-              <span>Tiếng Anh {selectedGrade}</span>
-            </div>
-          </div>
-          
-          <nav className="menu-nav">
-            {menuItems.map(item => (
-              item.path ? (
-                <Link
-                  key={item.id}
-                  to={item.path}
-                  className={`menu-item ${activeMenuItem === item.id ? 'active' : ''}`}
-                  onClick={() => setActiveMenuItem(item.id)}
-                >
-                  <item.icon size={20} />
-                  <span>{item.label}</span>
-                </Link>
-              ) : (
-                <button
-                  key={item.id}
-                  className={`menu-item ${activeMenuItem === item.id ? 'active' : ''}`}
-                  onClick={() => setActiveMenuItem(item.id)}
-                >
-                  <item.icon size={20} />
-                  <span>{item.label}</span>
-                </button>
-              )
-            ))}
-          </nav>
-
-          <div className="sidebar-footer">
-            <button className="back-to-home-btn" onClick={() => navigate('/')}>
-              ← Trở về trang chủ
-            </button>
-          </div>
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <div className="my-courses-page">
+    <ConsistentSidebarLayout
+      activeMenuItem="my-courses"
+      courseTitle="Học bài"
+    >
+      <div className="my-courses-wrapper">
+        <div className="my-courses-page">
         {/* Icon Banner Bar với text nổi bật */}
         <div className="icon-banner-bar">
           <div className="icon-banner-content">
@@ -358,8 +319,9 @@ const MyCourses = () => {
           <p>Thử thay đổi bộ lọc hoặc chọn lớp khác</p>
         </div>
       )}
+        </div>
       </div>
-    </div>
+    </ConsistentSidebarLayout>
   );
 };
 

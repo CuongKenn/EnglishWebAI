@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
+import {
+  ArrowLeft,
+  Clock,
+  CheckCircle,
+  XCircle,
   RotateCcw,
   HelpCircle,
   Target,
@@ -16,7 +16,7 @@ import './ReadingExercise.css';
 const ReadingExercise = () => {
   const { courseId, lessonId } = useParams();
   const navigate = useNavigate();
-  
+
   // State management
   const [userAnswers, setUserAnswers] = useState({});
   const [showAnswers, setShowAnswers] = useState(false);
@@ -29,7 +29,7 @@ const ReadingExercise = () => {
   const readingData = {
     id: lessonId || '1',
     title: 'Reading Unit 1',
-    courseTitle: 'Reading Lớp 3',
+    courseTitle: 'Reading Học bài',
     difficulty: 'Beginner',
     estimatedTime: 15, // minutes
     totalQuestions: 5,
@@ -58,7 +58,7 @@ const ReadingExercise = () => {
           ]
         },
         {
-          id: 'B', 
+          id: 'B',
           content: 'But does cloud seeding really work? Some experts think it might just be a coincidence when it rains after seeding. They say we don\'t know how effective it is because rain might have happened naturally anyway. Despite this, more than 150 weather-modifying projects are happening in over 40 countries. Not all are for making rain. In the USA, microwaves are used to prevent tornadoes. In Russia, they make sure there\'s sunshine for national events.',
           heading: 'Questions about effectiveness',
           questions: [
@@ -205,7 +205,7 @@ const ReadingExercise = () => {
           totalQuestions++;
           const questionKey = `${paragraph.id}_${question.id}`;
           const userAnswer = userAnswers[questionKey];
-          
+
           if (question.type === 'matching') {
             if (userAnswer === question.correctAnswer) {
               correctCount++;
@@ -223,6 +223,26 @@ const ReadingExercise = () => {
     setScore(newScore);
     setIsCompleted(true);
     setShowAnswers(true);
+  };
+
+  // Handle completion
+  const handleComplete = () => {
+    // Save completion data to localStorage
+    const completionData = {
+      lessonId: lessonId,
+      courseId: courseId,
+      score: score,
+      completedAt: new Date().toISOString(),
+      timeSpent: timeSpent,
+      type: 'reading'
+    };
+
+    const existingData = JSON.parse(localStorage.getItem(`course_${courseId}_completed_lessons`) || '{}');
+    existingData[lessonId] = completionData;
+    localStorage.setItem(`course_${courseId}_completed_lessons`, JSON.stringify(existingData));
+
+    // Navigate to learning profile page
+    navigate('/learning-profile');
   };
 
   // Reset exercise
@@ -246,7 +266,7 @@ const ReadingExercise = () => {
       {/* Header */}
       <div className="reading-header">
         <div className="header-left">
-          <button 
+          <button
             className="back-btn reading-back-btn"
             onClick={() => navigate(`/course/${courseId}`)}
           >
@@ -254,12 +274,12 @@ const ReadingExercise = () => {
             Quay lại
           </button>
         </div>
-        
+
         <div className="course-info">
           <h1>{readingData.courseTitle}</h1>
           <span className="lesson-title">{readingData.title}</span>
         </div>
-        
+
         <div className="header-right">
           <div className="time-info">
             <Clock size={16} />
@@ -295,7 +315,7 @@ const ReadingExercise = () => {
                 <div className="questions-header">
                   <h3>Questions for Paragraph {paragraph.id}</h3>
                   <div className="question-controls">
-                    <button 
+                    <button
                       className="hint-btn"
                       onClick={() => setShowHint(!showHint)}
                     >
@@ -313,13 +333,13 @@ const ReadingExercise = () => {
                           <p className="exercise-instruction">
                             {question.instruction}
                           </p>
-                          
+
                           <div className="paragraph-matching">
                             <div className="paragraph-match-item">
                               <div className="paragraph-label-small">
                                 Paragraph {paragraph.id}
                               </div>
-                              <select 
+                              <select
                                 className="matching-select"
                                 value={userAnswers[`${paragraph.id}_${question.id}`] || ''}
                                 onChange={(e) => handleAnswerChange(`${paragraph.id}_${question.id}`, parseInt(e.target.value))}
@@ -339,7 +359,7 @@ const ReadingExercise = () => {
                           <p className="exercise-instruction">
                             {question.instruction}
                           </p>
-                          
+
                           <div className="options-list">
                             {question.options.map((option, index) => (
                               <button
@@ -374,22 +394,31 @@ const ReadingExercise = () => {
         {/* Action Buttons */}
         <div className="exercise-actions">
           <div className="action-buttons">
-            <button 
+            <button
               className="reset-btn"
               onClick={resetExercise}
             >
               <RotateCcw size={16} />
               Reset
             </button>
-            
-            <button 
-              className="submit-btn"
-              onClick={checkAnswers}
-              disabled={isCompleted}
-            >
-              <Target size={16} />
-              {isCompleted ? 'Completed' : 'Submit Answers'}
-            </button>
+
+            {!isCompleted ? (
+              <button
+                className="submit-btn"
+                onClick={checkAnswers}
+              >
+                <Target size={16} />
+                Nộp bài
+              </button>
+            ) : (
+              <button
+                className="complete-btn"
+                onClick={handleComplete}
+              >
+                <CheckCircle size={16} />
+                Hoàn thành
+              </button>
+            )}
           </div>
         </div>
 
@@ -410,10 +439,10 @@ const ReadingExercise = () => {
                 <p>Câu đúng: {Math.round((score / 100) * readingData.passage.paragraphs.reduce((total, p) => total + (p.questions ? p.questions.length : 0), 0))}/{readingData.passage.paragraphs.reduce((total, p) => total + (p.questions ? p.questions.length : 0), 0)}</p>
                 <div className="score-stars">
                   {[...Array(5)].map((_, i) => (
-                    <Star 
-                      key={i} 
-                      size={20} 
-                      className={i < Math.floor(score / 20) ? 'filled' : 'empty'} 
+                    <Star
+                      key={i}
+                      size={20}
+                      className={i < Math.floor(score / 20) ? 'filled' : 'empty'}
                     />
                   ))}
                 </div>

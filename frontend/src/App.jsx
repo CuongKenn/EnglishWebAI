@@ -28,16 +28,13 @@ import MyCourses from './pages/MyCourses/MyCourses';
 import StudyPlan from './pages/StudyPlan/StudyPlan';
 import LearningProfile from './pages/LearningProfile/LearningProfile';
 import SpeakingExercise from './pages/SpeakingExercise/SpeakingExercise';
-import ReadingCourse from './pages/ReadingCourse/ReadingCourse';
-import WritingCourse from './pages/WritingCourse/WritingCourse';
-import VocabularyCourse from './pages/VocabularyCourse/VocabularyCourse';
-import VocabularyDemo from './pages/VocabularyDemo/VocabularyDemo';
-import VocabularyTest from './pages/VocabularyTest/VocabularyTest';
 import SpeakingExerciseDemo from './pages/SpeakingExercise/SpeakingExerciseDemo';
 import SpeakingExerciseShowcase from './pages/SpeakingExercise/SpeakingExerciseShowcase';
 import ReadingExercise from './pages/ReadingExercise/ReadingExercise';
 import WritingExercise from './pages/WritingExercise/WritingExercise';
 import ListeningExercise from './pages/ListeningExercise/ListeningExercise';
+import CourseLessons from './pages/CourseLessons/CourseLessons';
+
 
 // Import Admin Pages
 import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute';
@@ -258,50 +255,11 @@ function App() {
         }
       />
 
-      <Route
-        path="/learn/:courseId"
-        element={
-          <ProtectedRoute isLoggedIn={isLoggedIn}>
-            <ReadingCourse />
-          </ProtectedRoute>
-        }
-      />
 
-      <Route
-        path="/writing/:courseId"
-        element={
-          <ProtectedRoute isLoggedIn={isLoggedIn}>
-            <WritingCourse />
-          </ProtectedRoute>
-        }
-      />
 
-      <Route
-        path="/vocabulary/:courseId"
-        element={
-          <ProtectedRoute isLoggedIn={isLoggedIn}>
-            <VocabularyCourse />
-          </ProtectedRoute>
-        }
-      />
 
-      <Route
-        path="/vocabulary-demo"
-        element={
-          <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
-            <VocabularyDemo />
-          </Layout>
-        }
-      />
 
-      <Route
-        path="/vocabulary-test"
-        element={
-          <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
-            <VocabularyTest />
-          </Layout>
-        }
-      />
+
 
       <Route
         path="/speaking-demo"
@@ -367,6 +325,19 @@ function App() {
           </ProtectedRoute>
         }
       />
+
+      <Route
+        path="/courses/:courseId/lessons"
+        element={
+          <ProtectedRoute isLoggedIn={isLoggedIn}>
+            <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+              <CourseLessons />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+
 
       {/* Admin Dashboard - Protected, No Layout wrapper for fullscreen */}
       <Route

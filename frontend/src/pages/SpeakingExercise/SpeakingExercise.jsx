@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  Clock, 
-  CheckCircle, 
+import {
+  ArrowLeft,
+  Clock,
+  CheckCircle,
   RotateCcw,
   HelpCircle,
   Target,
@@ -27,7 +27,7 @@ import './SpeakingExercise.css';
 const SpeakingExercise = () => {
   const { courseId, lessonId } = useParams();
   const navigate = useNavigate();
-  
+
   // State management
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
@@ -39,17 +39,41 @@ const SpeakingExercise = () => {
   const [audioBlob, setAudioBlob] = useState(null);
   const [audioUrl, setAudioUrl] = useState(null);
   const [showHint, setShowHint] = useState(false);
-  
+  const [showCompletionMessage, setShowCompletionMessage] = useState(false);
+
   // Refs
   const mediaRecorderRef = useRef(null);
   const audioRef = useRef(null);
   const timerRef = useRef(null);
 
+  // Handle completion
+  const handleComplete = () => {
+    // Calculate final score (mock calculation based on mock results)
+    const finalScore = Math.round((mockResults.fluency + mockResults.grammar + mockResults.pronunciation + mockResults.vocabulary) / 4 * 10) / 10;
+
+    // Save completion data to localStorage
+    const completionData = {
+      lessonId: lessonId,
+      courseId: courseId,
+      score: finalScore,
+      completedAt: new Date().toISOString(),
+      timeSpent: timeSpent,
+      type: 'speaking'
+    };
+
+    const existingData = JSON.parse(localStorage.getItem(`course_${courseId}_completed_lessons`) || '{}');
+    existingData[lessonId] = completionData;
+    localStorage.setItem(`course_${courseId}_completed_lessons`, JSON.stringify(existingData));
+
+    // Navigate to learning profile page
+    navigate('/learning-profile');
+  };
+
   // Mock data cho bài speaking - sẽ được thay thế bằng API call
   const speakingData = {
     id: lessonId || '1',
     title: 'Speaking Unit 1',
-    courseTitle: 'Speaking Lớp 3',
+    courseTitle: 'Speaking Học bài',
     difficulty: 'Beginner',
     estimatedTime: 10, // minutes
     totalQuestions: 4,
@@ -209,12 +233,18 @@ const SpeakingExercise = () => {
 
     // TODO: API call to submit recording
     console.log('Submitting recording:', audioBlob);
-    
+
     // Simulate API response
     setTimeout(() => {
       setShowResults(true);
-      setIsCompleted(true);
     }, 2000);
+  };
+
+  // Calculate score from results
+  const calculateScore = () => {
+    // Aggregate score from pronunciation, fluency, grammar, vocabulary
+    const totalScore = mockResults.pronunciation + mockResults.fluency + mockResults.grammar + mockResults.vocabulary;
+    return Math.round(totalScore / 4); // Average out of 100
   };
 
   // Next question
@@ -226,7 +256,23 @@ const SpeakingExercise = () => {
       setAudioUrl(null);
       setRecordingTime(0);
     } else {
-      setIsCompleted(true);
+      // Exercise completed - save to localStorage and navigate
+      const score = calculateScore();
+      const completionData = {
+        lessonId,
+        score,
+        completedAt: new Date().toISOString(),
+        type: 'speaking'
+      };
+
+      // Save to localStorage
+      const key = `course_${courseId}_completed_lessons`;
+      const existing = JSON.parse(localStorage.getItem(key) || '{}');
+      existing[lessonId] = completionData;
+      localStorage.setItem(key, JSON.stringify(existing));
+
+      // Navigate to learning profile page
+      navigate('/learning-profile');
     }
   };
 
@@ -240,6 +286,7 @@ const SpeakingExercise = () => {
     setAudioUrl(null);
     setRecordingTime(0);
     setTimeSpent(0);
+    setShowCompletionMessage(false);
   };
 
   const currentQuestionData = speakingData.questions[currentQuestion];
@@ -249,7 +296,7 @@ const SpeakingExercise = () => {
       {/* Header */}
       <div className="speaking-header">
         <div className="header-left">
-          <button 
+          <button
             className="speaking-back-btn"
             onClick={() => navigate(-1)}
           >
@@ -257,12 +304,12 @@ const SpeakingExercise = () => {
             Quay lại
           </button>
         </div>
-        
+
         <div className="course-info">
           <h1 className="course-title">{speakingData.courseTitle}</h1>
           <p className="course-subtitle">{speakingData.title}</p>
         </div>
-        
+
         <div className="header-right">
           <div className="timer-info">
             <Clock size={16} />
@@ -281,7 +328,7 @@ const SpeakingExercise = () => {
           <div className="question-header">
             <h2 className="question-title">Questions {currentQuestion + 1} - {speakingData.totalQuestions}</h2>
             <div className="question-controls">
-              <button 
+              <button
                 className="hint-btn"
                 onClick={() => setShowHint(!showHint)}
               >
@@ -332,7 +379,7 @@ const SpeakingExercise = () => {
 
             <div className="recording-interface">
               <div className="recording-button-container">
-                <button 
+                <button
                   className={`recording-btn ${isRecording ? 'recording' : ''}`}
                   onClick={isRecording ? stopRecording : startRecording}
                   disabled={isCompleted}
@@ -364,7 +411,7 @@ const SpeakingExercise = () => {
             {audioUrl && (
               <div className="audio-player">
                 <div className="audio-controls">
-                  <button 
+                  <button
                     className="play-btn"
                     onClick={playAudio}
                   >
@@ -375,7 +422,7 @@ const SpeakingExercise = () => {
                     <span>{formatTime(recordingTime)}</span>
                   </div>
                 </div>
-                <audio 
+                <audio
                   ref={audioRef}
                   src={audioUrl}
                   onEnded={() => setIsPlaying(false)}
@@ -407,7 +454,7 @@ const SpeakingExercise = () => {
               <div className="transcription-section">
                 <p className="transcription-text">
                   {mockResults.detailedFeedback.map((item, index) => (
-                    <span 
+                    <span
                       key={index}
                       className={`transcription-word ${item.type}`}
                       title={item.suggestion || ''}
@@ -427,8 +474,8 @@ const SpeakingExercise = () => {
                 <div className="score-item">
                   <span className="score-label">Pronunciation</span>
                   <div className="score-bar">
-                    <div 
-                      className="score-fill" 
+                    <div
+                      className="score-fill"
                       style={{ width: `${(mockResults.pronunciation / 10) * 100}%` }}
                     ></div>
                   </div>
@@ -437,8 +484,8 @@ const SpeakingExercise = () => {
                 <div className="score-item">
                   <span className="score-label">Fluency</span>
                   <div className="score-bar">
-                    <div 
-                      className="score-fill" 
+                    <div
+                      className="score-fill"
                       style={{ width: `${(mockResults.fluency / 10) * 100}%` }}
                     ></div>
                   </div>
@@ -447,8 +494,8 @@ const SpeakingExercise = () => {
                 <div className="score-item">
                   <span className="score-label">Grammar</span>
                   <div className="score-bar">
-                    <div 
-                      className="score-fill" 
+                    <div
+                      className="score-fill"
                       style={{ width: `${(mockResults.grammar / 10) * 100}%` }}
                     ></div>
                   </div>
@@ -457,8 +504,8 @@ const SpeakingExercise = () => {
                 <div className="score-item">
                   <span className="score-label">Vocabulary</span>
                   <div className="score-bar">
-                    <div 
-                      className="score-fill" 
+                    <div
+                      className="score-fill"
                       style={{ width: `${(mockResults.vocabulary / 10) * 100}%` }}
                     ></div>
                   </div>
@@ -473,7 +520,7 @@ const SpeakingExercise = () => {
       {/* Action Buttons */}
       <div className="exercise-actions">
         <div className="action-buttons">
-          <button 
+          <button
             className="reset-btn"
             onClick={resetExercise}
             disabled={isCompleted}
@@ -481,9 +528,9 @@ const SpeakingExercise = () => {
             <RotateCcw size={16} />
             Reset
           </button>
-          
+
           {!showResults ? (
-            <button 
+            <button
               className="submit-btn"
               onClick={submitRecording}
               disabled={!audioBlob || isCompleted}
@@ -492,37 +539,18 @@ const SpeakingExercise = () => {
               Nộp bài
             </button>
           ) : (
-            <button 
-              className="next-btn"
-              onClick={nextQuestion}
-            >
-              <RefreshCw size={16} />
-              {currentQuestion < speakingData.questions.length - 1 ? 'Câu tiếp theo' : 'Hoàn thành'}
-            </button>
+          <button
+            className="next-btn"
+            onClick={currentQuestion < speakingData.questions.length - 1 ? nextQuestion : handleComplete}
+          >
+            <RefreshCw size={16} />
+            {currentQuestion < speakingData.questions.length - 1 ? 'Câu tiếp theo' : 'Hoàn thành'}
+          </button>
           )}
         </div>
       </div>
 
-      {/* Completion Message */}
-      {isCompleted && (
-        <div className="completion-message">
-          <div className="completion-content">
-            <Award size={32} />
-            <h3>Chúc mừng!</h3>
-            <p>Bạn đã hoàn thành bài Speaking thành công.</p>
-            <div className="completion-stats">
-              <div className="stat-item">
-                <BookOpen size={20} />
-                <span>{speakingData.totalQuestions} câu hỏi</span>
-              </div>
-              <div className="stat-item">
-                <Clock size={20} />
-                <span>{formatTime(timeSpent)}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 };
