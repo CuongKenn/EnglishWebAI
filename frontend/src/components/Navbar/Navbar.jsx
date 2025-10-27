@@ -1,11 +1,38 @@
-import React, { useState } from 'react'; // <--- SỬA LỖI 1: Đã sửa lại cú pháp import
-import { Link, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import ProfileDropdown from '../ProfileDropdown/ProfileDropdown';
+import AuthModal from './AuthModal';
+import authService from '../../services/authService';
 import './Navbar.css';
 
-const Navbar = ({ userRole = 'student', isLoggedIn = false, onLogout }) => {
+const Navbar = ({ userRole = 'student', isLoggedIn: isLoggedInProp = false, onLogout }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(isLoggedInProp);
   const location = useLocation();
+  const navigate = useNavigate();
+
+  // Check login status from localStorage on mount and location change
+  useEffect(() => {
+    const checkLoginStatus = () => {
+      const loggedIn = authService.isAuthenticated();
+      setIsLoggedIn(loggedIn);
+    };
+
+    checkLoginStatus();
+    
+    // Listen for storage changes (in case user logs in from another tab)
+    window.addEventListener('storage', checkLoginStatus);
+    
+    return () => {
+      window.removeEventListener('storage', checkLoginStatus);
+    };
+  }, [location.pathname]);
+
+  // Also update when prop changes
+  useEffect(() => {
+    setIsLoggedIn(isLoggedInProp);
+  }, [isLoggedInProp]);
 
   const getNavigationItems = () => {
     // Menu cơ bản cho student
@@ -76,6 +103,15 @@ const Navbar = ({ userRole = 'student', isLoggedIn = false, onLogout }) => {
     return location.pathname === path;
   };
 
+  const handleNavClick = (e, path) => {
+    // Check if user is logged in
+    if (!isLoggedIn) {
+      e.preventDefault();
+      setShowAuthModal(true);
+      setIsMenuOpen(false);
+    }
+  };
+
   return (
     <nav className="navbar">
       <div className="navbar-container">
@@ -95,6 +131,7 @@ const Navbar = ({ userRole = 'student', isLoggedIn = false, onLogout }) => {
               to={item.path}
               className={`nav-link ${isActive(item.path) ? 'active' : ''} ${item.special ? 'special-link' : ''}`}
               title={item.label}
+              onClick={(e) => handleNavClick(e, item.path)}
             >
               {item.icon && <i className={`fas ${item.icon}`}></i>}
               <span>{item.label}</span>
@@ -134,7 +171,10 @@ const Navbar = ({ userRole = 'student', isLoggedIn = false, onLogout }) => {
               key={index}
               to={item.path}
               className={`mobile-nav-link ${isActive(item.path) ? 'active' : ''} ${item.special ? 'special-link' : ''}`}
-              onClick={() => setIsMenuOpen(false)}
+              onClick={(e) => {
+                handleNavClick(e, item.path);
+                if (isLoggedIn) setIsMenuOpen(false);
+              }}
             >
               {item.icon && <i className={`fas ${item.icon}`}></i>}
               <span>{item.label}</span>
@@ -142,6 +182,12 @@ const Navbar = ({ userRole = 'student', isLoggedIn = false, onLogout }) => {
           ))}
         </div>
       </div>
+
+      {/* Auth Modal */}
+      <AuthModal 
+        isOpen={showAuthModal} 
+        onClose={() => setShowAuthModal(false)} 
+      />
     </nav>
   );
 };
