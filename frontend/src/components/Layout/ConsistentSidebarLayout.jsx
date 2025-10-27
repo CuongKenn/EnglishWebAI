@@ -10,7 +10,7 @@ const ConsistentSidebarLayout = ({
   activeMenuItem = 'study-plan',
   onMenuItemClick,
   showBackButton = true,
-  courseTitle = "Tiếng Anh Lớp 8"
+  courseTitle = "Học bài"
 }) => {
   const navigate = useNavigate();
 
@@ -58,13 +58,11 @@ const ConsistentSidebarLayout = ({
             ))}
           </nav>
 
-          {showBackButton && (
-            <div className="sidebar-footer">
-              <button className="back-to-home-btn" onClick={() => navigate('/')}>
-                ← Trở về trang chủ
-              </button>
-            </div>
-          )}
+          <div className="sidebar-footer">
+            <button className="back-to-home-btn" onClick={() => navigate('/')}>
+              ← Trở về trang chủ
+            </button>
+          </div>
         </div>
       </aside>
 

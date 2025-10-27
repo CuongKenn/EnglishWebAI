@@ -1,0 +1,29 @@
+.teacher-dashboard-v2 {
+  display: flex;
+  height: 100vh;
+  background-color: #f8fafc;
+}
+
+.dashboard-main {
+  flex: 1;
+  overflow-y: auto;
+  background: #f8fafc;
+}
+
+.placeholder-page {
+  padding: 32px;
+  text-align: center;
+}
+
+.placeholder-page h2 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 8px;
+}
+
+.placeholder-page p {
+  font-size: 14px;
+  color: #64748b;
+}
+

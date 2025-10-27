@@ -6,6 +6,7 @@ import { Headphones, Play, Pause, RotateCcw, Volume2, CheckCircle2, RefreshCw } 
 import { Slider } from "../ui/slider";
 import { Badge } from "../ui/badge";
 import { getListeningLesson, submitListeningAnswers } from "../../services/aiService";
+import { aiUsageAPI } from "../../services/api";
 
 export function ListeningAI() {
   const [selectedLevel, setSelectedLevel] = useState("intermediate");
@@ -31,6 +32,7 @@ export function ListeningAI() {
       setShowAnswers(false);
       setProgress(0);
       setIsPlaying(false);
+      aiUsageAPI.logUsage('listening', { action: 'generate', level });
     } catch (error) {
       console.error("Error loading lesson:", error);
     } finally {
@@ -49,6 +51,7 @@ export function ListeningAI() {
     if (lesson && lesson.id) {
       try {
         await submitListeningAnswers(lesson.id, selectedAnswers);
+        aiUsageAPI.logUsage('listening', { action: 'submit', level: selectedLevel, answered: Object.keys(selectedAnswers).length });
       } catch (error) {
         console.error("Error submitting answers:", error);
       }

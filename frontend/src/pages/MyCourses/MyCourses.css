@@ -1,110 +1,15 @@
 /* My Courses Page - Inspired by modern learning platforms */
 
-/* Wrapper with Sidebar */
-.my-courses-wrapper {
-  display: grid;
-  grid-template-columns: 240px 1fr;
-  gap: 0;
-  min-height: 100vh;
-  background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
-}
-
-/* ===== SIDEBAR TRÁI: Menu Navigation ===== */
-.my-courses-wrapper .courses-sidebar-left {
-  background: #ffffff;
-  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
-  height: 100vh;
-  position: sticky;
-  top: 0;
-}
-
-.my-courses-wrapper .sidebar-menu {
-  padding: 20px 0;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.my-courses-wrapper .program-selector {
-  padding: 0 20px 20px;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.my-courses-wrapper .program-badge {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 16px;
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-  color: white;
-  border-radius: 12px;
-  font-weight: 600;
-  font-size: 14px;
-}
-
-.my-courses-wrapper .menu-nav {
-  padding: 20px 0;
-  flex: 1;
-}
-
-.my-courses-wrapper .menu-item {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 24px;
-  border: none;
-  background: transparent;
-  color: #64748b;
-  font-size: 15px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  border-left: 3px solid transparent;
-  text-align: left;
-  text-decoration: none;
-}
-
-.my-courses-wrapper .menu-item:hover {
-  background: #f8fafc;
-  color: #6366f1;
-}
-
-.my-courses-wrapper .menu-item.active {
-  background: #f0f4ff;
-  color: #6366f1;
-  border-left-color: #6366f1;
-  font-weight: 600;
-}
-
-.my-courses-wrapper .sidebar-footer {
-  padding: 20px;
-  border-top: 1px solid #e2e8f0;
-}
-
-.my-courses-wrapper .back-to-home-btn {
-  width: 100%;
-  padding: 10px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  color: #64748b;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.25s ease;
-}
-
-.my-courses-wrapper .back-to-home-btn:hover {
-  background: #e2e8f0;
-  color: #475569;
-}
-
 /* Main Content Area */
-.my-courses-wrapper .my-courses-page {
+.my-courses-wrapper {
   min-height: 100vh;
   background: #f7f8fa;
   padding: 0;
   overflow-y: auto;
+}
+
+.my-courses-page {
+  /* Nội dung chính của trang */
 }
 
 /* Icon Banner Bar với text nổi bật */
@@ -187,8 +92,8 @@
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
   transition: all 0.3s ease;
   border: 1px solid #f1f5f9;
-  position: relative; 
-  overflow: hidden; 
+  position: relative;
+  overflow: hidden;
 }
 
 /* Thanh màu ở trên */
@@ -199,13 +104,13 @@
   left: 0;
   right: 0;
   height: 4px;
-  background-color: #ccc; 
+  background-color: #ccc;
 }
 
-.my-courses-wrapper .stats-overview .stat-card:nth-child(1)::before { background-color: #3b82f6; } 
-.my-courses-wrapper .stats-overview .stat-card:nth-child(2)::before { background-color: #10b981; } 
-.my-courses-wrapper .stats-overview .stat-card:nth-child(3)::before { background-color: #f59e0b; } 
-.my-courses-wrapper .stats-overview .stat-card:nth-child(4)::before { background-color: #ec4899; } 
+.my-courses-wrapper .stats-overview .stat-card:nth-child(1)::before { background-color: #3b82f6; }
+.my-courses-wrapper .stats-overview .stat-card:nth-child(2)::before { background-color: #10b981; }
+.my-courses-wrapper .stats-overview .stat-card:nth-child(3)::before { background-color: #f59e0b; }
+.my-courses-wrapper .stats-overview .stat-card:nth-child(4)::before { background-color: #ec4899; }
 
 .my-courses-wrapper .stat-card:hover {
   transform: translateY(-5px);
@@ -223,24 +128,24 @@
   border: 2px solid;
 }
 
-.my-courses-wrapper .stat-icon.total { 
-  background: #dbeafe !important; 
-  color: #1e3a8a !important; 
+.my-courses-wrapper .stat-icon.total {
+  background: #dbeafe !important;
+  color: #1e3a8a !important;
   border-color: #93c5fd !important;
 }
-.my-courses-wrapper .stat-icon.completed { 
-  background: #d1fae5 !important; 
-  color: #064e3b !important; 
+.my-courses-wrapper .stat-icon.completed {
+  background: #d1fae5 !important;
+  color: #064e3b !important;
   border-color: #6ee7b7 !important;
 }
-.my-courses-wrapper .stat-icon.progress { 
-  background: #fef3c7 !important; 
-  color: #78350f !important; 
+.my-courses-wrapper .stat-icon.progress {
+  background: #fef3c7 !important;
+  color: #78350f !important;
   border-color: #fcd34d !important;
 }
-.my-courses-wrapper .stat-icon.cups { 
-  background: #fce7f3 !important; 
-  color: #831843 !important; 
+.my-courses-wrapper .stat-icon.cups {
+  background: #fce7f3 !important;
+  color: #831843 !important;
   border-color: #f9a8d4 !important;
 }
 

@@ -702,6 +702,16 @@ export const discussionsAPI = {
     }
   },
 
+  // Xóa bình luận
+  deletePost: async (discussionId, postId) => {
+    try {
+      const response = await apiClient.delete(`/api/v1/discussions/${discussionId}/posts/${postId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
   // Like câu hỏi
   likeDiscussion: async (discussionId) => {
     try {
@@ -716,6 +726,16 @@ export const discussionsAPI = {
   unlikeDiscussion: async (discussionId) => {
     try {
       const response = await apiClient.delete(`/api/v1/discussions/${discussionId}/like`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Tăng lượt xem
+  viewThread: async (discussionId) => {
+    try {
+      const response = await apiClient.post(`/api/v1/discussions/${discussionId}/view`);
       return response.data;
     } catch (error) {
       throw error.response ? error.response.data : error;
@@ -780,6 +800,26 @@ export const newsAPI = {
     try {
       const response = await apiClient.delete(`/api/v1/news/${newsId}`);
       return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Thích tin tức (yêu cầu đăng nhập)
+  likeNews: async (newsId) => {
+    try {
+      const response = await apiClient.post(`/api/v1/news/${newsId}/like`);
+      return response.data; // { likes }
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Bỏ thích tin tức (yêu cầu đăng nhập)
+  unlikeNews: async (newsId) => {
+    try {
+      const response = await apiClient.delete(`/api/v1/news/${newsId}/like`);
+      return response.data; // { likes }
     } catch (error) {
       throw error.response ? error.response.data : error;
     }
@@ -1015,6 +1055,52 @@ export const aiAPI = {
       return response.data;
     } catch (error) {
       throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Generate reading passage
+  generateReadingPassage: async (level = 'intermediate', readingType = 'article', topic = null) => {
+    try {
+      const response = await apiClient.post('/api/v1/ai/reading/generate', {
+        level,
+        reading_type: readingType,
+        topic
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Check reading answers
+  checkReadingAnswers: async (answers) => {
+    try {
+      const response = await apiClient.post('/api/v1/ai/reading/check-answers', {
+        answers
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+};
+
+// ===========================
+// AI Usage Logging API
+// ===========================
+export const aiUsageAPI = {
+  // Log a usage event for AI features
+  logUsage: async (feature, metadata = {}) => {
+    try {
+      const response = await apiClient.post('/api/v1/ai/usage', {
+        feature,
+        metadata,
+      });
+      return response.data;
+    } catch (error) {
+      // Do not throw to avoid breaking UX; surface optional debugging
+      // console.warn('AI usage log failed', error);
+      return null;
     }
   },
 };

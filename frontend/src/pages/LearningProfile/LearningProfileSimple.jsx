@@ -30,7 +30,7 @@ const LearningProfileSimple = () => {
       <ConsistentSidebarLayout 
         activeMenuItem={activeMenuItem}
         onMenuItemClick={handleMenuItemClick}
-        courseTitle="Tiếng Anh Lớp 8"
+        courseTitle="Học bài"
       >
         <div style={{ 
           padding: '24px',

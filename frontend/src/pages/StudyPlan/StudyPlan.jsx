@@ -204,44 +204,17 @@ const StudyPlan = () => {
     <ConsistentSidebarLayout 
       activeMenuItem={activeMenuItem}
       onMenuItemClick={handleMenuItemClick}
-      courseTitle="Tiếng Anh Lớp 8"
+      courseTitle="Học bài"
     >
       <div className={`study-plan-content-wrapper ${isContentPushed ? 'pushed-out' : ''}`}>
         {/* Header */}
         <div className="study-plan-header">
           <div className="header-tabs">
-            <button 
-              className={`tab-btn ${activeTab === 'today' ? 'active' : ''}`}
-              onClick={() => setActiveTab('today')}
-            >
-              Hôm nay
-            </button>
-            <button 
+            <button
               className={`tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
               onClick={() => setActiveTab('overview')}
             >
               Tổng quan
-            </button>
-          </div>
-
-          <div className="header-actions">
-            <button className="view-calendar-btn">
-              <Calendar size={18} />
-            </button>
-            <button className="view-grid-btn active">
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor">
-                <rect x="0" y="0" width="8" height="8" rx="2"/>
-                <rect x="10" y="0" width="8" height="8" rx="2"/>
-                <rect x="0" y="10" width="8" height="8" rx="2"/>
-                <rect x="10" y="10" width="8" height="8" rx="2"/>
-              </svg>
-            </button>
-            <button className="view-list-btn">
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor">
-                <rect x="0" y="2" width="18" height="2" rx="1"/>
-                <rect x="0" y="8" width="18" height="2" rx="1"/>
-                <rect x="0" y="14" width="18" height="2" rx="1"/>
-              </svg>
             </button>
           </div>
         </div>

@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  Clock, 
-  CheckCircle, 
+import {
+  ArrowLeft,
+  Clock,
+  CheckCircle,
   RotateCcw,
   HelpCircle,
   Target,
@@ -28,7 +28,7 @@ import './ListeningExercise.css';
 const ListeningExercise = () => {
   const { courseId, lessonId } = useParams();
   const navigate = useNavigate();
-  
+
   // State management
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -42,7 +42,7 @@ const ListeningExercise = () => {
   const [selectedAnswers, setSelectedAnswers] = useState({});
   const [notes, setNotes] = useState({});
   const [showHint, setShowHint] = useState(false);
-  
+
   // Refs
   const audioRef = useRef(null);
   const timerRef = useRef(null);
@@ -51,7 +51,7 @@ const ListeningExercise = () => {
   const listeningData = {
     id: lessonId || '1',
     title: 'Listening Unit 1',
-    courseTitle: 'Listening Lớp 3',
+    courseTitle: 'Listening Học bài',
     difficulty: 'Beginner',
     estimatedTime: 15, // minutes
     totalQuestions: 5,
@@ -63,7 +63,7 @@ const ListeningExercise = () => {
         question: "When are the experimental areas closed to the public?",
         options: [
           "All the year round",
-          "Almost all the year", 
+          "Almost all the year",
           "A short time every year"
         ],
         correctAnswer: 2,
@@ -255,7 +255,7 @@ const ListeningExercise = () => {
     // TODO: API call to submit answers
     console.log('Submitting answers:', selectedAnswers);
     console.log('Notes:', notes);
-    
+
     // Simulate API response
     setTimeout(() => {
       setShowResults(true);
@@ -285,7 +285,7 @@ const ListeningExercise = () => {
       {/* Header */}
       <div className="listening-header">
         <div className="header-left">
-          <button 
+          <button
             className="listening-back-btn"
             onClick={() => navigate(-1)}
           >
@@ -293,12 +293,12 @@ const ListeningExercise = () => {
             Quay lại
           </button>
         </div>
-        
+
         <div className="course-info">
           <h1 className="course-title">{listeningData.courseTitle}</h1>
           <p className="course-subtitle">{listeningData.title}</p>
         </div>
-        
+
         <div className="header-right">
           <div className="timer-info">
             <Clock size={16} />
@@ -319,7 +319,7 @@ const ListeningExercise = () => {
               Exercise {currentQuestion + 1}: Nghe và chọn đáp án đúng để trả lời cho các câu hỏi sau
             </h2>
             <div className="instructions-controls">
-              <button 
+              <button
                 className="hint-btn"
                 onClick={() => setShowHint(!showHint)}
               >
@@ -333,7 +333,7 @@ const ListeningExercise = () => {
             <div className="instruction-text">
               <AlertCircle size={16} />
               <p>
-                Lưu ý: Các bạn chú ý gạch chân keywords trong câu hỏi trước khi nghe, 
+                Lưu ý: Các bạn chú ý gạch chân keywords trong câu hỏi trước khi nghe,
                 và take note vào ô trống bên cạnh từng đáp án trong quá trình nghe để làm bài một cách chính xác nhất nhé!
               </p>
             </div>
@@ -363,7 +363,7 @@ const ListeningExercise = () => {
         <div className="audio-player-section">
           <div className="audio-player">
             <div className="audio-controls">
-              <button 
+              <button
                 className="skip-btn"
                 onClick={skipBackward}
                 title="Lùi 10 giây"
@@ -371,15 +371,15 @@ const ListeningExercise = () => {
                 <SkipBack size={20} />
                 <span>10</span>
               </button>
-              
-              <button 
+
+              <button
                 className="play-pause-btn"
                 onClick={togglePlayPause}
               >
                 {isPlaying ? <Pause size={32} /> : <Play size={32} />}
               </button>
-              
-              <button 
+
+              <button
                 className="skip-btn"
                 onClick={skipForward}
                 title="Tới 10 giây"
@@ -393,11 +393,11 @@ const ListeningExercise = () => {
               <div className="time-display">
                 <span>{formatTime(audioProgress)}</span>
               </div>
-              <div 
+              <div
                 className="progress-bar"
                 onClick={handleProgressClick}
               >
-                <div 
+                <div
                   className="progress-fill"
                   style={{ width: `${(audioProgress / audioDuration) * 100}%` }}
                 ></div>
@@ -408,7 +408,7 @@ const ListeningExercise = () => {
             </div>
 
             <div className="volume-controls">
-              <button 
+              <button
                 className="volume-btn"
                 onClick={toggleMute}
               >
@@ -532,7 +532,7 @@ const ListeningExercise = () => {
       {/* Action Buttons */}
       <div className="exercise-actions">
         <div className="action-buttons">
-          <button 
+          <button
             className="reset-btn"
             onClick={resetExercise}
             disabled={isCompleted}
@@ -540,9 +540,9 @@ const ListeningExercise = () => {
             <RotateCcw size={16} />
             Reset
           </button>
-          
+
           {!showResults ? (
-            <button 
+            <button
               className="submit-btn"
               onClick={submitExercise}
               disabled={isCompleted}
@@ -551,12 +551,29 @@ const ListeningExercise = () => {
               Nộp bài
             </button>
           ) : (
-            <button 
+            <button
               className="next-btn"
-              onClick={() => navigate(-1)}
+              onClick={() => {
+                // Save completion data to localStorage
+                const completionData = {
+                  lessonId: lessonId,
+                  courseId: courseId,
+                  score: mockResults.score,
+                  completedAt: new Date().toISOString(),
+                  timeSpent: timeSpent,
+                  type: 'listening'
+                };
+
+                const existingData = JSON.parse(localStorage.getItem(`course_${courseId}_completed_lessons`) || '{}');
+                existingData[lessonId] = completionData;
+                localStorage.setItem(`course_${courseId}_completed_lessons`, JSON.stringify(existingData));
+
+                // Navigate to learning profile page
+                navigate('/learning-profile');
+              }}
             >
               <RefreshCw size={16} />
-              Quay lại khóa học
+              Hoàn thành
             </button>
           )}
         </div>
@@ -588,7 +605,7 @@ const ListeningExercise = () => {
       )}
 
       {/* Hidden Audio Element */}
-      <audio 
+      <audio
         ref={audioRef}
         src={listeningData.audioUrl}
         preload="metadata"

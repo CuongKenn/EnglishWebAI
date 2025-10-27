@@ -1,0 +1,108 @@
+.teacher-sidebar {
+  width: 210px;
+  background: #ffffff;
+  color: #64748b;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow-y: auto;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.04);
+  border-right: 1px solid #f1f5f9;
+}
+
+.sidebar-header {
+  padding: 24px 16px;
+  border-bottom: none;
+  background: transparent;
+}
+
+.sidebar-logo {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+  background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.sidebar-menu {
+  flex: 1;
+  padding: 8px 12px;
+  overflow-y: auto;
+}
+
+.menu-section {
+  margin-bottom: 24px;
+}
+
+.section-title {
+  font-size: 10px;
+  font-weight: 600;
+  color: #94a3b8;
+  margin: 0 0 8px 8px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.menu-items {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-size: 14px;
+  font-weight: 400;
+  width: 100%;
+  text-align: left;
+}
+
+.menu-item:hover {
+  background: #f8fafc;
+  color: #475569;
+}
+
+.menu-item.active {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  color: white;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.2);
+}
+
+.menu-icon {
+  flex-shrink: 0;
+}
+
+.menu-label {
+  flex: 1;
+}
+
+/* Scrollbar styling */
+.teacher-sidebar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.teacher-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.teacher-sidebar::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 2px;
+}
+
+.teacher-sidebar::-webkit-scrollbar-thumb:hover {
+  background: #cbd5e1;
+}
+

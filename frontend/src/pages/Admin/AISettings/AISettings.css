@@ -1,8 +1,8 @@
 .ai-settings-container {
-  padding: 30px;
-  max-width: 1400px;
-  margin: 0 auto;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 0;
+  max-width: 100%;
+  margin: 0;
+  background: transparent;
   min-height: 100%;
 }
 

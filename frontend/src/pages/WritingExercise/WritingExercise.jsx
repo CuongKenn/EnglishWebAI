@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  Clock, 
-  CheckCircle, 
+import {
+  ArrowLeft,
+  Clock,
+  CheckCircle,
   RotateCcw,
   HelpCircle,
   Target,
@@ -19,7 +19,7 @@ import './WritingExercise.css';
 const WritingExercise = () => {
   const { courseId, lessonId } = useParams();
   const navigate = useNavigate();
-  
+
   // State management
   const [userEssay, setUserEssay] = useState('');
   const [timeSpent, setTimeSpent] = useState(0);
@@ -33,7 +33,7 @@ const WritingExercise = () => {
   const writingData = {
     id: lessonId || '1',
     title: 'Writing Unit 1',
-    courseTitle: 'Writing Lớp 3',
+    courseTitle: 'Writing Học bài',
     difficulty: 'Beginner',
     estimatedTime: 30, // minutes
     wordLimit: 350,
@@ -68,7 +68,7 @@ const WritingExercise = () => {
   useEffect(() => {
     const words = userEssay.trim().split(/\s+/).filter(word => word.length > 0);
     const sentences = userEssay.split(/[.!?]+/).filter(sentence => sentence.trim().length > 0);
-    
+
     setWordCount(words.length);
     setSentenceCount(sentences.length);
   }, [userEssay]);
@@ -100,16 +100,60 @@ const WritingExercise = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Calculate score (mock for now - in real app this would come from AI evaluation)
+  const calculateScore = () => {
+    // Mock score based on word count and basic criteria
+    let score = 60; // Base score
+
+    // Bonus for word count
+    if (wordCount >= writingData.wordLimit) {
+      score += 20;
+    } else if (wordCount >= writingData.wordLimit * 0.8) {
+      score += 10;
+    }
+
+    // Bonus for sentence count (good structure)
+    if (sentenceCount >= 8) {
+      score += 10;
+    }
+
+    return Math.min(score, 100); // Cap at 100
+  };
+
   // Submit essay
   const submitEssay = () => {
     if (wordCount < 50) {
       alert('Bài viết phải có ít nhất 50 từ');
       return;
     }
-    
-    setIsCompleted(true);
-    // TODO: API call to submit essay
-    console.log('Essay submitted:', userEssay);
+
+    if (!isCompleted) {
+      setIsCompleted(true);
+      setIsSaved(true);
+
+      // Calculate score and save completion data
+      const score = calculateScore();
+      const completionData = {
+        lessonId,
+        courseId,
+        score,
+        completedAt: new Date().toISOString(),
+        type: 'writing',
+        wordCount,
+        timeSpent
+      };
+
+      // Save to localStorage
+      const key = `course_${courseId}_completed_lessons`;
+      const existing = JSON.parse(localStorage.getItem(key) || '{}');
+      existing[lessonId] = completionData;
+      localStorage.setItem(key, JSON.stringify(existing));
+
+      // Navigate to learning profile page after a short delay
+      setTimeout(() => {
+        navigate('/learning-profile');
+      }, 2000);
+    }
   };
 
   // Reset exercise
@@ -124,7 +168,7 @@ const WritingExercise = () => {
       {/* Header */}
       <div className="writing-header">
         <div className="header-left">
-          <button 
+          <button
             className="writing-back-btn"
             onClick={() => navigate(-1)}
           >
@@ -132,12 +176,12 @@ const WritingExercise = () => {
             Quay lại
           </button>
         </div>
-        
+
         <div className="course-info">
           <h1 className="course-title">{writingData.courseTitle}</h1>
           <p className="course-subtitle">{writingData.title}</p>
         </div>
-        
+
         <div className="header-right">
           <div className="timer-info">
             <Clock size={16} />
@@ -156,7 +200,7 @@ const WritingExercise = () => {
           <div className="question-header">
             <h2 className="question-title">Bài chấm viết đoạn</h2>
             <div className="question-controls">
-              <button 
+              <button
                 className="hint-btn"
                 onClick={() => setShowHint(!showHint)}
               >
@@ -167,12 +211,6 @@ const WritingExercise = () => {
           </div>
 
           <div className="question-content">
-            <div className="question-number">
-              <span className="question-label">Question {writingData.currentQuestion}</span>
-              <div className="question-icon">
-                <FileText size={20} />
-              </div>
-            </div>
 
             <div className="question-instruction">
               <p>{writingData.question.instruction}</p>
@@ -192,7 +230,7 @@ const WritingExercise = () => {
                   <AlertCircle size={16} />
                   <span>Gợi ý</span>
                 </div>
-                <div className="grading-criteria">
+                <div className="hint-tips">
                   <h4>Tiêu chí chấm điểm:</h4>
                   <ul>
                     {writingData.question.gradingCriteria.map((criteria, index) => (
@@ -230,14 +268,14 @@ const WritingExercise = () => {
               disabled={isCompleted}
               rows={20}
             />
-            
+
             <div className="word-limit-info">
               <span>Giới hạn bài viết là <strong>{writingData.wordLimit} từ</strong></span>
             </div>
 
             <div className="disclaimer">
               <p>
-                Để đánh giá chính xác kết quả học tập của học viên, Prep không hỗ trợ việc sử dụng trợ giúp từ AI hoặc đạo văn dưới bất kỳ hình thức nào. 
+                Để đánh giá chính xác kết quả học tập của học viên, Prep không hỗ trợ việc sử dụng trợ giúp từ AI hoặc đạo văn dưới bất kỳ hình thức nào.
                 Nếu phát hiện vi phạm, Prep rất tiếc sẽ không chấm điểm cho bài nộp này.
               </p>
             </div>
@@ -248,7 +286,7 @@ const WritingExercise = () => {
       {/* Action Buttons */}
       <div className="exercise-actions">
         <div className="action-buttons">
-          <button 
+          <button
             className="reset-btn"
             onClick={resetExercise}
             disabled={isCompleted}
@@ -256,38 +294,19 @@ const WritingExercise = () => {
             <RotateCcw size={16} />
             Reset
           </button>
-          
-          <button 
+
+          <button
             className="submit-btn"
             onClick={submitEssay}
             disabled={isCompleted || wordCount < 50}
           >
             <Target size={16} />
-            {isCompleted ? 'Đã nộp bài' : 'Nộp bài'}
+            {isCompleted ? 'Hoàn thành' : 'Nộp bài'}
           </button>
         </div>
       </div>
 
-      {/* Completion Message */}
-      {isCompleted && (
-        <div className="completion-message">
-          <div className="completion-content">
-            <Award size={32} />
-            <h3>Chúc mừng!</h3>
-            <p>Bạn đã hoàn thành bài viết thành công.</p>
-            <div className="completion-stats">
-              <div className="stat-item">
-                <BookOpen size={20} />
-                <span>{wordCount} từ</span>
-              </div>
-              <div className="stat-item">
-                <Clock size={20} />
-                <span>{formatTime(timeSpent)}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 };

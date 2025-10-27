@@ -67,7 +67,7 @@ const Lessons = () => {
     <ConsistentSidebarLayout 
       activeMenuItem={activeMenuItem}
       onMenuItemClick={handleMenuItemClick}
-      courseTitle={`Tiếng Anh ${userInfo.grade}`}
+      courseTitle="Học bài"
     >
       <div className={`lessons-content-wrapper ${isContentPushed ? 'pushed-out' : ''}`}>
         {/* Nội dung chính */}
@@ -77,7 +77,7 @@ const Lessons = () => {
           <div className="banner-content">
             <div className="greeting">
               <h1>Xin chào,</h1>
-              <p>Cùng Prep tiến bộ mỗi ngày nào!</p>
+              <p>Cùng chúng tôi tiến bộ nên mỗi ngày</p>
             </div>
             <div className="mascot-container">
               <div className="mascot">
@@ -96,11 +96,6 @@ const Lessons = () => {
             <div className="goal-message">
               <h3>{todayGoal.message}</h3>
               <p>{todayGoal.subMessage}</p>
-              {!todayGoal.hasLesson && (
-                <Link to="/study-plan" className="study-plan-btn">
-                  Xem Kế hoạch học
-                </Link>
-              )}
             </div>
           </div>
         </section>
@@ -235,245 +230,9 @@ const Lessons = () => {
           </div>
         </section>
 
-        {/* Khóa học Writing */}
-        <section className="writing-courses-section">
-          <h2 className="section-title">Khóa học Writing</h2>
-          <div className="courses-grid">
-            <div className="course-card writing-course-card" onClick={() => navigate('/writing/essay-mastery')}>
-              <div className="course-image">
-                <img src="https://images.unsplash.com/photo-1434030216411-0b793f4b4173?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80" alt="Essay Writing" />
-                <div className="course-overlay">
-                  <Play size={32} className="play-icon" />
-                </div>
-              </div>
-              <div className="course-content">
-                <div className="course-header">
-                  <h3>Essay Writing Mastery</h3>
-                  <span className="course-level">Intermediate</span>
-                </div>
-                <p className="course-description">
-                  Master the art of essay writing with structured lessons and AI-powered feedback.
-                </p>
-                <div className="course-meta">
-                  <div className="meta-item">
-                    <Clock size={16} />
-                    <span>45 min</span>
-                  </div>
-                  <div className="meta-item">
-                    <BookOpen size={16} />
-                    <span>8 lessons</span>
-                  </div>
-                  <div className="meta-item">
-                    <Target size={16} />
-                    <span>Writing</span>
-                  </div>
-                </div>
-                <div className="course-progress">
-                  <div className="progress-bar">
-                    <div className="progress-fill" style={{ width: '0%' }}></div>
-                  </div>
-                  <span className="progress-text">0% Complete</span>
-                </div>
-              </div>
-            </div>
 
-            <div className="course-card writing-course-card" onClick={() => navigate('/writing/g3_writing')}>
-              <div className="course-image">
-                <img src="https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80" alt="Grade 3 Writing" />
-                <div className="course-overlay">
-                  <Play size={32} className="play-icon" />
-                </div>
-              </div>
-              <div className="course-content">
-                <div className="course-header">
-                  <h3>Grade 3 Writing Practice</h3>
-                  <span className="course-level">Grade 3</span>
-                </div>
-                <p className="course-description">
-                  Develop basic writing skills with age-appropriate exercises and guided practice.
-                </p>
-                <div className="course-meta">
-                  <div className="meta-item">
-                    <Clock size={16} />
-                    <span>30 min</span>
-                  </div>
-                  <div className="meta-item">
-                    <BookOpen size={16} />
-                    <span>6 lessons</span>
-                  </div>
-                  <div className="meta-item">
-                    <Target size={16} />
-                    <span>Writing</span>
-                  </div>
-                </div>
-                <div className="course-progress">
-                  <div className="progress-bar">
-                    <div className="progress-fill" style={{ width: '0%' }}></div>
-                  </div>
-                  <span className="progress-text">0% Complete</span>
-                </div>
-              </div>
-            </div>
 
-            <div className="course-card writing-course-card" onClick={() => navigate('/writing/creative-writing')}>
-              <div className="course-image">
-                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80" alt="Creative Writing" />
-                <div className="course-overlay">
-                  <Play size={32} className="play-icon" />
-                </div>
-              </div>
-              <div className="course-content">
-                <div className="course-header">
-                  <h3>Creative Writing Workshop</h3>
-                  <span className="course-level">Advanced</span>
-                </div>
-                <p className="course-description">
-                  Unleash your creativity with storytelling, poetry, and creative expression exercises.
-                </p>
-                <div className="course-meta">
-                  <div className="meta-item">
-                    <Clock size={16} />
-                    <span>60 min</span>
-                  </div>
-                  <div className="meta-item">
-                    <BookOpen size={16} />
-                    <span>10 lessons</span>
-                  </div>
-                  <div className="meta-item">
-                    <Target size={16} />
-                    <span>Writing</span>
-                  </div>
-                </div>
-                <div className="course-progress">
-                  <div className="progress-bar">
-                    <div className="progress-fill" style={{ width: '0%' }}></div>
-                  </div>
-                  <span className="progress-text">0% Complete</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
 
-        {/* Khóa học Reading */}
-        <section className="reading-courses-section">
-          <h2 className="section-title">Khóa học Reading</h2>
-          <div className="courses-grid">
-            <div className="course-card reading-course-card" onClick={() => navigate('/learn/traffic-congestion')}>
-              <div className="course-image">
-                <img src="https://images.unsplash.com/photo-1449824913935-59a10b8d2000?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80" alt="Traffic Congestion" />
-                <div className="course-overlay">
-                  <Play size={32} className="play-icon" />
-                </div>
-              </div>
-              <div className="course-content">
-                <div className="course-header">
-                  <h3>Traffic Congestion: A Global Problem</h3>
-                  <span className="course-level">Intermediate</span>
-                </div>
-                <p className="course-description">
-                  Learn about traffic problems worldwide through interactive reading exercises and comprehension activities.
-                </p>
-                <div className="course-meta">
-                  <div className="meta-item">
-                    <Clock size={16} />
-                    <span>15 min</span>
-                  </div>
-                  <div className="meta-item">
-                    <BookOpen size={16} />
-                    <span>5 lessons</span>
-                  </div>
-                  <div className="meta-item">
-                    <Target size={16} />
-                    <span>Reading</span>
-                  </div>
-                </div>
-                <div className="course-progress">
-                  <div className="progress-bar">
-                    <div className="progress-fill" style={{ width: '0%' }}></div>
-                  </div>
-                  <span className="progress-text">0% Complete</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="course-card reading-course-card" onClick={() => navigate('/learn/climate-change')}>
-              <div className="course-image">
-                <img src="https://images.unsplash.com/photo-1569163139394-de446e504b1a?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80" alt="Climate Change" />
-                <div className="course-overlay">
-                  <Play size={32} className="play-icon" />
-                </div>
-              </div>
-              <div className="course-content">
-                <div className="course-header">
-                  <h3>Climate Change and Environment</h3>
-                  <span className="course-level">Advanced</span>
-                </div>
-                <p className="course-description">
-                  Explore environmental issues and climate change through comprehensive reading materials.
-                </p>
-                <div className="course-meta">
-                  <div className="meta-item">
-                    <Clock size={16} />
-                    <span>20 min</span>
-                  </div>
-                  <div className="meta-item">
-                    <BookOpen size={16} />
-                    <span>7 lessons</span>
-                  </div>
-                  <div className="meta-item">
-                    <Target size={16} />
-                    <span>Reading</span>
-                  </div>
-                </div>
-                <div className="course-progress">
-                  <div className="progress-bar">
-                    <div className="progress-fill" style={{ width: '0%' }}></div>
-                  </div>
-                  <span className="progress-text">0% Complete</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="course-card reading-course-card" onClick={() => navigate('/learn/technology-innovation')}>
-              <div className="course-image">
-                <img src="https://images.unsplash.com/photo-1518709268805-4e9042af2176?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80" alt="Technology Innovation" />
-                <div className="course-overlay">
-                  <Play size={32} className="play-icon" />
-                </div>
-              </div>
-              <div className="course-content">
-                <div className="course-header">
-                  <h3>Technology and Innovation</h3>
-                  <span className="course-level">Intermediate</span>
-                </div>
-                <p className="course-description">
-                  Discover the latest technological advances and their impact on society through engaging texts.
-                </p>
-                <div className="course-meta">
-                  <div className="meta-item">
-                    <Clock size={16} />
-                    <span>18 min</span>
-                  </div>
-                  <div className="meta-item">
-                    <BookOpen size={16} />
-                    <span>6 lessons</span>
-                  </div>
-                  <div className="meta-item">
-                    <Target size={16} />
-                    <span>Reading</span>
-                  </div>
-                </div>
-                <div className="course-progress">
-                  <div className="progress-bar">
-                    <div className="progress-fill" style={{ width: '0%' }}></div>
-                  </div>
-                  <span className="progress-text">0% Complete</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
 
         {/* Bài học gần đây */}
         <section className="recent-lessons-section">

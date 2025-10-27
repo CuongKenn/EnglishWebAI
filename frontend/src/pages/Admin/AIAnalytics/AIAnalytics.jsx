@@ -1,43 +1,42 @@
-import { useState, useEffect } from 'react';
-import { BarChart3, TrendingUp, Users, Zap, RefreshCw, Calendar } from 'lucide-react';
-import aiSettingsService from '../../../services/aiSettingsService';
+import { useState, useEffect, useMemo } from 'react';
+import { BarChart3, Users, Zap, RefreshCw, Calendar } from 'lucide-react';
+import { adminGetAIAnalytics } from '../../../services/adminService';
 import './AIAnalytics.css';
 
 const AIAnalytics = () => {
   const [stats, setStats] = useState(null);
   const [timeRange, setTimeRange] = useState('30d');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  const fetchStats = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const data = await adminGetAIAnalytics(timeRange);
+      setStats(data);
+    } catch (e) {
+      setError('Không tải được dữ liệu. Vui lòng thử lại.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    loadStats();
-  }, []);
+    fetchStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timeRange]);
 
-  const loadStats = () => {
-    let currentStats = aiSettingsService.getUsageStats();
-    
-    // Nếu chưa có data, generate mock data
-    if (currentStats.totalRequests === 0) {
-      currentStats = aiSettingsService.generateMockStats();
-    }
-    
-    setStats(currentStats);
-  };
-
-  const handleRefresh = () => {
-    const newStats = aiSettingsService.generateMockStats();
-    setStats(newStats);
-  };
+  const handleRefresh = () => fetchStats();
 
   const formatNumber = (num) => {
-    if (num >= 1000000) {
-      return (num / 1000000).toFixed(1) + 'M';
-    } else if (num >= 1000) {
-      return (num / 1000).toFixed(1) + 'K';
-    }
-    return num.toString();
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+    return (num ?? 0).toString();
   };
 
   const getFeaturePercentage = (count) => {
-    if (!stats || stats.totalRequests === 0) return 0;
+    if (!stats || !stats.totalRequests) return 0;
     return ((count / stats.totalRequests) * 100).toFixed(1);
   };
 
@@ -47,14 +46,26 @@ const AIAnalytics = () => {
     { id: 'listening', name: 'Luyện nghe AI', icon: '🎧', color: 'green' },
     { id: 'writing', name: 'Luyện viết AI', icon: '✍️', color: 'orange' },
     { id: 'reading', name: 'Luyện đọc AI', icon: '📖', color: 'indigo' },
-    { id: 'flashcard', name: 'Flashcard AI', icon: '🎴', color: 'pink' },
+    { id: 'flashcard', name: 'Flashcard AI', icon: '🃏', color: 'pink' },
   ];
 
-  if (!stats) return <div>Đang tải...</div>;
+  const days = useMemo(
+    () => stats?.requestsByDay?.length || (timeRange === '7d' ? 7 : timeRange === '90d' ? 90 : 30),
+    [stats, timeRange]
+  );
 
-  // Calculate growth (mock)
-  const growth = 12.5;
-  const avgDaily = Math.floor(stats.totalRequests / 30);
+  const topFeature = useMemo(() => {
+    if (!stats?.requestsByFeature || !stats.totalRequests) return null;
+    const entries = Object.entries(stats.requestsByFeature);
+    const [id, count] = entries.reduce((acc, cur) => (cur[1] > acc[1] ? cur : acc), entries[0]);
+    return { id, count };
+  }, [stats]);
+
+  if (loading) return <div>Đang tải...</div>;
+  if (error) return <div>{error}</div>;
+  if (!stats) return <div>Không có dữ liệu.</div>;
+
+  const avgDaily = Math.floor((stats.totalRequests || 0) / Math.max(1, days));
 
   return (
     <div className="ai-analytics-container">
@@ -95,10 +106,6 @@ const AIAnalytics = () => {
           <div className="stat-content">
             <div className="stat-label">Tổng Requests</div>
             <div className="stat-value">{formatNumber(stats.totalRequests)}</div>
-            <div className="stat-trend positive">
-              <TrendingUp size={16} />
-              +{growth}% so với tháng trước
-            </div>
           </div>
         </div>
 
@@ -109,10 +116,6 @@ const AIAnalytics = () => {
           <div className="stat-content">
             <div className="stat-label">Active Users</div>
             <div className="stat-value">{stats.activeUsers}</div>
-            <div className="stat-trend positive">
-              <TrendingUp size={16} />
-              +8.2% so với tuần trước
-            </div>
           </div>
         </div>
 
@@ -123,9 +126,7 @@ const AIAnalytics = () => {
           <div className="stat-content">
             <div className="stat-label">Trung bình/Ngày</div>
             <div className="stat-value">{formatNumber(avgDaily)}</div>
-            <div className="stat-trend neutral">
-              Ổn định trong tuần qua
-            </div>
+            <div className="stat-trend neutral">—</div>
           </div>
         </div>
 
@@ -135,9 +136,11 @@ const AIAnalytics = () => {
           </div>
           <div className="stat-content">
             <div className="stat-label">Tính năng phổ biến nhất</div>
-            <div className="stat-value-text">Dịch AI 🌐</div>
+            <div className="stat-value-text">
+              {topFeature ? (features.find(f => f.id === topFeature.id)?.name || topFeature.id) : '—'}
+            </div>
             <div className="stat-trend neutral">
-              {getFeaturePercentage(stats.requestsByFeature.translate)}% tổng usage
+              {topFeature ? `${getFeaturePercentage(topFeature.count)}% tổng usage` : '—'}
             </div>
           </div>
         </div>
@@ -150,9 +153,8 @@ const AIAnalytics = () => {
           <h3 className="chart-title">Usage theo tính năng</h3>
           <div className="feature-bars">
             {features.map((feature) => {
-              const count = stats.requestsByFeature[feature.id] || 0;
+              const count = stats.requestsByFeature?.[feature.id] || 0;
               const percentage = getFeaturePercentage(count);
-              
               return (
                 <div key={feature.id} className="feature-bar-item">
                   <div className="feature-bar-header">
@@ -166,10 +168,7 @@ const AIAnalytics = () => {
                     </div>
                   </div>
                   <div className="progress-bar">
-                    <div 
-                      className={`progress-fill gradient-${feature.color}`}
-                      style={{ width: `${percentage}%` }}
-                    ></div>
+                    <div className={`progress-fill gradient-${feature.color}`} style={{ width: `${percentage}%` }}></div>
                   </div>
                 </div>
               );
@@ -179,28 +178,26 @@ const AIAnalytics = () => {
 
         {/* Usage Trend */}
         <div className="chart-card">
-          <h3 className="chart-title">Xu hướng 30 ngày qua</h3>
+          <h3 className="chart-title">Xu hướng {days} ngày qua</h3>
           <div className="trend-chart">
-            {stats.requestsByDay.slice(-30).map((day, index) => {
-              const maxCount = Math.max(...stats.requestsByDay.map(d => d.count));
-              const heightPercentage = (day.count / maxCount) * 100;
-              
-              return (
-                <div key={index} className="trend-bar-wrapper">
-                  <div 
-                    className="trend-bar"
-                    style={{ height: `${heightPercentage}%` }}
-                    title={`${day.date}: ${day.count} requests`}
-                  >
-                    <div className="trend-bar-fill gradient-purple"></div>
+            {(() => {
+              const data = stats.requestsByDay || [];
+              const maxCount = Math.max(1, ...data.map(d => d.count));
+              return data.map((day, index) => {
+                const heightPercentage = (day.count / maxCount) * 100;
+                return (
+                  <div key={index} className="trend-bar-wrapper">
+                    <div className="trend-bar" style={{ height: `${heightPercentage}%` }} title={`${day.date}: ${day.count} requests`}>
+                      <div className="trend-bar-fill gradient-purple"></div>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              });
+            })()}
           </div>
           <div className="trend-legend">
-            <span>{stats.requestsByDay[0]?.date}</span>
-            <span>{stats.requestsByDay[stats.requestsByDay.length - 1]?.date}</span>
+            <span>{stats.requestsByDay?.[0]?.date}</span>
+            <span>{stats.requestsByDay?.[stats.requestsByDay.length - 1]?.date}</span>
           </div>
         </div>
       </div>
@@ -221,11 +218,10 @@ const AIAnalytics = () => {
             </thead>
             <tbody>
               {features.map((feature) => {
-                const count = stats.requestsByFeature[feature.id] || 0;
+                const count = stats.requestsByFeature?.[feature.id] || 0;
                 const percentage = getFeaturePercentage(count);
-                const avgPerDay = Math.floor(count / 30);
-                const trendValue = Math.random() > 0.5 ? 'up' : 'down';
-                
+                const avgPerDay = Math.floor(count / Math.max(1, days));
+                const trendValue = count > 0 ? 'up' : 'down';
                 return (
                   <tr key={feature.id}>
                     <td>
@@ -242,7 +238,7 @@ const AIAnalytics = () => {
                     <td>
                       <span className={`trend-badge trend-${trendValue}`}>
                         {trendValue === 'up' ? '↑' : '↓'}
-                        {(Math.random() * 20 + 5).toFixed(1)}%
+                        {percentage}%
                       </span>
                     </td>
                   </tr>
@@ -258,8 +254,7 @@ const AIAnalytics = () => {
         <div className="info-box">
           <span className="info-icon">💡</span>
           <div>
-            <strong>Lưu ý:</strong> Đây là dữ liệu mock để demo. 
-            Trong production, dữ liệu sẽ được lấy từ backend API và cơ sở dữ liệu thực tế.
+            <strong>Lưu ý:</strong> Dữ liệu từ backend; nếu chưa ghi nhận usage, các số liệu có thể bằng 0.
           </div>
         </div>
         <div className="last-update-info">

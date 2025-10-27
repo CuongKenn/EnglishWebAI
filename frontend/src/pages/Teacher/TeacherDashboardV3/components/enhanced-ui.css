@@ -1,0 +1,384 @@
+/* Enhanced UI for Teacher Dashboard V3 - Beautiful Modern Design */
+
+/* ============================================
+   SCOPE: Only apply to main content, not sidebar
+   ============================================ */
+
+/* Primary Buttons - Only in dashboard-main */
+.dashboard-main button:not([class*="unstyled"]):not([class*="ghost"]):not([class*="outline"]):not([class*="link"]) {
+  background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dashboard-main button:not([class*="unstyled"]):not([class*="ghost"]):not([class*="outline"]):not([class*="link"]):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+}
+
+.dashboard-main button:not([class*="unstyled"]):not([class*="ghost"]):not([class*="outline"]):not([class*="link"]):active {
+  transform: translateY(0);
+}
+
+/* Outline Buttons */
+.dashboard-main button[class*="outline"] {
+  border: 1px solid #e5e7eb;
+  background: white;
+  color: #374151;
+  transition: all 0.2s ease;
+}
+
+.dashboard-main button[class*="outline"]:hover {
+  border-color: #8b5cf6;
+  background: #faf5ff;
+  color: #8b5cf6;
+}
+
+/* Ghost Buttons */
+.dashboard-main button[class*="ghost"] {
+  background: transparent;
+  color: #6b7280;
+}
+
+.dashboard-main button[class*="ghost"]:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+/* ============================================
+   INPUTS & TEXTAREAS - Modern Focused Style
+   ============================================ */
+
+.dashboard-main input[type="text"],
+.dashboard-main input[type="email"],
+.dashboard-main input[type="password"],
+.dashboard-main input[type="number"],
+.dashboard-main input[type="search"],
+.dashboard-main input[type="tel"],
+.dashboard-main input[type="url"],
+.dashboard-main input[type="date"],
+.dashboard-main input[type="time"],
+.dashboard-main textarea,
+.dashboard-main select,
+[role="dialog"] input[type="text"],
+[role="dialog"] input[type="email"],
+[role="dialog"] input[type="password"],
+[role="dialog"] input[type="number"],
+[role="dialog"] textarea,
+[role="dialog"] select {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.dashboard-main input:focus,
+.dashboard-main textarea:focus,
+.dashboard-main select:focus,
+[role="dialog"] input:focus,
+[role="dialog"] textarea:focus,
+[role="dialog"] select:focus {
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+  outline: none;
+}
+
+/* ============================================
+   DIALOGS & MODALS - Beautiful Rounded Style
+   ============================================ */
+
+[role="dialog"],
+.dialog-content,
+[data-radix-portal] > div[role="dialog"] {
+  position: fixed !important;
+  left: 50% !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  border-radius: 1rem;
+  background: white;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  border: 1px solid #e5e7eb;
+  animation: dialogSlideIn 0.2s ease-out;
+  color: #111827;
+  width: 600px !important;
+  max-width: 90vw !important;
+  max-height: 85vh !important;
+  margin: 0 !important;
+  overflow: visible !important;
+  padding: 1.5rem !important; /* Thêm padding đồng đều */
+  box-sizing: border-box !important;
+}
+
+/* Dialog với max-w-2xl */
+[role="dialog"][class*="max-w-2xl"] {
+  width: 650px !important;
+  max-width: 90vw !important;
+  padding: 1.5rem !important;
+}
+
+/* Dialog với max-w-3xl */
+[role="dialog"][class*="max-w-3xl"] {
+  width: 800px !important;
+  max-width: 90vw !important;
+  padding: 1.5rem !important;
+}
+
+/* Dialog với max-w-4xl */
+[role="dialog"][class*="max-w-4xl"] {
+  width: 950px !important;
+  max-width: 90vw !important;
+  padding: 1.5rem !important;
+}
+
+/* Dialog với max-w-6xl */
+[role="dialog"][class*="max-w-6xl"] {
+  width: 1150px !important;
+  max-width: 90vw !important;
+  padding: 1.5rem !important;
+}
+
+@keyframes dialogSlideIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* Dialog Header & Title - Full Width */
+[role="dialog"] > div:first-child,
+[role="dialog"] [class*="DialogHeader"],
+[role="dialog"] header {
+  width: 100% !important;
+  margin-bottom: 1rem !important;
+  padding: 0 !important;
+}
+
+[role="dialog"] h2,
+[role="dialog"] h3,
+[role="dialog"] [class*="DialogTitle"] {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+  width: 100% !important;
+  margin: 0 0 1rem 0 !important;
+  padding: 0 !important;
+}
+
+/* Dialog Content - Ensure visibility */
+[role="dialog"] p,
+[role="dialog"] span,
+[role="dialog"] label {
+  color: #374151;
+}
+
+/* Dialog Overlay */
+[role="dialog"]::backdrop,
+.dialog-overlay {
+  background: rgba(0, 0, 0, 0.5);
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ============================================
+   CARDS - Enhanced with Hover Effects
+   ============================================ */
+
+.dashboard-main [class*="card"]:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
+}
+
+/* ============================================
+   SELECT DROPDOWNS - Fix Visibility
+   ============================================ */
+
+/* Select Trigger */
+[role="dialog"] button[role="combobox"],
+.dashboard-main button[role="combobox"] {
+  background: white !important;
+  border: 1px solid #e5e7eb !important;
+  color: #374151 !important;
+  font-weight: 400 !important;
+  box-shadow: none !important;
+}
+
+[role="dialog"] button[role="combobox"]:hover,
+.dashboard-main button[role="combobox"]:hover {
+  background: white !important;
+  border-color: #d1d5db !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Select Content (Dropdown) */
+[data-radix-popper-content-wrapper] {
+  z-index: 9999 !important;
+}
+
+[role="listbox"],
+[data-radix-select-content] {
+  background: white !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 0.5rem !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+  padding: 0.25rem !important;
+  max-height: 300px !important;
+  overflow-y: auto !important;
+  z-index: 9999 !important;
+}
+
+/* Select Items */
+[role="option"],
+[data-radix-select-item] {
+  padding: 0.5rem 0.75rem !important;
+  color: #374151 !important;
+  font-size: 0.875rem !important;
+  cursor: pointer !important;
+  border-radius: 0.375rem !important;
+  transition: all 0.15s ease !important;
+}
+
+[role="option"]:hover,
+[data-radix-select-item]:hover,
+[role="option"][data-highlighted],
+[data-radix-select-item][data-highlighted] {
+  background: #f3f4f6 !important;
+  color: #111827 !important;
+  outline: none !important;
+}
+
+[role="option"][aria-selected="true"],
+[role="option"][data-state="checked"],
+[data-radix-select-item][data-state="checked"] {
+  background: #ede9fe !important;
+  color: #7c3aed !important;
+  font-weight: 500 !important;
+}
+
+/* ============================================
+   DIALOG CONTENT SCROLLING & FULL WIDTH
+   ============================================ */
+
+[role="dialog"] > div {
+  max-height: calc(85vh - 4rem);
+  overflow-y: auto;
+  width: 100%;
+}
+
+/* Đảm bảo content bên trong full width */
+[role="dialog"] > div > * {
+  width: 100%;
+}
+
+/* Hide scrollbar but keep functionality */
+[role="dialog"] > div::-webkit-scrollbar {
+  width: 6px;
+}
+
+[role="dialog"] > div::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+[role="dialog"] > div::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+[role="dialog"] > div::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* ============================================
+   FORM FIELD CONSISTENCY - Căn chỉnh đồng đều
+   ============================================ */
+
+/* Đảm bảo tất cả containers full width */
+[role="dialog"] .py-4,
+[role="dialog"] .space-y-4,
+[role="dialog"] .space-y-2 {
+  width: 100% !important;
+}
+
+[role="dialog"] .grid {
+  display: grid;
+  gap: 1rem;
+  width: 100% !important;
+}
+
+[role="dialog"] .grid > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+[role="dialog"] label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.25rem;
+  width: 100%;
+}
+
+/* Full width cho tất cả form elements */
+[role="dialog"] input,
+[role="dialog"] textarea,
+[role="dialog"] button[role="combobox"],
+[role="dialog"] select {
+  width: 100% !important;
+  min-height: 2.5rem;
+  padding: 0.5rem 0.75rem;
+  box-sizing: border-box !important;
+}
+
+/* Full width cho upload area */
+[role="dialog"] .border-dashed,
+[role="dialog"] [class*="upload"] {
+  width: 100% !important;
+}
+
+[role="dialog"] .space-y-4 > * + * {
+  margin-top: 1rem;
+}
+
+[role="dialog"] .space-y-2 > * + * {
+  margin-top: 0.5rem;
+}
+
+/* Đảm bảo div wrappers không co lại */
+[role="dialog"] > div > div {
+  width: 100%;
+}
+
+/* Close button positioning */
+[role="dialog"] button[class*="close"],
+[role="dialog"] [class*="DialogClose"] {
+  position: absolute !important;
+  right: 1rem !important;
+  top: 1rem !important;
+}
+
+/* Buttons container */
+[role="dialog"] .flex.gap-2,
+[role="dialog"] .flex.gap-3 {
+  width: 100% !important;
+  margin-top: 1rem !important;
+}
+
+[role="dialog"] .flex.gap-2 button,
+[role="dialog"] .flex.gap-3 button {
+  flex: 1 !important;
+}
+
+/* Minimal additional styles - rest handled by Tailwind */
+
+

@@ -14,33 +14,35 @@ import Materials from './pages/Materials/Materials';
 import Discussion from './pages/Discussion/Discussion';
 import Exercises from './pages/Exercises/Exercises';
 import News from './pages/News/News';
+import NewsDetail from './pages/News/NewsDetail';
 import Lessons from './pages/Lessons/Lessons';
 import ClassContent from './pages/ClassContent/ClassContent';
 import AIPractice from './pages/student/AIPractice';
 import { WritingAI } from './components/ai/WritingAI';
+import { ReadingAI } from './components/ai/ReadingAI';
 import CourseContentPage from './pages/CourseContentPage/CourseContentPage';
 import MyCourses from './pages/MyCourses/MyCourses';
 import StudyPlan from './pages/StudyPlan/StudyPlan';
 import LearningProfile from './pages/LearningProfile/LearningProfile';
 import SpeakingExercise from './pages/SpeakingExercise/SpeakingExercise';
-import ReadingCourse from './pages/ReadingCourse/ReadingCourse';
-import WritingCourse from './pages/WritingCourse/WritingCourse';
-import VocabularyCourse from './pages/VocabularyCourse/VocabularyCourse';
-import VocabularyDemo from './pages/VocabularyDemo/VocabularyDemo';
-import VocabularyTest from './pages/VocabularyTest/VocabularyTest';
 import SpeakingExerciseDemo from './pages/SpeakingExercise/SpeakingExerciseDemo';
 import SpeakingExerciseShowcase from './pages/SpeakingExercise/SpeakingExerciseShowcase';
 import ReadingExercise from './pages/ReadingExercise/ReadingExercise';
 import WritingExercise from './pages/WritingExercise/WritingExercise';
 import ListeningExercise from './pages/ListeningExercise/ListeningExercise';
+import CourseLessons from './pages/CourseLessons/CourseLessons';
+
 
 // Import Admin Pages
 import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute';
 import AdminDashboard from './pages/Admin/AdminDashboard/AdminDashboard';
+import AdminDashboardV2 from './pages/Admin/AdminDashboardV2/AdminDashboardV2';
 
 // Import Teacher Pages
 import TeacherDashboard from './pages/Teacher/TeacherDashboard/TeacherDashboard';
 import TeacherDashboardNew from './pages/Teacher/TeacherDashboard/TeacherDashboardNew';
+import TeacherDashboardV2 from './pages/Teacher/TeacherDashboardV2/TeacherDashboardV2';
+import TeacherDashboardV3 from './pages/Teacher/TeacherDashboardV3/TeacherDashboardV3';
 import TeacherMaterials from './pages/Teacher/TeacherMaterials/TeacherMaterials';
 
 // Import Parent Pages
@@ -137,6 +139,14 @@ function App() {
         }
       />
       <Route
+        path="/news/:newsId"
+        element={
+          <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+            <NewsDetail />
+          </Layout>
+        }
+      />
+      <Route
         path="/lessons"
         element={
           <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
@@ -175,6 +185,14 @@ function App() {
         element={
           <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
             <WritingAI />
+          </Layout>
+        } 
+      />
+      <Route 
+        path="/ai-reading" 
+        element={
+          <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+            <ReadingAI />
           </Layout>
         } 
       />
@@ -222,50 +240,11 @@ function App() {
         }
       />
 
-      <Route
-        path="/learn/:courseId"
-        element={
-          <ProtectedRoute isLoggedIn={isLoggedIn}>
-            <ReadingCourse />
-          </ProtectedRoute>
-        }
-      />
 
-      <Route
-        path="/writing/:courseId"
-        element={
-          <ProtectedRoute isLoggedIn={isLoggedIn}>
-            <WritingCourse />
-          </ProtectedRoute>
-        }
-      />
 
-      <Route
-        path="/vocabulary/:courseId"
-        element={
-          <ProtectedRoute isLoggedIn={isLoggedIn}>
-            <VocabularyCourse />
-          </ProtectedRoute>
-        }
-      />
 
-      <Route
-        path="/vocabulary-demo"
-        element={
-          <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
-            <VocabularyDemo />
-          </Layout>
-        }
-      />
 
-      <Route
-        path="/vocabulary-test"
-        element={
-          <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
-            <VocabularyTest />
-          </Layout>
-        }
-      />
+
 
       <Route
         path="/speaking-demo"
@@ -332,19 +311,52 @@ function App() {
         }
       />
 
+      <Route
+        path="/courses/:courseId/lessons"
+        element={
+          <ProtectedRoute isLoggedIn={isLoggedIn}>
+            <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+              <CourseLessons />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+
+
       {/* Admin Dashboard - Protected, No Layout wrapper for fullscreen */}
       <Route
         path="/admin-dashboard/*"
         element={
           <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="admin">
-            <AdminDashboard />
+            <AdminDashboardV2 />
           </ProtectedRoute>
         }
       />
 
-      {/* Teacher Dashboard New - Protected with Nested Routes */}
+      {/* Teacher Dashboard V3 - NEW Beautiful Design with Full Features */}
       <Route
         path="/teacher-dashboard/*"
+        element={
+          <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="teacher">
+            <TeacherDashboardV3 />
+          </ProtectedRoute>
+        }
+      />
+      
+      {/* Teacher Dashboard V2 - Backup */}
+      <Route
+        path="/teacher-dashboard-v2/*"
+        element={
+          <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="teacher">
+            <TeacherDashboardV2 />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Teacher Dashboard New - Backup (Old Beautiful) */}
+      <Route
+        path="/teacher-dashboard-old"
         element={
           <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="teacher">
             <TeacherDashboardNew />
@@ -352,9 +364,9 @@ function App() {
         }
       />
 
-      {/* Teacher Dashboard Old (Legacy) - Protected */}
+      {/* Teacher Dashboard Legacy - Very Old */}
       <Route
-        path="/teacher-dashboard-old"
+        path="/teacher-dashboard-legacy"
         element={
           <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="teacher">
             <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
