@@ -7,7 +7,7 @@ from app.routers import auth, users, otp, parent, test
 from app.routers import admin as admin_router
 from app.routers import classes, lessons, exercises, materials, discussions, news, notifications, messages
 from app.routers import courses as courses_router
-from app.routers import ai_conversation, ai_writing, ai_reading, ai_listening
+from app.routers import ai_conversation, ai_writing, ai_reading, ai_listening, ai_flashcard
 from app.routers import question_bank as question_bank_router
 from app.routers import ai_usage, ai_analytics
 from app.routers import teacher_grading as teacher_router
@@ -58,6 +58,7 @@ app.include_router(ai_conversation.router, tags=["AI Conversation"])
 app.include_router(ai_writing.router, tags=["AI Writing"])
 app.include_router(ai_reading.router, prefix=f"{settings.API_PREFIX}/ai/reading", tags=["AI Reading"])
 app.include_router(ai_listening.router, prefix=f"{settings.API_PREFIX}/ai/listening", tags=["AI Listening"])
+app.include_router(ai_flashcard.router, prefix=f"{settings.API_PREFIX}/ai", tags=["AI Flashcard"])
 app.include_router(ai_usage.router, tags=["AI Usage"])
 app.include_router(ai_analytics.router, tags=["AI Analytics (Admin)"])
 app.include_router(question_bank_router.router, prefix=f"{settings.API_PREFIX}/question-bank", tags=["Question Bank"])

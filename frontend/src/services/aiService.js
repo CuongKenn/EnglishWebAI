@@ -140,7 +140,7 @@ export const getFlashcards = async (level, limit = 20) => {
     return response.data;
   } catch (error) {
     console.error('Error fetching flashcards:', error);
-    return getMockFlashcardData(level);
+    throw error;
   }
 };
 
@@ -178,7 +178,8 @@ export const saveFlashcardProgress = async (flashcardId, known) => {
     return response.data;
   } catch (error) {
     console.error('Error saving flashcard progress:', error);
-    throw error;
+    // Don't throw error for progress saving - not critical
+    return { success: false, error: error.message };
   }
 };
 
