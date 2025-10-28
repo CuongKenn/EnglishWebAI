@@ -5,7 +5,7 @@ import { Input } from '../../../../components/ui/input';
 import { Badge } from '../../../../components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../../../../components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../../components/ui/table';
-import { Upload, Plus, Search, Edit, Trash2, Eye, Users, Wand2 } from 'lucide-react';
+import { Upload, Plus, Search, Edit, Trash2, Eye, Users, Wand2, Copy, X, Check } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../../components/ui/tabs';
 import { Label } from '../../../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
@@ -22,9 +22,21 @@ const ExercisesTests = () => {
   const [selectedTest, setSelectedTest] = useState(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isGradingOpen, setIsGradingOpen] = useState(false);
+  const [showExerciseLinkModal, setShowExerciseLinkModal] = useState(false);
+  const [createdExerciseLink, setCreatedExerciseLink] = useState(null);
   const [tests, setTests] = useState([]);
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // Form state
+  const [newExercise, setNewExercise] = useState({
+    title: '',
+    classId: '',
+    type: '',
+    duration: '',
+    dueDate: '',
+    description: ''
+  });
 
   useEffect(() => {
     fetchClasses();
@@ -77,6 +89,51 @@ const ExercisesTests = () => {
       console.error('Error fetching tests:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCreateExercise = async () => {
+    try {
+      if (!newExercise.title || !newExercise.classId) {
+        alert('Vui lòng nhập tên bài kiểm tra và chọn lớp!');
+        return;
+      }
+
+      const response = await apiV1.post('/exercises/', {
+        class_id: parseInt(newExercise.classId),
+        title: newExercise.title,
+        description: newExercise.description || '',
+        type: newExercise.type || 'homework',
+        duration: newExercise.duration ? parseInt(newExercise.duration) : null,
+        due_at: newExercise.dueDate || null,
+        max_score: 10,
+        content: {},
+        enable_ai_grading: false
+      });
+
+      // Hiển thị modal với link
+      const exerciseLink = `${window.location.origin}/exercise/${response.data.id}`;
+      setCreatedExerciseLink({
+        id: response.data.id,
+        link: exerciseLink,
+        classId: response.data.class_id
+      });
+      setShowExerciseLinkModal(true);
+
+      // Reset form và refresh
+      setNewExercise({
+        title: '',
+        classId: '',
+        type: '',
+        duration: '',
+        dueDate: '',
+        description: ''
+      });
+      setIsCreateOpen(false);
+      await fetchTests();
+    } catch (error) {
+      console.error('Error creating exercise:', error);
+      alert(`Không thể tạo bài tập: ${error.response?.data?.detail || error.message}`);
     }
   };
 
@@ -359,12 +416,19 @@ const ExercisesTests = () => {
               <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto">
                 <div>
                   <Label>Tên bài kiểm tra</Label>
-                  <Input placeholder="VD: Kiểm tra 15 phút - Unit 6" />
+                  <Input 
+                    placeholder="VD: Kiểm tra 15 phút - Unit 6"
+                    value={newExercise.title}
+                    onChange={(e) => setNewExercise({...newExercise, title: e.target.value})}
+                  />
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div>
                     <Label>Lớp</Label>
-                    <Select>
+                    <Select
+                      value={newExercise.classId}
+                      onValueChange={(value) => setNewExercise({...newExercise, classId: value})}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Chọn lớp" />
                       </SelectTrigger>
@@ -381,7 +445,10 @@ const ExercisesTests = () => {
                   </div>
                   <div>
                     <Label>Loại</Label>
-                    <Select>
+                    <Select
+                      value={newExercise.type}
+                      onValueChange={(value) => setNewExercise({...newExercise, type: value})}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Chọn loại" />
                       </SelectTrigger>
@@ -394,16 +461,30 @@ const ExercisesTests = () => {
                   </div>
                   <div>
                     <Label>Thời gian (phút)</Label>
-                    <Input type="number" placeholder="45" />
+                    <Input 
+                      type="number" 
+                      placeholder="45"
+                      value={newExercise.duration}
+                      onChange={(e) => setNewExercise({...newExercise, duration: e.target.value})}
+                    />
                   </div>
                 </div>
                 <div>
                   <Label>Hạn nộp</Label>
-                  <Input type="date" />
+                  <Input 
+                    type="date"
+                    value={newExercise.dueDate}
+                    onChange={(e) => setNewExercise({...newExercise, dueDate: e.target.value})}
+                  />
                 </div>
                 <div>
                   <Label>Mô tả</Label>
-                  <Textarea placeholder="Mô tả bài kiểm tra..." rows={3} />
+                  <Textarea 
+                    placeholder="Mô tả bài kiểm tra..." 
+                    rows={3}
+                    value={newExercise.description}
+                    onChange={(e) => setNewExercise({...newExercise, description: e.target.value})}
+                  />
                 </div>
                 <div className="border-t pt-4">
                   <div className="flex items-center justify-between mb-4">
@@ -417,7 +498,7 @@ const ExercisesTests = () => {
                 <div className="flex gap-2 justify-end pt-4">
                   <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Hủy</Button>
                   <Button variant="outline">Lưu nháp</Button>
-                  <Button onClick={() => setIsCreateOpen(false)}>Xuất bản</Button>
+                  <Button onClick={handleCreateExercise}>Xuất bản</Button>
                 </div>
               </div>
             </DialogContent>
@@ -538,6 +619,7 @@ const ExercisesTests = () => {
             <DialogTitle>{selectedTest?.title}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto">
+            {console.log('Detail modal opened, selectedTest:', selectedTest)}
             <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded">
               <div>
                 <p className="text-xs text-gray-500">Lớp</p>
@@ -555,6 +637,35 @@ const ExercisesTests = () => {
                 <p className="text-xs text-gray-500">Thời gian</p>
                 <p className="text-sm text-gray-900">{selectedTest?.duration} phút</p>
               </div>
+            </div>
+
+            {/* Link bài tập */}
+            <div className="border-t pt-4">
+              <Label className="block text-sm font-medium text-gray-700 mb-2">
+                📎 Link bài tập cho học sinh:
+              </Label>
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  value={`${window.location.origin}/exercise/${selectedTest?.id}`}
+                  readOnly
+                  className="flex-1 bg-gray-50 font-mono text-sm"
+                />
+                <Button
+                  onClick={() => {
+                    const link = `${window.location.origin}/exercise/${selectedTest?.id}`;
+                    navigator.clipboard.writeText(link);
+                    alert('✅ Đã copy link vào clipboard!');
+                  }}
+                  className="gap-2"
+                >
+                  <Copy className="w-4 h-4" />
+                  Copy
+                </Button>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                💡 Copy link này và gửi cho học sinh để họ làm bài tập
+              </p>
             </div>
 
             <div>
@@ -648,6 +759,82 @@ const ExercisesTests = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Modal hiển thị link bài tập */}
+      {showExerciseLinkModal && createdExerciseLink && (
+        <Dialog open={showExerciseLinkModal} onOpenChange={setShowExerciseLinkModal}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="text-green-600 flex items-center gap-2">
+                <Check className="w-6 h-6" />
+                Tạo bài tập thành công!
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div>
+                <p className="text-gray-700 mb-2">
+                  <strong>ID Bài tập:</strong> #{createdExerciseLink.id}
+                </p>
+                {createdExerciseLink.classId && (
+                  <p className="text-gray-700 mb-2">
+                    <strong>Lớp học:</strong> {classes.find(c => c.id === createdExerciseLink.classId)?.name || createdExerciseLink.classId}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <Label className="block text-sm font-medium text-gray-700 mb-2">
+                  Link bài tập cho học sinh:
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    type="text"
+                    value={createdExerciseLink.link}
+                    readOnly
+                    className="flex-1 bg-gray-50 font-mono text-sm"
+                  />
+                  <Button
+                    onClick={() => {
+                      navigator.clipboard.writeText(createdExerciseLink.link);
+                      alert('✅ Đã copy link vào clipboard!');
+                    }}
+                    className="gap-2"
+                  >
+                    <Copy className="w-4 h-4" />
+                    Copy
+                  </Button>
+                </div>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-blue-800">
+                  💡 <strong>Hướng dẫn:</strong> Copy link này và gửi cho học sinh qua email, tin nhắn hoặc đăng trên lớp học online.
+                  Học sinh có thể click vào link để làm bài tập.
+                </p>
+              </div>
+
+              <div className="flex gap-3 justify-end">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    window.open(createdExerciseLink.link, '_blank');
+                  }}
+                  className="gap-2"
+                >
+                  <Eye className="w-4 h-4" />
+                  Xem trước
+                </Button>
+                <Button
+                  onClick={() => setShowExerciseLinkModal(false)}
+                >
+                  Đóng
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };

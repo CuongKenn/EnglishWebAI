@@ -1,14 +1,22 @@
 import { useState } from 'react';
 import { 
   X, Download, Edit, Trash2, File, FileAudio, 
-  Eye, Clock, Award, Sparkles, Users 
+  Eye, Clock, Award, Sparkles, Users, Copy, Check 
 } from 'lucide-react';
 import './ExerciseManagement.css';
 
 export default function ExerciseDetailModal({ exercise, onClose, onUpdate, onDelete }) {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedExercise, setEditedExercise] = useState({ ...exercise });
+  const [copied, setCopied] = useState(false);
   
+  const handleCopyLink = () => {
+    const link = `${window.location.origin}/exercise/${exercise?.id}`;
+    navigator.clipboard.writeText(link).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
   const getSkillIcon = (skill) => {
     const icons = {
       listening: '🎧',
@@ -95,6 +103,54 @@ export default function ExerciseDetailModal({ exercise, onClose, onUpdate, onDel
                 <span className="info-label">Bài nộp:</span>
                 <span className="info-value">{exercise.submissions}/{exercise.totalStudents}</span>
               </div>
+            </div>
+          </div>
+
+          {/* Link Section */}
+          <div className="detail-info-section">
+            <h3>Link bài tập cho học sinh</h3>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <input 
+                type="text" 
+                readOnly 
+                value={`${window.location.origin}/exercise/${exercise?.id}`}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  border: '1px solid #e0e0e0',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  backgroundColor: '#f5f5f5'
+                }}
+              />
+              <button 
+                onClick={handleCopyLink}
+                style={{
+                  padding: '10px 16px',
+                  backgroundColor: copied ? '#10b981' : '#3b82f6',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontSize: '14px',
+                  fontWeight: '500'
+                }}
+              >
+                {copied ? (
+                  <>
+                    <Check size={16} />
+                    Đã sao chép
+                  </>
+                ) : (
+                  <>
+                    <Copy size={16} />
+                    Sao chép
+                  </>
+                )}
+              </button>
             </div>
           </div>
           

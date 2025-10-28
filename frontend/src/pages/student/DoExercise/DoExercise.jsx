@@ -32,13 +32,8 @@ export default function DoExercise() {
   
   useEffect(() => {
     fetchExercise();
+    fetchSubmission();
   }, [exerciseId]);
-  
-  useEffect(() => {
-    if (exercise) {
-      fetchSubmission();
-    }
-  }, [exercise]);
 
   useEffect(() => {
     // Timer
@@ -92,22 +87,16 @@ export default function DoExercise() {
       // Find submission for this exercise
       const exerciseSubmission = response.data.find(s => s.exercise_id === parseInt(exerciseId));
       console.log('[DoExercise] Found submission:', exerciseSubmission);
-      console.log('[DoExercise] Submission score:', exerciseSubmission?.score);
-      console.log('[DoExercise] Score is null?', exerciseSubmission?.score === null);
       
-      if (exerciseSubmission && exerciseSubmission.score !== null && exerciseSubmission.score !== undefined) {
+      if (exerciseSubmission && exerciseSubmission.score !== null) {
         // Has graded submission, show result view
         setSubmission(exerciseSubmission);
         setViewMode('result');
-        console.log('[DoExercise] ✅ Submission is graded, showing result view. ViewMode set to:', 'result');
+        console.log('[DoExercise] Submission is graded, showing result view');
       } else if (exerciseSubmission) {
         // Has submission but not graded yet
         setSubmission(exerciseSubmission);
-        setViewMode('exercise');
-        console.log('[DoExercise] ⚠️ Submission exists but not graded yet. ViewMode set to:', 'exercise');
-      } else {
-        console.log('[DoExercise] ℹ️ No submission found. ViewMode stays as:', 'exercise');
-        setViewMode('exercise');
+        console.log('[DoExercise] Submission exists but not graded yet');
       }
     } catch (error) {
       console.error('[DoExercise] Error fetching submission:', error);
@@ -230,13 +219,31 @@ export default function DoExercise() {
     console.log('[renderExerciseContent] destructured exerciseContent:', exerciseContent);
 
     // Check if content exists
-    if (!exerciseContent) {
-      console.error('[renderExerciseContent] exerciseContent is null or undefined!');
+    if (!exerciseContent || !skill_type) {
+      console.error('[renderExerciseContent] exerciseContent or skill_type is missing!');
       return (
         <div className="error-container">
           <AlertCircle size={64} />
           <h2>Bài tập chưa có nội dung</h2>
           <p>Giáo viên chưa thiết lập nội dung cho bài tập này.</p>
+          <p style={{ fontSize: '14px', color: '#999', marginTop: '10px' }}>
+            {!skill_type && 'Loại kỹ năng chưa được chỉ định. '}
+            {!exerciseContent && 'Nội dung bài tập chưa có.'}
+          </p>
+          <button 
+            onClick={() => navigate('/exercise-hub')}
+            style={{
+              marginTop: '20px',
+              padding: '10px 20px',
+              backgroundColor: '#3b82f6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer'
+            }}
+          >
+            Quay lại danh sách
+          </button>
         </div>
       );
     }
@@ -642,7 +649,6 @@ export default function DoExercise() {
 
   return (
     <div className="do-exercise-container">
-      {console.log('[DoExercise] Render - viewMode:', viewMode, 'submission:', submission)}
       {/* Show result view if graded, otherwise show exercise view */}
       {viewMode === 'result' ? renderResultView() : (
         <>
