@@ -7,9 +7,9 @@ const ProtectedRoute = ({ children, isLoggedIn, userRole, requiredRole }) => {
   const authenticated = isLoggedIn !== undefined ? isLoggedIn : authService.isAuthenticated();
   const role = userRole || authService.getCurrentUser()?.role;
 
-  // Kiểm tra nếu chưa đăng nhập
+  // Kiểm tra nếu chưa đăng nhập - redirect về home thay vì login
   if (!authenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/" replace />;
   }
 
   // Kiểm tra nếu role không đúng

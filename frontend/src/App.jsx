@@ -96,9 +96,17 @@ function App() {
 
   // 4. Hàm xử lý đăng xuất
   const handleLogout = () => {
+    // Clear localStorage first
     authService.logout();
+    
+    // Update state immediately
     setIsLoggedIn(false);
     setUserRole('user');
+    
+    // Dispatch custom event to notify all components (including Navbar)
+    window.dispatchEvent(new Event('storage'));
+    
+    // Navigate to home page (not login page)
     navigate('/');
   };
 
@@ -342,7 +350,7 @@ function App() {
         path="/admin-dashboard/*"
         element={
           <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="admin">
-            <AdminDashboardV2 />
+            <AdminDashboardV2 onLogout={handleLogout} />
           </ProtectedRoute>
         }
       />
@@ -352,7 +360,7 @@ function App() {
         path="/teacher-dashboard/*"
         element={
           <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="teacher">
-            <TeacherDashboardV3 />
+            <TeacherDashboardV3 onLogout={handleLogout} />
           </ProtectedRoute>
         }
       />
@@ -372,7 +380,7 @@ function App() {
         path="/teacher-dashboard-old"
         element={
           <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="teacher">
-            <TeacherDashboardNew />
+            <TeacherDashboardNew onLogout={handleLogout} />
           </ProtectedRoute>
         }
       />

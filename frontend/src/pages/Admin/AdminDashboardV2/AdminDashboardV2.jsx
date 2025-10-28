@@ -20,13 +20,17 @@ import Settings from '../Settings/Settings';
 import Backup from '../Backup/Backup';
 import Logs from '../Logs/Logs';
 
-const AdminDashboardV2 = () => {
+const AdminDashboardV2 = ({ onLogout }) => {
   const [currentPage, setCurrentPage] = useState('overview-stats');
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    authService.logout();
-    navigate('/');
+    if (onLogout) {
+      onLogout();
+    } else {
+      authService.logout();
+      navigate('/');
+    }
   };
 
   return (
