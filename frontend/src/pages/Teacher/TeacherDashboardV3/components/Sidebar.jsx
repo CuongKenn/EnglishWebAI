@@ -27,7 +27,8 @@ const Sidebar = ({ currentPage, onNavigate }) => {
     {
       title: 'TRỢ LÝ AI',
       items: [
-        { id: 'worksheet-generator', label: 'Soạn phiếu học tập', icon: Wand2 },
+        { id: 'lesson-plans', label: 'Tạo giáo án', icon: Wand2 },
+        { id: 'worksheets', label: 'Tạo phiếu học tập', icon: Sparkles },
         { id: 'student-analytics', label: 'Phân tích tiến độ', icon: TrendingUp },
         { id: 'support-groups', label: 'Nhóm cần hỗ trợ', icon: Users }
       ]
