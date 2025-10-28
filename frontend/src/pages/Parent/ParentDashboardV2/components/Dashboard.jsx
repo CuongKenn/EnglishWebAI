@@ -32,6 +32,10 @@ const Dashboard = ({ onNavigate }) => {
     sender: true,
     time: true
   });
+  
+  // Form states for adding child
+  const [studentEmail, setStudentEmail] = useState('');
+  const [linkLoading, setLinkLoading] = useState(false);
 
   useEffect(() => {
     loadDashboardSummary();
@@ -120,6 +124,35 @@ const Dashboard = ({ onNavigate }) => {
       sender: true,
       time: true
     });
+  };
+  
+  // Handle add child submission
+  const handleAddChild = async (e) => {
+    e.preventDefault();
+    
+    if (!studentEmail || !studentEmail.trim()) {
+      alert('⚠️ Vui lòng nhập email học sinh!');
+      return;
+    }
+    
+    try {
+      setLinkLoading(true);
+      const result = await parentAPI.linkStudent(studentEmail);
+      
+      alert(`✅ ${result.message}\n\nEmail: ${result.student_email}\n\nHọc sinh cần xác nhận yêu cầu liên kết trong tài khoản của mình.`);
+      
+      setShowAddChildModal(false);
+      setStudentEmail('');
+      
+      // Reload children list
+      await loadDashboardSummary();
+    } catch (error) {
+      console.error('Error linking student:', error);
+      const errorMsg = error.response?.data?.detail || error.message || 'Không thể gửi yêu cầu liên kết';
+      alert(`❌ ${errorMsg}`);
+    } finally {
+      setLinkLoading(false);
+    }
   };
 
   if (loading) {
@@ -411,41 +444,73 @@ const Dashboard = ({ onNavigate }) => {
 
       <Modal 
         isOpen={showAddChildModal} 
-        onClose={() => closeAllModals()}
+        onClose={() => {
+          closeAllModals();
+          setStudentEmail('');
+        }}
         title="Thêm con em"
         size="medium"
       >
         <div className="modal-content-custom">
-          <form className="add-child-form">
+          <form className="add-child-form" onSubmit={handleAddChild}>
             <div className="form-group">
-              <label className="form-label">Email học sinh</label>
+              <label className="form-label">Email học sinh *</label>
               <input 
                 type="email" 
                 className="form-input" 
                 placeholder="student@example.com"
+                value={studentEmail}
+                onChange={(e) => setStudentEmail(e.target.value)}
+                required
+                disabled={linkLoading}
               />
+              <small className="form-helper-text">
+                Nhập chính xác email mà học sinh đã đăng ký
+              </small>
             </div>
-            <div className="form-group">
-              <label className="form-label">Mã xác nhận (nếu có)</label>
-              <input 
-                type="text" 
-                className="form-input" 
-                placeholder="Nhập mã xác nhận"
-              />
-            </div>
+            
             <div className="form-info">
               <Info className="info-icon-small" />
-              <span>Bạn cần có email của con em để liên kết tài khoản</span>
+              <div>
+                <p><strong>Lưu ý:</strong></p>
+                <ul style={{ marginLeft: '20px', marginTop: '8px' }}>
+                  <li>Học sinh cần xác nhận yêu cầu liên kết trong tài khoản của mình</li>
+                  <li>Sau khi xác nhận, bạn sẽ có thể theo dõi tiến độ học tập</li>
+                </ul>
+              </div>
+            </div>
+            
+            <div className="modal-footer">
+              <button 
+                type="button"
+                className="modal-btn-secondary" 
+                onClick={() => {
+                  setShowAddChildModal(false);
+                  setStudentEmail('');
+                }}
+                disabled={linkLoading}
+              >
+                Hủy
+              </button>
+              <button 
+                type="submit"
+                className="modal-btn-primary"
+                disabled={linkLoading}
+              >
+                {linkLoading ? (
+                  <>
+                    <div className="spinner-small"></div>
+                    Đang gửi...
+                  </>
+                ) : (
+                  <>
+                    <UserPlus size={18} />
+                    Gửi yêu cầu
+                  </>
+                )}
+              </button>
             </div>
           </form>
-          <div className="modal-footer">
-            <button className="modal-btn-secondary" onClick={() => setShowAddChildModal(false)}>
-              Hủy
-            </button>
-            <button className="modal-btn-primary">
-              Gửi yêu cầu
-            </button>
-          </div>
         </div>
       </Modal>
 
