@@ -76,7 +76,7 @@ const TeacherCommunication = () => {
       setLoading(true);
       const response = await fetch('/api/v1/parent/children', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
         }
       });
       if (response.ok) {
@@ -98,7 +98,7 @@ const TeacherCommunication = () => {
       setLoading(true);
       const response = await fetch(`/api/v1/parent/children/${childId}/teachers`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
         }
       });
       if (response.ok) {

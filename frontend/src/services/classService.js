@@ -5,7 +5,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 // Get all classes for teacher
 export const getClasses = async () => {
   try {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('access_token');
     const response = await axios.get(`${API_URL}/api/classes/teacher/classes`, {
       headers: {
         'Authorization': `Bearer ${token}`
@@ -21,7 +21,7 @@ export const getClasses = async () => {
 // Get students in a class
 export const getClassStudents = async (classId) => {
   try {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('access_token');
     const response = await axios.get(`${API_URL}/api/classes/${classId}/students`, {
       headers: {
         'Authorization': `Bearer ${token}`
@@ -37,7 +37,7 @@ export const getClassStudents = async (classId) => {
 // Create new class
 export const createClass = async (classData) => {
   try {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('access_token');
     const response = await axios.post(`${API_URL}/api/classes/`, classData, {
       headers: {
         'Authorization': `Bearer ${token}`
@@ -53,7 +53,7 @@ export const createClass = async (classData) => {
 // Update class
 export const updateClass = async (classId, classData) => {
   try {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('access_token');
     const response = await axios.put(`${API_URL}/api/classes/${classId}`, classData, {
       headers: {
         'Authorization': `Bearer ${token}`
@@ -69,7 +69,7 @@ export const updateClass = async (classId, classData) => {
 // Delete class
 export const deleteClass = async (classId) => {
   try {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('access_token');
     await axios.delete(`${API_URL}/api/classes/${classId}`, {
       headers: {
         'Authorization': `Bearer ${token}`

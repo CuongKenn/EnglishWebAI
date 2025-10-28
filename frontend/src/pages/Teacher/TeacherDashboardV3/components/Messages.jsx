@@ -61,9 +61,9 @@ const Messages = () => {
 
   const loadUsers = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/v1/users', {
+      const response = await fetch('/api/v1/users', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
         }
       });
       if (response.ok) {
@@ -81,7 +81,7 @@ const Messages = () => {
 
   const loadMessages = async (userId) => {
     try {
-      const data = await messageService.getMessages(userId);
+      const data = await messageService.getConversationWithUser(userId);
       setMessages(data);
     } catch (error) {
       console.error('Error loading messages:', error);
@@ -93,7 +93,10 @@ const Messages = () => {
 
     setSending(true);
     try {
-      await messageService.sendMessage(selectedChat, messageInput.trim());
+      await messageService.sendMessage({
+        receiver_id: selectedChat,
+        content: messageInput.trim()
+      });
       setMessageInput('');
       await loadMessages(selectedChat);
       await loadConversations();
@@ -110,7 +113,7 @@ const Messages = () => {
     
     // Mark messages as read
     try {
-      await messageService.markAsRead(userId);
+      await messageService.markConversationAsRead(userId);
       await loadConversations();
     } catch (error) {
       console.error('Error marking messages as read:', error);
