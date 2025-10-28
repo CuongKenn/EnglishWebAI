@@ -632,6 +632,77 @@
   max-width: 500px;
 }
 
+/* Answers Section */
+.answers-section {
+  padding: 20px;
+  background: #f0f9ff;
+  border-radius: 12px;
+  border: 2px solid #bae6fd;
+  margin-top: 16px;
+}
+
+.answers-section strong {
+  display: block;
+  font-size: 15px;
+  font-weight: 700;
+  color: #0c4a6e;
+  margin-bottom: 12px;
+}
+
+.answers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.answer-item {
+  display: flex;
+  gap: 12px;
+  padding: 12px 16px;
+  background: white;
+  border-radius: 8px;
+  border-left: 3px solid #0ea5e9;
+}
+
+.question-label {
+  font-weight: 600;
+  color: #0369a1;
+  min-width: 80px;
+}
+
+.answer-text {
+  color: #374151;
+  flex: 1;
+}
+
+/* Empty Content State */
+.empty-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+  color: #9ca3af;
+}
+
+.empty-content svg {
+  color: #d1d5db;
+  margin-bottom: 16px;
+}
+
+.empty-content p {
+  font-size: 16px;
+  font-weight: 600;
+  color: #6b7280;
+  margin: 0 0 8px;
+}
+
+.empty-content small {
+  font-size: 13px;
+  color: #9ca3af;
+}
+
 /* Grading Mode Section */
 .grading-mode-section {
   margin-bottom: 24px;

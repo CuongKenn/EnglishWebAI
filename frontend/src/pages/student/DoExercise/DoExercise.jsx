@@ -16,6 +16,8 @@ export default function DoExercise() {
   const [timeRemaining, setTimeRemaining] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [submission, setSubmission] = useState(null);
+  const [viewMode, setViewMode] = useState('exercise'); // 'exercise' or 'result'
   
   // For Speaking
   const [isRecording, setIsRecording] = useState(false);
@@ -31,6 +33,12 @@ export default function DoExercise() {
   useEffect(() => {
     fetchExercise();
   }, [exerciseId]);
+  
+  useEffect(() => {
+    if (exercise) {
+      fetchSubmission();
+    }
+  }, [exercise]);
 
   useEffect(() => {
     // Timer
@@ -72,6 +80,37 @@ export default function DoExercise() {
       console.error('[DoExercise] Error fetching exercise:', error);
       console.error('[DoExercise] Error details:', error.response?.data);
       setLoading(false);
+    }
+  };
+
+  const fetchSubmission = async () => {
+    try {
+      console.log('[DoExercise] Fetching submission for exercise:', exerciseId);
+      const response = await apiV1.get(`/exercises/my-submissions`);
+      console.log('[DoExercise] My submissions:', response.data);
+      
+      // Find submission for this exercise
+      const exerciseSubmission = response.data.find(s => s.exercise_id === parseInt(exerciseId));
+      console.log('[DoExercise] Found submission:', exerciseSubmission);
+      console.log('[DoExercise] Submission score:', exerciseSubmission?.score);
+      console.log('[DoExercise] Score is null?', exerciseSubmission?.score === null);
+      
+      if (exerciseSubmission && exerciseSubmission.score !== null && exerciseSubmission.score !== undefined) {
+        // Has graded submission, show result view
+        setSubmission(exerciseSubmission);
+        setViewMode('result');
+        console.log('[DoExercise] ✅ Submission is graded, showing result view. ViewMode set to:', 'result');
+      } else if (exerciseSubmission) {
+        // Has submission but not graded yet
+        setSubmission(exerciseSubmission);
+        setViewMode('exercise');
+        console.log('[DoExercise] ⚠️ Submission exists but not graded yet. ViewMode set to:', 'exercise');
+      } else {
+        console.log('[DoExercise] ℹ️ No submission found. ViewMode stays as:', 'exercise');
+        setViewMode('exercise');
+      }
+    } catch (error) {
+      console.error('[DoExercise] Error fetching submission:', error);
     }
   };
 
@@ -502,8 +541,111 @@ export default function DoExercise() {
     );
   };
 
+  const renderResultView = () => {
+    if (!submission || !exercise) return null;
+
+    return (
+      <div className="result-view-container">
+        {/* Header */}
+        <div className="result-header">
+          <div className="result-header-left">
+            <h1>
+              {exercise.skill_type === 'listening' && '🎧'}
+              {exercise.skill_type === 'speaking' && '🗣️'}
+              {exercise.skill_type === 'reading' && '📖'}
+              {exercise.skill_type === 'writing' && '✍️'}
+              {' '}
+              {exercise.title}
+            </h1>
+            <p className="result-subtitle">Kết quả bài làm của bạn</p>
+          </div>
+          <div className="result-score-display">
+            <div className="score-badge">
+              <span className="score-number">{submission.score}</span>
+              <span className="score-total">/{exercise.max_score || 10}</span>
+            </div>
+            <div className="score-label">Điểm</div>
+          </div>
+        </div>
+
+        {/* Submission Info */}
+        <div className="result-info-card">
+          <div className="info-item">
+            <span className="info-label">📅 Ngày nộp:</span>
+            <span className="info-value">{new Date(submission.submitted_at).toLocaleString('vi-VN')}</span>
+          </div>
+          {submission.graded_at && (
+            <div className="info-item">
+              <span className="info-label">✅ Ngày chấm:</span>
+              <span className="info-value">{new Date(submission.graded_at).toLocaleString('vi-VN')}</span>
+            </div>
+          )}
+          <div className="info-item">
+            <span className="info-label">📊 Trạng thái:</span>
+            <span className="info-value status-graded">Đã chấm</span>
+          </div>
+        </div>
+
+        {/* Feedback */}
+        {submission.feedback && (
+          <div className="feedback-card">
+            <h3>💬 Nhận xét của giáo viên</h3>
+            <div className="feedback-content">
+              {submission.feedback}
+            </div>
+          </div>
+        )}
+
+        {/* Your Submission */}
+        <div className="submission-content-card">
+          <h3>📝 Bài làm của bạn</h3>
+          {submission.content_text && (
+            <div className="submission-text">
+              {submission.content_text}
+            </div>
+          )}
+          {submission.content_url && (
+            <div className="submission-file">
+              {submission.content_url.includes('.mp3') || submission.content_url.includes('audio') ? (
+                <audio controls src={submission.content_url} />
+              ) : (
+                <a href={submission.content_url} target="_blank" rel="noopener noreferrer">
+                  Xem file đính kèm
+                </a>
+              )}
+            </div>
+          )}
+          {submission.answers && Object.keys(submission.answers).length > 0 && (
+            <div className="submission-answers">
+              <h4>Câu trả lời:</h4>
+              <ul>
+                {Object.entries(submission.answers).map(([qId, answer]) => (
+                  <li key={qId}>
+                    <strong>Câu {qId}:</strong> {answer}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className="result-actions">
+          <button className="btn-back" onClick={() => navigate('/exercise-hub')}>
+            <BookOpen size={18} />
+            Quay lại Exercise Hub
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="do-exercise-container">
+      {console.log('[DoExercise] Render - viewMode:', viewMode, 'submission:', submission)}
+      {/* Show result view if graded, otherwise show exercise view */}
+      {viewMode === 'result' ? renderResultView() : (
+        <>
       {/* Header */}
       <div className="exercise-header">
         <div className="header-left">
@@ -547,6 +689,8 @@ export default function DoExercise() {
           {isSubmitting ? 'Đang nộp...' : 'Nộp bài'}
         </button>
       </div>
+        </>
+      )}
     </div>
   );
 }
