@@ -12,7 +12,8 @@ import {
   BookOpen,
   FileText,
   Save,
-  AlertCircle
+  AlertCircle,
+  X
 } from 'lucide-react';
 import './WritingExercise.css';
 
@@ -28,6 +29,7 @@ const WritingExercise = () => {
   const [isCompleted, setIsCompleted] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [showHint, setShowHint] = useState(false);
+  const [showCompletionMessage, setShowCompletionMessage] = useState(false);
 
   // Mock data cho bài writing - sẽ được thay thế bằng API call
   const writingData = {
@@ -148,12 +150,10 @@ const WritingExercise = () => {
       const existing = JSON.parse(localStorage.getItem(key) || '{}');
       existing[lessonId] = completionData;
       localStorage.setItem(key, JSON.stringify(existing));
-
-      // Navigate to learning profile page after a short delay
-      setTimeout(() => {
-        navigate('/learning-profile');
-      }, 2000);
     }
+
+    // Show completion message (whether newly submitted or reopening)
+    setShowCompletionMessage(true);
   };
 
   // Reset exercise
@@ -298,14 +298,59 @@ const WritingExercise = () => {
           <button
             className="submit-btn"
             onClick={submitEssay}
-            disabled={isCompleted || wordCount < 50}
+            disabled={wordCount < 50}
           >
             <Target size={16} />
-            {isCompleted ? 'Hoàn thành' : 'Nộp bài'}
+            {isCompleted ? 'Xem kết quả' : 'Nộp bài'}
           </button>
         </div>
       </div>
 
+      {/* Completion Message */}
+      {showCompletionMessage && (
+        <div className="completion-message">
+          <div className="completion-content">
+            <button
+              className="completion-close-btn"
+              onClick={() => {
+                setShowCompletionMessage(false);
+                setIsCompleted(false); // Allow re-submission
+              }}
+            >
+              <X size={24} />
+            </button>
+
+            <CheckCircle size={64} color="#10b981" />
+            <h3>Hoàn thành bài tập!</h3>
+            <p>Bài viết của bạn đã được nộp thành công.</p>
+
+            <div className="completion-stats">
+              <div className="stat-item">
+                <FileText size={16} />
+                <span>{wordCount} từ</span>
+              </div>
+              <div className="stat-item">
+                <Clock size={16} />
+                <span>{formatTime(timeSpent)}</span>
+              </div>
+              <div className="stat-item">
+                <Award size={16} />
+                <span>{calculateScore()} điểm</span>
+              </div>
+            </div>
+
+            <div className="completion-actions">
+              <button
+                className="back-to-profile-btn"
+                onClick={() => navigate('/learning-profile')}
+              >
+                <ArrowLeft size={16} />
+                Quay lại
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

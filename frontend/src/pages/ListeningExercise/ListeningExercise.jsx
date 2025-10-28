@@ -21,7 +21,8 @@ import {
   RefreshCw,
   SkipBack,
   SkipForward,
-  Headphones
+  Headphones,
+  X
 } from 'lucide-react';
 import './ListeningExercise.css';
 
@@ -34,6 +35,7 @@ const ListeningExercise = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [showCompletionMessage, setShowCompletionMessage] = useState(false);
   const [timeSpent, setTimeSpent] = useState(0);
   const [audioProgress, setAudioProgress] = useState(0);
   const [audioDuration, setAudioDuration] = useState(0);
@@ -260,6 +262,7 @@ const ListeningExercise = () => {
     setTimeout(() => {
       setShowResults(true);
       setIsCompleted(true);
+      setShowCompletionMessage(true);
     }, 2000);
   };
 
@@ -435,10 +438,7 @@ const ListeningExercise = () => {
           {listeningData.questions.map((question, index) => (
             <div key={question.id} className="question-card">
               <div className="question-header">
-                <div className="question-number">
-                  <span>{question.id}</span>
-                </div>
-                <h3 className="question-text">{question.question}</h3>
+                <h3 className="question-text">{question.id}. {question.question}</h3>
               </div>
 
               <div className="options-container">
@@ -580,9 +580,15 @@ const ListeningExercise = () => {
       </div>
 
       {/* Completion Message */}
-      {isCompleted && (
+      {showCompletionMessage && (
         <div className="completion-message">
           <div className="completion-content">
+            <button
+              className="close-completion-btn"
+              onClick={() => setShowCompletionMessage(false)}
+            >
+              <X size={24} />
+            </button>
             <Award size={32} />
             <h3>Chúc mừng!</h3>
             <p>Bạn đã hoàn thành bài Listening thành công.</p>

@@ -20,7 +20,8 @@ import {
   AlertCircle,
   ThumbsUp,
   ThumbsDown,
-  RefreshCw
+  RefreshCw,
+  X
 } from 'lucide-react';
 import './SpeakingExercise.css';
 
@@ -256,23 +257,8 @@ const SpeakingExercise = () => {
       setAudioUrl(null);
       setRecordingTime(0);
     } else {
-      // Exercise completed - save to localStorage and navigate
-      const score = calculateScore();
-      const completionData = {
-        lessonId,
-        score,
-        completedAt: new Date().toISOString(),
-        type: 'speaking'
-      };
-
-      // Save to localStorage
-      const key = `course_${courseId}_completed_lessons`;
-      const existing = JSON.parse(localStorage.getItem(key) || '{}');
-      existing[lessonId] = completionData;
-      localStorage.setItem(key, JSON.stringify(existing));
-
-      // Navigate to learning profile page
-      navigate('/learning-profile');
+      // Exercise completed - show completion message
+      setShowCompletionMessage(true);
     }
   };
 
@@ -326,7 +312,6 @@ const SpeakingExercise = () => {
         {/* Question Section */}
         <div className="question-section">
           <div className="question-header">
-            <h2 className="question-title">Questions {currentQuestion + 1} - {speakingData.totalQuestions}</h2>
             <div className="question-controls">
               <button
                 className="hint-btn"
@@ -344,9 +329,6 @@ const SpeakingExercise = () => {
             </div>
 
             <div className="question-prompt">
-              <div className="question-number">
-                <span>{currentQuestion + 1}</span>
-              </div>
               <p>{currentQuestionData.question}</p>
             </div>
 
@@ -541,7 +523,7 @@ const SpeakingExercise = () => {
           ) : (
           <button
             className="next-btn"
-            onClick={currentQuestion < speakingData.questions.length - 1 ? nextQuestion : handleComplete}
+            onClick={currentQuestion < speakingData.questions.length - 1 ? nextQuestion : () => setShowCompletionMessage(true)}
           >
             <RefreshCw size={16} />
             {currentQuestion < speakingData.questions.length - 1 ? 'Câu tiếp theo' : 'Hoàn thành'}
@@ -550,6 +532,44 @@ const SpeakingExercise = () => {
         </div>
       </div>
 
+      {/* Completion Message */}
+      {showCompletionMessage && (
+        <div className="completion-message">
+          <div className="completion-content">
+            <button
+              className="close-completion-btn"
+              onClick={() => setShowCompletionMessage(false)}
+            >
+              <X size={24} />
+            </button>
+            <Award size={32} />
+            <h3>Chúc mừng!</h3>
+            <p>Bạn đã hoàn thành bài Speaking thành công.</p>
+            <div className="completion-stats">
+              <div className="stat-item">
+                <BookOpen size={20} />
+                <span>{speakingData.totalQuestions} câu hỏi</span>
+              </div>
+              <div className="stat-item">
+                <Clock size={20} />
+                <span>{formatTime(timeSpent)}</span>
+              </div>
+              <div className="stat-item">
+                <Star size={20} />
+                <span>{calculateScore()}/100 điểm</span>
+              </div>
+            </div>
+            <div className="completion-actions">
+              <button
+                className="back-to-profile-btn"
+                onClick={() => navigate('/learning-profile')}
+              >
+                Quay lại
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

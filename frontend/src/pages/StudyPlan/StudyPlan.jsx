@@ -17,7 +17,7 @@ const studyPlanData = {
         date: 'Th 5, 24 Thg 4',
         fullDate: '2025-04-24',
         title: 'Mở đầu khóa Từ vựng',
-        category: 'Vocabulary',
+        category: 'Reading',
         status: 'completed',
         cupsEarned: 3,
         totalCups: 3,
@@ -29,7 +29,7 @@ const studyPlanData = {
         date: 'Th 6, 25 Thg 4',
         fullDate: '2025-04-25',
         title: 'Bài giới thiệu khóa Ngữ pháp',
-        category: 'Grammar',
+        category: 'Writing',
         status: 'in-progress',
         cupsEarned: 0,
         totalCups: 3,
@@ -41,7 +41,7 @@ const studyPlanData = {
         date: 'Th 5, 24 Thg 4',
         fullDate: '2025-04-24',
         title: 'Tổng quan phát âm',
-        category: 'Pronunciation',
+        category: 'Speaking',
         status: 'completed',
         cupsEarned: 3,
         totalCups: 3,
@@ -53,7 +53,7 @@ const studyPlanData = {
         date: 'Th 7, 26 Thg 4',
         fullDate: '2025-04-26',
         title: 'Thế giới tự nhiên',
-        category: 'Vocabulary',
+        category: 'Reading',
         status: 'completed',
         cupsEarned: 2,
         totalCups: 3,
@@ -65,7 +65,7 @@ const studyPlanData = {
         date: 'CN, 27 Thg 4',
         fullDate: '2025-04-27',
         title: 'Danh từ',
-        category: 'Grammar',
+        category: 'Writing',
         status: 'in-progress',
         cupsEarned: 0,
         totalCups: 3,
@@ -89,7 +89,7 @@ const studyPlanData = {
         date: 'Th 3, 29 Thg 4',
         fullDate: '2025-04-29',
         title: 'Các lời phát âm thường gặp',
-        category: 'Pronunciation',
+        category: 'Speaking',
         status: 'completed',
         cupsEarned: 2,
         totalCups: 3,
@@ -101,7 +101,7 @@ const studyPlanData = {
         date: 'Th 3, 29 Thg 4',
         fullDate: '2025-04-29',
         title: 'Bài kiểm tra 1 - Từ vựng',
-        category: 'Vocabulary',
+        category: 'Reading',
         status: 'completed',
         cupsEarned: 3,
         totalCups: 3,
@@ -113,7 +113,7 @@ const studyPlanData = {
         date: 'Th 4, 30 Thg 4',
         fullDate: '2025-04-30',
         title: 'Mind map 1',
-        category: 'Grammar',
+        category: 'Writing',
         status: 'in-progress',
         cupsEarned: 0,
         totalCups: 3,
@@ -130,7 +130,7 @@ const studyPlanData = {
         date: 'Th 5, 1 Thg 5',
         fullDate: '2025-05-01',
         title: 'Dị nghĩa chính chính tả',
-        category: 'Vocabulary',
+        category: 'Reading',
         status: 'not-started',
         cupsEarned: 0,
         totalCups: 3
@@ -141,7 +141,7 @@ const studyPlanData = {
         date: 'Th 6, 2 Thg 5',
         fullDate: '2025-05-02',
         title: 'Bài kiểm tra 1 - Phát âm',
-        category: 'Pronunciation',
+        category: 'Speaking',
         status: 'not-started',
         cupsEarned: 1,
         totalCups: 3
@@ -152,7 +152,7 @@ const studyPlanData = {
         date: 'Th 7, 3 Thg 5',
         fullDate: '2025-05-03',
         title: 'Hoạt động thực nghĩa',
-        category: 'Grammar',
+        category: 'Writing',
         status: 'completed',
         cupsEarned: 3,
         totalCups: 3,
@@ -170,6 +170,16 @@ const categoryStyles = {
   Reading: { bg: '#e0e7ff', border: '#c7d2fe', text: '#3730a3' },
   Writing: { bg: '#fed7aa', border: '#fdba74', text: '#7c2d12' },
   Speaking: { bg: '#e9d5ff', border: '#d8b4fe', text: '#6b21a8' }
+};
+
+const getCourseIdByCategory = (category) => {
+  const categoryToCourseId = {
+    Speaking: 10,
+    Reading: 11,
+    Writing: 12,
+    Listening: 13
+  };
+  return categoryToCourseId[category] || 10; // Default to 10 if category not found
 };
 
 const StudyPlan = () => {
@@ -292,8 +302,14 @@ const StudyPlan = () => {
                       <Award size={16} className="cup-icon" />
                       <span className="cups-text">{session.cupsEarned}/{session.totalCups}</span>
                     </div>
-                    <button className="session-action-btn">
-                      {session.cupsEarned === session.totalCups ? 'Xem lại' : 
+                    <button
+                      className="session-action-btn"
+                      onClick={() => {
+                        const courseId = getCourseIdByCategory(session.category);
+                        navigate(`/course/${courseId}`);
+                      }}
+                    >
+                      {session.cupsEarned === session.totalCups ? 'Xem lại' :
                        session.cupsEarned > 0 ? 'Tiếp tục' : 'Bắt đầu'}
                       <ChevronRight size={16} />
                     </button>
