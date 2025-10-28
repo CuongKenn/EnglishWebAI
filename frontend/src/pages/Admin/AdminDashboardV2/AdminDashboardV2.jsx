@@ -26,7 +26,7 @@ const AdminDashboardV2 = () => {
 
   const handleLogout = () => {
     authService.logout();
-    navigate('/login');
+    navigate('/');
   };
 
   return (

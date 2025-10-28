@@ -15,14 +15,17 @@ const HomeStudent = () => {
   const [typedText, setTypedText] = useState('');
   const [isTypingComplete, setIsTypingComplete] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userRole, setUserRole] = useState('user');
   const [showAuthModal, setShowAuthModal] = useState(false);
   const sectionRefs = useRef([]);
 
-  // Check if user is logged in
+  // Check if user is logged in and get role
   useEffect(() => {
     const checkLoginStatus = () => {
       const loggedIn = authService.isAuthenticated();
+      const user = authService.getCurrentUser();
       setIsLoggedIn(loggedIn);
+      setUserRole(user?.role || 'user');
     };
     checkLoginStatus();
     
@@ -203,6 +206,120 @@ const HomeStudent = () => {
     }
   };
 
+  // Get CTA content based on user role
+  const getCTAContent = () => {
+    if (!isLoggedIn) {
+      return {
+        title: 'Tham gia cùng hàng nghìn học viên thành công!',
+        description: 'Đăng ký miễn phí ngay hôm nay để trải nghiệm học tiếng Anh với AI'
+      };
+    }
+
+    switch (userRole) {
+      case 'admin':
+      case 'superadmin':
+        return {
+          title: 'Quản lý hệ thống hiệu quả!',
+          description: 'Truy cập dashboard để quản lý tài khoản, lớp học và theo dõi thống kê'
+        };
+      
+      case 'teacher':
+        return {
+          title: 'Bắt đầu giảng dạy hiệu quả hơn!',
+          description: 'Quản lý lớp học, tạo bài tập và theo dõi tiến độ học sinh của bạn'
+        };
+      
+      case 'parent':
+        return {
+          title: 'Theo dõi tiến độ con em của bạn!',
+          description: 'Xem kết quả học tập và giao tiếp với giáo viên một cách dễ dàng'
+        };
+      
+      default: // student/user
+        return {
+          title: 'Sẵn sàng bắt đầu hành trình của bạn?',
+          description: 'Khám phá các khóa học AI và bắt đầu học ngay hôm nay'
+        };
+    }
+  };
+
+  // Get CTA buttons based on user role
+  const getCTAButtons = () => {
+    if (!isLoggedIn) {
+      return {
+        primary: {
+          icon: 'fas fa-rocket',
+          text: 'Bắt đầu học miễn phí',
+          onClick: () => navigate('/register')
+        },
+        secondary: {
+          icon: 'fas fa-book-open',
+          text: 'Xem khóa học',
+          onClick: () => handleNavigate('/lessons')
+        }
+      };
+    }
+
+    switch (userRole) {
+      case 'admin':
+      case 'superadmin':
+        return {
+          primary: {
+            icon: 'fas fa-chart-line',
+            text: 'Dashboard Admin',
+            onClick: () => navigate('/admin-dashboard')
+          },
+          secondary: {
+            icon: 'fas fa-cog',
+            text: 'Quản lý hệ thống',
+            onClick: () => navigate('/admin-dashboard/settings')
+          }
+        };
+      
+      case 'teacher':
+        return {
+          primary: {
+            icon: 'fas fa-chalkboard-teacher',
+            text: 'Dashboard Giáo viên',
+            onClick: () => navigate('/teacher-dashboard')
+          },
+          secondary: {
+            icon: 'fas fa-users',
+            text: 'Quản lý lớp học',
+            onClick: () => navigate('/teacher-dashboard')
+          }
+        };
+      
+      case 'parent':
+        return {
+          primary: {
+            icon: 'fas fa-chart-bar',
+            text: 'Dashboard Phụ huynh',
+            onClick: () => navigate('/parent-dashboard')
+          },
+          secondary: {
+            icon: 'fas fa-child',
+            text: 'Theo dõi con em',
+            onClick: () => navigate('/parent-dashboard')
+          }
+        };
+      
+      default: // student/user
+        return {
+          primary: {
+            icon: 'fas fa-robot',
+            text: 'Bắt đầu luyện tập AI',
+            onClick: () => navigate('/ai-practice')
+          },
+          secondary: {
+            icon: 'fas fa-chalkboard-teacher',
+            text: 'Lớp học của tôi',
+            onClick: () => navigate('/my-classes')
+          }
+        };
+    }
+  };
+
   return (
     <div className="modern-home">
       <section className="hero-section-new">
@@ -276,29 +393,21 @@ const HomeStudent = () => {
 
             {/* CTA Buttons */}
             <div className="hero-cta-buttons">
-              {!isLoggedIn ? (
-                <>
-                  <button className="cta-btn cta-primary" onClick={() => navigate('/register')}>
-                    <i className="fas fa-rocket"></i>
-                    <span>Bắt đầu học miễn phí</span>
-                  </button>
-                  <button className="cta-btn cta-secondary" onClick={() => handleNavigate('/lessons')}>
-                    <i className="fas fa-book-open"></i>
-                    <span>Xem khóa học</span>
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button className="cta-btn cta-primary" onClick={() => navigate('/ai-practice')}>
-                    <i className="fas fa-robot"></i>
-                    <span>Bắt đầu luyện tập AI</span>
-                  </button>
-                  <button className="cta-btn cta-secondary" onClick={() => navigate('/my-classes')}>
-                    <i className="fas fa-chalkboard-teacher"></i>
-                    <span>Lớp học của tôi</span>
-                  </button>
-                </>
-              )}
+              {(() => {
+                const buttons = getCTAButtons();
+                return (
+                  <>
+                    <button className="cta-btn cta-primary" onClick={buttons.primary.onClick}>
+                      <i className={buttons.primary.icon}></i>
+                      <span>{buttons.primary.text}</span>
+                    </button>
+                    <button className="cta-btn cta-secondary" onClick={buttons.secondary.onClick}>
+                      <i className={buttons.secondary.icon}></i>
+                      <span>{buttons.secondary.text}</span>
+                    </button>
+                  </>
+                );
+              })()}
             </div>
           </div>
         </div>
@@ -466,37 +575,27 @@ const HomeStudent = () => {
             <i className="fas fa-rocket"></i>
           </div>
           <h2 className="cta-title">
-            {isLoggedIn ? 'Sẵn sàng bắt đầu hành trình của bạn?' : 'Tham gia cùng hàng nghìn học viên thành công!'}
+            {getCTAContent().title}
           </h2>
           <p className="cta-description">
-            {isLoggedIn 
-              ? 'Khám phá các khóa học AI và bắt đầu học ngay hôm nay' 
-              : 'Đăng ký miễn phí ngay hôm nay để trải nghiệm học tiếng Anh với AI'}
+            {getCTAContent().description}
           </p>
           <div className="cta-buttons">
-            {!isLoggedIn ? (
-              <>
-                <button className="cta-btn cta-btn-primary" onClick={() => navigate('/register')}>
-                  <i className="fas fa-user-plus"></i>
-                  <span>Đăng ký miễn phí</span>
-                </button>
-                <button className="cta-btn cta-btn-secondary" onClick={() => handleNavigate('/lessons')}>
-                  <i className="fas fa-book-open"></i>
-                  <span>Xem khóa học</span>
-                </button>
-              </>
-            ) : (
-              <>
-                <button className="cta-btn cta-btn-primary" onClick={() => navigate('/ai-practice')}>
-                  <i className="fas fa-robot"></i>
-                  <span>Bắt đầu luyện tập AI</span>
-                </button>
-                <button className="cta-btn cta-btn-secondary" onClick={() => navigate('/my-classes')}>
-                  <i className="fas fa-chalkboard-teacher"></i>
-                  <span>Lớp học của tôi</span>
-                </button>
-              </>
-            )}
+            {(() => {
+              const buttons = getCTAButtons();
+              return (
+                <>
+                  <button className="cta-btn cta-btn-primary" onClick={buttons.primary.onClick}>
+                    <i className={buttons.primary.icon}></i>
+                    <span>{buttons.primary.text}</span>
+                  </button>
+                  <button className="cta-btn cta-btn-secondary" onClick={buttons.secondary.onClick}>
+                    <i className={buttons.secondary.icon}></i>
+                    <span>{buttons.secondary.text}</span>
+                  </button>
+                </>
+              );
+            })()}
           </div>
         </div>
       </section>

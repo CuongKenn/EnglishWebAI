@@ -63,14 +63,14 @@ apiV1Client.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Chỉ redirect về login nếu KHÔNG phải đang ở trang login
+      // Chỉ redirect về home nếu KHÔNG phải đang ở trang login
       const isLoginPage = window.location.pathname === '/login';
       const isLoginRequest = error.config?.url?.includes('/login');
       
       if (!isLoginPage && !isLoginRequest) {
         localStorage.removeItem('access_token');
         localStorage.removeItem('user');
-        window.location.href = '/login';
+        window.location.href = '/';
       }
     }
     return Promise.reject(error);
@@ -100,16 +100,16 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Chỉ redirect về login nếu KHÔNG phải đang ở trang login
+      // Chỉ redirect về home nếu KHÔNG phải đang ở trang login
       // và KHÔNG phải request đến endpoint login
       const isLoginPage = window.location.pathname === '/login';
       const isLoginRequest = error.config?.url?.includes('/login');
       
       if (!isLoginPage && !isLoginRequest) {
-        // Token expired or invalid - redirect to login
+        // Token expired or invalid - redirect to home
         localStorage.removeItem('access_token');
         localStorage.removeItem('user');
-        window.location.href = '/login';
+        window.location.href = '/';
       }
     }
     return Promise.reject(error);
