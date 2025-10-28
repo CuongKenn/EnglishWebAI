@@ -39,7 +39,7 @@ export const studentService = {
 
   // Exercises & Submissions
   getExercises: async (params = {}) => {
-    const response = await apiV1.get('/exercises', { params });
+    const response = await apiV1.get('/exercises/', { params });
     return response.data;
   },
 
