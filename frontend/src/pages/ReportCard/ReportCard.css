@@ -2,6 +2,7 @@
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .report-card-header {
@@ -11,15 +12,18 @@
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-radius: 16px;
   color: white;
+  box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
 }
 
 .report-card-header svg {
   margin-bottom: 1rem;
+  opacity: 0.9;
 }
 
 .report-card-header h1 {
   font-size: 2.5rem;
   margin: 0 0 0.5rem 0;
+  font-weight: 700;
 }
 
 .report-card-header p {
@@ -29,29 +33,366 @@
 }
 
 .report-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Loading States */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
   background: white;
   border-radius: 16px;
-  padding: 3rem;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
-.coming-soon {
+.loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #f3f4f6;
+  border-top: 4px solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error-container {
   text-align: center;
   padding: 4rem 2rem;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  color: #ef4444;
 }
 
-.coming-soon h2 {
-  font-size: 2rem;
-  color: #667eea;
-  margin: 0 0 1rem 0;
+/* Section Headers */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
 }
 
-.coming-soon p {
-  font-size: 1.1rem;
-  color: #6c757d;
+.section-header h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1f2937;
   margin: 0;
 }
 
+.section-header svg {
+  color: #667eea;
+}
+
+/* Summary Section */
+.summary-section {
+  margin-bottom: 2rem;
+}
+
+.summary-card {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+}
+
+.main-summary {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 2px solid #e2e8f0;
+}
+
+.summary-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.summary-header h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+}
+
+.summary-header svg {
+  color: #667eea;
+}
+
+.summary-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.stat-item {
+  text-align: center;
+  padding: 1rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.trend-icon {
+  margin-right: 0.25rem;
+}
+
+.trend-icon.improving {
+  color: #10b981;
+}
+
+.trend-icon.declining {
+  color: #ef4444;
+}
+
+.trend-icon.stable {
+  color: #6b7280;
+}
+
+.trend-text.improving {
+  color: #10b981;
+}
+
+.trend-text.declining {
+  color: #ef4444;
+}
+
+.trend-text.stable {
+  color: #6b7280;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* Skills Section */
+.skills-section {
+  margin-bottom: 2rem;
+}
+
+.skills-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.skill-card {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.skill-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.skill-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.skill-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  position: relative;
+  z-index: 1;
+}
+
+.skill-icon svg {
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+.skill-info {
+  flex: 1;
+}
+
+.skill-info h4 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 0.25rem 0;
+}
+
+.skill-trend {
+  display: flex;
+  align-items: center;
+}
+
+.skill-stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.skill-score {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.skill-exercises {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.skill-progress-bar {
+  width: 100%;
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+/* Exercises Section */
+.exercises-section {
+  margin-bottom: 2rem;
+}
+
+.exercises-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.exercise-card {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.exercise-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.exercise-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.exercise-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
+  flex: 1;
+  margin-right: 1rem;
+}
+
+.exercise-skill {
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  background: rgba(59, 130, 246, 0.1);
+  white-space: nowrap;
+}
+
+.exercise-score {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.score-display {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.score-percentage {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.exercise-feedback {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  border-left: 4px solid #667eea;
+}
+
+.exercise-feedback svg {
+  color: #667eea;
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+.exercise-feedback p {
+  margin: 0;
+  color: #374151;
+  line-height: 1.5;
+}
+
+.exercise-dates {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.date-item {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.date-item span {
+  font-weight: 500;
+  color: #374151;
+}
+
+
+
+/* Responsive Design */
 @media (max-width: 768px) {
   .report-card-page {
     padding: 1rem;
@@ -61,8 +402,59 @@
     font-size: 2rem;
   }
 
-  .report-card-content {
-    padding: 2rem 1rem;
+  .summary-stats {
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
+
+  .skills-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .exercise-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .exercise-title {
+    margin-right: 0;
+  }
+
+  .exercise-score {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .exercise-dates {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+
 }
 
+@media (max-width: 480px) {
+  .report-card-header {
+    padding: 1.5rem;
+  }
+
+  .report-card-header h1 {
+    font-size: 1.75rem;
+  }
+
+  .summary-card {
+    padding: 1.5rem;
+  }
+
+  .skill-card {
+    padding: 1.25rem;
+  }
+
+  .exercise-card {
+    padding: 1.25rem;
+  }
+
+
+}

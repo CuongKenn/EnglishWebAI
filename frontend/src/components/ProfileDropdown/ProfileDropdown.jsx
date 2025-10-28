@@ -101,12 +101,15 @@ const ProfileDropdown = ({ onLogout }) => {
               <User size={18} />
               <span>Thông tin</span>
             </Link>
-            
-            <Link to="/report-card" className="dropdown-item" onClick={handleMenuClick}>
-              <BookOpen size={18} />
-              <span>Học bạ</span>
-            </Link>
-            
+
+            {/* Chỉ hiển thị nút Học bạ cho học sinh (role 'user' hoặc 'student') */}
+            {(user.role === 'user' || user.role === 'student') && (
+              <Link to="/report-card" className="dropdown-item" onClick={handleMenuClick}>
+                <BookOpen size={18} />
+                <span>Học bạ</span>
+              </Link>
+            )}
+
             <Link to="/invite-friends" className="dropdown-item" onClick={handleMenuClick}>
               <UserPlus size={18} />
               <span>Giới thiệu bạn bè</span>
