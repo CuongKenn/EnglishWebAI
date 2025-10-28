@@ -16,13 +16,39 @@ class GeminiService:
     def __init__(self):
         """Initialize Gemini with API key"""
         api_key = settings.GEMINI_API_KEY if hasattr(settings, 'GEMINI_API_KEY') else os.getenv('GEMINI_API_KEY')
-        if not api_key:
-            raise ValueError("GEMINI_API_KEY not found in settings or environment variables")
+        self.api_key = api_key
+        self.model = None
         
-        model_name = settings.GEMINI_MODEL if hasattr(settings, 'GEMINI_MODEL') else os.getenv('GEMINI_MODEL', 'gemini-1.5-flash')
+        if api_key and api_key.strip():
+            try:
+                model_name = settings.GEMINI_MODEL if hasattr(settings, 'GEMINI_MODEL') else os.getenv('GEMINI_MODEL', 'gemini-1.5-flash')
+                genai.configure(api_key=api_key)
+                self.model = genai.GenerativeModel(model_name)
+            except Exception as e:
+                print(f"Warning: Failed to initialize Gemini: {str(e)}")
+                self.model = None
+        else:
+            print("Warning: GEMINI_API_KEY not configured")
+    
+    def generate_content(self, prompt: str) -> str:
+        """
+        Generate content from a prompt using Gemini
         
-        genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel(model_name)
+        Args:
+            prompt: The prompt to send to Gemini
+            
+        Returns:
+            Generated text content
+        """
+        if not self.model:
+            raise ValueError("Gemini API is not configured. Please add GEMINI_API_KEY to your .env file. Get your free API key at: https://aistudio.google.com/app/apikey")
+        
+        try:
+            response = self.model.generate_content(prompt)
+            return response.text
+        except Exception as e:
+            print(f"Error generating content: {str(e)}")
+            raise
     
     async def chat_conversation(
         self, 
