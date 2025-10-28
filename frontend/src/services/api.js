@@ -1286,6 +1286,208 @@ export const aiUsageAPI = {
   },
 };
 
+// ===========================
+// Lesson Plans API
+// ===========================
+export const lessonPlansAPI = {
+  // Get all lesson plans
+  getAll: async (params = {}) => {
+    try {
+      const response = await apiClient.get('/api/v1/lesson-plans/', { params });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Get lesson plan by ID
+  getById: async (id) => {
+    try {
+      const response = await apiClient.get(`/api/v1/lesson-plans/${id}`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Create lesson plan manually
+  create: async (data) => {
+    try {
+      const response = await apiClient.post('/api/v1/lesson-plans/', data);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Generate lesson plan with AI
+  generateWithAI: async (data) => {
+    try {
+      const response = await apiClient.post('/api/v1/lesson-plans/generate', data);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Update lesson plan
+  update: async (id, data) => {
+    try {
+      const response = await apiClient.put(`/api/v1/lesson-plans/${id}`, data);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Delete lesson plan
+  delete: async (id) => {
+    try {
+      const response = await apiClient.delete(`/api/v1/lesson-plans/${id}`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Download lesson plan as Word
+  downloadWord: async (id) => {
+    try {
+      const response = await apiClient.get(`/api/v1/lesson-plans/${id}/export/word`, {
+        responseType: 'blob'
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Download lesson plan as PDF
+  downloadPDF: async (id) => {
+    try {
+      const response = await apiClient.get(`/api/v1/lesson-plans/${id}/export/pdf`, {
+        responseType: 'blob'
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+};
+
+// ===========================
+// Worksheets API
+// ===========================
+export const worksheetsAPI = {
+  // Get all worksheets
+  getAll: async (params = {}) => {
+    try {
+      const response = await apiClient.get('/api/v1/worksheets/', { params });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Get worksheet by ID
+  getById: async (id) => {
+    try {
+      const response = await apiClient.get(`/api/v1/worksheets/${id}`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Create worksheet manually
+  create: async (data) => {
+    try {
+      const response = await apiClient.post('/api/v1/worksheets/', data);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Generate worksheet with AI
+  generateWithAI: async (data) => {
+    try {
+      const response = await apiClient.post('/api/v1/worksheets/generate', data);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Update worksheet
+  update: async (id, data) => {
+    try {
+      const response = await apiClient.put(`/api/v1/worksheets/${id}`, data);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Delete worksheet
+  delete: async (id) => {
+    try {
+      const response = await apiClient.delete(`/api/v1/worksheets/${id}`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Download worksheet as Word
+  downloadWord: async (id) => {
+    try {
+      const response = await apiClient.get(`/api/v1/worksheets/${id}/export/word`, {
+        responseType: 'blob'
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Download Word error:', error);
+      // If error response is blob, try to parse it
+      if (error.response?.data instanceof Blob) {
+        try {
+          const text = await error.response.data.text();
+          const errorData = JSON.parse(text);
+          throw { response: { data: errorData } };
+        } catch (parseError) {
+          // If can't parse, throw original error
+          throw error;
+        }
+      }
+      throw error;
+    }
+  },
+
+  // Download worksheet as PDF
+  downloadPDF: async (id) => {
+    try {
+      const response = await apiClient.get(`/api/v1/worksheets/${id}/export/pdf`, {
+        responseType: 'blob'
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Download PDF error:', error);
+      // If error response is blob, try to parse it
+      if (error.response?.data instanceof Blob) {
+        try {
+          const text = await error.response.data.text();
+          const errorData = JSON.parse(text);
+          throw { response: { data: errorData } };
+        } catch (parseError) {
+          // If can't parse, throw original error
+          throw error;
+        }
+      }
+      throw error;
+    }
+  },
+};
+
 // Export default apiClient for custom requests
 export default apiClient;
 
