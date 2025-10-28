@@ -20,7 +20,7 @@ class AzureSpeechService:
         
         self.endpoint = f"https://{self.speech_region}.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1"
     
-    async def assess_pronunciation(self, audio_file_path: str, reference_text: str, language: str = "en-US") -> dict:
+    def assess_pronunciation(self, audio_file_path: str, reference_text: str, language: str = "en-US") -> dict:
         """
         Assess pronunciation using Azure Speech API
         

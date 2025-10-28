@@ -27,6 +27,8 @@ export default function DoExercise() {
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const objectUrlRef = useRef(new Set());
+  const generalFileInputRef = useRef(null);
+  const questionFileInputRefs = useRef({});
   // For comprehensive test speaking per-question
   const [activeSpeakingQ, setActiveSpeakingQ] = useState(null);
   const [speakingAnswers, setSpeakingAnswers] = useState({}); // qId -> { url, blob, mimeType }
@@ -362,13 +364,52 @@ export default function DoExercise() {
         objectUrlRef.current.delete(prev.url);
       }
       setSpeakingAnswers(prevState => ({ ...prevState, [questionId]: null }));
+      if (questionFileInputRefs.current[questionId]) {
+        questionFileInputRefs.current[questionId].value = '';
+      }
     } else {
       if (recordedAudio?.url) {
         URL.revokeObjectURL(recordedAudio.url);
         objectUrlRef.current.delete(recordedAudio.url);
       }
       setRecordedAudio(null);
+      setRecordingError(null);
+      if (generalFileInputRef.current) {
+        generalFileInputRef.current.value = '';
+      }
     }
+  };
+
+  const handleAudioFileSelect = (event, questionId = null) => {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+
+    setRecordingError(null);
+
+    const mimeType = file.type || 'audio/webm';
+    const audioUrl = URL.createObjectURL(file);
+    objectUrlRef.current.add(audioUrl);
+
+    if (questionId) {
+      const prev = speakingAnswers[questionId];
+      if (prev?.url) {
+        URL.revokeObjectURL(prev.url);
+        objectUrlRef.current.delete(prev.url);
+      }
+      setSpeakingAnswers(prevState => ({
+        ...prevState,
+        [questionId]: { url: audioUrl, blob: file, mimeType }
+      }));
+    } else {
+      if (recordedAudio?.url) {
+        URL.revokeObjectURL(recordedAudio.url);
+        objectUrlRef.current.delete(recordedAudio.url);
+      }
+      setRecordedAudio({ url: audioUrl, blob: file, mimeType });
+    }
+
+    // Reset input to allow same file selection again if needed
+    event.target.value = '';
   };
 
   // Writing functions
@@ -550,6 +591,16 @@ export default function DoExercise() {
                   {recordingError && (
                     <p className="recording-error-message">{recordingError}</p>
                   )}
+
+                  <div className="upload-fallback">
+                    <span>Hoặc tải file âm thanh:</span>
+                    <input
+                      type="file"
+                      accept="audio/*"
+                      ref={(el) => { questionFileInputRefs.current[q.id] = el; }}
+                      onChange={(e) => handleAudioFileSelect(e, q.id)}
+                    />
+                  </div>
                 </div>
               )}
 
@@ -720,6 +771,16 @@ export default function DoExercise() {
             {recordingError && (
               <p className="recording-error-message">{recordingError}</p>
             )}
+
+            <div className="upload-fallback">
+              <span>Không ghi âm được? Tải file âm thanh:</span>
+              <input
+                type="file"
+                accept="audio/*"
+                ref={generalFileInputRef}
+                onChange={(e) => handleAudioFileSelect(e)}
+              />
+            </div>
           </div>
 
           {exerciseContent.sample_answer && (

@@ -115,8 +115,7 @@ def _auto_grade_submission(submission: Submission, exercise: Exercise, db: Sessi
     if submission.content_url:
         print(f"[AUTO-GRADE] Speaking exercise detected for submission {submission.id}")
         # Import service
-        from app.services.azure_speech_service import azure_speech_service
-        import asyncio
+    from app.services.azure_speech_service import azure_speech_service
         
         # Get reference text from exercise content
         content = exercise.content
@@ -128,12 +127,7 @@ def _auto_grade_submission(submission: Submission, exercise: Exercise, db: Sessi
                 audio_path = submission.content_url.replace('/media/', './media/')
                 
                 # Assess pronunciation
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                assessment = loop.run_until_complete(
-                    azure_speech_service.assess_pronunciation(audio_path, reference_text)
-                )
-                loop.close()
+                assessment = azure_speech_service.assess_pronunciation(audio_path, reference_text)
                 
                 # Calculate score
                 score_result = azure_speech_service.calculate_speaking_score(
@@ -347,17 +341,11 @@ async def auto_grade_submission(
         if submission.content_url and (exercise.skill_type == 'speaking' or exercise.skill_type is None):
             # Speaking auto-grade
             from app.services.azure_speech_service import azure_speech_service
-            import asyncio
             content = exercise.content or {}
             reference_text = content.get('prompt', '')
             if reference_text and submission.content_url.startswith("/media/"):
                 audio_path = submission.content_url.replace('/media/', './media/')
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                assessment = loop.run_until_complete(
-                    azure_speech_service.assess_pronunciation(audio_path, reference_text)
-                )
-                loop.close()
+                assessment = azure_speech_service.assess_pronunciation(audio_path, reference_text)
                 score_result = azure_speech_service.calculate_speaking_score(
                     assessment,
                     float(exercise.max_score or 10)
