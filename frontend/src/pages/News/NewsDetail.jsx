@@ -1,12 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useNewsDetail } from '../../hooks';
+import ShareModal from '../../components/ShareModal/ShareModal';
 import './News.css';
 
 const NewsDetail = () => {
   const { newsId } = useParams();
   const navigate = useNavigate();
   const { newsItem, loading, error } = useNewsDetail(newsId);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareUrl, setShareUrl] = useState('');
 
   const getCategoryColor = (category) => {
     const colors = {
@@ -25,20 +28,13 @@ const NewsDetail = () => {
     try {
       if (navigator.share) {
         await navigator.share({ title: newsItem?.title, text: newsItem?.description, url: shareUrl });
-      } else if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(shareUrl);
-        alert('Đã sao chép liên kết bài viết');
       } else {
-        const ta = document.createElement('textarea');
-        ta.value = shareUrl;
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand('copy');
-        document.body.removeChild(ta);
-        alert('Đã sao chép liên kết bài viết');
+        setShareUrl(shareUrl);
+        setShowShareModal(true);
       }
     } catch (err) {
-      alert('Không thể chia sẻ. Hãy sao chép liên kết: ' + shareUrl);
+      setShareUrl(shareUrl);
+      setShowShareModal(true);
     }
   };
 
@@ -136,6 +132,14 @@ const NewsDetail = () => {
           </div>
         </main>
       </div>
+
+      {/* Share Modal */}
+      <ShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        shareUrl={shareUrl}
+        title="Chia sẻ bài viết"
+      />
     </div>
   );
 };

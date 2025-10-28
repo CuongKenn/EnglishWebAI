@@ -2,11 +2,14 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { newsAPI } from '../../services/api';
 import { useNews } from '../../hooks';
+import ShareModal from '../../components/ShareModal/ShareModal';
 import './News.css';
 
 const News = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedNews, setSelectedNews] = useState(null);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareUrl, setShareUrl] = useState('');
   const { news: newsData, loading, error } = useNews();
 
   const categories = ['all', 'Khuyến mãi', 'Học tập', 'Hướng dẫn', 'Sự kiện', 'Tính năng mới', 'Thông báo'];
@@ -67,20 +70,13 @@ const News = () => {
     try {
       if (navigator.share) {
         await navigator.share({ title: selectedNews.title, text: selectedNews.description, url: shareUrl });
-      } else if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(shareUrl);
-        alert('Đã sao chép liên kết bài viết');
       } else {
-        const ta = document.createElement('textarea');
-        ta.value = shareUrl;
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand('copy');
-        document.body.removeChild(ta);
-        alert('Đã sao chép liên kết bài viết');
+        setShareUrl(shareUrl);
+        setShowShareModal(true);
       }
     } catch (err) {
-      alert('Không thể chia sẻ. Hãy sao chép liên kết: ' + shareUrl);
+      setShareUrl(shareUrl);
+      setShowShareModal(true);
     }
   };
 
@@ -292,9 +288,9 @@ const News = () => {
         <div className="modal-overlay" onClick={handleCloseDetail}>
           <div className="modal-content-news-detail" onClick={(e) => e.stopPropagation()}>
             <button className="close-btn" onClick={handleCloseDetail}>×</button>
-            
+
             <div className="news-detail-header">
-              <span 
+              <span
                 className="news-detail-category"
                 style={{ backgroundColor: getCategoryColor(selectedNews.category) }}
               >
@@ -302,7 +298,7 @@ const News = () => {
               </span>
               <h1 className="news-detail-title">{selectedNews.title}</h1>
               <p className="news-detail-description">{selectedNews.description}</p>
-              
+
               <div className="news-detail-meta">
                 <div className="author-info-detail">
                   <div className="author-avatar-detail">
@@ -347,6 +343,14 @@ const News = () => {
           </div>
         </div>
       )}
+
+      {/* Share Modal */}
+      <ShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        shareUrl={shareUrl}
+        title="Chia sẻ bài viết"
+      />
     </div>
   );
 };
