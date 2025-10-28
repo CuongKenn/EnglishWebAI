@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
 
 // Tạo axios instance với config mặc định
 const aiApiClient = axios.create({
@@ -80,7 +80,7 @@ export const getListeningLesson = async (level) => {
     return response.data;
   } catch (error) {
     console.error('Error fetching listening lesson:', error);
-    return getMockListeningData(level);
+    throw error;
   }
 };
 
@@ -330,67 +330,6 @@ const getMockReadingData = (level) => {
   return passages[level] || passages.beginner;
 };
 
-const getMockListeningData = (level) => {
-  const lessons = {
-    beginner: {
-      id: 1,
-      title: "Ordering Food at a Restaurant",
-      level: "Beginner",
-      duration: "2:30",
-      audio_url: null,
-      transcript: "Waiter: Good evening! What would you like to order?\nCustomer: I'd like a pizza and a salad, please.\nWaiter: What kind of drink would you like?\nCustomer: A glass of water, please.",
-      questions: [
-        {
-          question: "What does the customer order?",
-          options: ["Burger and fries", "Pizza and salad", "Pasta and soup", "Sandwich and juice"],
-          correct: 1,
-        },
-      ],
-    },
-    intermediate: {
-      id: 2,
-      title: "Daily Conversation at a Coffee Shop",
-      level: "Intermediate",
-      duration: "3:45",
-      audio_url: null,
-      transcript: "Customer: Hi! I'd like a cappuccino and a croissant, please.\nBarista: Sure! Would you like that for here or to go?\nCustomer: For here, thank you.",
-      questions: [
-        {
-          question: "What does the customer order?",
-          options: [
-            "A cappuccino and a croissant",
-            "A latte and a muffin",
-            "An espresso and a sandwich",
-            "A tea and a cookie",
-          ],
-          correct: 0,
-        },
-      ],
-    },
-    advanced: {
-      id: 3,
-      title: "Business Meeting Discussion",
-      level: "Advanced",
-      duration: "5:00",
-      audio_url: null,
-      transcript: "Manager: Let's discuss our Q4 strategy. Sales have been declining.\nEmployee: I suggest we focus on digital marketing and customer retention.\nManager: Excellent idea. Let's allocate more budget to those areas.",
-      questions: [
-        {
-          question: "What is the main topic of discussion?",
-          options: [
-            "Hiring new employees",
-            "Q4 strategy and declining sales",
-            "Office relocation",
-            "Product development",
-          ],
-          correct: 1,
-        },
-      ],
-    },
-  };
-
-  return lessons[level] || lessons.beginner;
-};
 
 const getMockFlashcardData = (level) => {
   const flashcards = {

@@ -149,7 +149,7 @@ const NewsArticles = () => {
         <div className="loading-container">
           <div className="loading-spinner"></div>
           <p>Đang tải...</p>
-        </div>
+            </div>
       ) : (
         <div className="news-table-container">
           <table className="news-table">
@@ -171,11 +171,11 @@ const NewsArticles = () => {
                   <td>
                     <div className="news-title-cell">
                       <span className="news-icon-cell">{news.icon}</span>
-                      <div>
+            <div>
                         <div className="news-title-text">{news.title}</div>
                         <div className="news-desc-text">{news.description}</div>
-                      </div>
-                    </div>
+            </div>
+          </div>
                   </td>
                   <td>
                     <span className="category-badge">{news.category}</span>
@@ -201,7 +201,7 @@ const NewsArticles = () => {
                       >
                         🗑️
                       </button>
-                    </div>
+            </div>
                   </td>
                 </tr>
               ))}
@@ -215,7 +215,7 @@ const NewsArticles = () => {
               <p>Tạo tin tức đầu tiên để bắt đầu</p>
             </div>
           )}
-        </div>
+          </div>
       )}
 
       {/* Modal */}
@@ -238,8 +238,8 @@ const NewsArticles = () => {
                     required
                     placeholder="Nhập tiêu đề tin tức"
                   />
-                </div>
-              </div>
+            </div>
+          </div>
 
               <div className="form-row">
                 <div className="form-group">
@@ -250,8 +250,8 @@ const NewsArticles = () => {
                     rows={2}
                     placeholder="Mô tả ngắn gọn về tin tức"
                   />
-                </div>
-              </div>
+            </div>
+      </div>
 
               <div className="form-row">
                 <div className="form-group">
@@ -262,9 +262,9 @@ const NewsArticles = () => {
                     required
                     rows={6}
                     placeholder="Nội dung chi tiết của tin tức"
-                  />
+            />
+          </div>
                 </div>
-              </div>
 
               <div className="form-row">
                 <div className="form-group">
@@ -277,7 +277,7 @@ const NewsArticles = () => {
                       <option key={cat} value={cat}>{cat}</option>
                     ))}
                   </select>
-                </div>
+                  </div>
 
                 <div className="form-group">
                   <label>Loại</label>
@@ -291,8 +291,8 @@ const NewsArticles = () => {
                       </option>
                     ))}
                   </select>
+                  </div>
                 </div>
-              </div>
 
               <div className="form-row">
                 <div className="form-group">
@@ -308,7 +308,7 @@ const NewsArticles = () => {
                         {icon}
                       </button>
                     ))}
-                  </div>
+                </div>
                 </div>
               </div>
 
@@ -324,10 +324,10 @@ const NewsArticles = () => {
                   {formData.image && (
                     <div className="image-preview">
                       <img src={formData.image} alt="Preview" />
-                    </div>
-                  )}
                 </div>
-              </div>
+                  )}
+                  </div>
+                </div>
 
               <div className="form-row">
                 <div className="form-group">
@@ -350,10 +350,10 @@ const NewsArticles = () => {
                 <button type="submit" className="btn-primary">
                   {editingNews ? 'Cập nhật' : 'Tạo mới'}
                 </button>
-              </div>
+            </div>
             </form>
-          </div>
-        </div>
+              </div>
+            </div>
       )}
     </div>
   );

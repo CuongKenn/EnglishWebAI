@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "../ui/button";
 import { Card } from "../ui/card";
 import { Progress } from "../ui/progress";
@@ -17,6 +17,48 @@ export function ListeningAI() {
   const [speed, setSpeed] = useState([1]);
   const [selectedAnswers, setSelectedAnswers] = useState({});
   const [showAnswers, setShowAnswers] = useState(false);
+  
+  // Refs for text-to-speech
+  const speechSynthRef = useRef(null);
+  const utteranceRef = useRef(null);
+
+  // Initialize speech synthesis and cleanup
+  useEffect(() => {
+    if ('speechSynthesis' in window) {
+      speechSynthRef.current = window.speechSynthesis;
+      // Cancel any ongoing speech when component mounts
+      speechSynthRef.current.cancel();
+    }
+    
+    // Handle page reload/close - stop speech
+    const handleBeforeUnload = () => {
+      if (speechSynthRef.current) {
+        speechSynthRef.current.cancel();
+      }
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    // Cleanup when component unmounts or page reloads
+    return () => {
+      if (speechSynthRef.current) {
+        speechSynthRef.current.cancel();
+      }
+      setIsPlaying(false);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
+
+  // Stop speech when component unmounts or lesson changes
+  useEffect(() => {
+    return () => {
+      if (speechSynthRef.current) {
+        speechSynthRef.current.cancel();
+      }
+      setIsPlaying(false);
+      setProgress(0);
+    };
+  }, [lesson]);
 
   // Load lesson khi component mount hoặc level thay đổi
   useEffect(() => {
@@ -24,14 +66,20 @@ export function ListeningAI() {
   }, [selectedLevel]);
 
   const loadLesson = async (level) => {
+    // Stop any ongoing speech before loading new lesson
+    if (speechSynthRef.current) {
+      speechSynthRef.current.cancel();
+    }
+    
     setLoading(true);
+    setIsPlaying(false);
+    setProgress(0);
+    
     try {
       const data = await getListeningLesson(level);
       setLesson(data);
       setSelectedAnswers({});
       setShowAnswers(false);
-      setProgress(0);
-      setIsPlaying(false);
       aiUsageAPI.logUsage('listening', { action: 'generate', level });
     } catch (error) {
       console.error("Error loading lesson:", error);
@@ -41,10 +89,22 @@ export function ListeningAI() {
   };
 
   const handleLevelChange = (level) => {
+    // Stop speech when changing level
+    if (speechSynthRef.current) {
+      speechSynthRef.current.cancel();
+    }
+    setIsPlaying(false);
+    setProgress(0);
     setSelectedLevel(level);
   };
 
   const handleSubmit = async () => {
+    // Stop speech when submitting
+    if (speechSynthRef.current) {
+      speechSynthRef.current.cancel();
+    }
+    setIsPlaying(false);
+    
     setShowAnswers(true);
     
     // Gửi kết quả lên server
@@ -59,7 +119,184 @@ export function ListeningAI() {
   };
 
   const resetExercise = () => {
+    // Stop speech completely
+    if (speechSynthRef.current) {
+      speechSynthRef.current.cancel();
+    }
+    setIsPlaying(false);
+    setProgress(0);
+    setSelectedAnswers({});
+    setShowAnswers(false);
+    
+    // Load new lesson
     loadLesson(selectedLevel);
+  };
+
+  // Toggle play/pause with text-to-speech
+  const togglePlayPause = () => {
+    if (!lesson) return;
+
+    if (isPlaying) {
+      // Stop playing
+      if (speechSynthRef.current) {
+        speechSynthRef.current.cancel();
+      }
+      setIsPlaying(false);
+    } else {
+      // Start playing
+      startSpeech();
+    }
+  };
+
+  const startSpeech = () => {
+    if (lesson.transcript && speechSynthRef.current) {
+      // Get available voices
+      const voices = speechSynthRef.current.getVoices();
+      const englishVoices = voices.filter(voice => voice.lang.startsWith('en-'));
+      
+      // Try to get male and female voices
+      const femaleVoice = englishVoices.find(v => v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('woman') || v.name.toLowerCase().includes('zira') || v.name.toLowerCase().includes('samantha'));
+      const maleVoice = englishVoices.find(v => v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('man') || v.name.toLowerCase().includes('david') || v.name.toLowerCase().includes('daniel'));
+      
+      // Fallback voices
+      const voice1 = femaleVoice || englishVoices[0];
+      const voice2 = maleVoice || englishVoices[1] || englishVoices[0];
+      
+      // Check if transcript has dialogue format (Speaker: text)
+      const lines = lesson.transcript.split('\n').filter(line => line.trim());
+      const hasDialogue = lines.some(line => line.includes(':'));
+      
+      if (hasDialogue && lines.length > 1) {
+        // Dialogue mode - speak line by line with different voices
+        speakDialogue(lines, voice1, voice2);
+      } else {
+        // Monologue mode - speak as one piece
+        speakMonologue(lesson.transcript, voice1);
+      }
+    }
+  };
+
+  const speakDialogue = (lines, voice1, voice2) => {
+    let currentLineIndex = 0;
+    const totalLines = lines.length;
+    
+    // Map speakers to voices
+    const speakerVoices = {};
+    const speakers = [];
+    
+    // Identify unique speakers
+    lines.forEach(line => {
+      const colonIndex = line.indexOf(':');
+      if (colonIndex > 0) {
+        const speaker = line.substring(0, colonIndex).trim();
+        if (!speakers.includes(speaker)) {
+          speakers.push(speaker);
+        }
+      }
+    });
+    
+    // Assign voices to speakers (alternate between male and female)
+    speakers.forEach((speaker, index) => {
+      speakerVoices[speaker] = index % 2 === 0 ? voice1 : voice2;
+    });
+    
+    const speakNextLine = () => {
+      if (currentLineIndex >= totalLines) {
+        setIsPlaying(false);
+        setProgress(100);
+        return;
+      }
+      
+      const line = lines[currentLineIndex];
+      const colonIndex = line.indexOf(':');
+      
+      let textToSpeak = line;
+      let voice = voice1;
+      
+      if (colonIndex > 0) {
+        const speaker = line.substring(0, colonIndex).trim();
+        textToSpeak = line.substring(colonIndex + 1).trim();
+        voice = speakerVoices[speaker] || voice1;
+      }
+      
+      if (textToSpeak.trim()) {
+        const utterance = new SpeechSynthesisUtterance(textToSpeak);
+        utterance.lang = 'en-US';
+        utterance.rate = speed[0];
+        utterance.volume = 1;
+        utterance.voice = voice;
+        
+        utterance.onend = () => {
+          currentLineIndex++;
+          const progressPercent = (currentLineIndex / totalLines) * 100;
+          setProgress(progressPercent);
+          
+          // Continue to next line after a short pause
+          setTimeout(() => speakNextLine(), 300);
+        };
+        
+        utterance.onerror = (event) => {
+          console.error('Speech synthesis error:', event);
+          setIsPlaying(false);
+        };
+        
+        speechSynthRef.current.speak(utterance);
+      } else {
+        currentLineIndex++;
+        speakNextLine();
+      }
+    };
+    
+    setIsPlaying(true);
+    speakNextLine();
+  };
+
+  const speakMonologue = (text, voice) => {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US';
+    utterance.rate = speed[0];
+    utterance.volume = 1;
+    utterance.voice = voice;
+    
+    // Update progress during speech
+    let words = text.split(' ');
+    let currentWord = 0;
+    utterance.onboundary = (event) => {
+      if (event.name === 'word') {
+        currentWord++;
+        const progressPercent = (currentWord / words.length) * 100;
+        setProgress(progressPercent);
+      }
+    };
+    
+    utterance.onend = () => {
+      setIsPlaying(false);
+      setProgress(100);
+    };
+    
+    utterance.onerror = (event) => {
+      console.error('Speech synthesis error:', event);
+      setIsPlaying(false);
+    };
+    
+    utteranceRef.current = utterance;
+    speechSynthRef.current.speak(utterance);
+    setIsPlaying(true);
+  };
+  
+  // Handle speed change - restart speech with new speed
+  const handleSpeedChange = (newSpeed) => {
+    setSpeed(newSpeed);
+    
+    // If currently playing, restart with new speed
+    if (isPlaying && speechSynthRef.current) {
+      speechSynthRef.current.cancel();
+      setIsPlaying(false);
+      // Restart after a short delay
+      setTimeout(() => {
+        startSpeech();
+      }, 100);
+    }
   };
 
   if (loading) {
@@ -147,6 +384,20 @@ export function ListeningAI() {
         </div>
       </Card>
 
+      {/* Text-to-Speech Notice */}
+      <div className="rounded-lg border-2 border-blue-400 bg-blue-50 p-4">
+        <div className="flex items-center gap-3">
+          <Headphones className="h-5 w-5 text-blue-700" />
+          <div>
+            <p className="font-medium text-blue-900">🎭 Chế độ giọng đọc đa nhân vật</p>
+            <p className="text-sm text-blue-700">
+              Hệ thống tự động phát hiện hội thoại và sử dụng giọng nam/nữ khác nhau cho từng nhân vật.
+              Nhấn nút play để trải nghiệm!
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Audio Player */}
       <Card className="overflow-hidden bg-gradient-to-br from-green-50 to-emerald-50">
         <div className="bg-gradient-to-r from-green-600 to-emerald-600 p-6 text-white">
@@ -190,7 +441,7 @@ export function ListeningAI() {
             <Button
               size="icon"
               className="h-16 w-16 rounded-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
-              onClick={() => setIsPlaying(!isPlaying)}
+              onClick={togglePlayPause}
             >
               {isPlaying ? (
                 <Pause className="h-7 w-7" />
@@ -215,7 +466,7 @@ export function ListeningAI() {
             </div>
             <Slider
               value={speed}
-              onValueChange={setSpeed}
+              onValueChange={handleSpeedChange}
               min={0.5}
               max={2}
               step={0.25}
@@ -226,6 +477,9 @@ export function ListeningAI() {
               <span>1x</span>
               <span>1.5x</span>
               <span>2x</span>
+            </div>
+            <div className="mt-2 text-xs text-gray-500 italic">
+              {isPlaying ? "Đang điều chỉnh tốc độ..." : "Kéo thanh để thay đổi tốc độ"}
             </div>
           </div>
         </div>
@@ -275,6 +529,23 @@ export function ListeningAI() {
                   );
                 })}
               </div>
+              
+              {/* Explanation */}
+              {showAnswers && q.explanation && (
+                <div className="mt-4 rounded-lg border-l-4 border-blue-500 bg-blue-50 p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-blue-900 mb-1">Giải thích:</p>
+                      <p className="text-sm text-blue-800">{q.explanation}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -292,65 +563,59 @@ export function ListeningAI() {
         )}
 
         {showAnswers && (
-          <div className="mt-6 flex justify-center gap-3">
-            <Button
-              onClick={resetExercise}
-              className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
-            >
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Làm bài mới
-            </Button>
-            <Button
-              onClick={() => {
-                setSelectedAnswers({});
-                setShowAnswers(false);
-                setProgress(0);
-                setIsPlaying(false);
-              }}
-              variant="outline"
-            >
-              Làm lại bài này
-            </Button>
-          </div>
+          <>
+            {/* Results Summary */}
+            <div className="mt-6 rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 p-6 border-2 border-green-200">
+              <h4 className="text-lg font-bold text-gray-900 mb-4 text-center">📊 Kết quả của bạn</h4>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-green-600">
+                    {Object.keys(selectedAnswers).filter(qIndex => selectedAnswers[qIndex] === lesson.questions[qIndex].correct).length}
+                  </div>
+                  <div className="text-sm text-gray-600 mt-1">Câu đúng</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-red-600">
+                    {Object.keys(selectedAnswers).filter(qIndex => selectedAnswers[qIndex] !== lesson.questions[qIndex].correct).length}
+                  </div>
+                  <div className="text-sm text-gray-600 mt-1">Câu sai</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-blue-600">
+                    {Math.round((Object.keys(selectedAnswers).filter(qIndex => selectedAnswers[qIndex] === lesson.questions[qIndex].correct).length / lesson.questions.length) * 100)}%
+                  </div>
+                  <div className="text-sm text-gray-600 mt-1">Điểm số</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-center gap-3">
+              <Button
+                onClick={resetExercise}
+                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Làm bài mới
+              </Button>
+              <Button
+                onClick={() => {
+                  // Stop speech when redoing exercise
+                  if (speechSynthRef.current) {
+                    speechSynthRef.current.cancel();
+                  }
+                  setSelectedAnswers({});
+                  setShowAnswers(false);
+                  setProgress(0);
+                  setIsPlaying(false);
+                }}
+                variant="outline"
+              >
+                Làm lại bài này
+              </Button>
+            </div>
+          </>
         )}
       </Card>
-
-      {/* Transcript */}
-      {lesson.transcript && (
-        <Card className="overflow-hidden">
-          <div className="border-b border-gray-200 bg-gradient-to-r from-green-100 to-emerald-100 p-5">
-            <h3 className="font-bold text-gray-900">📄 Script (Bản ghi âm)</h3>
-            <p className="mt-1 text-sm text-gray-700">Nội dung đầy đủ của bài nghe</p>
-          </div>
-          <div className="p-6">
-            <div className="space-y-4 rounded-xl bg-gradient-to-br from-green-50 to-emerald-50 p-5 shadow-inner">
-              {lesson.transcript.split('\n').map((line, index) => {
-                const [speaker, ...textParts] = line.split(':');
-                const text = textParts.join(':').trim();
-                
-                if (!text) return null;
-                
-                const speakerColors = {
-                  'Customer': 'text-green-700 font-bold',
-                  'Barista': 'text-blue-700 font-bold',
-                  'Waiter': 'text-purple-700 font-bold',
-                  'Manager': 'text-orange-700 font-bold',
-                  'Employee': 'text-indigo-700 font-bold',
-                };
-                
-                const colorClass = speakerColors[speaker] || 'text-gray-900 font-bold';
-                
-                return (
-                  <div key={index} className="flex gap-3">
-                    <span className={colorClass}>{speaker}:</span>
-                    <p className="flex-1 text-gray-900">{text}</p>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </Card>
-      )}
     </div>
   );
 }

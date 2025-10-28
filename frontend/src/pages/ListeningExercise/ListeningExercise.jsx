@@ -24,6 +24,7 @@ import {
   Headphones,
   X
 } from 'lucide-react';
+import { getListeningLesson, submitListeningAnswers } from '../../services/aiService';
 import './ListeningExercise.css';
 
 const ListeningExercise = () => {
@@ -44,97 +45,70 @@ const ListeningExercise = () => {
   const [selectedAnswers, setSelectedAnswers] = useState({});
   const [notes, setNotes] = useState({});
   const [showHint, setShowHint] = useState(false);
+
+  const [listeningData, setListeningData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [results, setResults] = useState(null);
+  const [selectedLevel, setSelectedLevel] = useState('intermediate');
+
   const [notification, setNotification] = useState(null);
+
 
   // Refs
   const audioRef = useRef(null);
   const timerRef = useRef(null);
+  const speechSynthRef = useRef(null);
+  const utteranceRef = useRef(null);
 
-  // Mock data cho bài listening - sẽ được thay thế bằng API call
-  const listeningData = {
-    id: lessonId || '1',
-    title: 'Listening Unit 1',
-    courseTitle: 'Listening Học bài',
-    difficulty: 'Beginner',
-    estimatedTime: 15, // minutes
-    totalQuestions: 5,
-    audioUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav', // Mock audio URL
-    duration: 148, // seconds
-    questions: [
-      {
-        id: 1,
-        question: "When are the experimental areas closed to the public?",
-        options: [
-          "All the year round",
-          "Almost all the year",
-          "A short time every year"
-        ],
-        correctAnswer: 2,
-        explanation: "The experimental areas are closed for only a short time every year for maintenance."
-      },
-      {
-        id: 2,
-        question: "How can you move around the park?",
-        options: [
-          "By tram, walking or bicycle",
-          "By solar car or bicycle",
-          "By bicycle, walking or bus"
-        ],
-        correctAnswer: 0,
-        explanation: "Visitors can move around the park by tram, walking, or bicycle."
-      },
-      {
-        id: 3,
-        question: "The rare breed animals kept in the park include",
-        options: [
-          "Lions and tigers",
-          "Elephants and giraffes",
-          "Endangered species from local area"
-        ],
-        correctAnswer: 2,
-        explanation: "The park focuses on keeping rare breed animals that are endangered species from the local area."
-      },
-      {
-        id: 4,
-        question: "What is the main purpose of the visitor center?",
-        options: [
-          "To sell souvenirs",
-          "To provide information about the park",
-          "To house the animals"
-        ],
-        correctAnswer: 1,
-        explanation: "The visitor center's main purpose is to provide information about the park to visitors."
-      },
-      {
-        id: 5,
-        question: "How often are guided tours available?",
-        options: [
-          "Every hour",
-          "Twice daily",
-          "Only on weekends"
-        ],
-        correctAnswer: 0,
-        explanation: "Guided tours are available every hour for visitors."
+  // Load listening data from API
+  useEffect(() => {
+    const fetchListeningData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await getListeningLesson(selectedLevel);
+        // Transform API response to match expected format
+        const transformedData = {
+          id: data.id,
+          title: data.title,
+          courseTitle: 'AI Listening Exercise',
+          difficulty: data.level,
+          estimatedTime: parseInt(data.duration.split(':')[0]) || 5,
+          totalQuestions: data.questions.length,
+          audioUrl: data.audio_url,
+          duration: parseDuration(data.duration),
+          transcript: data.transcript,
+          questions: data.questions.map((q, idx) => ({
+            id: idx + 1,
+            question: q.question,
+            options: q.options,
+            correctAnswer: q.correct,
+            explanation: `Correct answer is ${String.fromCharCode(65 + q.correct)}.`
+          }))
+        };
+        setListeningData(transformedData);
+      } catch (err) {
+        console.error('Error loading listening exercise:', err);
+        let errorMessage = 'Không thể tải bài tập. Vui lòng thử lại sau.';
+        
+        // Check for specific error messages
+        if (err.response?.status === 503) {
+          errorMessage = 'AI service chưa được cấu hình. Vui lòng liên hệ quản trị viên để thêm GEMINI_API_KEY.';
+        } else if (err.response?.data?.detail) {
+          errorMessage = err.response.data.detail;
+        } else if (err.message === 'Network Error') {
+          errorMessage = 'Không thể kết nối với server. Vui lòng kiểm tra xem backend đang chạy.';
+        }
+        
+        setError(errorMessage);
+      } finally {
+        setLoading(false);
       }
-    ]
-  };
+    };
 
-  // Mock results data - sẽ được thay thế bằng API response
-  const mockResults = {
-    score: 80,
-    totalQuestions: listeningData.totalQuestions,
-    correctAnswers: 4,
-    incorrectAnswers: 1,
-    timeSpent: timeSpent,
-    detailedResults: listeningData.questions.map(q => ({
-      questionId: q.id,
-      question: q.question,
-      userAnswer: selectedAnswers[q.id],
-      correctAnswer: q.correctAnswer,
-      isCorrect: selectedAnswers[q.id] === q.correctAnswer,
-      explanation: q.explanation
-    }))
-  };
+    fetchListeningData();
+  }, [selectedLevel]);
 
   // Timer effect
   useEffect(() => {
@@ -144,6 +118,15 @@ const ListeningExercise = () => {
 
     return () => clearInterval(timer);
   }, []);
+
+  // Helper function to parse duration string to seconds
+  const parseDuration = (durationStr) => {
+    const parts = durationStr.split(':');
+    if (parts.length === 2) {
+      return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+    }
+    return 180; // default 3 minutes
+  };
 
   // Audio event handlers
   useEffect(() => {
@@ -180,47 +163,115 @@ const ListeningExercise = () => {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Audio controls
+  // Initialize speech synthesis
+  useEffect(() => {
+    if ('speechSynthesis' in window) {
+      speechSynthRef.current = window.speechSynthesis;
+    }
+    
+    return () => {
+      if (speechSynthRef.current) {
+        speechSynthRef.current.cancel();
+      }
+    };
+  }, []);
+
+  // Audio controls with Text-to-Speech fallback
   const togglePlayPause = () => {
-    if (audioRef.current) {
+    // Use audio element if audio URL exists
+    if (listeningData?.audioUrl && audioRef.current) {
       if (isPlaying) {
         audioRef.current.pause();
       } else {
         audioRef.current.play();
       }
       setIsPlaying(!isPlaying);
+    } 
+    // Use Web Speech API as fallback
+    else if (listeningData?.transcript && speechSynthRef.current) {
+      if (isPlaying) {
+        // Stop speaking
+        speechSynthRef.current.cancel();
+        setIsPlaying(false);
+      } else {
+        // Start speaking
+        const utterance = new SpeechSynthesisUtterance(listeningData.transcript);
+        utterance.lang = 'en-US';
+        utterance.rate = speed[0];
+        utterance.volume = isMuted ? 0 : volume;
+        
+        // Get English voice
+        const voices = speechSynthRef.current.getVoices();
+        const englishVoice = voices.find(voice => voice.lang.startsWith('en-'));
+        if (englishVoice) {
+          utterance.voice = englishVoice;
+        }
+        
+        // Update progress during speech
+        let words = listeningData.transcript.split(' ');
+        let currentWord = 0;
+        utterance.onboundary = (event) => {
+          if (event.name === 'word') {
+            currentWord++;
+            const progressPercent = (currentWord / words.length) * 100;
+            setAudioProgress((progressPercent / 100) * listeningData.duration);
+          }
+        };
+        
+        utterance.onend = () => {
+          setIsPlaying(false);
+          setAudioProgress(0);
+        };
+        
+        utterance.onerror = (event) => {
+          console.error('Speech synthesis error:', event);
+          setIsPlaying(false);
+        };
+        
+        utteranceRef.current = utterance;
+        speechSynthRef.current.speak(utterance);
+        setIsPlaying(true);
+      }
     }
   };
 
   const skipBackward = () => {
-    if (audioRef.current) {
+    if (audioRef.current && listeningData?.audioUrl) {
       audioRef.current.currentTime = Math.max(0, audioRef.current.currentTime - 10);
+    } else if (speechSynthRef.current && isPlaying) {
+      // Restart speech for skip backward
+      speechSynthRef.current.cancel();
+      setIsPlaying(false);
+      setTimeout(() => togglePlayPause(), 100);
     }
   };
 
   const skipForward = () => {
-    if (audioRef.current) {
+    if (audioRef.current && listeningData?.audioUrl) {
       audioRef.current.currentTime = Math.min(audioDuration, audioRef.current.currentTime + 10);
     }
+    // Skip forward not supported for speech synthesis
   };
 
   const handleVolumeChange = (e) => {
     const newVolume = parseFloat(e.target.value);
     setVolume(newVolume);
-    if (audioRef.current) {
+    if (audioRef.current && listeningData?.audioUrl) {
       audioRef.current.volume = newVolume;
     }
+    // Volume change during speech not supported, will apply on next play
   };
 
   const toggleMute = () => {
-    if (audioRef.current) {
+    setIsMuted(!isMuted);
+    if (audioRef.current && listeningData?.audioUrl) {
       if (isMuted) {
         audioRef.current.volume = volume;
       } else {
         audioRef.current.volume = 0;
       }
-      setIsMuted(!isMuted);
     }
+    // Mute change during speech not supported, will apply on next play
   };
 
   const handleProgressClick = (e) => {
@@ -248,7 +299,7 @@ const ListeningExercise = () => {
   };
 
   // Submit exercise
-  const submitExercise = () => {
+  const submitExercise = async () => {
     const answeredQuestions = Object.keys(selectedAnswers).length;
     if (answeredQuestions < listeningData.totalQuestions) {
       setNotification({
@@ -259,20 +310,47 @@ const ListeningExercise = () => {
       return;
     }
 
-    // TODO: API call to submit answers
-    console.log('Submitting answers:', selectedAnswers);
-    console.log('Notes:', notes);
+    try {
+      // Submit to API
+      await submitListeningAnswers(listeningData.id, selectedAnswers);
 
-    // Simulate API response
-    setTimeout(() => {
+      // Calculate results
+      let correctCount = 0;
+      const detailedResults = listeningData.questions.map(q => {
+        const isCorrect = selectedAnswers[q.id] === q.correctAnswer;
+        if (isCorrect) correctCount++;
+        return {
+          questionId: q.id,
+          question: q.question,
+          userAnswer: selectedAnswers[q.id],
+          correctAnswer: q.correctAnswer,
+          isCorrect: isCorrect,
+          explanation: q.explanation
+        };
+      });
+
+      const score = Math.round((correctCount / listeningData.totalQuestions) * 100);
+      
+      setResults({
+        score: score,
+        totalQuestions: listeningData.totalQuestions,
+        correctAnswers: correctCount,
+        incorrectAnswers: listeningData.totalQuestions - correctCount,
+        timeSpent: timeSpent,
+        detailedResults: detailedResults
+      });
+
       setShowResults(true);
       setIsCompleted(true);
       setShowCompletionMessage(true);
-    }, 2000);
+    } catch (error) {
+      console.error('Error submitting exercise:', error);
+      alert('Có lỗi khi nộp bài. Vui lòng thử lại.');
+    }
   };
 
   // Reset exercise
-  const resetExercise = () => {
+  const resetExercise = async () => {
     setCurrentQuestion(0);
     setIsPlaying(false);
     setIsCompleted(false);
@@ -281,10 +359,109 @@ const ListeningExercise = () => {
     setNotes({});
     setTimeSpent(0);
     setAudioProgress(0);
+    setResults(null);
+    
+    // Stop audio or speech
     if (audioRef.current) {
       audioRef.current.currentTime = 0;
     }
+    if (speechSynthRef.current) {
+      speechSynthRef.current.cancel();
+    }
+
+    // Load new exercise
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await getListeningLesson(selectedLevel);
+      const transformedData = {
+        id: data.id,
+        title: data.title,
+        courseTitle: 'AI Listening Exercise',
+        difficulty: data.level,
+        estimatedTime: parseInt(data.duration.split(':')[0]) || 5,
+        totalQuestions: data.questions.length,
+        audioUrl: data.audio_url,
+        duration: parseDuration(data.duration),
+        transcript: data.transcript,
+        questions: data.questions.map((q, idx) => ({
+          id: idx + 1,
+          question: q.question,
+          options: q.options,
+          correctAnswer: q.correct,
+          explanation: `Correct answer is ${String.fromCharCode(65 + q.correct)}.`
+        }))
+      };
+      setListeningData(transformedData);
+    } catch (err) {
+      console.error('Error loading new exercise:', err);
+      let errorMessage = 'Không thể tải bài tập mới. Vui lòng thử lại.';
+      
+      if (err.response?.status === 503) {
+        errorMessage = 'AI service chưa được cấu hình. Vui lòng liên hệ quản trị viên để thêm GEMINI_API_KEY.';
+      } else if (err.response?.data?.detail) {
+        errorMessage = err.response.data.detail;
+      } else if (err.message === 'Network Error') {
+        errorMessage = 'Không thể kết nối với server. Vui lòng kiểm tra xem backend đang chạy.';
+      }
+      
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="listening-exercise-page">
+        <div className="loading-container" style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '60vh',
+          flexDirection: 'column',
+          gap: '1rem'
+        }}>
+          <RefreshCw size={48} className="animate-spin" style={{ color: '#10b981' }} />
+          <p style={{ fontSize: '1.2rem', color: '#6b7280' }}>Đang sinh đề bài listening với AI...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error || !listeningData) {
+    return (
+      <div className="listening-exercise-page">
+        <div className="error-container" style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '60vh',
+          flexDirection: 'column',
+          gap: '1rem'
+        }}>
+          <AlertCircle size={48} style={{ color: '#ef4444' }} />
+          <p style={{ fontSize: '1.2rem', color: '#6b7280' }}>{error || 'Không thể tải bài tập.'}</p>
+          <button
+            onClick={() => window.location.reload()}
+            style={{
+              padding: '0.75rem 1.5rem',
+              backgroundColor: '#10b981',
+              color: 'white',
+              border: 'none',
+              borderRadius: '0.5rem',
+              cursor: 'pointer',
+              fontSize: '1rem'
+            }}
+          >
+            Thử lại
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const currentQuestionData = listeningData.questions[currentQuestion];
 
@@ -305,6 +482,57 @@ const ListeningExercise = () => {
         <div className="course-info">
           <h1 className="course-title">{listeningData.courseTitle}</h1>
           <p className="course-subtitle">{listeningData.title}</p>
+          <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.875rem', color: '#6b7280', fontWeight: '500' }}>Chọn cấp độ:</span>
+            <button
+              onClick={() => setSelectedLevel('beginner')}
+              disabled={loading}
+              style={{
+                padding: '0.25rem 0.75rem',
+                fontSize: '0.875rem',
+                borderRadius: '0.375rem',
+                border: selectedLevel === 'beginner' ? '2px solid #10b981' : '1px solid #d1d5db',
+                backgroundColor: selectedLevel === 'beginner' ? '#d1fae5' : 'white',
+                color: selectedLevel === 'beginner' ? '#065f46' : '#6b7280',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                fontWeight: selectedLevel === 'beginner' ? '600' : '400'
+              }}
+            >
+              Beginner
+            </button>
+            <button
+              onClick={() => setSelectedLevel('intermediate')}
+              disabled={loading}
+              style={{
+                padding: '0.25rem 0.75rem',
+                fontSize: '0.875rem',
+                borderRadius: '0.375rem',
+                border: selectedLevel === 'intermediate' ? '2px solid #10b981' : '1px solid #d1d5db',
+                backgroundColor: selectedLevel === 'intermediate' ? '#d1fae5' : 'white',
+                color: selectedLevel === 'intermediate' ? '#065f46' : '#6b7280',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                fontWeight: selectedLevel === 'intermediate' ? '600' : '400'
+              }}
+            >
+              Intermediate
+            </button>
+            <button
+              onClick={() => setSelectedLevel('advanced')}
+              disabled={loading}
+              style={{
+                padding: '0.25rem 0.75rem',
+                fontSize: '0.875rem',
+                borderRadius: '0.375rem',
+                border: selectedLevel === 'advanced' ? '2px solid #10b981' : '1px solid #d1d5db',
+                backgroundColor: selectedLevel === 'advanced' ? '#d1fae5' : 'white',
+                color: selectedLevel === 'advanced' ? '#065f46' : '#6b7280',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                fontWeight: selectedLevel === 'advanced' ? '600' : '400'
+              }}
+            >
+              Advanced
+            </button>
+          </div>
         </div>
 
         <div className="header-right">
@@ -369,6 +597,22 @@ const ListeningExercise = () => {
 
         {/* Audio Player */}
         <div className="audio-player-section">
+          {!listeningData.audioUrl && (
+            <div style={{
+              backgroundColor: '#fef3c7',
+              padding: '0.75rem',
+              borderRadius: '0.5rem',
+              marginBottom: '1rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}>
+              <Volume2 size={20} style={{ color: '#d97706' }} />
+              <span style={{ fontSize: '0.875rem', color: '#92400e' }}>
+                Đang sử dụng giọng đọc tự động của trình duyệt (Text-to-Speech)
+              </span>
+            </div>
+          )}
           <div className="audio-player">
             <div className="audio-controls">
               <button
@@ -484,12 +728,12 @@ const ListeningExercise = () => {
         </div>
 
         {/* Results Section */}
-        {showResults && (
+        {showResults && results && (
           <div className="results-section">
             <div className="results-header">
               <h3 className="results-title">Kết quả bài làm</h3>
               <div className="score-display">
-                <span className="score-number">{mockResults.score}</span>
+                <span className="score-number">{results.score}</span>
                 <span className="score-label">/100</span>
               </div>
             </div>
@@ -497,21 +741,21 @@ const ListeningExercise = () => {
             <div className="results-summary">
               <div className="summary-item correct">
                 <CheckCircle size={20} />
-                <span>{mockResults.correctAnswers} câu đúng</span>
+                <span>{results.correctAnswers} câu đúng</span>
               </div>
               <div className="summary-item incorrect">
                 <AlertCircle size={20} />
-                <span>{mockResults.incorrectAnswers} câu sai</span>
+                <span>{results.incorrectAnswers} câu sai</span>
               </div>
               <div className="summary-item time">
                 <Clock size={20} />
-                <span>{formatTime(mockResults.timeSpent)}</span>
+                <span>{formatTime(results.timeSpent)}</span>
               </div>
             </div>
 
             <div className="detailed-results">
               <h4>Chi tiết từng câu hỏi:</h4>
-              {mockResults.detailedResults.map((result, index) => (
+              {results.detailedResults.map((result, index) => (
                 <div key={index} className={`result-item ${result.isCorrect ? 'correct' : 'incorrect'}`}>
                   <div className="result-question">
                     <span className="result-number">{result.questionId}.</span>
@@ -563,7 +807,7 @@ const ListeningExercise = () => {
                 const completionData = {
                   lessonId: lessonId,
                   courseId: courseId,
-                  score: mockResults.score,
+                  score: results?.score || 0,
                   completedAt: new Date().toISOString(),
                   timeSpent: timeSpent,
                   type: 'listening'
@@ -585,7 +829,7 @@ const ListeningExercise = () => {
       </div>
 
       {/* Completion Message */}
-      {showCompletionMessage && (
+      {showCompletionMessage && results && (
         <div className="completion-message">
           <div className="completion-content">
             <button
@@ -608,7 +852,7 @@ const ListeningExercise = () => {
               </div>
               <div className="stat-item">
                 <Star size={20} />
-                <span>{mockResults.score}/100 điểm</span>
+                <span>{results.score}/100 điểm</span>
               </div>
             </div>
           </div>
