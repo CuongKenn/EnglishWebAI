@@ -780,6 +780,15 @@ export const questionBankAPI = {
     const response = await apiClient.delete(`/api/v1/question-bank/${id}`);
     return response.data;
   },
+  // Bulk delete items
+  bulkDelete: async (ids) => {
+    try {
+      const response = await apiClient.post('/api/v1/question-bank/bulk-delete', ids);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
   // Duplicate item
   duplicate: async (id) => {
     try {

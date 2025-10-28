@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { 
   Plus, Search, FileQuestion, Zap, TrendingUp, AlertTriangle,
   Edit, Copy, Trash2, Upload, Download, Sparkles, Database, X, 
@@ -8,19 +8,28 @@ import {
 import { Card } from '../../../../components/ui/card';
 import AddQuestionModal from './AddQuestionModal';
 import { questionBankAPI } from '../../../../services/api';
+import './QuestionBankV2.css';
 
 export default function QuestionBankV2() {
   const [questions, setQuestions] = useState([]);
   const [testSets, setTestSets] = useState([]);
   const [selectedTestSet, setSelectedTestSet] = useState(null);
+  const [selectedQuestions, setSelectedQuestions] = useState(new Set());
   
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState(null);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [showTestSetDetailModal, setShowTestSetDetailModal] = useState(false);
+  const [expandedQuestionId, setExpandedQuestionId] = useState(null);
   const [filterSkill, setFilterSkill] = useState('');
   const [filterType, setFilterType] = useState('');
   const [filterDifficulty, setFilterDifficulty] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Loading and animation states
+  const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [bulkActionMode, setBulkActionMode] = useState(false);
   
   // AI Generation states
   const [aiGenerationConfig, setAiGenerationConfig] = useState({
@@ -48,8 +57,9 @@ export default function QuestionBankV2() {
   
   const fileInputRef = useRef(null);
 
-  // Load questions from backend
+  // Load questions from backend with loading state
   const loadQuestions = async () => {
+    setIsLoadingQuestions(true);
     try {
       const res = await questionBankAPI.list();
       const items = res.items || [];
@@ -69,6 +79,9 @@ export default function QuestionBankV2() {
       })));
     } catch (e) {
       console.error('Failed to load questions', e);
+      alert('❌ Không thể tải danh sách câu hỏi');
+    } finally {
+      setIsLoadingQuestions(false);
     }
   };
 
@@ -86,42 +99,145 @@ export default function QuestionBankV2() {
     loadQuestions();
     loadTestSets();
   }, []);
+  
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Ctrl/Cmd + K: Focus search
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        document.querySelector('input[placeholder*="Tìm kiếm"]')?.focus();
+      }
+      // Ctrl/Cmd + N: Add new question
+      if ((e.ctrlKey || e.metaKey) && e.key === 'n' && !bulkActionMode) {
+        e.preventDefault();
+        setShowAddModal(true);
+      }
+      // Ctrl/Cmd + B: Toggle bulk mode
+      if ((e.ctrlKey || e.metaKey) && e.key === 'b' && questions.length > 0) {
+        e.preventDefault();
+        setBulkActionMode(!bulkActionMode);
+      }
+      // Escape: Cancel bulk mode or close modals
+      if (e.key === 'Escape') {
+        if (bulkActionMode) {
+          setBulkActionMode(false);
+          setSelectedQuestions(new Set());
+        } else if (showAddModal) {
+          setShowAddModal(false);
+        } else if (editingQuestion) {
+          setEditingQuestion(null);
+        }
+      }
+      // Ctrl/Cmd + A: Select all (when in bulk mode)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'a' && bulkActionMode) {
+        e.preventDefault();
+        selectAllQuestions();
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [bulkActionMode, questions, showAddModal, editingQuestion]);
 
-  // Filter logic
-  const filteredQuestions = questions.filter(q => {
-    const matchesSkill = !filterSkill || q.skill_type === filterSkill;
-    const matchesType = !filterType || q.question_type === filterType;
-    const matchesDifficulty = !filterDifficulty || q.difficulty === filterDifficulty;
-    const matchesSearch = !searchTerm || 
-      q.question_text.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (q.topic && q.topic.toLowerCase().includes(searchTerm.toLowerCase()));
-    return matchesSkill && matchesType && matchesDifficulty && matchesSearch;
-  });
+  // Memoized filter logic for better performance
+  const filteredQuestions = useMemo(() => {
+    return questions.filter(q => {
+      const matchesSkill = !filterSkill || q.skill_type === filterSkill;
+      const matchesType = !filterType || q.question_type === filterType;
+      const matchesDifficulty = !filterDifficulty || q.difficulty === filterDifficulty;
+      const matchesSearch = !searchTerm || 
+        q.question_text.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (q.topic && q.topic.toLowerCase().includes(searchTerm.toLowerCase()));
+      return matchesSkill && matchesType && matchesDifficulty && matchesSearch;
+    });
+  }, [questions, filterSkill, filterType, filterDifficulty, searchTerm]);
   
-  // Stats
-  const totalQuestions = questions.length;
-  const easyCount = questions.filter(q => q.difficulty === 'easy').length;
-  const mediumCount = questions.filter(q => q.difficulty === 'medium').length;
-  const hardCount = questions.filter(q => q.difficulty === 'hard').length;
+  // Memoized stats for better performance
+  const stats = useMemo(() => ({
+    total: questions.length,
+    easy: questions.filter(q => q.difficulty === 'easy').length,
+    medium: questions.filter(q => q.difficulty === 'medium').length,
+    hard: questions.filter(q => q.difficulty === 'hard').length,
+  }), [questions]);
   
-  const handleDeleteQuestion = async (id) => {
+  const totalQuestions = stats.total;
+  const easyCount = stats.easy;
+  const mediumCount = stats.medium;
+  const hardCount = stats.hard;
+  
+  const handleDeleteQuestion = useCallback(async (id) => {
     if (!confirm('Bạn có chắc muốn xóa câu hỏi này?')) return;
+    setIsDeleting(true);
     try {
       await questionBankAPI.remove(id);
       await loadQuestions();
+      alert('✅ Đã xóa câu hỏi');
     } catch (e) {
-      alert('Xóa thất bại');
+      console.error('Delete failed:', e);
+      alert('❌ Xóa thất bại');
+    } finally {
+      setIsDeleting(false);
+    }
+  }, []);
+  
+  // Bulk delete selected questions
+  const handleBulkDelete = async () => {
+    if (selectedQuestions.size === 0) {
+      alert('⚠️ Vui lòng chọn ít nhất 1 câu hỏi');
+      return;
+    }
+    
+    if (!confirm(`Bạn có chắc muốn xóa ${selectedQuestions.size} câu hỏi đã chọn?`)) return;
+    
+    setIsDeleting(true);
+    try {
+      const ids = Array.from(selectedQuestions);
+      await questionBankAPI.bulkDelete(ids);
+      setSelectedQuestions(new Set());
+      setBulkActionMode(false);
+      await loadQuestions();
+      alert(`✅ Đã xóa ${ids.length} câu hỏi`);
+    } catch (e) {
+      console.error('Bulk delete failed:', e);
+      alert('❌ Xóa hàng loạt thất bại');
+    } finally {
+      setIsDeleting(false);
     }
   };
   
-  const handleDuplicateQuestion = async (question) => {
+  // Toggle question selection
+  const toggleQuestionSelection = (id) => {
+    const newSelected = new Set(selectedQuestions);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedQuestions(newSelected);
+  };
+  
+  // Select all filtered questions
+  const selectAllQuestions = () => {
+    const allIds = filteredQuestions.map(q => q.id);
+    setSelectedQuestions(new Set(allIds));
+  };
+  
+  // Deselect all
+  const deselectAll = () => {
+    setSelectedQuestions(new Set());
+  };
+  
+  const handleDuplicateQuestion = useCallback(async (question) => {
     try {
       await questionBankAPI.duplicate(question.id);
       await loadQuestions();
+      alert('✅ Đã nhân bản câu hỏi');
     } catch (e) {
-      alert('Nhân bản thất bại');
+      console.error('Duplicate failed:', e);
+      alert('❌ Nhân bản thất bại');
     }
-  };
+  }, []);
 
   const handleAIGeneration = async () => {
     if (!validateConfig()) return;
@@ -197,38 +313,52 @@ export default function QuestionBankV2() {
     }
   };
 
-  const handleExportTest = () => {
+  const handleExportTest = async () => {
     if (!generatedTest) return;
-    const payload = {
-      name: generatedTest.name,
-      timeLimit: generatedTest.timeLimit,
-      totalPoints: generatedTest.totalPoints,
-      questions: generatedTest.questions.map(q => ({
-        question_text: q.question_text,
-        question_type: q.question_type,
-        skill_type: q.skill_type,
-        options: q.options || [],
-        correct_answer: q.correct_answer,
-        difficulty: q.difficulty,
-        topic: q.topic,
-        tags: q.tags || [],
-        points: q.points || 1,
-      }))
-    };
+    
+    try {
+      const payload = {
+        name: generatedTest.name,
+        timeLimit: generatedTest.timeLimit,
+        totalPoints: generatedTest.totalPoints,
+        questions: generatedTest.questions.map(q => ({
+          question_text: q.question_text,
+          question_type: q.question_type,
+          skill_type: q.skill_type,
+          options: q.options || [],
+          correct_answer: q.correct_answer,
+          difficulty: q.difficulty,
+          topic: q.topic,
+          tags: q.tags || [],
+          points: q.points || 1,
+          passage_text: q.passage_text || null,
+          transcript: q.transcript || null,
+        }))
+      };
 
-    questionBankAPI.exportDocx(payload).then((res) => {
+      console.log('[EXPORT] Sending payload:', payload);
+      
+      const res = await questionBankAPI.exportDocx(payload);
       const blob = res.data;
+      
+      if (!blob || blob.size === 0) {
+        throw new Error('Received empty file from server');
+      }
+      
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${generatedTest.name.replace(/[^a-zA-Z0-9]/g, '_')}.docx`;
+      a.download = `${generatedTest.name.replace(/[^a-zA-Z0-9\s]/g, '_')}.docx`;
       document.body.appendChild(a);
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
-    }).catch(() => {
-      alert('Xuất DOCX thất bại');
-    });
+      
+      alert('✅ Đã xuất file DOCX thành công');
+    } catch (error) {
+      console.error('[EXPORT] Error:', error);
+      alert(`❌ Xuất DOCX thất bại: ${error.response?.data?.detail || error.message || 'Unknown error'}`);
+    }
   };
 
   const handleCreateExercise = async () => {
@@ -398,33 +528,102 @@ export default function QuestionBankV2() {
     try {
       const detail = await questionBankAPI.getTestSetDetail(testSetId);
       setSelectedTestSet(detail);
-      // Convert to generatedTest format for preview
-      const mapped = (detail.questions || []).map((q, idx) => ({
-        id: `testset_${testSetId}_${idx}`,
-        question_text: q.question_text,
-        question_type: q.question_type,
-        options: q.options || [],
-        correct_answer: q.correct_answer,
-        skill_type: q.skill_type,
-        difficulty: q.difficulty || 'medium',
-        topic: q.topic,
-        tags: q.tags || [],
-        points: q.points || 1,
-        transcript: q.transcript,
-        passage_text: q.passage_text,
-      }));
-      setGeneratedTest({
-        name: detail.name,
-        questions: mapped,
-        timeLimit: detail.timeLimit,
-        totalPoints: detail.totalPoints,
-        skillDistribution: detail.skillDistribution,
-        createdAt: detail.createdAt,
-      });
+      setShowTestSetDetailModal(true);
+      setExpandedQuestionId(null); // Reset expanded question
     } catch (e) {
       console.error('Failed to load test set detail', e);
-      alert('Không thể tải bộ đề');
+      alert('❌ Không thể tải bộ đề');
     }
+  };
+  
+  const handleCloseTestSetDetail = () => {
+    setShowTestSetDetailModal(false);
+    setSelectedTestSet(null);
+    setExpandedQuestionId(null);
+  };
+  
+  const handleExportTestSet = async () => {
+    if (!selectedTestSet) return;
+    
+    try {
+      const payload = {
+        name: selectedTestSet.name,
+        timeLimit: selectedTestSet.timeLimit,
+        totalPoints: selectedTestSet.totalPoints,
+        questions: (selectedTestSet.questions || []).map(q => ({
+          question_text: q.question_text,
+          question_type: q.question_type,
+          skill_type: q.skill_type,
+          options: q.options || [],
+          correct_answer: q.correct_answer,
+          difficulty: q.difficulty,
+          topic: q.topic,
+          tags: q.tags || [],
+          points: q.points || 1,
+          passage_text: q.passage_text || null,
+          transcript: q.transcript || null,
+        }))
+      };
+
+      console.log('[EXPORT TEST SET] Sending payload:', payload);
+      
+      const res = await questionBankAPI.exportDocx(payload);
+      const blob = res.data;
+      
+      if (!blob || blob.size === 0) {
+        throw new Error('Received empty file from server');
+      }
+      
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${selectedTestSet.name.replace(/[^a-zA-Z0-9\s]/g, '_')}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      
+      alert('✅ Đã xuất file DOCX thành công');
+    } catch (error) {
+      console.error('[EXPORT TEST SET] Error:', error);
+      alert(`❌ Xuất DOCX thất bại: ${error.response?.data?.detail || error.message || 'Unknown error'}`);
+    }
+  };
+  
+  const handleUseTestSetAsTemplate = () => {
+    if (!selectedTestSet) return;
+    
+    // Convert to generatedTest format for preview
+    const mapped = (selectedTestSet.questions || []).map((q, idx) => ({
+      id: `testset_${selectedTestSet.id}_${idx}`,
+      question_text: q.question_text,
+      question_type: q.question_type,
+      options: q.options || [],
+      correct_answer: q.correct_answer,
+      skill_type: q.skill_type,
+      difficulty: q.difficulty || 'medium',
+      topic: q.topic,
+      tags: q.tags || [],
+      points: q.points || 1,
+      transcript: q.transcript,
+      passage_text: q.passage_text,
+    }));
+    
+    setGeneratedTest({
+      name: selectedTestSet.name,
+      questions: mapped,
+      timeLimit: selectedTestSet.timeLimit,
+      totalPoints: selectedTestSet.totalPoints,
+      skillDistribution: selectedTestSet.skillDistribution,
+      createdAt: selectedTestSet.createdAt,
+    });
+    
+    handleCloseTestSetDetail();
+    
+    // Scroll to preview section
+    setTimeout(() => {
+      document.querySelector('.ai-generation-section')?.scrollIntoView({ behavior: 'smooth' });
+    }, 300);
   };
 
   const handleDeleteTestSet = async (testSetId) => {
@@ -445,6 +644,17 @@ export default function QuestionBankV2() {
 
   return (
     <div className="p-8">
+      {/* Keyboard shortcuts hint */}
+      <div className="fixed bottom-4 right-4 bg-gray-800 text-white text-xs rounded-lg p-3 shadow-lg z-50 opacity-90 hover:opacity-100 transition-opacity">
+        <div className="font-semibold mb-1">⌨️ Shortcuts</div>
+        <div className="space-y-0.5">
+          <div><kbd className="px-1.5 py-0.5 bg-gray-700 rounded">Ctrl+K</kbd> Tìm kiếm</div>
+          <div><kbd className="px-1.5 py-0.5 bg-gray-700 rounded">Ctrl+N</kbd> Thêm mới</div>
+          <div><kbd className="px-1.5 py-0.5 bg-gray-700 rounded">Ctrl+B</kbd> Chọn nhiều</div>
+          <div><kbd className="px-1.5 py-0.5 bg-gray-700 rounded">Esc</kbd> Hủy</div>
+        </div>
+      </div>
+      
       {/* Header Section - Match Courses style */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
@@ -458,20 +668,64 @@ export default function QuestionBankV2() {
               <Upload size={18} />
               Import File
             </button>
-            <button 
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
-              onClick={() => setShowAddModal(true)}
-            >
-              <Plus size={18} />
-              Thêm câu hỏi
-            </button>
+            {!bulkActionMode ? (
+              <>
+                <button 
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2"
+                  onClick={() => setBulkActionMode(true)}
+                  disabled={questions.length === 0}
+                >
+                  <Filter size={18} />
+                  Chọn nhiều
+                </button>
+                <button 
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
+                  onClick={() => setShowAddModal(true)}
+                >
+                  <Plus size={18} />
+                  Thêm câu hỏi
+                </button>
+              </>
+            ) : (
+              <>
+                <button 
+                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2"
+                  onClick={() => {
+                    setBulkActionMode(false);
+                    setSelectedQuestions(new Set());
+                  }}
+                >
+                  <X size={18} />
+                  Hủy chọn
+                </button>
+                <button 
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  onClick={selectAllQuestions}
+                  disabled={filteredQuestions.length === 0}
+                >
+                  Chọn tất cả ({filteredQuestions.length})
+                </button>
+                <button 
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2 disabled:opacity-50"
+                  onClick={handleBulkDelete}
+                  disabled={selectedQuestions.size === 0 || isDeleting}
+                >
+                  {isDeleting ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                  ) : (
+                    <Trash2 size={18} />
+                  )}
+                  Xóa ({selectedQuestions.size})
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Stats Grid - Match Courses style */}
+      {/* Stats Grid - Match Courses style with animations */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <Card className="p-6">
+        <Card className="p-6 stats-card-animate card-hover-effect">
           <div className="flex items-start justify-between">
             <div>
               <p className="text-gray-600 text-sm mb-1">Tổng câu hỏi</p>
@@ -483,7 +737,7 @@ export default function QuestionBankV2() {
           </div>
         </Card>
         
-        <Card className="p-6">
+        <Card className="p-6 stats-card-animate card-hover-effect" style={{ animationDelay: '0.1s' }}>
           <div className="flex items-start justify-between">
             <div>
               <p className="text-gray-600 text-sm mb-1">Dễ</p>
@@ -495,7 +749,7 @@ export default function QuestionBankV2() {
           </div>
         </Card>
         
-        <Card className="p-6">
+        <Card className="p-6 stats-card-animate card-hover-effect" style={{ animationDelay: '0.2s' }}>
           <div className="flex items-start justify-between">
             <div>
               <p className="text-gray-600 text-sm mb-1">Trung bình</p>
@@ -507,7 +761,7 @@ export default function QuestionBankV2() {
           </div>
         </Card>
         
-        <Card className="p-6">
+        <Card className="p-6 stats-card-animate card-hover-effect" style={{ animationDelay: '0.3s' }}>
           <div className="flex items-start justify-between">
             <div>
               <p className="text-gray-600 text-sm mb-1">Khó</p>
@@ -577,14 +831,39 @@ export default function QuestionBankV2() {
 
       {/* Questions Grid - Match Courses style */}
       <div className="mb-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Danh sách câu hỏi</h2>
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">
+          Danh sách câu hỏi
+          {isLoadingQuestions && (
+            <span className="ml-2 text-sm text-gray-500 inline-flex items-center gap-1">
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-purple-600 border-t-transparent"></div>
+              Đang tải...
+            </span>
+          )}
+        </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredQuestions.map((question) => {
+          {filteredQuestions.map((question, index) => {
             const SkillIcon = getSkillIcon(question.skill_type);
+            const isSelected = selectedQuestions.has(question.id);
             return (
-              <Card key={question.id} className="p-6 hover:shadow-lg transition-shadow">
+              <Card 
+                key={question.id} 
+                className={`p-6 question-grid-item card-hover-effect bulk-mode-transition ${
+                  isSelected ? 'ring-2 ring-purple-600 shadow-lg selected-card-pulse' : ''
+                } ${bulkActionMode ? 'cursor-pointer' : ''}`}
+                style={{ animationDelay: `${Math.min(index * 0.05, 0.3)}s` }}
+                onClick={() => bulkActionMode && toggleQuestionSelection(question.id)}
+              >
                 <div className="flex items-start justify-between mb-4">
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 items-center">
+                    {bulkActionMode && (
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleQuestionSelection(question.id)}
+                        className="w-5 h-5 text-purple-600 rounded focus:ring-purple-500"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    )}
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(question.difficulty)}`}>
                       {question.difficulty.toUpperCase()}
                     </span>
@@ -592,29 +871,41 @@ export default function QuestionBankV2() {
                       {question.skill_type.toUpperCase()}
                     </span>
                   </div>
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => setEditingQuestion(question)}
-                      className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
-                      title="Chỉnh sửa"
-                    >
-                      <Edit size={16} />
-                    </button>
-                    <button
-                      onClick={() => handleDuplicateQuestion(question)}
-                      className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
-                      title="Sao chép"
-                    >
-                      <Copy size={16} />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteQuestion(question.id)}
-                      className="p-1 text-gray-400 hover:text-red-600 transition-colors"
-                      title="Xóa"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
+                  {!bulkActionMode && (
+                    <div className="flex gap-1">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingQuestion(question);
+                        }}
+                        className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
+                        title="Chỉnh sửa"
+                      >
+                        <Edit size={16} />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDuplicateQuestion(question);
+                        }}
+                        className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                        title="Sao chép"
+                      >
+                        <Copy size={16} />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteQuestion(question.id);
+                        }}
+                        className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                        title="Xóa"
+                        disabled={isDeleting}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  )}
                 </div>
                 
                 <div className="mb-4">
@@ -825,7 +1116,7 @@ export default function QuestionBankV2() {
       </div>
 
       {/* AI Test Generation Section */}
-      <div className="mt-12">
+      <div className="mt-12 ai-generation-section">
         <div className="flex items-center gap-3 mb-6">
           <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-2 rounded-lg">
             <Bot className="w-6 h-6 text-white" />
@@ -1330,6 +1621,234 @@ export default function QuestionBankV2() {
             }
           }}
         />
+      )}
+      
+      {/* Test Set Detail Modal */}
+      {showTestSetDetailModal && selectedTestSet && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={handleCloseTestSetDetail}>
+          <div className="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-blue-50 to-purple-50">
+              <div className="flex-1">
+                <h2 className="text-2xl font-bold text-gray-900 mb-1">{selectedTestSet.name}</h2>
+                <div className="flex items-center gap-4 text-sm text-gray-600">
+                  <div className="flex items-center gap-1">
+                    <FileQuestion className="w-4 h-4" />
+                    <span>{selectedTestSet.questions?.length || 0} câu hỏi</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Clock className="w-4 h-4" />
+                    <span>{selectedTestSet.timeLimit} phút</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Target className="w-4 h-4" />
+                    <span>{selectedTestSet.totalPoints} điểm</span>
+                  </div>
+                  {selectedTestSet.createdAt && (
+                    <span className="text-xs text-gray-500">
+                      {new Date(selectedTestSet.createdAt).toLocaleDateString('vi-VN')}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={handleCloseTestSetDetail}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-6 h-6 text-gray-600" />
+              </button>
+            </div>
+
+            {/* Skill Distribution */}
+            {selectedTestSet.skillDistribution && Object.keys(selectedTestSet.skillDistribution).length > 0 && (
+              <div className="px-6 py-3 bg-gray-50 border-b border-gray-200">
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="font-medium text-gray-700">Phân bố kỹ năng:</span>
+                  <div className="flex gap-2 flex-wrap">
+                    {Object.entries(selectedTestSet.skillDistribution).map(([skill, percentage]) => (
+                      percentage > 0 && (
+                        <span key={skill} className={`px-2 py-1 rounded text-xs font-medium ${getSkillColor(skill)}`}>
+                          {skill === 'listening' ? '🎧 Nghe' : 
+                           skill === 'speaking' ? '🗣️ Nói' :
+                           skill === 'reading' ? '📖 Đọc' : '✍️ Viết'}: {percentage}%
+                        </span>
+                      )
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Questions List */}
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="space-y-4">
+                {(selectedTestSet.questions || []).map((question, index) => {
+                  const isExpanded = expandedQuestionId === index;
+                  const SkillIcon = getSkillIcon(question.skill_type);
+                  
+                  return (
+                    <div
+                      key={index}
+                      className="border border-gray-200 rounded-lg hover:shadow-md transition-all"
+                    >
+                      {/* Question Header - Always Visible */}
+                      <div
+                        className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                        onClick={() => setExpandedQuestionId(isExpanded ? null : index)}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="bg-purple-100 text-purple-800 text-sm font-semibold px-3 py-1 rounded">
+                                Câu {index + 1}
+                              </span>
+                              <span className={`px-2 py-1 rounded text-xs font-medium ${getDifficultyColor(question.difficulty)}`}>
+                                {question.difficulty?.toUpperCase()}
+                              </span>
+                              <span className={`px-2 py-1 rounded text-xs font-medium ${getSkillColor(question.skill_type)}`}>
+                                {question.skill_type?.toUpperCase()}
+                              </span>
+                              <span className="text-xs text-gray-500">{question.points} điểm</span>
+                            </div>
+                            <p className="text-gray-900 font-medium line-clamp-2">
+                              {question.question_text}
+                            </p>
+                            {question.topic && (
+                              <p className="text-sm text-gray-500 mt-1">Chủ đề: {question.topic}</p>
+                            )}
+                          </div>
+                          <ChevronDown 
+                            className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'transform rotate-180' : ''}`}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Question Details - Expandable */}
+                      {isExpanded && (
+                        <div className="px-4 pb-4 border-t border-gray-100 space-y-3 animate-fadeIn">
+                          {/* Reading Passage */}
+                          {question.skill_type === 'reading' && question.passage_text && (
+                            <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                              <div className="flex items-center gap-2 mb-2">
+                                <BookOpen className="w-4 h-4 text-green-700" />
+                                <span className="font-medium text-green-900 text-sm">Đoạn văn đọc:</span>
+                              </div>
+                              <p className="text-sm text-gray-700 whitespace-pre-wrap">{question.passage_text}</p>
+                            </div>
+                          )}
+
+                          {/* Listening Transcript */}
+                          {question.skill_type === 'listening' && question.transcript && (
+                            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Headphones className="w-4 h-4 text-blue-700" />
+                                <span className="font-medium text-blue-900 text-sm">Transcript:</span>
+                              </div>
+                              <p className="text-sm text-gray-700 whitespace-pre-wrap">{question.transcript}</p>
+                            </div>
+                          )}
+
+                          {/* Multiple Choice Options */}
+                          {question.question_type === 'multiple_choice' && question.options && (
+                            <div>
+                              <p className="font-medium text-gray-700 text-sm mb-2">Các đáp án:</p>
+                              <div className="space-y-2">
+                                {question.options.map((option, optIdx) => {
+                                  const isCorrect = question.correct_answer == optIdx || 
+                                                   option.startsWith(question.correct_answer + '.');
+                                  return (
+                                    <div
+                                      key={optIdx}
+                                      className={`p-3 rounded-lg text-sm ${
+                                        isCorrect
+                                          ? 'bg-green-100 border-2 border-green-500 text-green-900 font-medium'
+                                          : 'bg-gray-50 border border-gray-200 text-gray-700'
+                                      }`}
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        {isCorrect && <Check className="w-4 h-4 text-green-600" />}
+                                        <span>{option}</span>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Short Answer / Fill Blank */}
+                          {(question.question_type === 'short_answer' || question.question_type === 'fill_blank') && question.correct_answer && (
+                            <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+                              <span className="font-medium text-green-900 text-sm">Đáp án đúng: </span>
+                              <span className="text-green-800 font-semibold">{question.correct_answer}</span>
+                            </div>
+                          )}
+
+                          {/* Tags */}
+                          {question.tags && question.tags.length > 0 && (
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-xs text-gray-500">Tags:</span>
+                              {question.tags.map((tag, tagIdx) => (
+                                <span key={tagIdx} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
+                                  #{tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {(!selectedTestSet.questions || selectedTestSet.questions.length === 0) && (
+                <div className="text-center py-12">
+                  <FileQuestion className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500">Bộ đề này không có câu hỏi nào</p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer Actions */}
+            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
+              <button
+                onClick={handleCloseTestSetDetail}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                Đóng
+              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleUseTestSetAsTemplate}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
+                >
+                  <Play className="w-4 h-4" />
+                  Sử dụng làm mẫu
+                </button>
+                <button
+                  onClick={handleExportTestSet}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  Xuất DOCX
+                </button>
+                <button
+                  onClick={async () => {
+                    if (confirm('Bạn có chắc muốn xóa bộ đề này?')) {
+                      await handleDeleteTestSet(selectedTestSet.id);
+                      handleCloseTestSetDetail();
+                    }
+                  }}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Xóa bộ đề
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
       
       {/* Edit Modal */}
