@@ -99,17 +99,47 @@ export default function ExerciseManagementV2() {
     setShowDetailModal(true);
   };
 
-  const handleUpdateExercise = (updatedExercise) => {
-    setExercises(exercises.map(ex => 
-      ex.id === updatedExercise.id ? updatedExercise : ex
-    ));
-    setShowDetailModal(false);
+  const handleUpdateExercise = async (updatedExercise) => {
+    try {
+      // Call API to update exercise
+      await apiV1.put(`/exercises/${updatedExercise.id}`, {
+        title: updatedExercise.title,
+        description: updatedExercise.description || '',
+        max_score: updatedExercise.maxScore || 10,
+        due_at: updatedExercise.dueDate || null,
+        type: updatedExercise.type,
+        skill_type: updatedExercise.skill,
+        content: updatedExercise.content || {}
+      });
+      
+      // Update local state
+      setExercises(exercises.map(ex => 
+        ex.id === updatedExercise.id ? updatedExercise : ex
+      ));
+      
+      alert('✅ Cập nhật bài tập thành công!');
+      setShowDetailModal(false);
+    } catch (error) {
+      console.error('Error updating exercise:', error);
+      alert(`❌ Không thể cập nhật: ${error.response?.data?.detail || error.message}`);
+    }
   };
 
-  const handleDeleteExercise = (exerciseId) => {
-    if (confirm('Bạn có chắc muốn xóa bài tập này?')) {
-      setExercises(exercises.filter(ex => ex.id !== exerciseId));
-      setShowDetailModal(false);
+  const handleDeleteExercise = async (exerciseId) => {
+    if (confirm('⚠️ Bạn có chắc muốn xóa bài tập này?\n\nLưu ý: Tất cả bài nộp của học sinh cũng sẽ bị xóa!')) {
+      try {
+        // Call API to delete exercise
+        await apiV1.delete(`/exercises/${exerciseId}`);
+        
+        // Update local state
+        setExercises(exercises.filter(ex => ex.id !== exerciseId));
+        
+        alert('✅ Đã xóa bài tập thành công!');
+        setShowDetailModal(false);
+      } catch (error) {
+        console.error('Error deleting exercise:', error);
+        alert(`❌ Không thể xóa: ${error.response?.data?.detail || error.message}`);
+      }
     }
   };
 

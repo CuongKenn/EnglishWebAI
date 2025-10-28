@@ -44,8 +44,33 @@ export default function ExerciseDetailModal({ exercise, onClose, onUpdate, onDel
   };
   
   const handleSaveEdit = () => {
+    // Validate before saving
+    if (!editedExercise.title || !editedExercise.title.trim()) {
+      alert('⚠️ Vui lòng nhập tiêu đề bài tập!');
+      return;
+    }
+    
+    if (!editedExercise.maxScore || editedExercise.maxScore < 1) {
+      alert('⚠️ Điểm tối đa phải lớn hơn 0!');
+      return;
+    }
+    
+    // Call parent's update handler
     onUpdate(editedExercise);
     setIsEditMode(false);
+  };
+  
+  const handleCancelEdit = () => {
+    // Reset to original values
+    setEditedExercise({ ...exercise });
+    setIsEditMode(false);
+  };
+  
+  const handleFieldChange = (field, value) => {
+    setEditedExercise({
+      ...editedExercise,
+      [field]: value
+    });
   };
   
   return (
@@ -54,7 +79,18 @@ export default function ExerciseDetailModal({ exercise, onClose, onUpdate, onDel
         {/* Header */}
         <div className="modal-header-detail-ex">
           <div className="header-left">
-            <h2>{exercise.title}</h2>
+            {isEditMode ? (
+              <input
+                type="text"
+                className="form-input-ex"
+                style={{ fontSize: '20px', fontWeight: '600', marginBottom: '8px' }}
+                value={editedExercise.title}
+                onChange={(e) => handleFieldChange('title', e.target.value)}
+                placeholder="Nhập tiêu đề bài tập..."
+              />
+            ) : (
+              <h2>{exercise.title}</h2>
+            )}
             <div className="exercise-meta-badges">
               <span className={`type-badge-detail ${exercise.type}`}>
                 {getTypeLabel(exercise.type)}
@@ -87,11 +123,32 @@ export default function ExerciseDetailModal({ exercise, onClose, onUpdate, onDel
             <div className="info-grid">
               <div className="info-item">
                 <span className="info-label">Hạn nộp:</span>
-                <span className="info-value">{new Date(exercise.dueDate).toLocaleString('vi-VN')}</span>
+                {isEditMode ? (
+                  <input
+                    type="datetime-local"
+                    className="form-input-ex"
+                    style={{ width: '100%' }}
+                    value={editedExercise.dueDate ? new Date(editedExercise.dueDate).toISOString().slice(0, 16) : ''}
+                    onChange={(e) => handleFieldChange('dueDate', e.target.value)}
+                  />
+                ) : (
+                  <span className="info-value">{new Date(exercise.dueDate).toLocaleString('vi-VN')}</span>
+                )}
               </div>
               <div className="info-item">
                 <span className="info-label">Điểm tối đa:</span>
-                <span className="info-value">{exercise.maxScore} điểm</span>
+                {isEditMode ? (
+                  <input
+                    type="number"
+                    className="form-input-ex"
+                    style={{ width: '100%' }}
+                    min="1"
+                    value={editedExercise.maxScore}
+                    onChange={(e) => handleFieldChange('maxScore', Number(e.target.value))}
+                  />
+                ) : (
+                  <span className="info-value">{exercise.maxScore} điểm</span>
+                )}
               </div>
               <div className="info-item">
                 <span className="info-label">Trạng thái:</span>
@@ -164,20 +221,36 @@ export default function ExerciseDetailModal({ exercise, onClose, onUpdate, onDel
         {/* Footer */}
         <div className="modal-footer-detail-ex">
           <div className="footer-left">
-            <button className="btn-download-detail" onClick={handleDownload}>
-              <Download size={18} />
-              Tải xuống (.pdf)
-            </button>
+            {!isEditMode && (
+              <button className="btn-download-detail" onClick={handleDownload}>
+                <Download size={18} />
+                Tải xuống (.pdf)
+              </button>
+            )}
           </div>
           <div className="footer-right">
-            <button className="btn-delete-detail" onClick={onDelete}>
-              <Trash2 size={18} />
-              Xóa
-            </button>
-            <button className="btn-edit-detail" onClick={() => setIsEditMode(!isEditMode)}>
-              <Edit size={18} />
-              {isEditMode ? 'Hủy' : 'Chỉnh sửa'}
-            </button>
+            {isEditMode ? (
+              <>
+                <button className="btn-cancel-edit" onClick={handleCancelEdit}>
+                  Hủy
+                </button>
+                <button className="btn-save-edit" onClick={handleSaveEdit}>
+                  <Check size={18} />
+                  Lưu thay đổi
+                </button>
+              </>
+            ) : (
+              <>
+                <button className="btn-delete-detail" onClick={() => onDelete(exercise.id)}>
+                  <Trash2 size={18} />
+                  Xóa
+                </button>
+                <button className="btn-edit-detail" onClick={() => setIsEditMode(true)}>
+                  <Edit size={18} />
+                  Chỉnh sửa
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>

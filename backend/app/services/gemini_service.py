@@ -906,6 +906,172 @@ IMPORTANT:
                 "level_recommendation": "Error occurred while checking answers",
                 "feedback": "Sorry, we couldn't check your answers. Please try again."
             }
+    
+    async def grade_writing(
+        self,
+        writing_text: str,
+        prompt: str = None,
+        max_score: float = 10.0,
+        criteria: dict = None
+    ) -> dict:
+        """
+        Grade writing assignment using Gemini AI
+        
+        Args:
+            writing_text: Student's writing content
+            prompt: Writing prompt/topic (optional)
+            max_score: Maximum score (default 10)
+            criteria: Grading criteria dict (optional)
+        
+        Returns:
+            dict: Grading result with score, feedback, and breakdown
+        """
+        try:
+            # Default criteria if not provided
+            if criteria is None:
+                criteria = {
+                    "content": {"weight": 0.3, "name": "Nội dung & Ý tưởng"},
+                    "organization": {"weight": 0.2, "name": "Tổ chức bài viết"},
+                    "vocabulary": {"weight": 0.2, "name": "Từ vựng"},
+                    "grammar": {"weight": 0.2, "name": "Ngữ pháp"},
+                    "mechanics": {"weight": 0.1, "name": "Chính tả & Dấu câu"}
+                }
+            
+            # Build grading prompt
+            grading_prompt = f"""You are an experienced English teacher grading a student's writing assignment.
+
+WRITING PROMPT: {prompt if prompt else "General writing assignment"}
+
+STUDENT'S WRITING:
+{writing_text}
+
+GRADING CRITERIA (Total: {max_score} points):
+"""
+            
+            for key, value in criteria.items():
+                grading_prompt += f"\n- {value['name']}: {value['weight'] * 100}%"
+            
+            grading_prompt += """
+
+Please evaluate the writing and provide:
+
+1. SCORE FOR EACH CRITERION (0-100 scale):
+   - Content & Ideas: How well does it address the topic? Are ideas clear and relevant?
+   - Organization: Is it well-structured with clear introduction, body, and conclusion?
+   - Vocabulary: Is vocabulary appropriate, varied, and accurate?
+   - Grammar: Are sentences grammatically correct? Any major errors?
+   - Mechanics: Are spelling, punctuation, and capitalization correct?
+
+2. OVERALL SCORE: Calculate weighted average based on criteria percentages
+
+3. DETAILED FEEDBACK:
+   - Strengths (what the student did well)
+   - Areas for improvement (specific suggestions)
+   - Example corrections for major errors
+
+4. SUGGESTIONS: Concrete advice for improvement
+
+Return your response in JSON format:
+{
+    "scores": {
+        "content": <0-100>,
+        "organization": <0-100>,
+        "vocabulary": <0-100>,
+        "grammar": <0-100>,
+        "mechanics": <0-100>
+    },
+    "overall_score": <calculated weighted score 0-100>,
+    "word_count": <approximate word count>,
+    "strengths": ["strength1", "strength2", ...],
+    "improvements": ["improvement1", "improvement2", ...],
+    "corrections": ["error1 -> correction1", "error2 -> correction2", ...],
+    "detailed_feedback": "Detailed feedback text in Vietnamese",
+    "suggestions": "Specific suggestions for improvement in Vietnamese"
+}
+"""
+            
+            # Get AI response
+            response = self.model.generate_content(grading_prompt)
+            result_text = response.text.strip()
+            
+            # Clean up JSON (remove markdown code blocks if present)
+            if result_text.startswith("```json"):
+                result_text = result_text[7:]
+            if result_text.startswith("```"):
+                result_text = result_text[3:]
+            if result_text.endswith("```"):
+                result_text = result_text[:-3]
+            result_text = result_text.strip()
+            
+            # Parse JSON response
+            import json
+            grading_result = json.loads(result_text)
+            
+            # Calculate final score based on max_score
+            overall_percentage = grading_result.get('overall_score', 0)
+            final_score = (overall_percentage / 100) * max_score
+            
+            # Build detailed breakdown
+            breakdown = {}
+            for key, value in criteria.items():
+                criterion_score = grading_result.get('scores', {}).get(key, 0)
+                breakdown[key] = {
+                    "score": round(criterion_score, 1),
+                    "weight": value['weight'],
+                    "name": value['name'],
+                    "weighted_contribution": round((criterion_score / 100) * value['weight'] * max_score, 2)
+                }
+            
+            return {
+                "score": round(final_score, 2),
+                "max_score": max_score,
+                "percentage": round(overall_percentage, 1),
+                "breakdown": breakdown,
+                "word_count": grading_result.get('word_count', len(writing_text.split())),
+                "strengths": grading_result.get('strengths', []),
+                "improvements": grading_result.get('improvements', []),
+                "corrections": grading_result.get('corrections', []),
+                "feedback": grading_result.get('detailed_feedback', ''),
+                "suggestions": grading_result.get('suggestions', ''),
+                "raw_scores": grading_result.get('scores', {})
+            }
+            
+        except json.JSONDecodeError as e:
+            print(f"Error parsing Gemini JSON response: {str(e)}")
+            print(f"Raw response: {result_text[:500]}")
+            # Fallback: basic scoring
+            word_count = len(writing_text.split())
+            basic_score = min(max_score, (word_count / 100) * max_score * 0.7)
+            
+            return {
+                "score": round(basic_score, 2),
+                "max_score": max_score,
+                "percentage": round((basic_score / max_score) * 100, 1),
+                "breakdown": {},
+                "word_count": word_count,
+                "strengths": ["Đã hoàn thành bài viết"],
+                "improvements": ["Cần teacher review chi tiết hơn"],
+                "corrections": [],
+                "feedback": "AI không thể phân tích chi tiết. Teacher vui lòng review thủ công.",
+                "suggestions": "Hãy kiểm tra ngữ pháp và từ vựng.",
+                "error": "JSON parsing failed"
+            }
+            
+        except Exception as e:
+            print(f"Error grading writing: {str(e)}")
+            return {
+                "score": 0,
+                "max_score": max_score,
+                "percentage": 0,
+                "breakdown": {},
+                "word_count": 0,
+                "strengths": [],
+                "improvements": [],
+                "corrections": [],
+                "feedback": f"Lỗi: {str(e)}",
+                "suggestions": "Vui lòng thử lại hoặc liên hệ teacher.",
+                "error": str(e)
+            }
 
 
 # Create a singleton instance

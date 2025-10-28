@@ -37,6 +37,10 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
     GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
     
+    # Azure Speech Configuration
+    AZURE_SPEECH_KEY: str = os.getenv("AZURE_SPEECH_KEY", "")
+    AZURE_SPEECH_REGION: str = os.getenv("AZURE_SPEECH_REGION", "eastus")
+    
     class Config:
         env_file = ".env"
         case_sensitive = True

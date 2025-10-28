@@ -83,6 +83,220 @@ class ExerciseDetailResponse(BaseModel):
     class Config:
         from_attributes = True
 
+# Helper function for auto-grading
+def _auto_grade_submission(submission: Submission, exercise: Exercise, db: Session):
+    """
+    Tự động chấm điểm:
+    - Trắc nghiệm (multiple_choice, true_false, fill_blank): Chấm ngay
+    - Tự luận (short_answer): Đợi teacher
+    - Speaking: Azure Speech API (chấm tự động, teacher có thể confirm)
+    - Writing: Gemini AI (chấm tự động, teacher có thể confirm)
+    """
+    skill_type = exercise.skill_type
+    
+    # Speaking: Use Azure Speech API
+    if skill_type == 'speaking' and submission.content_url:
+        print(f"[AUTO-GRADE] Speaking exercise detected for submission {submission.id}")
+        # Import service
+        from app.services.azure_speech_service import azure_speech_service
+        import asyncio
+        
+        # Get reference text from exercise content
+        content = exercise.content
+        reference_text = content.get('prompt', '') if content else ''
+        
+        if reference_text and submission.content_url:
+            try:
+                # Get audio file path (assuming it's stored locally)
+                audio_path = submission.content_url.replace('/media/', './media/')
+                
+                # Assess pronunciation
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                assessment = loop.run_until_complete(
+                    azure_speech_service.assess_pronunciation(audio_path, reference_text)
+                )
+                loop.close()
+                
+                # Calculate score
+                score_result = azure_speech_service.calculate_speaking_score(
+                    assessment, 
+                    float(exercise.max_score or 10)
+                )
+                
+                submission.ai_score = score_result['score']
+                submission.ai_feedback = score_result['feedback']
+                submission.rubrics_scores = {
+                    'speaking_assessment': score_result['breakdown'],
+                    'recognized_text': score_result.get('recognized_text', ''),
+                    'detailed_feedback': score_result.get('detailed_feedback', '')
+                }
+                submission.status = "pending_review"  # Teacher can confirm
+                submission.ai_graded_at = datetime.utcnow()
+                
+                print(f"[AUTO-GRADE] Speaking graded: {score_result['score']}/{exercise.max_score}")
+                return
+                
+            except Exception as e:
+                print(f"[AUTO-GRADE] Speaking error: {str(e)}")
+                submission.ai_feedback = f"Lỗi chấm speaking: {str(e)}"
+                submission.status = "pending_review"
+                return
+    
+    # Writing: Use Gemini AI
+    if skill_type == 'writing' and submission.content_text:
+        print(f"[AUTO-GRADE] Writing exercise detected for submission {submission.id}")
+        # Import service
+        from app.services.gemini_service import gemini_service
+        import asyncio
+        
+        # Get writing prompt
+        content = exercise.content
+        prompt = content.get('prompt', '') if content else ''
+        
+        try:
+            # Grade writing
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            grading_result = loop.run_until_complete(
+                gemini_service.grade_writing(
+                    submission.content_text,
+                    prompt=prompt,
+                    max_score=float(exercise.max_score or 10)
+                )
+            )
+            loop.close()
+            
+            submission.ai_score = grading_result['score']
+            submission.ai_feedback = grading_result['feedback']
+            submission.rubrics_scores = {
+                'writing_assessment': grading_result['breakdown'],
+                'word_count': grading_result['word_count'],
+                'strengths': grading_result['strengths'],
+                'improvements': grading_result['improvements'],
+                'corrections': grading_result['corrections'],
+                'suggestions': grading_result['suggestions']
+            }
+            submission.status = "pending_review"  # Teacher can confirm
+            submission.ai_graded_at = datetime.utcnow()
+            
+            print(f"[AUTO-GRADE] Writing graded: {grading_result['score']}/{exercise.max_score}")
+            return
+            
+        except Exception as e:
+            print(f"[AUTO-GRADE] Writing error: {str(e)}")
+            submission.ai_feedback = f"Lỗi chấm writing: {str(e)}"
+            submission.status = "pending_review"
+            return
+    
+    # Multiple choice questions (for comprehensive tests, reading, listening)
+    if not submission.answers:
+        return
+    
+    # Lấy nội dung bài tập
+    content = exercise.content
+    if not content or not isinstance(content, dict):
+        return
+    
+    # Lấy danh sách câu hỏi
+    questions = content.get('questions', [])
+    if not questions:
+        return
+    
+    total_score = 0.0
+    max_possible_score = 0.0
+    has_short_answer = False
+    auto_graded_count = 0
+    total_questions = len(questions)
+    
+    # Tạo dict để lưu kết quả từng câu
+    question_results = {}
+    
+    for q in questions:
+        q_id = str(q.get('id'))
+        q_type = q.get('type', '')
+        q_points = float(q.get('points', 1))
+        correct_answer = q.get('correct_answer', '')
+        
+        max_possible_score += q_points
+        
+        # Nếu là câu tự luận, bỏ qua
+        if q_type == 'short_answer':
+            has_short_answer = True
+            question_results[q_id] = {
+                'type': 'short_answer',
+                'points': q_points,
+                'status': 'pending_review',
+                'student_answer': submission.answers.get(q_id, '')
+            }
+            continue
+        
+        # Lấy câu trả lời của học sinh
+        student_answer = submission.answers.get(q_id, '')
+        
+        # Chấm điểm cho các loại câu trắc nghiệm
+        if q_type in ['multiple_choice', 'true_false']:
+            # So sánh chính xác (case-sensitive)
+            is_correct = (str(student_answer).strip() == str(correct_answer).strip())
+            earned_points = q_points if is_correct else 0.0
+            total_score += earned_points
+            auto_graded_count += 1
+            
+            question_results[q_id] = {
+                'type': q_type,
+                'points': q_points,
+                'earned': earned_points,
+                'correct': is_correct,
+                'student_answer': student_answer,
+                'correct_answer': correct_answer
+            }
+        
+        elif q_type == 'fill_blank':
+            # So sánh không phân biệt hoa thường và khoảng trắng
+            student_ans_normalized = str(student_answer).strip().lower()
+            correct_ans_normalized = str(correct_answer).strip().lower()
+            is_correct = (student_ans_normalized == correct_ans_normalized)
+            earned_points = q_points if is_correct else 0.0
+            total_score += earned_points
+            auto_graded_count += 1
+            
+            question_results[q_id] = {
+                'type': q_type,
+                'points': q_points,
+                'earned': earned_points,
+                'correct': is_correct,
+                'student_answer': student_answer,
+                'correct_answer': correct_answer
+            }
+    
+    # Cập nhật submission
+    if auto_graded_count > 0:
+        # Lưu kết quả chi tiết
+        if not submission.rubrics_scores:
+            submission.rubrics_scores = {}
+        submission.rubrics_scores['auto_grade_results'] = question_results
+        submission.rubrics_scores['auto_graded_count'] = auto_graded_count
+        submission.rubrics_scores['total_questions'] = total_questions
+        submission.rubrics_scores['has_short_answer'] = has_short_answer
+        
+        if has_short_answer:
+            # Có câu tự luận -> chỉ lưu điểm tự động, chờ giáo viên chấm thêm
+            submission.ai_score = total_score
+            submission.ai_feedback = f"Tự động chấm {auto_graded_count}/{total_questions} câu trắc nghiệm. Điểm tạm thời: {total_score}/{max_possible_score}. Chờ giáo viên chấm {total_questions - auto_graded_count} câu tự luận."
+            submission.status = "pending_review"  # Đợi giáo viên review
+            submission.ai_graded_at = datetime.utcnow()
+        else:
+            # Toàn trắc nghiệm -> chấm luôn
+            submission.score = total_score
+            submission.ai_score = total_score
+            submission.feedback = f"Tự động chấm: {total_score}/{max_possible_score} điểm"
+            submission.ai_feedback = f"Hoàn thành {auto_graded_count}/{total_questions} câu đúng."
+            submission.status = "graded"  # Đã chấm xong
+            submission.graded_at = datetime.utcnow()
+            submission.ai_graded_at = datetime.utcnow()
+        
+        print(f"[AUTO-GRADE] Submission {submission.id}: {auto_graded_count}/{total_questions} auto-graded, score={total_score}/{max_possible_score}, has_essay={has_short_answer}")
+
 @router.get("/", response_model=List[ExerciseDetailResponse])
 async def get_exercises(
     class_id: Optional[int] = None,
@@ -335,13 +549,18 @@ async def get_exercise(
 @router.post("/{exercise_id}/submit", response_model=SubmissionResponse)
 async def submit_exercise(
     exercise_id: int,
-    submission_data: SubmissionCreate,
+    audio_file: Optional[UploadFile] = File(None),
+    answers: Optional[str] = None,
+    content_text: Optional[str] = None,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
-    Nộp bài tập
+    Nộp bài tập - Hỗ trợ cả JSON và multipart/form-data
     """
+    import json
+    import os
+    
     exercise = db.query(Exercise).filter(Exercise.id == exercise_id).first()
     
     if not exercise:
@@ -364,6 +583,39 @@ async def submit_exercise(
             detail="Bạn chưa tham gia lớp học này"
         )
     
+    # Parse answers if it's a JSON string
+    parsed_answers = None
+    if answers:
+        try:
+            parsed_answers = json.loads(answers) if isinstance(answers, str) else answers
+        except:
+            parsed_answers = None
+    
+    # Handle audio file upload for speaking exercises
+    audio_url = None
+    if audio_file:
+        try:
+            # Create upload directory if not exists
+            upload_dir = "./media/speaking_submissions"
+            os.makedirs(upload_dir, exist_ok=True)
+            
+            # Generate unique filename
+            timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+            filename = f"student_{current_user.id}_ex_{exercise_id}_{timestamp}.wav"
+            file_path = os.path.join(upload_dir, filename)
+            
+            # Save file
+            with open(file_path, "wb") as f:
+                content = await audio_file.read()
+                f.write(content)
+            
+            audio_url = f"/media/speaking_submissions/{filename}"
+            print(f"[UPLOAD] Saved speaking audio to {audio_url}")
+            
+        except Exception as e:
+            print(f"[UPLOAD ERROR] Failed to save audio: {str(e)}")
+            audio_url = None
+    
     # Check if already submitted
     existing_submission = db.query(Submission).filter(
         Submission.exercise_id == exercise_id,
@@ -372,11 +624,15 @@ async def submit_exercise(
     
     if existing_submission:
         # Update existing submission
-        existing_submission.content_text = submission_data.content_text
-        existing_submission.content_url = submission_data.content_url
-        existing_submission.answers = submission_data.answers
+        existing_submission.content_text = content_text
+        existing_submission.content_url = audio_url or existing_submission.content_url
+        existing_submission.answers = parsed_answers
         existing_submission.submitted_at = datetime.utcnow()
         existing_submission.status = "submitted"
+        
+        # Auto-grade if possible
+        _auto_grade_submission(existing_submission, exercise, db)
+        
         db.commit()
         db.refresh(existing_submission)
         return existing_submission
@@ -390,13 +646,18 @@ async def submit_exercise(
     submission = Submission(
         exercise_id=exercise_id,
         student_id=current_user.id,
-        content_text=submission_data.content_text,
-        content_url=submission_data.content_url,
-        answers=submission_data.answers,
+        content_text=content_text,
+        content_url=audio_url,
+        answers=parsed_answers,
         status=status_value
     )
     
     db.add(submission)
+    db.commit()
+    db.refresh(submission)
+    
+    # Auto-grade if possible
+    _auto_grade_submission(submission, exercise, db)
     db.commit()
     db.refresh(submission)
     
