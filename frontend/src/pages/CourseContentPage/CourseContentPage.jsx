@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { BookOpen, BarChart2, Star, Film, PenSquare, CheckCircle, Headphones, Play } from 'lucide-react';
+import { BookOpen, BarChart2, Star, Film, PenSquare, CheckCircle, Headphones, Play, Clock } from 'lucide-react';
 import './CourseContentPage.css';
 import { coursesAPI } from '../../services/api';
 
@@ -22,6 +22,7 @@ const CourseContentPage = () => {
   const [questions, setQuestions] = useState({}); // { [unitId]: [] }
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showComingSoon, setShowComingSoon] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -127,8 +128,8 @@ const CourseContentPage = () => {
         <nav className="course-nav">
           <ul>
             <li><Link to="#" className="active">Nội dung khóa học</Link></li>
-            <li><Link to="#">Thi kiểm tra</Link></li>
-            <li><Link to="#">Hỏi đáp</Link></li>
+            <li><button onClick={() => setShowComingSoon(true)} className="exam-btn">Thi kiểm tra</button></li>
+            <li><Link to="/discussion">Hỏi đáp</Link></li>
           </ul>
         </nav>
       </aside>
@@ -272,6 +273,21 @@ const CourseContentPage = () => {
             </ul>
         </div>
       </aside>
+
+      {showComingSoon && (
+        <div className="coming-soon-modal-overlay" onClick={() => setShowComingSoon(false)}>
+          <div className="coming-soon-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="close-modal-btn" onClick={() => setShowComingSoon(false)} aria-label="Close modal">
+              <span style={{ fontSize: '24px', fontWeight: 'bold', color: 'white' }}>×</span>
+            </button>
+            <div className="coming-soon-content">
+              <Clock size={64} className="coming-soon-icon" />
+              <h2>Coming Soon</h2>
+              <p>Tính năng thi kiểm tra đang được phát triển. Vui lòng quay lại sau!</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

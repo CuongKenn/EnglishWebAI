@@ -465,7 +465,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.8);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -480,6 +480,34 @@
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   max-width: 400px;
   width: 90%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.completion-close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #6c757d;
+  padding: 4px;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.completion-close-btn:hover {
+  background: #f8f9fa;
+  color: #495057;
 }
 
 .completion-content h3 {
@@ -512,6 +540,36 @@
   color: #495057;
 }
 
+.completion-actions {
+  margin-top: 32px;
+  display: flex;
+  justify-content: center;
+}
+
+.back-to-profile-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px 32px;
+  background: linear-gradient(135deg, #667eea, #8b5cf6);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+  min-width: 200px;
+}
+
+.back-to-profile-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+  background: linear-gradient(135deg, #5a6fd8, #6a4190);
+}
+
 /* Responsive Design */
 @media (max-width: 1200px) {
   .writing-content {
@@ -529,7 +587,7 @@
   .writing-exercise-page {
     padding: 12px;
   }
-  
+
   .writing-header {
     grid-template-columns: 1fr;
     gap: 16px;
@@ -537,50 +595,69 @@
     padding: 20px;
     min-height: auto;
   }
-  
+
   .course-info {
     order: 1;
   }
-  
+
   .header-left {
     order: 2;
     justify-content: center;
   }
-  
+
   .header-right {
     order: 3;
     justify-content: center;
     flex-direction: row;
     gap: 12px;
   }
-  
+
   .question-panel,
   .essay-panel {
     padding: 20px;
   }
-  
+
   .question-title,
   .essay-title {
     font-size: 20px;
   }
-  
+
   .essay-textarea {
     min-height: 300px;
   }
-  
+
   .action-buttons {
     flex-direction: column;
     width: 100%;
   }
-  
+
   .reset-btn,
   .submit-btn {
     width: 100%;
   }
-  
+
   .completion-stats {
     flex-direction: column;
     gap: 12px;
+  }
+
+  .completion-content {
+    padding: 32px 24px;
+    max-width: 350px;
+  }
+
+  .completion-close-btn {
+    top: 12px;
+    right: 12px;
+    width: 28px;
+    height: 28px;
+    font-size: 20px;
+  }
+
+  .back-to-profile-btn {
+    min-width: 180px;
+    padding: 14px 24px;
+    font-size: 15px;
   }
 }
 

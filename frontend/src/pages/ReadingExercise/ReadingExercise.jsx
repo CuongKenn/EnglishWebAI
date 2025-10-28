@@ -9,7 +9,9 @@ import {
   HelpCircle,
   Target,
   Award,
-  Star
+  Star,
+  X,
+  BookOpen
 } from 'lucide-react';
 import './ReadingExercise.css';
 
@@ -24,6 +26,7 @@ const ReadingExercise = () => {
   const [score, setScore] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
   const [showHint, setShowHint] = useState(false);
+  const [showCompletionMessage, setShowCompletionMessage] = useState(false);
 
   // Mock data cho bài reading - sẽ được thay thế bằng API call
   const readingData = {
@@ -223,6 +226,7 @@ const ReadingExercise = () => {
     setScore(newScore);
     setIsCompleted(true);
     setShowAnswers(true);
+    setShowCompletionMessage(true);
   };
 
   // Handle completion
@@ -421,6 +425,37 @@ const ReadingExercise = () => {
             )}
           </div>
         </div>
+
+        {/* Completion Message */}
+        {showCompletionMessage && (
+          <div className="completion-message">
+            <div className="completion-content">
+              <button
+                className="close-completion-btn"
+                onClick={() => setShowCompletionMessage(false)}
+              >
+                <X size={24} />
+              </button>
+              <Award size={32} />
+              <h3>Chúc mừng!</h3>
+              <p>Bạn đã hoàn thành bài Reading thành công.</p>
+              <div className="completion-stats">
+                <div className="stat-item">
+                  <BookOpen size={20} />
+                  <span>{readingData.passage.paragraphs.reduce((total, p) => total + (p.questions ? p.questions.length : 0), 0)} câu hỏi</span>
+                </div>
+                <div className="stat-item">
+                  <Clock size={20} />
+                  <span>{formatTime(timeSpent)}</span>
+                </div>
+                <div className="stat-item">
+                  <Star size={20} />
+                  <span>{score}/100 điểm</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Score Display */}
         {isCompleted && (

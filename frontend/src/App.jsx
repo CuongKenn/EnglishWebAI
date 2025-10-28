@@ -312,7 +312,9 @@ function App() {
         path="/speaking-exercise/:courseId/:lessonId"
         element={
           <ProtectedRoute isLoggedIn={isLoggedIn}>
-            <SpeakingExercise />
+            <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+              <SpeakingExercise />
+            </Layout>
           </ProtectedRoute>
         }
       />

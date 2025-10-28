@@ -196,6 +196,122 @@
 .user-profile-card.redesigned .user-name { font-weight: 600; }
 .user-profile-card.redesigned .user-score { display: flex; align-items: center; gap: 8px; font-weight: bold; font-size: 18px; color: #ffc107; }
 
+/* Coming Soon Modal */
+.coming-soon-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.coming-soon-modal {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 20px;
+  padding: 40px;
+  max-width: 500px;
+  width: 90%;
+  position: relative;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  animation: slideIn 0.4s ease-out;
+  text-align: center;
+  color: white;
+}
+
+.close-modal-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: white;
+  z-index: 9999;
+}
+
+.close-modal-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+.coming-soon-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.coming-soon-icon {
+  color: #ffd700;
+  animation: pulse 2s infinite;
+}
+
+.coming-soon-content h2 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.coming-soon-content p {
+  font-size: 1.1rem;
+  margin: 0;
+  opacity: 0.9;
+  line-height: 1.6;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+/* Exam Button */
+.exam-btn {
+  background: none;
+  border: none;
+  color: #333;
+  font-weight: 500;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+  cursor: pointer;
+  padding: 12px 16px;
+  width: 100%;
+  text-align: left;
+}
+
+.exam-btn:hover {
+  background-color: #f8f9fa;
+}
+
 /* Responsive */
 @media (max-width: 1200px) {
   .course-content-page { grid-template-columns: 200px 1fr; }
@@ -204,4 +320,17 @@
 @media (max-width: 768px) {
   .course-content-page { grid-template-columns: 1fr; }
   .course-sidebar-left { display: none; }
+
+  .coming-soon-modal {
+    padding: 30px 20px;
+    margin: 20px;
+  }
+
+  .coming-soon-content h2 {
+    font-size: 2rem;
+  }
+
+  .coming-soon-content p {
+    font-size: 1rem;
+  }
 }
