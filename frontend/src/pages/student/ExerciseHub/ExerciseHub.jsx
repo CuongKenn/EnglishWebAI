@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FileText, Trophy, BarChart3, CheckCircle, Clock, AlertCircle, Award, Star, Calendar, Eye, Edit3, Headphones, MessageSquare, BookOpen, PenTool, Target } from 'lucide-react';
 import './ExerciseHub.css';
-import { apiV1 } from '../../../services/api';
+import studentService from '../../../services/studentService';
 
 // Sidebar Component (giống AI Practice)
 function ExerciseSidebar({ activeTab, onTabChange }) {
@@ -128,12 +128,11 @@ export default function ExerciseHub() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [exercisesRes, statsRes] = await Promise.all([
-        apiV1.get('/exercises'),
-        apiV1.get('/exercises/statistics/summary')
+      const [allExercises, statsRes] = await Promise.all([
+        studentService.getExercises(),
+        studentService.getExerciseStatistics()
       ]);
       
-      const allExercises = exercisesRes.data;
       console.log('All exercises from API:', allExercises);
       
       // Filter exercises vs tests
@@ -144,13 +143,13 @@ export default function ExerciseHub() {
       setTests(allExercises.filter(e => testTypes.includes(e.type)));
       setExercises(allExercises.filter(e => !testTypes.includes(e.type)));
       
-      setStatistics(statsRes.data);
+  setStatistics(statsRes);
       
-      const submissionsRes = await apiV1.get('/exercises/my-submissions');
-      setSubmissions(submissionsRes.data);
+  const submissionsRes = await studentService.getMySubmissions();
+  setSubmissions(submissionsRes);
       
       // Calculate skill-based statistics
-      calculateSkillStats(submissionsRes.data);
+  calculateSkillStats(submissionsRes);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {

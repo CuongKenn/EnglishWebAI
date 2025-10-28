@@ -446,6 +446,13 @@
   background: #f9fafb;
 }
 
+.recording-error-message {
+  margin-top: 16px;
+  color: #dc2626;
+  font-size: 14px;
+  text-align: center;
+}
+
 /* Sample Answer */
 .sample-answer-section {
   padding: 20px;
