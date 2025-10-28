@@ -1489,13 +1489,19 @@ async def generate_test(
 
 @router.post("/export-docx")
 async def export_docx(payload: ExportDocxRequest):
-    """Return a DOCX file built from the generated test payload."""
+    """Return a DOCX file built from the generated test payload with enhanced formatting."""
+    logger.info(f"[EXPORT-DOCX] Starting export for '{payload.name}' with {len(payload.questions)} questions")
+    
     try:
         from docx import Document
-        from docx.shared import Pt, RGBColor
+        from docx.shared import Pt, RGBColor, Inches
         from docx.enum.text import WD_ALIGN_PARAGRAPH
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Missing dependency python-docx: {e}")
+    except ImportError as e:
+        logger.error(f"[EXPORT-DOCX] Missing python-docx: {e}")
+        raise HTTPException(
+            status_code=500, 
+            detail="Server configuration error: python-docx not installed. Please contact administrator."
+        )
 
     try:
         doc = Document()
@@ -1542,33 +1548,45 @@ async def export_docx(payload: ExportDocxRequest):
                 key = f"passage_{passage_text[:50]}"
                 if key not in printed_passages:
                     printed_passages.add(key)
+                    doc.add_paragraph()  # Blank line before
                     # Passage header
-                    passage_header = doc.add_paragraph("📖 Reading Passage:")
-                    passage_header.runs[0].font.bold = True
-                    passage_header.runs[0].font.size = Pt(13)
-                    passage_header.runs[0].font.color.rgb = RGBColor(34, 139, 34)
+                    passage_header = doc.add_paragraph("READING PASSAGE")
+                    if passage_header.runs:
+                        passage_header.runs[0].font.bold = True
+                        passage_header.runs[0].font.size = Pt(13)
+                        try:
+                            passage_header.runs[0].font.color.rgb = RGBColor(34, 139, 34)
+                        except:
+                            pass
                     # Passage text
                     passage_p = doc.add_paragraph(passage_text)
-                    passage_p.runs[0].font.size = Pt(11)
-                    passage_p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-                    doc.add_paragraph()  # Blank line
+                    if passage_p.runs:
+                        passage_p.runs[0].font.size = Pt(11)
+                        passage_p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+                    doc.add_paragraph()  # Blank line after
             
             # Print listening transcript once per unique transcript
             if skill_type == 'listening' and transcript:
                 key = f"transcript_{transcript[:50]}"
                 if key not in printed_transcripts:
                     printed_transcripts.add(key)
+                    doc.add_paragraph()  # Blank line before
                     # Transcript header
-                    trans_header = doc.add_paragraph("🎧 Listening Transcript:")
-                    trans_header.runs[0].font.bold = True
-                    trans_header.runs[0].font.size = Pt(13)
-                    trans_header.runs[0].font.color.rgb = RGBColor(30, 144, 255)
+                    trans_header = doc.add_paragraph("LISTENING TRANSCRIPT")
+                    if trans_header.runs:
+                        trans_header.runs[0].font.bold = True
+                        trans_header.runs[0].font.size = Pt(13)
+                        try:
+                            trans_header.runs[0].font.color.rgb = RGBColor(30, 144, 255)
+                        except:
+                            pass
                     # Transcript text
                     trans_p = doc.add_paragraph(transcript)
-                    trans_p.runs[0].font.size = Pt(11)
-                    trans_p.runs[0].italic = True
-                    trans_p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-                    doc.add_paragraph()  # Blank line
+                    if trans_p.runs:
+                        trans_p.runs[0].font.size = Pt(11)
+                        trans_p.runs[0].italic = True
+                        trans_p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+                    doc.add_paragraph()  # Blank line after
             
             # Question number and text
             q_para = doc.add_paragraph()
@@ -1591,8 +1609,12 @@ async def export_docx(payload: ExportDocxRequest):
             
             if meta_parts:
                 meta_line = doc.add_paragraph(f"[{' | '.join(meta_parts)}]")
-                meta_line.runs[0].font.size = Pt(9)
-                meta_line.runs[0].font.color.rgb = RGBColor(128, 128, 128)
+                if meta_line.runs:
+                    meta_line.runs[0].font.size = Pt(9)
+                    try:
+                        meta_line.runs[0].font.color.rgb = RGBColor(128, 128, 128)
+                    except:
+                        pass
 
             # Answer options based on question type
             if question_type == 'multiple_choice' and options:
@@ -1644,10 +1666,12 @@ async def export_docx(payload: ExportDocxRequest):
         )
         
     except Exception as e:
-        logger.error(f"Error exporting DOCX: {e}")
+        logger.error(f"[EXPORT-DOCX] Error exporting DOCX: {e}")
         import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Failed to export DOCX: {str(e)}")
+        logger.error(f"[EXPORT-DOCX] Traceback: {traceback.format_exc()}")
+        # Return detailed error message
+        error_detail = f"Export failed: {type(e).__name__}: {str(e)}"
+        raise HTTPException(status_code=500, detail=error_detail)
 
 
 @router.post("/create-exercise")

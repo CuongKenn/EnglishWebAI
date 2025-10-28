@@ -6,6 +6,7 @@ from datetime import datetime
 from pathlib import Path
 import os
 import uuid
+import logging
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.models.user import User, UserRole
@@ -20,8 +21,19 @@ from app.schemas.student import (
     NewsManageItem,
     NewsManageListResponse,
 )
+from app.services.gemini_service import GeminiService
+from pydantic import BaseModel
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
+
+
+# Schema for AI generation
+class AIGenerateNewsRequest(BaseModel):
+    topic: str
+    category: str
+    level: str = "intermediate"  # beginner, intermediate, advanced
+    word_count: int = 300
 
 @router.get("/", response_model=List[NewsListResponse])
 async def get_news(
@@ -482,3 +494,137 @@ async def unlike_news(
     db.commit()
     db.refresh(news)
     return {"likes": news.likes}
+
+
+# ===================== AI Generation =====================
+
+@router.post("/generate-ai")
+async def generate_news_article(
+    payload: AIGenerateNewsRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Generate news article using Gemini AI
+    Only for teachers and admins
+    """
+    if current_user.role not in [UserRole.TEACHER, UserRole.ADMIN, UserRole.SUPERADMIN]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Chỉ giáo viên và admin mới có thể sinh bài viết bằng AI"
+        )
+    
+    try:
+        gemini = GeminiService()
+        
+        # Build prompt based on level
+        level_map = {
+            "beginner": "A2-B1 (basic vocabulary and simple grammar)",
+            "intermediate": "B1-B2 (moderate vocabulary and grammar)",
+            "advanced": "B2-C1 (advanced vocabulary and complex grammar)"
+        }
+        
+        level_desc = level_map.get(payload.level, level_map["intermediate"])
+        
+        prompt = f"""
+Generate an English news article for ESL learners at {level_desc} level.
+
+Topic: {payload.topic}
+Category: {payload.category}
+Target word count: {payload.word_count} words
+
+Requirements:
+1. Write a complete, engaging news article in English
+2. Use vocabulary appropriate for {payload.level} level learners
+3. Include a catchy headline (title)
+4. Write a brief 1-2 sentence summary (description/excerpt)
+5. Make it educational and interesting for language learners
+6. Use clear, well-structured paragraphs
+7. Include relevant facts and context
+
+Return ONLY valid JSON in this exact format:
+{{
+    "title": "Article headline here",
+    "description": "Brief 1-2 sentence summary",
+    "content": "Full article content with multiple paragraphs..."
+}}
+
+Do not include any markdown, code blocks, or extra formatting. Just the pure JSON object.
+"""
+        
+        logger.info(f"[AI-NEWS] Generating article for topic: {payload.topic}")
+        
+        # Call Gemini
+        response_text = gemini.generate_content(prompt)
+        
+        # Clean and parse response
+        response_text = response_text.strip()
+        # Remove markdown code blocks if present
+        if response_text.startswith("```json"):
+            response_text = response_text[7:]
+        if response_text.startswith("```"):
+            response_text = response_text[3:]
+        if response_text.endswith("```"):
+            response_text = response_text[:-3]
+        response_text = response_text.strip()
+        
+        # Parse JSON
+        import json
+        try:
+            result = json.loads(response_text)
+        except json.JSONDecodeError as e:
+            logger.error(f"[AI-NEWS] Failed to parse JSON: {e}")
+            logger.error(f"[AI-NEWS] Response text: {response_text[:500]}")
+            raise HTTPException(
+                status_code=500,
+                detail="AI response không hợp lệ. Vui lòng thử lại."
+            )
+        
+        # Validate required fields
+        if "title" not in result or "content" not in result:
+            raise HTTPException(
+                status_code=500,
+                detail="AI response thiếu trường bắt buộc"
+            )
+        
+        # Calculate reading time
+        word_count = len(result["content"].split())
+        reading_time = max(1, round(word_count / 200))
+        
+        # Get category icon
+        category_icons = {
+            "technology": "🤖",
+            "environment": "🌍",
+            "sports": "⚽",
+            "culture": "🎭",
+            "education": "📚",
+            "health": "🏥",
+            "business": "💼",
+            "science": "🔬"
+        }
+        
+        icon = category_icons.get(payload.category.lower(), "📰")
+        
+        logger.info(f"[AI-NEWS] Successfully generated article: {result['title'][:50]}...")
+        
+        return {
+            "title": result["title"],
+            "description": result.get("description", "")[:300],  # Limit description
+            "content": result["content"],
+            "category": payload.category,
+            "level": payload.level,
+            "reading_time": reading_time,
+            "word_count": word_count,
+            "icon": icon
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[AI-NEWS] Error generating article: {e}")
+        import traceback
+        logger.error(f"[AI-NEWS] Traceback: {traceback.format_exc()}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Lỗi khi sinh bài viết: {str(e)}"
+        )

@@ -969,6 +969,42 @@ export const newsAPI = {
       throw error.response ? error.response.data : error;
     }
   },
+
+  // Upload ảnh cho tin tức
+  uploadImage: async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await apiClient.post('/api/v1/news/upload-image', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data; // { url }
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Sinh bài viết bằng AI
+  generateArticle: async (params) => {
+    try {
+      const response = await apiClient.post('/api/v1/news/generate-ai', params);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Update status
+  updateNewsStatus: async (newsId, status) => {
+    try {
+      const response = await apiClient.patch(`/api/v1/news/${newsId}/status`, { status });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
 };
 
 // ==================== Users APIs ====================
