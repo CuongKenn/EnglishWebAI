@@ -10,13 +10,17 @@ import Navbar from '../../../components/Navbar/Navbar';
 import authService from '../../../services/authService';
 import './ParentDashboardV2.css';
 
-const ParentDashboardV2 = () => {
+const ParentDashboardV2 = ({ onLogout }) => {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    authService.logout();
-    navigate('/');
+    if (onLogout) {
+      onLogout();
+    } else {
+      authService.logout();
+      navigate('/');
+    }
   };
 
   const renderPage = () => {

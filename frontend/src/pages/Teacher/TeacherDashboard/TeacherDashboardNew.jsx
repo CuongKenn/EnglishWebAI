@@ -16,7 +16,7 @@ import OnlineTeaching from '../OnlineTeaching/OnlineTeaching';
 import TeacherOverview from '../TeacherOverview/TeacherOverview';
 import CoursesManage from '../CoursesManage/CoursesManage';
 
-const TeacherDashboardNew = () => {
+const TeacherDashboardNew = ({ onLogout }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -26,8 +26,12 @@ const TeacherDashboardNew = () => {
   };
 
   const handleLogout = () => {
-    authService.logout();
-    navigate('/');
+    if (onLogout) {
+      onLogout();
+    } else {
+      authService.logout();
+      navigate('/');
+    }
   };
 
   return (

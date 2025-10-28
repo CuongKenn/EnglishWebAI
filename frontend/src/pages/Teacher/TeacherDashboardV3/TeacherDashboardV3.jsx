@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import ClassManagement from './components/ClassManagement';
-import Courses from './components/Courses';
+import CoursesManagement from '../CoursesManagement/CoursesManagement';
 import QuestionBank from './components/QuestionBankV2';
 import ExercisesTests from './components/ExercisesTests';
 import ExerciseManagement from './components/ExerciseManagement/ExerciseManagementV2';
@@ -26,13 +26,17 @@ import './TeacherDashboardV3.css';
 import './components/common.css';
 import './components/enhanced-ui.css';
 
-const TeacherDashboardV3 = () => {
+const TeacherDashboardV3 = ({ onLogout }) => {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    authService.logout();
-    navigate('/');
+    if (onLogout) {
+      onLogout();
+    } else {
+      authService.logout();
+      navigate('/');
+    }
   };
 
   const renderPage = () => {
@@ -42,7 +46,7 @@ const TeacherDashboardV3 = () => {
       case 'class-management':
         return <ClassManagement />;
       case 'courses':
-        return <Courses />;
+        return <CoursesManagement />;
       case 'question-bank':
         return <QuestionBank />;
       case 'news-articles':
