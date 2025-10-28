@@ -1,8 +1,8 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { X, Plus, Trash2, FileAudio, Upload, Check, FileText } from 'lucide-react';
 import './AddQuestionModal.css';
 
-export default function AddQuestionModal({ onClose, onAdd }) {
+export default function AddQuestionModal({ onClose, onAdd, mode = 'add', initialData = null }) {
   // Basic fields
   const [questionText, setQuestionText] = useState('');
   const [questionType, setQuestionType] = useState('multiple_choice');
@@ -39,14 +39,101 @@ export default function AddQuestionModal({ onClose, onAdd }) {
   const [maxWords, setMaxWords] = useState(300);
   const [writingRequirements, setWritingRequirements] = useState(['']);
   
+  // Populate form when editing
+  useEffect(() => {
+    if (mode === 'edit' && initialData) {
+      console.log('[EDIT MODAL] Populating with data:', initialData);
+      
+      setQuestionText(initialData.question_text || '');
+      setQuestionType(initialData.question_type || 'multiple_choice');
+      setSkillType(initialData.skill_type || 'listening');
+      setDifficulty(initialData.difficulty || 'medium');
+      setTopic(initialData.topic || '');
+      setPoints(initialData.points || 2);
+      
+      // MCQ
+      if (initialData.options && Array.isArray(initialData.options)) {
+        setOptions(initialData.options);
+      }
+      setCorrectAnswer(initialData.correct_answer || '');
+      
+      // Listening
+      setTranscript(initialData.transcript || '');
+      
+      // Speaking
+      if (initialData.skill_type === 'speaking') {
+        setSpeakingPrompt(initialData.question_text || '');
+        if (initialData.requirements && Array.isArray(initialData.requirements)) {
+          setSpeakingInstructions(initialData.requirements);
+        }
+      }
+      
+      // Reading
+      if (initialData.skill_type === 'reading') {
+        setReadingPassage(initialData.passage_text || '');
+        setUseFile(!!initialData.passage_url && !initialData.passage_text);
+      }
+      
+      // Writing
+      if (initialData.skill_type === 'writing') {
+        setWritingPrompt(initialData.question_text || '');
+        setWritingType(initialData.writing_type || 'essay');
+        if (initialData.word_limit) {
+          setMinWords(initialData.word_limit.min || 150);
+          setMaxWords(initialData.word_limit.max || 300);
+        }
+        if (initialData.requirements && Array.isArray(initialData.requirements)) {
+          setWritingRequirements(initialData.requirements);
+        }
+      }
+    }
+  }, [mode, initialData]);
+  
   const handleAudioUpload = (e) => {
     const file = e.target.files[0];
-    if (file) setAudioFile(file);
+    if (file) {
+      console.log('[ADD MODAL] Audio file selected:', {
+        name: file.name,
+        type: file.type,
+        size: file.size
+      });
+      setAudioFile(file);
+    }
   };
   
-  const handlePassageFileUpload = (e) => {
+  const handlePassageFileUpload = async (e) => {
     const file = e.target.files[0];
-    if (file) setPassageFile(file);
+    if (!file) return;
+    
+    setPassageFile(file);
+    
+    // Auto-parse DOCX files to text
+    const fileName = file.name.toLowerCase();
+    if (fileName.endsWith('.docx') || fileName.endsWith('.doc')) {
+      try {
+        console.log('[READING] Parsing DOCX file:', file.name);
+        
+        // Import API
+        const { questionBankAPI } = await import('../../../../services/api');
+        
+        // Parse DOCX
+        const result = await questionBankAPI.parseDocx(file);
+        
+        console.log('[READING] DOCX parsed:', result.paragraphs, 'paragraphs,', result.characters, 'chars');
+        
+        // Set text to textarea
+        setReadingPassage(result.text);
+        
+        // Clear file since we have text now
+        setPassageFile(null);
+        setUseFile(false);
+        
+        alert(`✅ Đã parse file thành công!\n\n${result.paragraphs} đoạn văn, ${result.characters} ký tự\n\nBạn có thể chỉnh sửa text trong ô bên dưới.`);
+      } catch (err) {
+        console.error('[READING] Parse DOCX failed:', err);
+        alert(`⚠️ Không thể parse file DOCX:\n\n${err.response?.data?.detail || err.message}\n\nVui lòng copy text thủ công hoặc chọn file khác.`);
+      }
+    }
   };
   
   const addSpeakingInstruction = () => {
@@ -84,9 +171,87 @@ export default function AddQuestionModal({ onClose, onAdd }) {
   };
   
   const handleSubmit = () => {
-    // Validation
-    if (!questionText && !speakingPrompt && !writingPrompt) {
-      alert('Vui lòng nhập nội dung câu hỏi!');
+    // Validation per skill type
+    const errors = [];
+    
+    if (skillType === 'listening') {
+      if (!questionText.trim()) {
+        errors.push('• Vui lòng nhập câu hỏi nghe');
+      }
+      if (!audioFile && !transcript) {
+        errors.push('• Vui lòng upload file audio HOẶC nhập transcript');
+      }
+      if (questionType === 'multiple_choice') {
+        const filledOptions = options.filter(opt => opt.trim());
+        if (filledOptions.length < 2) {
+          errors.push('• Cần ít nhất 2 đáp án cho trắc nghiệm');
+        }
+        if (!correctAnswer.trim()) {
+          errors.push('• Vui lòng chọn đáp án đúng');
+        }
+      } else if (questionType === 'fill_blank' || questionType === 'short_answer') {
+        if (!correctAnswer.trim()) {
+          errors.push('• Vui lòng nhập đáp án đúng');
+        }
+      }
+    } else if (skillType === 'speaking') {
+      if (!speakingPrompt.trim()) {
+        errors.push('• Vui lòng nhập câu hỏi/chủ đề nói');
+      }
+      if (prepTime < 0 || prepTime > 300) {
+        errors.push('• Thời gian chuẩn bị phải từ 0-300 giây');
+      }
+      if (speakTime < 10 || speakTime > 600) {
+        errors.push('• Thời gian nói phải từ 10-600 giây');
+      }
+    } else if (skillType === 'reading') {
+      if (!questionText.trim()) {
+        errors.push('• Vui lòng nhập câu hỏi đọc');
+      }
+      if (!readingPassage.trim() && !useFile) {
+        errors.push('• Vui lòng nhập đoạn văn đọc');
+      }
+      if (useFile && !passageFile) {
+        errors.push('• Vui lòng chọn file đoạn văn');
+      }
+      if (questionType === 'multiple_choice') {
+        const filledOptions = options.filter(opt => opt.trim());
+        if (filledOptions.length < 2) {
+          errors.push('• Cần ít nhất 2 đáp án cho trắc nghiệm');
+        }
+        if (!correctAnswer.trim()) {
+          errors.push('• Vui lòng chọn đáp án đúng');
+        }
+      } else if (questionType === 'fill_blank' || questionType === 'short_answer') {
+        if (!correctAnswer.trim()) {
+          errors.push('• Vui lòng nhập đáp án đúng');
+        }
+      }
+    } else if (skillType === 'writing') {
+      if (!writingPrompt.trim()) {
+        errors.push('• Vui lòng nhập đề bài viết');
+      }
+      if (minWords <= 0 || minWords > 1000) {
+        errors.push('• Số từ tối thiểu phải từ 1-1000');
+      }
+      if (maxWords < minWords) {
+        errors.push('• Số từ tối đa phải lớn hơn số từ tối thiểu');
+      }
+      if (maxWords > 2000) {
+        errors.push('• Số từ tối đa không vượt quá 2000');
+      }
+    }
+    
+    // Common validation
+    if (!topic.trim()) {
+      errors.push('• Vui lòng nhập chủ đề');
+    }
+    if (points <= 0 || points > 100) {
+      errors.push('• Điểm phải từ 1-100');
+    }
+    
+    if (errors.length > 0) {
+      alert('⚠️ Vui lòng kiểm tra lại:\n\n' + errors.join('\n'));
       return;
     }
     
@@ -107,7 +272,8 @@ export default function AddQuestionModal({ onClose, onAdd }) {
       questionData = {
         ...questionData,
         question_text: questionText,
-        audio_url: audioFile ? URL.createObjectURL(audioFile) : null,
+        // Pass actual file up for upload; preview handled locally
+        audio_url: null,
         transcript,
         options: questionType === 'multiple_choice' ? options : null,
         correct_answer: correctAnswer
@@ -125,7 +291,7 @@ export default function AddQuestionModal({ onClose, onAdd }) {
         ...questionData,
         question_text: questionText,
         passage: useFile ? null : readingPassage,
-        passage_url: passageFile ? URL.createObjectURL(passageFile) : null,
+        passage_url: null,
         options: questionType === 'multiple_choice' ? options : null,
         correct_answer: correctAnswer
       };
@@ -139,7 +305,14 @@ export default function AddQuestionModal({ onClose, onAdd }) {
       };
     }
     
-    onAdd(questionData);
+    // Attach raw files so parent can upload
+    onAdd({
+      ...questionData,
+      _files: {
+        audioFile: audioFile || null,
+        passageFile: useFile ? (passageFile || null) : null,
+      }
+    });
   };
   
   return (
@@ -147,8 +320,8 @@ export default function AddQuestionModal({ onClose, onAdd }) {
       <div className="add-question-modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="add-question-modal-header">
           <div>
-            <h2>Thêm câu hỏi mới</h2>
-            <p>Điền thông tin chi tiết cho câu hỏi</p>
+            <h2>{mode === 'edit' ? 'Chỉnh sửa câu hỏi' : 'Thêm câu hỏi mới'}</h2>
+            <p>{mode === 'edit' ? 'Cập nhật thông tin câu hỏi' : 'Điền thông tin chi tiết cho câu hỏi'}</p>
           </div>
           <button onClick={onClose} className="close-btn-aq">×</button>
         </div>
@@ -157,28 +330,37 @@ export default function AddQuestionModal({ onClose, onAdd }) {
           {/* Skill Type Selection */}
           <div className="form-group-aq">
             <label>Kỹ năng *</label>
+            {mode === 'edit' && <p className="text-xs text-gray-500 mt-1">Không thể thay đổi kỹ năng khi chỉnh sửa</p>}
             <div className="skill-pills">
               <button 
                 className={`skill-pill ${skillType === 'listening' ? 'active' : ''}`}
-                onClick={() => setSkillType('listening')}
+                onClick={() => mode === 'add' && setSkillType('listening')}
+                disabled={mode === 'edit'}
+                style={mode === 'edit' ? {opacity: 0.6, cursor: 'not-allowed'} : {}}
               >
                 🎧 Nghe
               </button>
               <button 
                 className={`skill-pill ${skillType === 'speaking' ? 'active' : ''}`}
-                onClick={() => setSkillType('speaking')}
+                onClick={() => mode === 'add' && setSkillType('speaking')}
+                disabled={mode === 'edit'}
+                style={mode === 'edit' ? {opacity: 0.6, cursor: 'not-allowed'} : {}}
               >
                 🗣️ Nói
               </button>
               <button 
                 className={`skill-pill ${skillType === 'reading' ? 'active' : ''}`}
-                onClick={() => setSkillType('reading')}
+                onClick={() => mode === 'add' && setSkillType('reading')}
+                disabled={mode === 'edit'}
+                style={mode === 'edit' ? {opacity: 0.6, cursor: 'not-allowed'} : {}}
               >
                 📖 Đọc
               </button>
               <button 
                 className={`skill-pill ${skillType === 'writing' ? 'active' : ''}`}
-                onClick={() => setSkillType('writing')}
+                onClick={() => mode === 'add' && setSkillType('writing')}
+                disabled={mode === 'edit'}
+                style={mode === 'edit' ? {opacity: 0.6, cursor: 'not-allowed'} : {}}
               >
                 ✍️ Viết
               </button>
@@ -251,7 +433,7 @@ export default function AddQuestionModal({ onClose, onAdd }) {
           <button onClick={onClose} className="btn-cancel-aq">Hủy</button>
           <button onClick={handleSubmit} className="btn-submit-aq">
             <Check size={18} />
-            Thêm câu hỏi
+            {mode === 'edit' ? 'Cập nhật câu hỏi' : 'Thêm câu hỏi'}
           </button>
         </div>
       </div>

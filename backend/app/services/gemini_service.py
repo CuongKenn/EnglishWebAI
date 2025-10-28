@@ -4,6 +4,7 @@ Handles interactions with Google Gemini API for AI conversation
 """
 
 import google.generativeai as genai
+import asyncio
 from typing import List, Dict
 import os
 from app.core.config import settings
@@ -94,7 +95,7 @@ class GeminiService:
                 prompt += f""" about {topic}"""
             prompt += """. Return only the questions, one per line, without numbering."""
             
-            response = self.model.generate_content(prompt)
+            response = await asyncio.to_thread(self.model.generate_content, prompt)
             suggestions = response.text.strip().split('\n')
             
             # Clean up suggestions
@@ -156,7 +157,7 @@ class GeminiService:
             
             prompt = f"{system_prompt}\n\nStudent's writing:\n{text}"
             
-            response = self.model.generate_content(prompt)
+            response = await asyncio.to_thread(self.model.generate_content, prompt)
             result_text = response.text.strip()
             
             # Try to parse JSON from response
@@ -240,7 +241,7 @@ The topic should:
 Type: {writing_type}
 Level: {level}"""
             
-            response = self.model.generate_content(prompt)
+            response = await asyncio.to_thread(self.model.generate_content, prompt)
             result_text = response.text.strip()
             
             # Try to parse JSON from response
@@ -303,6 +304,104 @@ Level: {level}"""
             # Get fallback or default
             type_fallbacks = fallback_topics.get(writing_type, fallback_topics["essay"])
             return type_fallbacks.get(level, type_fallbacks["intermediate"])
+
+    async def generate_listening_segment(self, num_questions: int = 4) -> Dict:
+        """Generate a short listening transcript with comprehension questions.
+
+        Returns JSON: { title, transcript, questions: [{question, question_format, options, correct_answer}] }
+        """
+        try:
+            num_questions = max(1, min(10, int(num_questions)))
+            prompt = f"""
+You are an English test generator. Create a short listening segment.
+Return a valid JSON object ONLY with fields:
+{{
+  "title": "short title",
+  "transcript": "natural English transcript (8-12 sentences)",
+  "questions": [
+    {{
+      "question": "...",
+      "question_format": "multiple_choice"|"true_false"|"fill_blank",
+      "options": ["A ...","B ...","C ...","D ..."] or ["True","False"],
+      "correct_answer": number index for MC/T-F or string for fill_blank
+    }}
+  ]
+}}
+
+Rules:
+- Generate exactly {num_questions} questions.
+- Make transcript self-contained and coherent.
+- Keep answers consistent with options order.
+"""
+            response = await asyncio.to_thread(self.model.generate_content, prompt)
+            text = response.text.strip()
+            import json
+            if "```json" in text:
+                text = text.split("```json")[1].split("```")[0].strip()
+            elif "```" in text:
+                text = text.split("```")[1].split("```")[0].strip()
+            data = json.loads(text)
+            return data
+        except Exception as e:
+            print(f"Error generating listening segment: {e}")
+            # Fallback minimal
+            return {
+                "title": "Daily Routine",
+                "transcript": "I wake up at 6:30... (fallback)",
+                "questions": [
+                    {
+                        "question": "What time does the speaker wake up?",
+                        "question_format": "multiple_choice",
+                        "options": ["6:00", "6:30", "7:00", "7:30"],
+                        "correct_answer": 1
+                    }
+                ]
+            }
+
+    async def generate_speaking_tasks(self, count: int = 3) -> Dict:
+        """Generate speaking prompts with brief instructions.
+
+        Returns: { tasks: [ { topic, prompt, instructions: [..], prep_time, speak_time } ] }
+        """
+        try:
+            count = max(1, min(10, int(count)))
+            prompt = f"""
+Create {count} English speaking tasks. Return ONLY JSON:
+{{
+  "tasks": [
+    {{
+      "topic": "...",
+      "prompt": "clear task statement",
+      "instructions": ["bullet 1","bullet 2"],
+      "prep_time": 30,
+      "speak_time": 60
+    }}
+  ]
+}}
+Keep prompts realistic for intermediate learners.
+"""
+            response = await asyncio.to_thread(self.model.generate_content, prompt)
+            text = response.text.strip()
+            import json
+            if "```json" in text:
+                text = text.split("```json")[1].split("```")[0].strip()
+            elif "```" in text:
+                text = text.split("```")[1].split("```")[0].strip()
+            data = json.loads(text)
+            return data
+        except Exception as e:
+            print(f"Error generating speaking tasks: {e}")
+            return {
+                "tasks": [
+                    {
+                        "topic": "Hobbies",
+                        "prompt": "Talk about your favorite hobby and why you enjoy it.",
+                        "instructions": ["Give examples", "Explain how often you do it"],
+                        "prep_time": 30,
+                        "speak_time": 60
+                    }
+                ]
+            }
     
     async def generate_reading_passage(
         self,
@@ -407,7 +506,7 @@ IMPORTANT:
 - For fill_blank, choose words that appear in the passage
 - Ensure correct answers are definitively right"""
 
-            response = self.model.generate_content(prompt)
+            response = await asyncio.to_thread(self.model.generate_content, prompt)
             result_text = response.text.strip()
             
             print(f"[AI Reading] Raw response from Gemini (first 500 chars): {result_text[:500]}")

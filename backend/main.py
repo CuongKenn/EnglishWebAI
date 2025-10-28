@@ -8,6 +8,7 @@ from app.routers import admin as admin_router
 from app.routers import classes, lessons, exercises, materials, discussions, news, notifications, messages
 from app.routers import courses as courses_router
 from app.routers import ai_conversation, ai_writing, ai_reading
+from app.routers import question_bank as question_bank_router
 from app.routers import ai_usage, ai_analytics
 from app.models import User
 
@@ -25,15 +26,10 @@ app = FastAPI(
 # CORS Middleware
 app.add_middleware(
     CORSMiddleware,
-    # NOTE: do not include "*" when allow_credentials=True to avoid browser blocking
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:5173",  # Vite dev server
-        "http://127.0.0.1:5173",
-    ],
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    # Allow all origins to avoid dev CORS issues (uses token auth, not cookies)
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"],
 )
@@ -61,6 +57,7 @@ app.include_router(ai_writing.router, tags=["AI Writing"])
 app.include_router(ai_reading.router, prefix=f"{settings.API_PREFIX}/ai/reading", tags=["AI Reading"])
 app.include_router(ai_usage.router, tags=["AI Usage"])
 app.include_router(ai_analytics.router, tags=["AI Analytics (Admin)"])
+app.include_router(question_bank_router.router, prefix=f"{settings.API_PREFIX}/question-bank", tags=["Question Bank"])
 
 # Serve media files if available (e.g., uploaded materials)
 try:

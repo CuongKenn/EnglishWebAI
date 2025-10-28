@@ -25,8 +25,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-# Create non-root user
+# Create non-root user and media directories
 RUN useradd -m -u 1000 appuser && \
+    mkdir -p /app/media/question_bank/audio && \
+    mkdir -p /app/media/question_bank/passages && \
     chown -R appuser:appuser /app
 
 USER appuser

@@ -21,6 +21,8 @@ from app.models.notification import Notification
 from app.models.message import Message
 from app.models.system_config import SystemConfig
 from app.models.course import Course, CourseExercise, CourseSubmission, CourseUnit, CourseQuestion
+from app.models.question_bank import QuestionBankItem
+from app.models.question_bank_test import QuestionBankTest
 
 __all__ = [
     "User",
@@ -45,4 +47,5 @@ __all__ = [
     "CourseSubmission",
     "CourseUnit",
     "CourseQuestion",
+    "QuestionBankItem",
 ]

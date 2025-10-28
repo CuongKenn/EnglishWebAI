@@ -743,6 +743,139 @@ export const discussionsAPI = {
   },
 };
 
+// ==================== Question Bank APIs ====================
+export const questionBankAPI = {
+  // List with optional filters
+  list: async (params = {}) => {
+    try {
+      const response = await apiClient.get('/api/v1/question-bank/', { params });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+  // Create item
+  create: async (data) => {
+    try {
+      const response = await apiClient.post('/api/v1/question-bank/', data);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+  // Update item
+  update: async (id, data) => {
+    try {
+      const response = await apiClient.put(`/api/v1/question-bank/${id}`, data);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+  // Delete item
+  remove: async (id) => {
+    const response = await apiClient.delete(`/api/v1/question-bank/${id}`);
+    return response.data;
+  },
+  // Duplicate item
+  duplicate: async (id) => {
+    try {
+      const response = await apiClient.post(`/api/v1/question-bank/${id}/duplicate`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+  // Upload audio
+  uploadAudio: async (file) => {
+    const form = new FormData();
+    form.append('file', file);
+    const response = await apiClient.post('/api/v1/question-bank/upload/audio', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+  // Upload passage file
+  uploadPassage: async (file) => {
+    const form = new FormData();
+    form.append('file', file);
+    const response = await apiClient.post('/api/v1/question-bank/upload/passage', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+  // Import CSV
+  importCSV: async (file) => {
+    const form = new FormData();
+    form.append('file', file);
+    const response = await apiClient.post('/api/v1/question-bank/import', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+  // Generate test by AI
+  generateTest: async (config) => {
+    // Dynamic timeout based on number of questions
+    // Base: 2 minutes + 1 minute per 10 questions
+    const numQuestions = config.totalQuestions || 10;
+    const timeoutMs = Math.max(120000, Math.min(numQuestions * 12000, 600000)); // 2-10 minutes
+    console.log(`[API] Generate test timeout: ${timeoutMs/1000}s for ${numQuestions} questions`);
+    
+    const response = await apiClient.post('/api/v1/question-bank/generate-test', config, {
+      timeout: timeoutMs
+    });
+    return response.data;
+  },
+  // Export DOCX
+  exportDocx: async (test) => {
+    const response = await apiClient.post('/api/v1/question-bank/export-docx', test, {
+      responseType: 'blob',
+    });
+    return response;
+  },
+  // Create exercise from test
+  createExerciseFromTest: async (test, classId = null) => {
+    const params = {};
+    if (classId) params.class_id = classId;
+    const response = await apiClient.post('/api/v1/question-bank/create-exercise', test, { params });
+    return response.data;
+  },
+  // Save all questions from generated test to user's bank
+  saveFromTest: async (test) => {
+    const response = await apiClient.post('/api/v1/question-bank/save-from-test', test);
+    return response.data;
+  },
+  // Save entire test as a set in bank
+  saveTestSet: async (test) => {
+    const response = await apiClient.post('/api/v1/question-bank/save-testset', test);
+    return response.data;
+  },
+  // Get all saved test sets
+  getTestSets: async () => {
+    const response = await apiClient.get('/api/v1/question-bank/testsets');
+    return response.data;
+  },
+  // Get test set detail
+  getTestSetDetail: async (testId) => {
+    const response = await apiClient.get(`/api/v1/question-bank/testsets/${testId}`);
+    return response.data;
+  },
+  // Delete test set
+  deleteTestSet: async (testId) => {
+    const response = await apiClient.delete(`/api/v1/question-bank/testsets/${testId}`);
+    return response.data;
+  },
+  // Parse DOCX file to text
+  parseDocx: async (file) => {
+    const form = new FormData();
+    form.append('file', file);
+    const response = await apiClient.post('/api/v1/question-bank/parse-docx', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  }
+};
+
 // ==================== News APIs ====================
 export const newsAPI = {
   // Lấy danh sách tin tức (public)
