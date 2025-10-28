@@ -9,7 +9,8 @@ const SupportGroups = () => {
   const [classes, setClasses] = useState([]);
   const [selectedClass, setSelectedClass] = useState(null);
   const [supportData, setSupportData] = useState(null);
-  const [threshold, setThreshold] = useState(60);
+  // Threshold in 0..10 scale for UI
+  const [threshold, setThreshold] = useState(5);
 
   useEffect(() => {
     fetchTeacherClasses();
@@ -35,8 +36,9 @@ const SupportGroups = () => {
 
   const fetchSupportData = async (classId) => {
     try {
+      // Backend expects percentage (0..100). Convert from 0..10 UI scale.
       const response = await apiV1.get(`/teacher/classes/${classId}/analytics/students-need-support`, {
-        params: { threshold }
+        params: { threshold: threshold * 10 }
       });
       setSupportData(response.data);
     } catch (error) {
@@ -82,15 +84,16 @@ const SupportGroups = () => {
           <input
             type="range"
             min="0"
-            max="100"
+            max="10"
+            step="0.1"
             value={threshold}
-            onChange={(e) => setThreshold(parseInt(e.target.value))}
+            onChange={(e) => setThreshold(parseFloat(e.target.value))}
             className="w-full"
           />
           <div className="flex justify-between text-xs text-gray-500 mt-1">
             <span>0</span>
             <span>{threshold}</span>
-            <span>100</span>
+            <span>10</span>
           </div>
         </div>
       </div>
@@ -189,14 +192,14 @@ const SupportGroups = () => {
                     <div
                       key={skill}
                       className={`p-2 rounded text-center ${
-                        score > 0 && score < threshold
+                        score > 0 && score < (threshold * 10)
                           ? 'bg-red-100 border border-red-200'
                           : 'bg-gray-100'
                       }`}
                     >
                       <p className="text-xs text-gray-600 capitalize">{skill}</p>
                       <p className={`text-sm font-semibold ${
-                        score > 0 && score < threshold ? 'text-red-600' : 'text-gray-700'
+                        score > 0 && score < (threshold * 10) ? 'text-red-600' : 'text-gray-700'
                       }`}>
                         {score.toFixed(1)}
                       </p>
