@@ -1,59 +1,21 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { 
   Plus, Search, FileQuestion, Zap, TrendingUp, AlertTriangle,
   Edit, Copy, Trash2, Upload, Download, Sparkles, Database, X, 
   Filter, ChevronDown, Check, Eye, Headphones, BookOpen, PenTool,
-  Bot, Settings, Play, Clock, Target, FileText, Wand2
+  Bot, Settings, Play, Clock, Target, FileText, Wand2, Mic
 } from 'lucide-react';
 import { Card } from '../../../../components/ui/card';
 import AddQuestionModal from './AddQuestionModal';
+import { questionBankAPI } from '../../../../services/api';
 
 export default function QuestionBankV2() {
-  const [questions, setQuestions] = useState([
-    {
-      id: 1,
-      question_text: 'What is the main topic of the listening passage?',
-      question_type: 'multiple_choice',
-      options: ['A. Travel', 'B. Food', 'C. Sports', 'D. Music'],
-      correct_answer: 'A',
-      skill_type: 'listening',
-      difficulty: 'easy',
-      topic: 'Comprehension',
-      tags: ['listening', 'main_idea'],
-      points: 2,
-      times_used: 5,
-      created_at: '2025-01-15'
-    },
-    {
-      id: 2,
-      question_text: 'Fill in the blank: She ___ to school every day.',
-      question_type: 'fill_blank',
-      correct_answer: 'goes',
-      skill_type: 'writing',
-      difficulty: 'easy',
-      topic: 'Grammar',
-      tags: ['present_simple', 'verb'],
-      points: 1,
-      times_used: 12,
-      created_at: '2025-01-10'
-    },
-    {
-      id: 3,
-      question_text: 'According to the passage, climate change affects...',
-      question_type: 'multiple_choice',
-      options: ['A. Only oceans', 'B. All ecosystems', 'C. Mountains only', 'D. Deserts only'],
-      correct_answer: 'B',
-      skill_type: 'reading',
-      difficulty: 'medium',
-      topic: 'Comprehension',
-      tags: ['reading', 'environment'],
-      points: 3,
-      times_used: 8,
-      created_at: '2025-01-12'
-    }
-  ]);
+  const [questions, setQuestions] = useState([]);
+  const [testSets, setTestSets] = useState([]);
+  const [selectedTestSet, setSelectedTestSet] = useState(null);
   
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingQuestion, setEditingQuestion] = useState(null);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [filterSkill, setFilterSkill] = useState('');
   const [filterType, setFilterType] = useState('');
@@ -76,11 +38,55 @@ export default function QuestionBankV2() {
       hard: 20
     },
     timeLimit: 60,
-    topics: []
+    topics: [],
+    aiOnly: true,
+    avoidDuplicates: true,
+    maxAIAttempts: 5
   });
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedTest, setGeneratedTest] = useState(null);
   
+  const fileInputRef = useRef(null);
+
+  // Load questions from backend
+  const loadQuestions = async () => {
+    try {
+      const res = await questionBankAPI.list();
+      const items = res.items || [];
+      setQuestions(items.map((it) => ({
+        id: it.id,
+        question_text: it.question_text,
+        question_type: it.question_type,
+        options: it.options || undefined,
+        correct_answer: it.correct_answer,
+        skill_type: it.skill_type,
+        difficulty: it.difficulty,
+        topic: it.topic,
+        tags: it.tags || [],
+        points: it.points || 1,
+        times_used: it.times_used || 0,
+        created_at: it.created_at,
+      })));
+    } catch (e) {
+      console.error('Failed to load questions', e);
+    }
+  };
+
+  // Load test sets from backend
+  const loadTestSets = async () => {
+    try {
+      const res = await questionBankAPI.getTestSets();
+      setTestSets(res.testsets || []);
+    } catch (e) {
+      console.error('Failed to load test sets', e);
+    }
+  };
+
+  useEffect(() => {
+    loadQuestions();
+    loadTestSets();
+  }, []);
+
   // Filter logic
   const filteredQuestions = questions.filter(q => {
     const matchesSkill = !filterSkill || q.skill_type === filterSkill;
@@ -98,126 +104,193 @@ export default function QuestionBankV2() {
   const mediumCount = questions.filter(q => q.difficulty === 'medium').length;
   const hardCount = questions.filter(q => q.difficulty === 'hard').length;
   
-  const handleDeleteQuestion = (id) => {
-    if (confirm('Bạn có chắc muốn xóa câu hỏi này?')) {
-      setQuestions(questions.filter(q => q.id !== id));
+  const handleDeleteQuestion = async (id) => {
+    if (!confirm('Bạn có chắc muốn xóa câu hỏi này?')) return;
+    try {
+      await questionBankAPI.remove(id);
+      await loadQuestions();
+    } catch (e) {
+      alert('Xóa thất bại');
     }
   };
   
-  const handleDuplicateQuestion = (question) => {
-    const newQuestion = {
-      ...question,
-      id: Date.now(),
-      question_text: question.question_text + ' (Copy)',
-      times_used: 0,
-      created_at: new Date().toISOString().split('T')[0]
-    };
-    setQuestions([...questions, newQuestion]);
+  const handleDuplicateQuestion = async (question) => {
+    try {
+      await questionBankAPI.duplicate(question.id);
+      await loadQuestions();
+    } catch (e) {
+      alert('Nhân bản thất bại');
+    }
   };
 
   const handleAIGeneration = async () => {
-    if (questions.length === 0) {
-      alert('Ngân hàng câu hỏi trống! Vui lòng thêm câu hỏi trước khi tạo đề thi.');
-      return;
-    }
-
-    if (!validateConfig()) {
-      return;
-    }
-
+    if (!validateConfig()) return;
     setIsGenerating(true);
     
-    // Simulate AI generation process with more realistic logic
-    setTimeout(() => {
-      // Filter questions based on skill distribution
-      const skillCounts = {};
-      Object.keys(aiGenerationConfig.skillDistribution).forEach(skill => {
-        skillCounts[skill] = Math.round(
-          (aiGenerationConfig.totalQuestions * aiGenerationConfig.skillDistribution[skill]) / 100
-        );
-      });
-
-      // Distribute questions by skill
-      const generatedQuestions = [];
-      Object.entries(skillCounts).forEach(([skill, count]) => {
-        const skillQuestions = questions.filter(q => q.skill_type === skill);
-        const selectedQuestions = skillQuestions
-          .sort(() => Math.random() - 0.5)
-          .slice(0, count)
-          .map((q, index) => ({
-            ...q,
-            id: `generated_${Date.now()}_${skill}_${index}`,
-            generated: true
-          }));
-        generatedQuestions.push(...selectedQuestions);
-      });
-
-      // Fill remaining slots with random questions if needed
-      const remaining = aiGenerationConfig.totalQuestions - generatedQuestions.length;
-      if (remaining > 0) {
-        const availableQuestions = questions.filter(q => 
-          !generatedQuestions.some(gq => gq.id === q.id)
-        );
-        const additionalQuestions = availableQuestions
-          .sort(() => Math.random() - 0.5)
-          .slice(0, remaining)
-          .map((q, index) => ({
-            ...q,
-            id: `generated_${Date.now()}_additional_${index}`,
-            generated: true
-          }));
-        generatedQuestions.push(...additionalQuestions);
-      }
-
-      // Shuffle final questions
-      const shuffledQuestions = generatedQuestions.sort(() => Math.random() - 0.5);
-      
+    // Debug: Log config being sent
+    console.log('=== AI Generation Config ===');
+    console.log('Total Questions:', aiGenerationConfig.totalQuestions);
+    console.log('Skill Distribution:', aiGenerationConfig.skillDistribution);
+    console.log('Time Limit:', aiGenerationConfig.timeLimit);
+    console.log('AI Only:', aiGenerationConfig.aiOnly);
+    console.log('Avoid Duplicates:', aiGenerationConfig.avoidDuplicates);
+    
+    try {
+      const res = await questionBankAPI.generateTest(aiGenerationConfig);
+      // Map to local UI structure
+      const mapped = (res.questions || []).map((q, idx) => ({
+        id: `generated_${Date.now()}_${idx}`,
+        question_text: q.question_text,
+        question_type: q.question_type,
+        options: q.options || [],
+        correct_answer: q.correct_answer,
+        skill_type: q.skill_type,
+        difficulty: q.difficulty || 'medium',
+        topic: q.topic,
+        tags: q.tags || [],
+        points: q.points || 1,
+        transcript: q.transcript,
+        passage_text: q.passage_text,
+        times_used: 0,
+        created_at: res.createdAt,
+        generated: true,
+      }));
       setGeneratedTest({
-        name: aiGenerationConfig.testName || `Đề thi AI - ${new Date().toLocaleDateString()}`,
-        questions: shuffledQuestions,
-        timeLimit: aiGenerationConfig.timeLimit,
-        totalPoints: shuffledQuestions.reduce((sum, q) => sum + q.points, 0),
-        skillDistribution: aiGenerationConfig.skillDistribution,
-        createdAt: new Date().toISOString()
+        name: res.name,
+        questions: mapped,
+        timeLimit: res.timeLimit,
+        totalPoints: res.totalPoints,
+        skillDistribution: res.skillDistribution,
+        createdAt: res.createdAt,
       });
+      
+      // Debug: Log actual results
+      console.log('=== AI Generation Results ===');
+      console.log('Total Questions Generated:', mapped.length);
+      const skillCounts = {};
+      ['listening', 'speaking', 'reading', 'writing'].forEach(skill => {
+        skillCounts[skill] = mapped.filter(q => q.skill_type === skill).length;
+      });
+      console.log('Skill Counts:', skillCounts);
+      console.log('Expected Distribution:', aiGenerationConfig.skillDistribution);
+      
+      // Show alert if mismatch
+      const totalPct = Object.values(aiGenerationConfig.skillDistribution).reduce((s, v) => s + v, 0);
+      if (totalPct === 100) {
+        const mismatches = [];
+        ['listening', 'speaking', 'reading', 'writing'].forEach(skill => {
+          const expected = Math.round(aiGenerationConfig.totalQuestions * (aiGenerationConfig.skillDistribution[skill] / 100));
+          const actual = skillCounts[skill];
+          if (expected > 0 && actual === 0) {
+            mismatches.push(`${skill}: mong đợi ${expected} câu nhưng được 0 câu`);
+          }
+        });
+        if (mismatches.length > 0) {
+          console.warn('⚠️ SKILL MISMATCH:', mismatches.join(', '));
+          alert('⚠️ Cảnh báo: Một số kỹ năng không tạo được câu hỏi:\n\n' + mismatches.join('\n') + '\n\nVui lòng:\n1. Bỏ tick "Tránh trùng với ngân hàng"\n2. Kiểm tra GEMINI_API_KEY\n3. Xem log backend để biết chi tiết');
+        }
+      }
+    } catch (e) {
+      alert('Tạo đề thi bằng AI thất bại');
+    } finally {
       setIsGenerating(false);
-    }, 2000);
+    }
   };
 
   const handleExportTest = () => {
     if (!generatedTest) return;
-    
-    const testData = {
+    const payload = {
       name: generatedTest.name,
       timeLimit: generatedTest.timeLimit,
       totalPoints: generatedTest.totalPoints,
-      questions: generatedTest.questions.map((q, index) => ({
-        number: index + 1,
-        question: q.question_text,
-        type: q.question_type,
-        skill: q.skill_type,
-        difficulty: q.difficulty,
-        points: q.points,
+      questions: generatedTest.questions.map(q => ({
+        question_text: q.question_text,
+        question_type: q.question_type,
+        skill_type: q.skill_type,
         options: q.options || [],
-        correctAnswer: q.correct_answer,
-        tags: q.tags || []
+        correct_answer: q.correct_answer,
+        difficulty: q.difficulty,
+        topic: q.topic,
+        tags: q.tags || [],
+        points: q.points || 1,
       }))
     };
 
-    const dataStr = JSON.stringify(testData, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${generatedTest.name.replace(/[^a-zA-Z0-9]/g, '_')}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
+    questionBankAPI.exportDocx(payload).then((res) => {
+      const blob = res.data;
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${generatedTest.name.replace(/[^a-zA-Z0-9]/g, '_')}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    }).catch(() => {
+      alert('Xuất DOCX thất bại');
+    });
   };
 
-  const handleCreateExercise = () => {
+  const handleCreateExercise = async () => {
     if (!generatedTest) return;
-    // This would integrate with the existing exercise creation system
-    alert('Tính năng tạo bài tập từ đề thi AI sẽ được tích hợp với hệ thống quản lý bài tập hiện có.');
+    try {
+      const payload = {
+        name: generatedTest.name,
+        timeLimit: generatedTest.timeLimit,
+        totalPoints: generatedTest.totalPoints,
+        questions: generatedTest.questions.map(q => ({
+          question_text: q.question_text,
+          question_type: q.question_type,
+          skill_type: q.skill_type,
+          options: q.options || [],
+          correct_answer: q.correct_answer,
+          difficulty: q.difficulty,
+          topic: q.topic,
+          tags: q.tags || [],
+          points: q.points || 1,
+        }))
+      };
+      // Optional: prompt for classId
+      const classIdStr = window.prompt('Nhập class_id để gắn bài tập (bỏ trống nếu không):', '');
+      const classId = classIdStr && !isNaN(parseInt(classIdStr)) ? parseInt(classIdStr) : null;
+      const res = await questionBankAPI.createExerciseFromTest(payload, classId);
+      alert(`Đã tạo bài tập #${res.id}${res.class_id ? ' cho lớp ' + res.class_id : ''}`);
+    } catch (e) {
+      alert('Tạo bài tập thất bại');
+    }
+  };
+
+  const handleSaveToBank = async () => {
+    if (!generatedTest) return;
+    try {
+      const payload = {
+        name: generatedTest.name,
+        timeLimit: generatedTest.timeLimit,
+        totalPoints: generatedTest.totalPoints,
+        skillDistribution: generatedTest.skillDistribution,
+        questions: generatedTest.questions.map(q => ({
+          question_text: q.question_text,
+          question_type: q.question_type,
+          skill_type: q.skill_type,
+          options: q.options || [],
+          correct_answer: q.correct_answer,
+          difficulty: q.difficulty,
+          topic: q.topic,
+          tags: q.tags || [],
+          points: q.points || 1,
+          transcript: q.transcript,
+          passage_text: q.passage_text,
+        }))
+      };
+      // Chỉ lưu bộ đề, không lưu từng câu riêng lẻ
+      const setRes = await questionBankAPI.saveTestSet(payload);
+      alert(`✅ Đã lưu bộ đề #${setRes.id} vào ngân hàng (${generatedTest.questions.length} câu hỏi)`);
+      // Refresh danh sách bộ đề
+      await loadTestSets();
+    } catch (e) {
+      console.error('Lỗi lưu bộ đề:', e);
+      alert('❌ Lưu vào ngân hàng thất bại');
+    }
   };
 
   const handleResetConfig = () => {
@@ -236,9 +309,43 @@ export default function QuestionBankV2() {
         hard: 20
       },
       timeLimit: 60,
-      topics: []
+      topics: [],
+      aiOnly: false
     });
     setGeneratedTest(null);
+  };
+
+  const handleImportClick = () => {
+    if (fileInputRef.current) fileInputRef.current.click();
+  };
+
+  const handleImportFile = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Check file type
+    const fileName = file.name.toLowerCase();
+    if (!fileName.endsWith('.csv') && !fileName.endsWith('.docx')) {
+      alert('⚠️ Vui lòng chọn file CSV hoặc DOCX');
+      e.target.value = '';
+      return;
+    }
+    
+    try {
+      const res = await questionBankAPI.importCSV(file);
+      if (res.errors && res.errors.length > 0) {
+        const errorMsg = res.errors.slice(0, 5).join('\n');
+        alert(`Import: ${res.imported} thành công, ${res.failed} lỗi\n\nLỗi:\n${errorMsg}${res.errors.length > 5 ? '\n...' : ''}`);
+      } else {
+        alert(`✅ Import thành công: ${res.imported} câu hỏi`);
+      }
+      await loadQuestions();
+    } catch (err) {
+      console.error('Import error:', err);
+      alert(`❌ Import thất bại: ${err.response?.data?.detail || err.message || 'Unknown error'}`);
+    } finally {
+      e.target.value = '';
+    }
   };
 
   const validateConfig = () => {
@@ -261,7 +368,7 @@ export default function QuestionBankV2() {
   const getSkillIcon = (skill) => {
     const icons = {
       listening: Headphones,
-      speaking: '🗣️',
+      speaking: Mic,
       reading: BookOpen,
       writing: PenTool
     };
@@ -287,6 +394,55 @@ export default function QuestionBankV2() {
     return colors[skill] || 'bg-gray-100 text-gray-800';
   };
 
+  const handleViewTestSet = async (testSetId) => {
+    try {
+      const detail = await questionBankAPI.getTestSetDetail(testSetId);
+      setSelectedTestSet(detail);
+      // Convert to generatedTest format for preview
+      const mapped = (detail.questions || []).map((q, idx) => ({
+        id: `testset_${testSetId}_${idx}`,
+        question_text: q.question_text,
+        question_type: q.question_type,
+        options: q.options || [],
+        correct_answer: q.correct_answer,
+        skill_type: q.skill_type,
+        difficulty: q.difficulty || 'medium',
+        topic: q.topic,
+        tags: q.tags || [],
+        points: q.points || 1,
+        transcript: q.transcript,
+        passage_text: q.passage_text,
+      }));
+      setGeneratedTest({
+        name: detail.name,
+        questions: mapped,
+        timeLimit: detail.timeLimit,
+        totalPoints: detail.totalPoints,
+        skillDistribution: detail.skillDistribution,
+        createdAt: detail.createdAt,
+      });
+    } catch (e) {
+      console.error('Failed to load test set detail', e);
+      alert('Không thể tải bộ đề');
+    }
+  };
+
+  const handleDeleteTestSet = async (testSetId) => {
+    if (!confirm('Bạn có chắc muốn xóa bộ đề này?')) return;
+    try {
+      await questionBankAPI.deleteTestSet(testSetId);
+      alert('✅ Đã xóa bộ đề');
+      await loadTestSets();
+      if (selectedTestSet && selectedTestSet.id === testSetId) {
+        setSelectedTestSet(null);
+        setGeneratedTest(null);
+      }
+    } catch (e) {
+      console.error('Failed to delete test set', e);
+      alert('❌ Xóa bộ đề thất bại');
+    }
+  };
+
   return (
     <div className="p-8">
       {/* Header Section - Match Courses style */}
@@ -297,9 +453,10 @@ export default function QuestionBankV2() {
             <p className="text-gray-600">Quản lý và tạo đề từ ngân hàng câu hỏi của bạn</p>
           </div>
           <div className="flex gap-3">
-            <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2">
+            <input ref={fileInputRef} type="file" accept=".csv,.docx" style={{ display: 'none' }} onChange={handleImportFile} />
+            <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2" onClick={handleImportClick}>
               <Upload size={18} />
-              Import Excel
+              Import File
             </button>
             <button 
               className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
@@ -437,14 +594,23 @@ export default function QuestionBankV2() {
                   </div>
                   <div className="flex gap-1">
                     <button
+                      onClick={() => setEditingQuestion(question)}
+                      className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
+                      title="Chỉnh sửa"
+                    >
+                      <Edit size={16} />
+                    </button>
+                    <button
                       onClick={() => handleDuplicateQuestion(question)}
                       className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                      title="Sao chép"
                     >
                       <Copy size={16} />
                     </button>
                     <button
                       onClick={() => handleDeleteQuestion(question.id)}
                       className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                      title="Xóa"
                     >
                       <Trash2 size={16} />
                     </button>
@@ -456,9 +622,61 @@ export default function QuestionBankV2() {
                     <SkillIcon className="w-4 h-4 text-gray-600" />
                     <span className="text-sm font-medium text-gray-600">{question.points} điểm</span>
                   </div>
-                  <p className="text-gray-900 text-sm leading-relaxed line-clamp-3">
+                  <p className="text-gray-900 text-sm font-medium leading-relaxed line-clamp-2 mb-2">
                     {question.question_text}
                   </p>
+                  
+                  {/* Additional info based on skill type */}
+                  {question.skill_type === 'listening' && (
+                    <div className="mt-2 space-y-1">
+                      {question.media_url && (
+                        <div className="flex items-center gap-1 text-xs text-gray-500">
+                          <Headphones size={12} />
+                          <span>Có file audio</span>
+                        </div>
+                      )}
+                      {question.transcript && (
+                        <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded line-clamp-2">
+                          📝 Transcript: {question.transcript}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  {question.skill_type === 'reading' && (
+                    <div className="mt-2">
+                      {(question.passage_text || question.passage_url) && (
+                        <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded line-clamp-3">
+                          📖 {question.passage_text ? question.passage_text : 'Có file đoạn văn'}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  {question.skill_type === 'speaking' && (
+                    <div className="mt-2">
+                      {question.requirements && question.requirements.length > 0 && (
+                        <div className="text-xs text-gray-600">
+                          💡 {question.requirements.length} yêu cầu
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  {question.skill_type === 'writing' && (
+                    <div className="mt-2">
+                      {question.word_limit && (
+                        <div className="text-xs text-gray-600">
+                          📏 {question.word_limit.min}-{question.word_limit.max} từ
+                        </div>
+                      )}
+                      {question.requirements && question.requirements.length > 0 && (
+                        <div className="text-xs text-gray-600">
+                          💡 {question.requirements.length} yêu cầu
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
                 
                 {question.question_type === 'multiple_choice' && question.options && (
@@ -511,6 +729,101 @@ export default function QuestionBankV2() {
         )}
       </div>
 
+      {/* Saved Test Sets Section */}
+      <div className="mt-12 mb-12">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="bg-gradient-to-r from-blue-500 to-cyan-500 p-2 rounded-lg">
+            <Database className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Bộ đề đã lưu</h2>
+            <p className="text-gray-600">Các bộ đề thi đã tạo và lưu trữ ({testSets.length} bộ đề)</p>
+          </div>
+        </div>
+
+        {testSets.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {testSets.map((testSet) => (
+              <Card key={testSet.id} className="p-6 hover:shadow-lg transition-shadow">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">{testSet.name}</h3>
+                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                      <Clock className="w-3 h-3" />
+                      {new Date(testSet.createdAt).toLocaleDateString('vi-VN')}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleDeleteTestSet(testSet.id)}
+                    className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                    title="Xóa bộ đề"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+
+                <div className="space-y-2 mb-4">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600 flex items-center gap-1">
+                      <FileQuestion className="w-4 h-4" />
+                      Số câu hỏi:
+                    </span>
+                    <span className="font-medium text-gray-900">{testSet.questionCount}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600 flex items-center gap-1">
+                      <Clock className="w-4 h-4" />
+                      Thời gian:
+                    </span>
+                    <span className="font-medium text-gray-900">{testSet.timeLimit} phút</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600 flex items-center gap-1">
+                      <Target className="w-4 h-4" />
+                      Tổng điểm:
+                    </span>
+                    <span className="font-medium text-gray-900">{testSet.totalPoints}</span>
+                  </div>
+                </div>
+
+                {testSet.skillDistribution && Object.keys(testSet.skillDistribution).length > 0 && (
+                  <div className="mb-4">
+                    <div className="text-xs text-gray-600 mb-2">Phân bố kỹ năng:</div>
+                    <div className="flex flex-wrap gap-1">
+                      {Object.entries(testSet.skillDistribution).map(([skill, percentage]) => (
+                        percentage > 0 && (
+                          <span key={skill} className={`px-2 py-1 rounded text-xs ${getSkillColor(skill)}`}>
+                            {skill === 'listening' ? 'Nghe' : 
+                             skill === 'speaking' ? 'Nói' :
+                             skill === 'reading' ? 'Đọc' : 'Viết'}: {percentage}%
+                          </span>
+                        )
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <button
+                  onClick={() => handleViewTestSet(testSet.id)}
+                  className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Eye className="w-4 h-4" />
+                  Xem chi tiết
+                </button>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <Card className="p-12">
+            <div className="text-center">
+              <Database className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500 mb-2">Chưa có bộ đề nào được lưu</p>
+              <p className="text-sm text-gray-400">Tạo đề thi bằng AI và lưu vào ngân hàng để quản lý</p>
+            </div>
+          </Card>
+        )}
+      </div>
+
       {/* AI Test Generation Section */}
       <div className="mt-12">
         <div className="flex items-center gap-3 mb-6">
@@ -519,7 +832,7 @@ export default function QuestionBankV2() {
           </div>
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Sinh đề trực tiếp bằng AI</h2>
-            <p className="text-gray-600">Tạo đề thi tự động từ ngân hàng câu hỏi với AI</p>
+            <p className="text-gray-600">Tạo đề thi tự động ngẫu nhiên không trùng lặp với AI</p>
           </div>
         </div>
 
@@ -620,13 +933,17 @@ export default function QuestionBankV2() {
                           max="100"
                           value={percentage}
                           className="w-full"
-                          onChange={(e) => setAiGenerationConfig(prev => ({
-                            ...prev,
-                            skillDistribution: {
-                              ...prev.skillDistribution,
-                              [skill]: parseInt(e.target.value)
-                            }
-                          }))}
+                          onChange={(e) => {
+                            const newValue = parseInt(e.target.value);
+                            console.log(`Skill ${skill} changed to ${newValue}%`);
+                            setAiGenerationConfig(prev => ({
+                              ...prev,
+                              skillDistribution: {
+                                ...prev.skillDistribution,
+                                [skill]: newValue
+                              }
+                            }));
+                          }}
                         />
                       </div>
                       <div className="w-12 text-sm text-gray-600 text-right">
@@ -642,11 +959,49 @@ export default function QuestionBankV2() {
                 )}
               </div>
 
+              {/* Fallback option when AI lacks questions */}
+              <div className="rounded-lg bg-gray-50 p-4 border border-gray-200">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="mt-1"
+                    checked={!aiGenerationConfig.aiOnly}
+                    onChange={(e) => setAiGenerationConfig(prev => ({
+                      ...prev,
+                      aiOnly: !e.target.checked
+                    }))}
+                  />
+                  <div>
+                    <div className="text-sm font-medium text-gray-900">Bổ sung từ ngân hàng nếu AI thiếu</div>
+                    <div className="text-xs text-gray-600">Giữ đúng tổng số câu bằng cách tự động lấy thêm từ ngân hàng cá nhân khi AI không sinh đủ ở một kỹ năng.</div>
+                  </div>
+                </label>
+              </div>
+
+              {/* Avoid duplicates option */}
+              <div className="rounded-lg bg-gray-50 p-4 border border-gray-200">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="mt-1"
+                    checked={aiGenerationConfig.avoidDuplicates}
+                    onChange={(e) => setAiGenerationConfig(prev => ({
+                      ...prev,
+                      avoidDuplicates: e.target.checked
+                    }))}
+                  />
+                  <div>
+                    <div className="text-sm font-medium text-gray-900">Tránh trùng với ngân hàng</div>
+                    <div className="text-xs text-gray-600">AI sẽ sinh nội dung mới và bỏ qua các câu/đoạn đã có trong ngân hàng của bạn.</div>
+                  </div>
+                </label>
+              </div>
+
               {/* Action Buttons */}
               <div className="flex gap-3">
                 <button
                   onClick={handleAIGeneration}
-                  disabled={isGenerating || questions.length === 0}
+                  disabled={isGenerating}
                   className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 px-4 rounded-lg hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2"
                 >
                   {isGenerating ? (
@@ -722,6 +1077,43 @@ export default function QuestionBankV2() {
                   </div>
                 </div>
 
+                {/* Listening: only a play button (no transcript shown) */}
+                {(() => {
+                  const q = generatedTest.questions.find(x => x.skill_type === 'listening' && x.transcript);
+                  if (!q) return null;
+                  return (
+                    <div className="flex justify-end mb-1">
+                      <button
+                        className="text-purple-700 text-xs hover:underline"
+                        onClick={() => {
+                          try {
+                            const utter = new SpeechSynthesisUtterance(q.transcript);
+                            utter.lang = 'en-US';
+                            window.speechSynthesis.cancel();
+                            window.speechSynthesis.speak(utter);
+                          } catch (e) {
+                            alert('Trình duyệt không hỗ trợ phát giọng nói.');
+                          }
+                        }}
+                      >
+                        Phát đoạn nghe
+                      </button>
+                    </div>
+                  );
+                })()}
+
+                {/* Reading: show passage (script) for students to read */}
+                {(() => {
+                  const rq = generatedTest.questions.find(x => x.skill_type === 'reading' && x.passage_text);
+                  if (!rq) return null;
+                  return (
+                    <div className="mb-3 p-3 rounded-lg bg-green-50 border border-green-200">
+                      <div className="text-sm font-medium text-green-900 mb-1">Đoạn đọc (Reading)</div>
+                      <p className="text-sm text-gray-900 whitespace-pre-wrap">{rq.passage_text}</p>
+                    </div>
+                  );
+                })()}
+
                 <div className="space-y-3 max-h-64 overflow-y-auto">
                   {generatedTest.questions.slice(0, 5).map((question, index) => (
                     <div key={question.id} className="p-3 bg-gray-50 rounded-lg">
@@ -761,6 +1153,13 @@ export default function QuestionBankV2() {
                     <Download className="w-4 h-4" />
                     Xuất đề thi
                   </button>
+                  <button
+                    onClick={handleSaveToBank}
+                    className="flex-1 bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Database className="w-4 h-4" />
+                    Lưu vào ngân hàng
+                  </button>
                   <button 
                     onClick={handleCreateExercise}
                     className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
@@ -784,10 +1183,281 @@ export default function QuestionBankV2() {
       {/* Modals */}
       {showAddModal && (
         <AddQuestionModal
+          mode="add"
           onClose={() => setShowAddModal(false)}
-          onAdd={(newQuestion) => {
-            setQuestions([...questions, { ...newQuestion, id: Date.now() }]);
-            setShowAddModal(false);
+          onAdd={async (newQuestion) => {
+            console.log('[ADD QUESTION] Received:', newQuestion);
+            
+            try {
+              let payload = {};
+              
+              // ========== LISTENING ==========
+              if (newQuestion.skill_type === 'listening') {
+                console.log('[LISTENING] Processing...');
+                
+                // Upload audio nếu có
+                let media_url = null;
+                const files = newQuestion._files || {};
+                console.log('[LISTENING] Files object:', files);
+                console.log('[LISTENING] audioFile:', files.audioFile);
+                
+                if (files.audioFile) {
+                  try {
+                    console.log('[LISTENING] Uploading audio...', {
+                      name: files.audioFile.name,
+                      type: files.audioFile.type,
+                      size: files.audioFile.size
+                    });
+                    const uploadRes = await questionBankAPI.uploadAudio(files.audioFile);
+                    media_url = uploadRes.url;
+                    console.log('[LISTENING] Audio uploaded successfully:', media_url);
+                  } catch (err) {
+                    console.error('[LISTENING] Audio upload failed:', err);
+                    console.error('[LISTENING] Error response:', err.response?.data);
+                    alert(`⚠️ Upload audio thất bại:\n\n${err.response?.data?.detail || err.message}\n\nVui lòng kiểm tra định dạng file và thử lại.`);
+                    // Don't continue if audio upload fails for listening questions
+                    return;
+                  }
+                } else {
+                  console.log('[LISTENING] No audio file provided');
+                }
+                
+                payload = {
+                  skill_type: 'listening',
+                  question_type: newQuestion.question_type || 'short_answer',
+                  difficulty: newQuestion.difficulty || 'medium',
+                  topic: newQuestion.topic,
+                  question_text: newQuestion.question_text,
+                  media_url: media_url,
+                  transcript: newQuestion.transcript || null,
+                  options: newQuestion.question_type === 'multiple_choice' ? newQuestion.options : null,
+                  correct_answer: newQuestion.correct_answer || null,
+                  points: newQuestion.points || 2,
+                  tags: ['listening'],
+                };
+              }
+              
+              // ========== SPEAKING ==========
+              else if (newQuestion.skill_type === 'speaking') {
+                console.log('[SPEAKING] Processing...');
+                
+                payload = {
+                  skill_type: 'speaking',
+                  question_type: 'task',
+                  difficulty: newQuestion.difficulty || 'medium',
+                  topic: newQuestion.topic,
+                  question_text: newQuestion.question_text,
+                  requirements: newQuestion.instructions || null,
+                  points: newQuestion.points || 3,
+                  tags: ['speaking'],
+                };
+              }
+              
+              // ========== READING ==========
+              else if (newQuestion.skill_type === 'reading') {
+                console.log('[READING] Processing...');
+                
+                // Xử lý passage
+                let passage_text = newQuestion.passage || null;
+                let passage_url = null;
+                
+                const files = newQuestion._files || {};
+                if (files.passageFile) {
+                  try {
+                    console.log('[READING] Uploading passage file...');
+                    const uploadRes = await questionBankAPI.uploadPassage(files.passageFile);
+                    passage_url = uploadRes.url;
+                    console.log('[READING] Passage uploaded:', passage_url);
+                  } catch (err) {
+                    console.error('[READING] Passage upload failed:', err);
+                    alert('⚠️ Upload passage thất bại, sử dụng text passage thay thế...');
+                  }
+                }
+                
+                payload = {
+                  skill_type: 'reading',
+                  question_type: newQuestion.question_type || 'short_answer',
+                  difficulty: newQuestion.difficulty || 'medium',
+                  topic: newQuestion.topic,
+                  question_text: newQuestion.question_text,
+                  passage_text: passage_text,
+                  passage_url: passage_url,
+                  options: newQuestion.question_type === 'multiple_choice' ? newQuestion.options : null,
+                  correct_answer: newQuestion.correct_answer || null,
+                  points: newQuestion.points || 2,
+                  tags: ['reading'],
+                };
+              }
+              
+              // ========== WRITING ==========
+              else if (newQuestion.skill_type === 'writing') {
+                console.log('[WRITING] Processing...');
+                
+                payload = {
+                  skill_type: 'writing',
+                  question_type: 'task',
+                  difficulty: newQuestion.difficulty || 'medium',
+                  topic: newQuestion.topic,
+                  question_text: newQuestion.question_text,
+                  writing_type: newQuestion.writing_type || 'essay',
+                  word_limit_min: newQuestion.word_limit?.min || 150,
+                  word_limit_max: newQuestion.word_limit?.max || 300,
+                  requirements: newQuestion.requirements || null,
+                  points: newQuestion.points || 4,
+                  tags: ['writing'],
+                };
+              }
+              
+              // Validate payload
+              if (!payload.skill_type || !payload.question_text || !payload.topic) {
+                throw new Error('Thiếu thông tin bắt buộc: skill_type, question_text, topic');
+              }
+              
+              console.log('[ADD QUESTION] Final payload:', payload);
+              
+              // Create question
+              await questionBankAPI.create(payload);
+              console.log('[ADD QUESTION] Success!');
+              
+              alert('✅ Đã thêm câu hỏi thành công');
+              await loadQuestions();
+              setShowAddModal(false);
+              
+            } catch (e) {
+              console.error('[ADD QUESTION] Error:', e);
+              const errorMsg = e.response?.data?.detail || e.message || 'Unknown error';
+              alert(`❌ Thêm câu hỏi thất bại:\n\n${errorMsg}`);
+            }
+          }}
+        />
+      )}
+      
+      {/* Edit Modal */}
+      {editingQuestion && (
+        <AddQuestionModal
+          mode="edit"
+          initialData={editingQuestion}
+          onClose={() => setEditingQuestion(null)}
+          onAdd={async (updatedQuestion) => {
+            console.log('[EDIT QUESTION] Received:', updatedQuestion);
+            
+            try {
+              let payload = {};
+              
+              // ========== LISTENING ==========
+              if (updatedQuestion.skill_type === 'listening') {
+                console.log('[LISTENING] Processing update...');
+                
+                // Upload audio nếu có file mới
+                let media_url = editingQuestion.media_url; // Keep existing URL
+                const files = updatedQuestion._files || {};
+                
+                if (files.audioFile) {
+                  try {
+                    console.log('[LISTENING] Uploading new audio...');
+                    const uploadRes = await questionBankAPI.uploadAudio(files.audioFile);
+                    media_url = uploadRes.url;
+                    console.log('[LISTENING] New audio uploaded:', media_url);
+                  } catch (err) {
+                    console.error('[LISTENING] Audio upload failed:', err);
+                    alert(`⚠️ Upload audio thất bại:\n\n${err.response?.data?.detail || err.message}`);
+                    return;
+                  }
+                }
+                
+                payload = {
+                  skill_type: 'listening',
+                  question_type: updatedQuestion.question_type || 'short_answer',
+                  difficulty: updatedQuestion.difficulty || 'medium',
+                  topic: updatedQuestion.topic,
+                  question_text: updatedQuestion.question_text,
+                  media_url: media_url,
+                  transcript: updatedQuestion.transcript || null,
+                  options: updatedQuestion.question_type === 'multiple_choice' ? updatedQuestion.options : null,
+                  correct_answer: updatedQuestion.correct_answer || null,
+                  points: updatedQuestion.points || 2,
+                  tags: ['listening'],
+                };
+              }
+              
+              // ========== SPEAKING ==========
+              else if (updatedQuestion.skill_type === 'speaking') {
+                payload = {
+                  skill_type: 'speaking',
+                  question_type: 'task',
+                  difficulty: updatedQuestion.difficulty || 'medium',
+                  topic: updatedQuestion.topic,
+                  question_text: updatedQuestion.question_text,
+                  requirements: updatedQuestion.instructions || null,
+                  points: updatedQuestion.points || 3,
+                  tags: ['speaking'],
+                };
+              }
+              
+              // ========== READING ==========
+              else if (updatedQuestion.skill_type === 'reading') {
+                let passage_text = updatedQuestion.passage || editingQuestion.passage_text;
+                let passage_url = editingQuestion.passage_url;
+                
+                const files = updatedQuestion._files || {};
+                if (files.passageFile) {
+                  try {
+                    console.log('[READING] Uploading new passage...');
+                    const uploadRes = await questionBankAPI.uploadPassage(files.passageFile);
+                    passage_url = uploadRes.url;
+                    passage_text = null; // Use file instead
+                  } catch (err) {
+                    console.error('[READING] Passage upload failed:', err);
+                    alert('⚠️ Upload passage thất bại, sử dụng text thay thế...');
+                  }
+                }
+                
+                payload = {
+                  skill_type: 'reading',
+                  question_type: updatedQuestion.question_type || 'short_answer',
+                  difficulty: updatedQuestion.difficulty || 'medium',
+                  topic: updatedQuestion.topic,
+                  question_text: updatedQuestion.question_text,
+                  passage_text: passage_text,
+                  passage_url: passage_url,
+                  options: updatedQuestion.question_type === 'multiple_choice' ? updatedQuestion.options : null,
+                  correct_answer: updatedQuestion.correct_answer || null,
+                  points: updatedQuestion.points || 2,
+                  tags: ['reading'],
+                };
+              }
+              
+              // ========== WRITING ==========
+              else if (updatedQuestion.skill_type === 'writing') {
+                payload = {
+                  skill_type: 'writing',
+                  question_type: 'task',
+                  difficulty: updatedQuestion.difficulty || 'medium',
+                  topic: updatedQuestion.topic,
+                  question_text: updatedQuestion.question_text,
+                  writing_type: updatedQuestion.writing_type || 'essay',
+                  word_limit: updatedQuestion.word_limit || { min: 150, max: 300 },
+                  requirements: updatedQuestion.requirements || null,
+                  points: updatedQuestion.points || 4,
+                  tags: ['writing'],
+                };
+              }
+              
+              console.log('[EDIT QUESTION] Final payload:', payload);
+              
+              // Update question
+              await questionBankAPI.update(editingQuestion.id, payload);
+              console.log('[EDIT QUESTION] Success!');
+              
+              alert('✅ Đã cập nhật câu hỏi thành công');
+              await loadQuestions();
+              setEditingQuestion(null);
+              
+            } catch (e) {
+              console.error('[EDIT QUESTION] Error:', e);
+              const errorMsg = e.response?.data?.detail || e.message || 'Unknown error';
+              alert(`❌ Cập nhật câu hỏi thất bại:\n\n${errorMsg}`);
+            }
           }}
         />
       )}
