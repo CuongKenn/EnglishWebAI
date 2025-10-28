@@ -32,7 +32,7 @@ const TeacherDashboardV3 = () => {
 
   const handleLogout = () => {
     authService.logout();
-    navigate('/login');
+    navigate('/');
   };
 
   const renderPage = () => {

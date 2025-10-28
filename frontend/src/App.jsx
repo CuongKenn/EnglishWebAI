@@ -85,16 +85,8 @@ function App() {
     setIsLoggedIn(true);
     setUserRole(role);
 
-    // Navigate dựa trên role
-    if (role === 'admin' || role === 'superadmin') {
-      navigate('/admin-dashboard');
-    } else if (role === 'teacher') {
-      navigate('/teacher-dashboard');
-    } else if (role === 'parent') {
-      navigate('/parent-dashboard');
-    } else {
-      navigate('/');
-    }
+    // Tất cả các role đều về trang home
+    navigate('/');
 
     // Hiển thị thông báo chào mừng
     setTimeout(() => {
@@ -107,7 +99,7 @@ function App() {
     authService.logout();
     setIsLoggedIn(false);
     setUserRole('user');
-    navigate('/login');
+    navigate('/');
   };
 
   return (

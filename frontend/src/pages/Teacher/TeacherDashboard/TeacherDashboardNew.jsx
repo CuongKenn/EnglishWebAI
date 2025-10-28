@@ -27,7 +27,7 @@ const TeacherDashboardNew = () => {
 
   const handleLogout = () => {
     authService.logout();
-    navigate('/login');
+    navigate('/');
   };
 
   return (
