@@ -110,9 +110,20 @@ const StudentAnalytics = () => {
                     </div>
                   </div>
                 </div>
-                <div className="text-right">
+                <div className="flex flex-col items-end">
                   <p className="text-sm text-gray-600">Điểm trung bình</p>
-                  <p className="text-3xl font-bold text-purple-600">{student.average_score.toFixed(1)}</p>
+                  {/* Donut chart via conic-gradient */}
+                  <div className="relative w-16 h-16">
+                    <div
+                      className="w-16 h-16 rounded-full"
+                      style={{
+                        background: `conic-gradient(#7c3aed ${Math.min(100, student.average_score)}%, #e5e7eb 0)`
+                      }}
+                    />
+                    <div className="absolute inset-1 bg-white rounded-full flex items-center justify-center">
+                      <span className="text-sm font-bold text-purple-600">{student.average_score.toFixed(1)}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -129,11 +140,14 @@ const StudentAnalytics = () => {
 
               <div>
                 <p className="text-sm font-medium text-gray-700 mb-3">Điểm theo kỹ năng</p>
-                <div className="grid grid-cols-4 gap-3">
+                <div className="space-y-2">
                   {Object.entries(student.skill_scores).map(([skill, score]) => (
-                    <div key={skill} className="bg-gradient-to-br from-purple-50 to-indigo-50 p-3 rounded text-center">
-                      <p className="text-xs text-gray-600 capitalize mb-1">{skill}</p>
-                      <p className="text-lg font-bold text-purple-600">{score.toFixed(1)}</p>
+                    <div key={skill} className="flex items-center gap-3">
+                      <div className="w-20 text-xs text-gray-600 capitalize">{skill}</div>
+                      <div className="flex-1 h-2 bg-gray-200 rounded">
+                        <div className="h-2 rounded bg-gradient-to-r from-purple-500 to-indigo-500" style={{ width: `${Math.min(100, score)}%` }} />
+                      </div>
+                      <div className="w-10 text-right text-xs font-semibold text-purple-600">{score.toFixed(1)}</div>
                     </div>
                   ))}
                 </div>

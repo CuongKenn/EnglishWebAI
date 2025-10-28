@@ -13,7 +13,9 @@ export default function GradingFeedback() {
   const [submissions, setSubmissions] = useState([]);
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [showGradingModal, setShowGradingModal] = useState(false);
-  const [gradingMode, setGradingMode] = useState('manual'); // manual | ai
+  // Remove mode toggle; always show AI results when available and allow confirm
+  const [scoreInput, setScoreInput] = useState('');
+  const [feedbackInput, setFeedbackInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [classes, setClasses] = useState([]);
   const [selectedClass, setSelectedClass] = useState(null);
@@ -67,27 +69,23 @@ export default function GradingFeedback() {
   const handleGradeSubmission = (submission) => {
     setSelectedSubmission(submission);
     setShowGradingModal(true);
+    setScoreInput((submission.ai_score ?? submission.score ?? '').toString());
+    setFeedbackInput(submission.ai_feedback ?? submission.feedback ?? '');
   };
 
-  const handleAIGrade = async () => {
+  const runAutoGrade = async () => {
     if (!selectedSubmission) return;
-    
     setLoading(true);
     try {
-      // Call AI grading API
-      await apiV1.post(`/exercises/teacher-grading/submissions/${selectedSubmission.id}/ai-grade`, {
-        submission_id: selectedSubmission.id,
-        ai_score: selectedSubmission.ai_score,
-        ai_feedback: selectedSubmission.ai_feedback,
-        rubrics_scores: selectedSubmission.rubrics_scores
-      });
-      
-      alert('AI đã chấm điểm thành công!');
-      setShowGradingModal(false);
-      fetchSubmissions(); // Refresh
+      const res = await apiV1.post(`/exercises/teacher-grading/submissions/${selectedSubmission.id}/auto-grade`);
+      const updated = res.data;
+      // Update modal state with AI results
+      setSelectedSubmission(prev => ({ ...prev, ...updated }));
+      setScoreInput((updated.ai_score ?? updated.score ?? '').toString());
+      setFeedbackInput(updated.ai_feedback ?? updated.feedback ?? '');
     } catch (error) {
-      console.error('Error AI grading:', error);
-      alert('Lỗi khi chấm điểm AI!');
+      console.error('Auto-grade error:', error);
+      alert('Lỗi khi chấm tự động!');
     } finally {
       setLoading(false);
     }
@@ -100,7 +98,8 @@ export default function GradingFeedback() {
     try {
       await apiV1.post(`/exercises/${selectedSubmission.exercise_id}/submissions/${selectedSubmission.id}/grade`, {
         score,
-        feedback
+        feedback,
+        rubrics_scores: selectedSubmission.rubrics_scores || null
       });
       
       alert('Lưu điểm thành công!');
@@ -141,7 +140,7 @@ export default function GradingFeedback() {
     console.log('Speaking assessment:', selectedSubmission.rubrics_scores?.speaking_assessment);
     console.log('Writing assessment:', selectedSubmission.rubrics_scores?.writing_assessment);
 
-    const hasAI = selectedSubmission.ai_score;
+  const hasAI = typeof selectedSubmission.ai_score === 'number';
 
     return (
       <div className="grading-modal-overlay" onClick={() => setShowGradingModal(false)}>
@@ -154,85 +153,91 @@ export default function GradingFeedback() {
             <button className="modal-close-grading" onClick={() => setShowGradingModal(false)}>×</button>
           </div>
 
-          <div className="modal-body-grading">
+          <div className="modal-body-grading grading-grid">
             {/* Student Info */}
             <div className="student-info-card">
-              <div className="student-avatar-grading">
-                <User size={24} />
-              </div>
-              <div className="student-details">
-                <h4>{selectedSubmission.student_name}</h4>
-                <p>ID: {selectedSubmission.student_id}</p>
-              </div>
-              <div className="submission-time">
-                <Clock size={16} />
-                <span>Nộp lúc: {new Date(selectedSubmission.submitted_at).toLocaleString('vi-VN')}</span>
+              <div className="student-row">
+                <div className="student-avatar-grading">
+                  <User size={24} />
+                </div>
+                <div className="student-details">
+                  <h4>{selectedSubmission.student_name}</h4>
+                  <p>ID: {selectedSubmission.student_id}</p>
+                </div>
+                <div className="submission-time">
+                  <Clock size={16} />
+                  <span>Nộp lúc: {new Date(selectedSubmission.submitted_at).toLocaleString('vi-VN')}</span>
+                </div>
               </div>
             </div>
 
-            {/* Submission Content */}
-            <div className="submission-content-section">
-              <h3>📝 Bài làm của học sinh</h3>
-              
-              {/* Text Content */}
-              {selectedSubmission.content_text && (
-                <div className="content-text-box">
-                  <strong>Nội dung văn bản:</strong>
-                  <p>{selectedSubmission.content_text}</p>
+            {/* Left column: main content */}
+            <div className="grading-main">
+              {/* Submission Content */}
+              <div className="submission-content-section card">
+                <div className="section-title">
+                  <span>📝 Bài làm của học sinh</span>
                 </div>
-              )}
               
-              {/* File/Audio Content - Hide audio if speaking assessment exists */}
-              {selectedSubmission.content_url && 
-               !selectedSubmission.content_url.startsWith('blob:') && 
-               !selectedSubmission.rubrics_scores?.speaking_assessment && (
-                <div className="content-file-box">
-                  {selectedSubmission.content_url.endsWith('.mp3') || selectedSubmission.content_url.endsWith('.wav') ? (
-                    <>
-                      <FileAudio size={24} />
-                      <audio controls src={selectedSubmission.content_url} className="audio-player" />
-                    </>
-                  ) : (
-                    <>
-                      <FileImage size={24} />
-                      <a href={selectedSubmission.content_url} target="_blank" rel="noopener noreferrer">
-                        Xem file đính kèm
-                      </a>
-                    </>
-                  )}
-                </div>
-              )}
-              
-              {/* Answers (for exercises with questions) */}
-              {selectedSubmission.answers && Object.keys(selectedSubmission.answers).length > 0 && (
-                <div className="answers-section">
-                  <strong>Câu trả lời:</strong>
-                  <div className="answers-list">
-                    {Object.entries(selectedSubmission.answers).map(([questionId, answer]) => (
-                      <div key={questionId} className="answer-item">
-                        <span className="question-label">Câu {questionId}:</span>
-                        <span className="answer-text">{typeof answer === 'object' ? JSON.stringify(answer) : answer}</span>
-                      </div>
-                    ))}
+                {/* Text Content */}
+                {selectedSubmission.content_text && (
+                  <div className="content-text-box">
+                    <strong>Nội dung văn bản:</strong>
+                    <p>{selectedSubmission.content_text}</p>
                   </div>
-                </div>
-              )}
+                )}
               
-              {/* Empty state */}
-              {!selectedSubmission.content_text && 
-               (!selectedSubmission.content_url || selectedSubmission.content_url.startsWith('blob:')) && 
-               (!selectedSubmission.answers || Object.keys(selectedSubmission.answers).length === 0) && (
-                <div className="empty-content">
-                  <AlertCircle size={32} />
-                  <p>Chưa có nội dung bài làm hoặc file đã bị xóa</p>
-                  <small>File audio/video blob chỉ tồn tại tạm thời trong phiên làm bài</small>
-                </div>
-              )}
-            </div>
+                {/* File/Audio Content - Hide audio if speaking assessment exists */}
+                {selectedSubmission.content_url && 
+                !selectedSubmission.content_url.startsWith('blob:') && 
+                !selectedSubmission.rubrics_scores?.speaking_assessment && (
+                  <div className="content-file-box">
+                    {selectedSubmission.content_url.endsWith('.mp3') || selectedSubmission.content_url.endsWith('.wav') ? (
+                      <div className="file-line">
+                        <FileAudio size={20} />
+                        <audio controls src={selectedSubmission.content_url} className="audio-player" />
+                      </div>
+                    ) : (
+                      <div className="file-line">
+                        <FileImage size={20} />
+                        <a href={selectedSubmission.content_url} target="_blank" rel="noopener noreferrer">
+                          Xem file đính kèm
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                )}
+              
+                {/* Answers */}
+                {selectedSubmission.answers && Object.keys(selectedSubmission.answers).length > 0 && (
+                  <div className="answers-section">
+                    <strong>Câu trả lời:</strong>
+                    <div className="answers-list">
+                      {Object.entries(selectedSubmission.answers).map(([questionId, answer]) => (
+                        <div key={questionId} className="answer-item">
+                          <span className="question-label">Câu {questionId}:</span>
+                          <span className="answer-text">{typeof answer === 'object' ? JSON.stringify(answer) : answer}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              
+                {/* Empty state */}
+                {!selectedSubmission.content_text && 
+                (!selectedSubmission.content_url || selectedSubmission.content_url.startsWith('blob:')) && 
+                (!selectedSubmission.answers || Object.keys(selectedSubmission.answers).length === 0) && (
+                  <div className="empty-content">
+                    <AlertCircle size={32} />
+                    <p>Chưa có nội dung bài làm hoặc file đã bị xóa</p>
+                    <small>File audio/video blob chỉ tồn tại tạm thời trong phiên làm bài</small>
+                  </div>
+                )}
+              </div>
 
-            {/* Speaking Assessment (Azure Speech) - Always visible */}
-            {selectedSubmission.rubrics_scores?.speaking_assessment && (
-              <div className="speaking-assessment-section">
+              {/* Speaking Assessment (Azure Speech) */}
+              {selectedSubmission.rubrics_scores?.speaking_assessment && (
+                <div className="speaking-assessment-section card">
                 <div className="assessment-header">
                   <Sparkles size={18} style={{ color: '#8b5cf6' }} />
                   <span>Đánh giá Speaking (Azure Speech API)</span>
@@ -308,12 +313,12 @@ export default function GradingFeedback() {
                     </div>
                   </div>
                 )}
-              </div>
-            )}
+                </div>
+              )}
             
-            {/* Writing Assessment (Gemini) - Always visible */}
-            {selectedSubmission.rubrics_scores?.writing_assessment && (
-              <div className="writing-assessment-section">
+              {/* Writing Assessment (Gemini) */}
+              {selectedSubmission.rubrics_scores?.writing_assessment && (
+                <div className="writing-assessment-section card">
                 <div className="assessment-header">
                   <Edit size={18} style={{ color: '#f59e0b' }} />
                   <span>Đánh giá Writing (Gemini AI)</span>
@@ -384,224 +389,109 @@ export default function GradingFeedback() {
                     <p>{selectedSubmission.rubrics_scores.suggestions}</p>
                   </div>
                 )}
-              </div>
-            )}
-
-            {/* Grading Mode Toggle */}
-            <div className="grading-mode-section">
-              <h3>Chọn phương thức chấm điểm</h3>
-              <div className="grading-mode-tabs">
-                <button
-                  className={`mode-tab-grading ${gradingMode === 'manual' ? 'active' : ''}`}
-                  onClick={() => setGradingMode('manual')}
-                >
-                  <Edit size={18} />
-                  <span>Chấm thủ công</span>
-                </button>
-                {hasAI && (
-                  <button
-                    className={`mode-tab-grading ${gradingMode === 'ai' ? 'active' : ''}`}
-                    onClick={() => setGradingMode('ai')}
-                  >
-                    <Sparkles size={18} />
-                    <span>Xem gợi ý AI</span>
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Manual Grading */}
-            {gradingMode === 'manual' && (
-              <div className="manual-grading-section">
-                <div className="form-row-grading">
-                  <div className="form-group-grading">
-                    <label>Điểm số (/10)</label>
-                    <input
-                      type="number"
-                      className="form-input-grading"
-                      placeholder="0"
-                      min="0"
-                      max={10}
-                      step="0.5"
-                      defaultValue={selectedSubmission.score}
-                      id="score-input"
-                    />
-                  </div>
                 </div>
+              )}
 
-                <div className="form-group-grading">
-                  <label>Nhận xét và phản hồi</label>
-                  <textarea
-                    className="form-textarea-grading"
-                    rows="6"
-                    placeholder="Nhập nhận xét chi tiết cho học sinh..."
-                    defaultValue={selectedSubmission.feedback}
-                    id="feedback-textarea"
-                  />
+              {/* Objective/Auto-graded Results (MC/TF/FillBlank) */}
+              {selectedSubmission.rubrics_scores?.auto_grade_results && (
+                <div className="auto-grade-results-section card">
+                <div className="auto-grade-summary">
+                  <span>
+                    Tự động chấm: {selectedSubmission.rubrics_scores.auto_graded_count}/{selectedSubmission.rubrics_scores.total_questions} câu
+                    {selectedSubmission.rubrics_scores.has_short_answer && (
+                      <span style={{ color: '#f59e0b', marginLeft: '8px' }}>
+                        ({selectedSubmission.rubrics_scores.total_questions - selectedSubmission.rubrics_scores.auto_graded_count} câu tự luận chờ chấm)
+                      </span>
+                    )}
+                  </span>
                 </div>
-              </div>
-            )}
-
-            {/* AI Grading View */}
-            {gradingMode === 'ai' && hasAI && (
-              <div className="ai-grading-section">
-                <div className="ai-result-card">
-                  <div className="ai-header">
-                    <Sparkles size={24} />
-                    <h3>Kết quả chấm điểm AI</h3>
-                  </div>
-                  
-                  <div className="ai-score-display">
-                    <div className="ai-score-main">
-                      <Award size={32} />
-                      <div>
-                        <div className="ai-score-value">{selectedSubmission.ai_score}/10</div>
-                        <div className="ai-score-label">Điểm AI đề xuất</div>
+                <div className="auto-grade-questions">
+                  {Object.entries(selectedSubmission.rubrics_scores.auto_grade_results).map(([qId, result]) => (
+                    <div key={qId} className={`auto-grade-question ${result.correct ? 'correct' : result.status === 'pending_review' ? 'pending' : 'incorrect'}`}>
+                      <div className="question-header">
+                        <span className="question-id">Câu {qId}</span>
+                        <span className="question-points">
+                          {result.earned !== undefined 
+                            ? `${result.earned}/${result.points} điểm` 
+                            : `${result.points} điểm (chờ chấm)`
+                          }
+                        </span>
                       </div>
-                    </div>
-                  </div>
-
-                  {selectedSubmission.rubrics_scores && (
-                    <div className="ai-rubrics-display">
-                      <h4>Chi tiết đánh giá:</h4>
-                      
-                      {/* Auto-grading results */}
-                      {selectedSubmission.rubrics_scores.auto_grade_results && (
-                        <div className="auto-grade-section">
-                          <div className="auto-grade-header">
-                            <CheckCircle size={18} style={{ color: '#10b981' }} />
-                            <span>
-                              Tự động chấm: {selectedSubmission.rubrics_scores.auto_graded_count}/{selectedSubmission.rubrics_scores.total_questions} câu
-                              {selectedSubmission.rubrics_scores.has_short_answer && 
-                                <span style={{ color: '#f59e0b', marginLeft: '8px' }}>
-                                  ({selectedSubmission.rubrics_scores.total_questions - selectedSubmission.rubrics_scores.auto_graded_count} câu tự luận chờ chấm)
-                                </span>
-                              }
+                      {result.type !== 'short_answer' ? (
+                        <div className="question-details">
+                          <div className="answer-row">
+                            <span className="label">Trả lời:</span>
+                            <span className={result.correct ? 'answer correct' : 'answer incorrect'}>
+                              {result.student_answer || '(Chưa trả lời)'}
+                              {result.correct ? ' ✓' : ' ✗'}
                             </span>
                           </div>
-                          
-                          <div className="auto-grade-questions">
-                            {Object.entries(selectedSubmission.rubrics_scores.auto_grade_results).map(([qId, result]) => (
-                              <div key={qId} className={`auto-grade-question ${result.correct ? 'correct' : result.status === 'pending_review' ? 'pending' : 'incorrect'}`}>
-                                <div className="question-header">
-                                  <span className="question-id">Câu {qId}</span>
-                                  <span className="question-points">
-                                    {result.earned !== undefined 
-                                      ? `${result.earned}/${result.points} điểm` 
-                                      : `${result.points} điểm (chờ chấm)`
-                                    }
-                                  </span>
-                                </div>
-                                
-                                {result.type !== 'short_answer' ? (
-                                  <div className="question-details">
-                                    <div className="answer-row">
-                                      <span className="label">Trả lời:</span>
-                                      <span className={result.correct ? 'answer correct' : 'answer incorrect'}>
-                                        {result.student_answer || '(Chưa trả lời)'}
-                                        {result.correct ? ' ✓' : ' ✗'}
-                                      </span>
-                                    </div>
-                                    {!result.correct && (
-                                      <div className="answer-row">
-                                        <span className="label">Đáp án:</span>
-                                        <span className="answer correct">{result.correct_answer}</span>
-                                      </div>
-                                    )}
-                                  </div>
-                                ) : (
-                                  <div className="question-details">
-                                    <div className="essay-answer">
-                                      <span className="label">Câu trả lời tự luận:</span>
-                                      <p className="essay-text">{result.student_answer || '(Chưa trả lời)'}</p>
-                                      <span className="pending-badge">⏳ Đợi giáo viên chấm</span>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            ))}
+                          {!result.correct && (
+                            <div className="answer-row">
+                              <span className="label">Đáp án:</span>
+                              <span className="answer correct">{result.correct_answer}</span>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="question-details">
+                          <div className="essay-answer">
+                            <span className="label">Câu trả lời tự luận:</span>
+                            <p className="essay-text">{result.student_answer || '(Chưa trả lời)'}</p>
+                            <span className="pending-badge">⏳ Đợi giáo viên chấm</span>
                           </div>
                         </div>
                       )}
-                      
-                      {/* Legacy rubrics display */}
-                      {!selectedSubmission.rubrics_scores.auto_grade_results && 
-                       !selectedSubmission.rubrics_scores.speaking_assessment &&
-                       !selectedSubmission.rubrics_scores.writing_assessment &&
-                       Object.entries(selectedSubmission.rubrics_scores).map(([skill, score]) => (
-                        <div key={skill} className="ai-rubric-item">
-                          <span className="skill-label">
-                            {skill === 'listening' && '🎧 Nghe'}
-                            {skill === 'speaking' && '🗣️ Nói'}
-                            {skill === 'reading' && '📖 Đọc'}
-                            {skill === 'writing' && '✍️ Viết'}
-                          </span>
-                          <div className="progress-bar-ai">
-                            <div className="progress-fill-ai" style={{ width: `${(score / 10) * 100}%` }} />
-                          </div>
-                          <span className="skill-score">{score}/10</span>
-                        </div>
-                      ))}
                     </div>
-                  )}
-
-                  <div className="ai-feedback-box">
-                    <h4>💬 Nhận xét của AI:</h4>
-                    <p>{selectedSubmission.ai_feedback}</p>
-                  </div>
-
-                  <div className="ai-actions">
-                    <button 
-                      className="btn-use-ai"
-                      onClick={() => {
-                        document.getElementById('score-input').value = selectedSubmission.ai_score;
-                        document.getElementById('feedback-textarea').value = selectedSubmission.ai_feedback || '';
-                        setGradingMode('manual');
-                      }}
-                    >
-                      <CheckCircle size={18} />
-                      Sử dụng điểm AI
-                    </button>
-                    <button className="btn-edit-ai" onClick={() => setGradingMode('manual')}>
-                      <Edit size={18} />
-                      Chỉnh sửa trước khi lưu
-                    </button>
-                  </div>
+                  ))}
                 </div>
-              </div>
-            )}
+                </div>
+              )}
+            </div>
 
-            {/* No AI Available */}
-            {gradingMode === 'ai' && !hasAI && (
-              <div className="no-ai-message">
-                <AlertCircle size={48} />
-                <h4>AI chưa chấm bài này</h4>
-                <p>Bài tập không bật AI chấm điểm hoặc AI chưa xử lý xong.</p>
-                <button className="btn-trigger-ai" onClick={handleAIGrade}>
-                  <Sparkles size={18} />
-                  Yêu cầu AI chấm điểm
+            {/* Right column: sticky sidebar */}
+            <div className="grading-sidebar">
+              <div className="sidebar-card">
+                <div className="section-title small">
+                  <span>✨ Chấm tự động (AI)</span>
+                </div>
+                {hasAI && (
+                  <div className="ai-summary">
+                    <div className="ai-score-pill">
+                      <Sparkles size={14} />
+                      <span>{selectedSubmission.ai_score}/10</span>
+                    </div>
+                    {selectedSubmission.ai_feedback && (
+                      <p className="ai-summary-text">{selectedSubmission.ai_feedback}</p>
+                    )}
+                  </div>
+                )}
+                <button className="btn-ai-grade full" onClick={runAutoGrade} disabled={loading}>
+                  <Sparkles size={18} /> {hasAI ? 'Chấm lại bằng AI' : 'Chấm tự động (AI)'}
                 </button>
               </div>
-            )}
+
+              <div className="sidebar-card">
+                <div className="section-title small">
+                  <span>✅ Kết quả & Xác nhận</span>
+                </div>
+                <div className="manual-grading-form">
+                  <label>Điểm số (/10)</label>
+                  <input type="number" min="0" max="10" step="0.1" value={scoreInput} onChange={(e)=>setScoreInput(e.target.value)} />
+                  <label>Nhận xét</label>
+                  <textarea value={feedbackInput} onChange={(e)=>setFeedbackInput(e.target.value)} />
+                  <button className="btn-save-grade full" onClick={() => handleManualSave(parseFloat(scoreInput), feedbackInput)} disabled={loading}>
+                    <CheckCircle size={18} /> Xác nhận & lưu điểm
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="modal-footer-grading">
             <button className="btn-cancel-grading" onClick={() => setShowGradingModal(false)}>
               Hủy
             </button>
-            {gradingMode === 'manual' && (
-              <button 
-                className="btn-save-grading" 
-                onClick={() => {
-                  const score = parseFloat(document.getElementById('score-input').value);
-                  const feedback = document.getElementById('feedback-textarea').value;
-                  handleManualSave(score, feedback);
-                }}
-              >
-                <CheckCircle size={18} />
-                Lưu điểm
-              </button>
-            )}
           </div>
         </div>
       </div>

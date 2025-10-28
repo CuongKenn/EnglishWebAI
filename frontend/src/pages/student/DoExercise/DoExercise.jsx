@@ -25,10 +25,16 @@ export default function DoExercise() {
   const [prepTime, setPrepTime] = useState(0);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
+  // For comprehensive test speaking per-question
+  const [activeSpeakingQ, setActiveSpeakingQ] = useState(null);
+  const [speakingAnswers, setSpeakingAnswers] = useState({}); // qId -> blobURL
   
   // For Writing
   const [wordCount, setWordCount] = useState(0);
   const [content, setContent] = useState('');
+  // For comprehensive test writing per-question
+  const [writingAnswers, setWritingAnswers] = useState({}); // qId -> text
+  const [writingCounts, setWritingCounts] = useState({}); // qId -> number
   
   useEffect(() => {
     fetchExercise();
@@ -147,6 +153,33 @@ export default function DoExercise() {
         const audioFile = new File([blob], `speaking_${Date.now()}.wav`, { type: 'audio/wav' });
         formData.append('audio_file', audioFile);
       }
+
+      // Comprehensive test: include first speaking audio and all writing answers into answers map
+      if (!exercise.skill_type && exercise.content?.type === 'comprehensive_test') {
+        // Map writing answers
+        const mergedAnswers = { ...(answers || {}) };
+        Object.entries(writingAnswers).forEach(([qid, txt]) => {
+          mergedAnswers[qid] = txt;
+        });
+        // Use first speaking answer as content_url (backend supports one file). Also store marker in answers map
+        const speakingQIds = Object.keys(speakingAnswers);
+        if (speakingQIds.length > 0) {
+          const firstQId = speakingQIds[0];
+          try {
+            const resp = await fetch(speakingAnswers[firstQId]);
+            const blob = await resp.blob();
+            const audioFile = new File([blob], `speaking_${firstQId}_${Date.now()}.wav`, { type: 'audio/wav' });
+            formData.append('audio_file', audioFile);
+            mergedAnswers[firstQId] = '[speaking-audio-attached]';
+          } catch (e) {
+            console.warn('Failed to attach speaking audio:', e);
+          }
+        }
+        if (Object.keys(mergedAnswers).length > 0) {
+          // Replace answers payload
+          formData.set('answers', JSON.stringify(mergedAnswers));
+        }
+      }
       
       await apiV1.post(`/exercises/${exerciseId}/submit`, formData, {
         headers: {
@@ -165,7 +198,7 @@ export default function DoExercise() {
   };
 
   // Speaking functions
-  const startRecording = async () => {
+  const startRecording = async (questionId = null) => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRecorderRef.current = new MediaRecorder(stream);
@@ -178,11 +211,17 @@ export default function DoExercise() {
       mediaRecorderRef.current.onstop = () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
         const audioUrl = URL.createObjectURL(audioBlob);
-        setRecordedAudio(audioUrl);
+        if (questionId) {
+          setSpeakingAnswers(prev => ({ ...prev, [questionId]: audioUrl }));
+          setActiveSpeakingQ(null);
+        } else {
+          setRecordedAudio(audioUrl);
+        }
       };
 
       mediaRecorderRef.current.start();
       setIsRecording(true);
+      if (questionId) setActiveSpeakingQ(questionId);
     } catch (error) {
       console.error('Error accessing microphone:', error);
       alert('Không thể truy cập microphone!');
@@ -197,9 +236,12 @@ export default function DoExercise() {
     }
   };
 
-  const reRecord = () => {
+  const reRecord = (questionId = null) => {
     setRecordedAudio(null);
     audioChunksRef.current = [];
+    if (questionId) {
+      setSpeakingAnswers(prev => ({ ...prev, [questionId]: null }));
+    }
   };
 
   // Writing functions
@@ -266,7 +308,7 @@ export default function DoExercise() {
     }
 
     // COMPREHENSIVE TEST (Mid-term/Final)
-    if (!skill_type && exerciseContent.type === 'comprehensive_test') {
+  if (!skill_type && exerciseContent.type === 'comprehensive_test') {
       console.log('[COMPREHENSIVE TEST] exerciseContent:', exerciseContent);
       const questions = exerciseContent.questions || [];
       console.log('[COMPREHENSIVE TEST] questions:', questions);
@@ -346,6 +388,57 @@ export default function DoExercise() {
                   value={answers[q.id] || ''}
                   onChange={(e) => handleAnswerChange(q.id, e.target.value)}
                 />
+              )}
+
+              {/* Speaking question in comprehensive test */}
+              {q.type === 'speaking' && (
+                <div className="ct-speaking">
+                  {!isRecording && !speakingAnswers[q.id] && (
+                    <button className="btn-start-recording" onClick={() => startRecording(q.id)}>
+                      <Mic size={18} /> Bắt đầu ghi âm
+                    </button>
+                  )}
+
+                  {isRecording && activeSpeakingQ === q.id && (
+                    <div className="recording-active">
+                      <div className="pulse-dot"></div>
+                      <p>Đang ghi âm...</p>
+                      <button className="btn-stop-recording" onClick={stopRecording}>
+                        <Pause size={18} /> Dừng
+                      </button>
+                    </div>
+                  )}
+
+                  {speakingAnswers[q.id] && (
+                    <div className="recorded-section">
+                      <audio controls src={speakingAnswers[q.id]} />
+                      <div className="recorded-actions">
+                        <button className="btn-re-record" onClick={() => reRecord(q.id)}>
+                          <RotateCcw size={16} /> Ghi lại
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Writing question in comprehensive test */}
+              {q.type === 'writing' && (
+                <div className="ct-writing">
+                  <textarea
+                    className="answer-textarea"
+                    rows={8}
+                    placeholder="Nhập bài viết của bạn..."
+                    value={writingAnswers[q.id] || ''}
+                    onChange={(e) => {
+                      const txt = e.target.value;
+                      setWritingAnswers(prev => ({ ...prev, [q.id]: txt }));
+                      const words = txt.trim().split(/\s+/).filter(Boolean);
+                      setWritingCounts(prev => ({ ...prev, [q.id]: words.length }));
+                    }}
+                  />
+                  <div className="word-counter">Số từ: {writingCounts[q.id] || 0}</div>
+                </div>
               )}
             </div>
           ))}

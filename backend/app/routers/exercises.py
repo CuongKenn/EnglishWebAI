@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func, or_, and_
@@ -94,8 +94,25 @@ def _auto_grade_submission(submission: Submission, exercise: Exercise, db: Sessi
     """
     skill_type = exercise.skill_type
     
-    # Speaking: Use Azure Speech API
-    if skill_type == 'speaking' and submission.content_url:
+    # Helper to get a speaking reference text from exercise content
+    def _extract_speaking_reference_text(content: Optional[dict]) -> str:
+        if not content or not isinstance(content, dict):
+            return ''
+        # Direct prompt on content
+        ref = content.get('prompt') or content.get('reference_text')
+        if ref:
+            return ref
+        # Try find first speaking-like question
+        questions = content.get('questions') or []
+        if isinstance(questions, list):
+            for q in questions:
+                qtype = (q or {}).get('type')
+                if qtype in ('speaking', 'pronunciation', 'speech'):
+                    return q.get('prompt') or q.get('text') or q.get('expected_text') or ''
+        return ''
+
+    # Speaking: Use Azure Speech API (works for speaking skill or mixed tests if we have audio + reference)
+    if submission.content_url:
         print(f"[AUTO-GRADE] Speaking exercise detected for submission {submission.id}")
         # Import service
         from app.services.azure_speech_service import azure_speech_service
@@ -103,7 +120,7 @@ def _auto_grade_submission(submission: Submission, exercise: Exercise, db: Sessi
         
         # Get reference text from exercise content
         content = exercise.content
-        reference_text = content.get('prompt', '') if content else ''
+        reference_text = _extract_speaking_reference_text(content)
         
         if reference_text and submission.content_url:
             try:
@@ -297,6 +314,122 @@ def _auto_grade_submission(submission: Submission, exercise: Exercise, db: Sessi
         
         print(f"[AUTO-GRADE] Submission {submission.id}: {auto_graded_count}/{total_questions} auto-graded, score={total_score}/{max_possible_score}, has_essay={has_short_answer}")
 
+@router.post("/teacher-grading/submissions/{submission_id}/auto-grade", response_class=JSONResponse)
+async def auto_grade_submission(
+    submission_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Chấm tự động server-side cho một submission:
+    - Speaking: Azure Speech (nếu có content_url audio)
+    - Writing: Gemini (nếu có content_text)
+    - Trắc nghiệm: Dùng logic chấm tự động sẵn có
+    Sau khi chấm, đặt status = pending_review để giáo viên xem và xác nhận.
+    """
+    submission = db.query(Submission).filter(Submission.id == submission_id).first()
+    if not submission:
+        raise HTTPException(status_code=404, detail="Không tìm thấy bài nộp")
+
+    exercise = db.query(Exercise).filter(Exercise.id == submission.exercise_id).first()
+    if not exercise:
+        raise HTTPException(status_code=404, detail="Không tìm thấy bài tập")
+
+    # Permission: must be teacher of the class
+    class_id = _get_exercise_class_id(db, exercise)
+    if class_id is None:
+        raise HTTPException(status_code=400, detail="Bài tập không gắn lớp hợp lệ")
+    _ensure_can_manage_class(db, current_user, int(class_id))
+
+    try:
+        # Prefer specialized grading when possible
+        ran_specialized = False
+        if submission.content_url and (exercise.skill_type == 'speaking' or exercise.skill_type is None):
+            # Speaking auto-grade
+            from app.services.azure_speech_service import azure_speech_service
+            import asyncio
+            content = exercise.content or {}
+            reference_text = content.get('prompt', '')
+            if reference_text and submission.content_url.startswith("/media/"):
+                audio_path = submission.content_url.replace('/media/', './media/')
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                assessment = loop.run_until_complete(
+                    azure_speech_service.assess_pronunciation(audio_path, reference_text)
+                )
+                loop.close()
+                score_result = azure_speech_service.calculate_speaking_score(
+                    assessment,
+                    float(exercise.max_score or 10)
+                )
+                submission.ai_score = score_result['score']
+                submission.ai_feedback = score_result['feedback']
+                submission.rubrics_scores = {
+                    'speaking_assessment': score_result['breakdown'],
+                    'recognized_text': score_result.get('recognized_text', ''),
+                    'detailed_feedback': score_result.get('detailed_feedback', '')
+                }
+                submission.status = "pending_review"
+                submission.ai_graded_at = datetime.utcnow()
+                ran_specialized = True
+
+        if (not ran_specialized) and submission.content_text and (exercise.skill_type == 'writing' or exercise.skill_type is None):
+            # Writing auto-grade
+            from app.services.gemini_service import gemini_service
+            import asyncio
+            content = exercise.content or {}
+            prompt = content.get('prompt', '')
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            grading_result = loop.run_until_complete(
+                gemini_service.grade_writing(
+                    submission.content_text,
+                    prompt=prompt,
+                    max_score=float(exercise.max_score or 10)
+                )
+            )
+            loop.close()
+            submission.ai_score = grading_result['score']
+            submission.ai_feedback = grading_result['feedback']
+            submission.rubrics_scores = {
+                'writing_assessment': grading_result['breakdown'],
+                'word_count': grading_result['word_count'],
+                'strengths': grading_result['strengths'],
+                'improvements': grading_result['improvements'],
+                'corrections': grading_result['corrections'],
+                'suggestions': grading_result['suggestions']
+            }
+            submission.status = "pending_review"
+            submission.ai_graded_at = datetime.utcnow()
+            ran_specialized = True
+
+        if not ran_specialized:
+            # Fallback to generic auto-grade (MC/TF/FillBlank, etc.)
+            _auto_grade_submission(submission, exercise, db)
+
+        db.commit()
+        db.refresh(submission)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi chấm tự động: {str(e)}")
+
+    # Build response similar to listing
+    result = {
+        "id": submission.id,
+        "exercise_id": submission.exercise_id,
+        "student_id": submission.student_id,
+        "content_text": submission.content_text,
+        "content_url": submission.content_url,
+        "answers": submission.answers,
+        "score": submission.score,
+        "ai_score": submission.ai_score,
+        "feedback": submission.feedback,
+        "ai_feedback": submission.ai_feedback,
+        "rubrics_scores": submission.rubrics_scores,
+        "status": submission.status,
+        "submitted_at": submission.submitted_at.isoformat() if submission.submitted_at else None,
+        "graded_at": submission.graded_at.isoformat() if submission.graded_at else None,
+    }
+    return JSONResponse(content=result)
 @router.get("/", response_model=List[ExerciseDetailResponse])
 async def get_exercises(
     class_id: Optional[int] = None,
@@ -550,8 +683,8 @@ async def get_exercise(
 async def submit_exercise(
     exercise_id: int,
     audio_file: Optional[UploadFile] = File(None),
-    answers: Optional[str] = None,
-    content_text: Optional[str] = None,
+    answers: Optional[str] = Form(None),
+    content_text: Optional[str] = Form(None),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -601,7 +734,10 @@ async def submit_exercise(
             
             # Generate unique filename
             timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
-            filename = f"student_{current_user.id}_ex_{exercise_id}_{timestamp}.wav"
+            # Keep original extension if available, default to .wav
+            orig_name = audio_file.filename or "audio.wav"
+            ext = ''.join(orig_name.split('.')[-1:]) or 'wav'
+            filename = f"student_{current_user.id}_ex_{exercise_id}_{timestamp}.{ext}"
             file_path = os.path.join(upload_dir, filename)
             
             # Save file
@@ -630,7 +766,7 @@ async def submit_exercise(
         existing_submission.submitted_at = datetime.utcnow()
         existing_submission.status = "submitted"
         
-        # Auto-grade if possible
+        # Auto-grade if possible (speaking/writing/objective)
         _auto_grade_submission(existing_submission, exercise, db)
         
         db.commit()

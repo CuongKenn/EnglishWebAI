@@ -19,6 +19,7 @@ import MyClassesTeacher from './components/MyClassesTeacher';
 import WorksheetGenerator from './components/WorksheetGenerator';
 import StudentAnalytics from './components/StudentAnalytics';
 import SupportGroups from './components/SupportGroups';
+import ProgressAnalytics from './components/ProgressAnalytics';
 import ExportReports from './components/ExportReports';
 import Navbar from '../../../components/Navbar/Navbar';
 import authService from '../../../services/authService';
@@ -57,6 +58,8 @@ const TeacherDashboardV3 = () => {
         return <StudentAnalytics />;
       case 'support-groups':
         return <SupportGroups />;
+      case 'student-analytics':
+        return <ProgressAnalytics />;
       case 'statistics':
         return <Statistics />;
       case 'export-reports':
