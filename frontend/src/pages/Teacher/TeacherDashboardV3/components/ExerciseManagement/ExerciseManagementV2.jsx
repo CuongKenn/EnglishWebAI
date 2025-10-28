@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Plus, Eye, Download, FileText, Clock, Award, Users, Sparkles, Headphones, BookOpen, PenTool, Mic, Search, Filter, ChevronDown } from 'lucide-react';
+import { Plus, Eye, Trash2, FileText, Clock, Award, Users, Sparkles, Headphones, BookOpen, PenTool, Mic, Search, List } from 'lucide-react';
 import { Card } from '../../../../../components/ui/card';
 import { apiV1 } from '../../../../../services/api';
 import CreateExerciseModalComplete from './CreateExerciseModalComplete';
 import ExerciseDetailModal from './ExerciseDetailModal';
+import ExerciseListTable from './ExerciseListTable';
 
 export default function ExerciseManagementV2() {
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -16,6 +17,7 @@ export default function ExerciseManagementV2() {
   const [exercises, setExercises] = useState([]);
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState('cards'); // 'cards' | 'table'
 
   useEffect(() => {
     fetchClasses();
@@ -204,13 +206,23 @@ export default function ExerciseManagementV2() {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Quản lý Bài tập & Kiểm tra</h1>
             <p className="text-gray-600">Tạo bài tập 4 kỹ năng với upload file, AI, hoặc Ngân hàng câu hỏi</p>
           </div>
-          <button 
-            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
-            onClick={() => setShowCreateModal(true)}
-          >
-            <Plus size={18} />
-            Tạo bài tập mới
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              className={`px-3 py-2 rounded-lg border ${viewMode === 'cards' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700 border-gray-300'} hidden md:flex items-center gap-2`}
+              onClick={() => setViewMode(viewMode === 'cards' ? 'table' : 'cards')}
+              title={viewMode === 'cards' ? 'Chuyển sang dạng bảng' : 'Chuyển sang dạng thẻ'}
+            >
+              <List size={16} />
+              {viewMode === 'cards' ? 'Dạng bảng' : 'Dạng thẻ'}
+            </button>
+            <button 
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
+              onClick={() => setShowCreateModal(true)}
+            >
+              <Plus size={18} />
+              Tạo bài tập mới
+            </button>
+          </div>
         </div>
       </div>
 
@@ -319,10 +331,17 @@ export default function ExerciseManagementV2() {
         </div>
       </div>
 
-      {/* Exercises Grid - Match Courses style */}
+      {/* Exercises List */}
       <div className="mb-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Danh sách Bài tập & Kiểm tra</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {viewMode === 'table' ? (
+          <ExerciseListTable
+            items={filteredExercises}
+            onView={handleViewDetail}
+            onDelete={handleDeleteExercise}
+          />
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredExercises.map((exercise) => {
             const SkillIcon = getSkillIcon(exercise.skill);
             const progressPercentage = exercise.totalStudents > 0 ? (exercise.submissions / exercise.totalStudents) * 100 : 0;
@@ -351,7 +370,7 @@ export default function ExerciseManagementV2() {
                       onClick={() => handleDeleteExercise(exercise.id)}
                       className="p-1 text-gray-400 hover:text-red-600 transition-colors"
                     >
-                      <Download size={16} />
+                      <Trash2 size={16} />
                     </button>
                   </div>
                 </div>
@@ -404,8 +423,9 @@ export default function ExerciseManagementV2() {
               </Card>
             );
           })}
-        </div>
-        
+          </div>
+        )}
+
         {filteredExercises.length === 0 && (
           <div className="text-center py-12">
             <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />

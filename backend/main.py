@@ -10,6 +10,7 @@ from app.routers import courses as courses_router
 from app.routers import ai_conversation, ai_writing, ai_reading
 from app.routers import question_bank as question_bank_router
 from app.routers import ai_usage, ai_analytics
+from app.routers import teacher_grading as teacher_router
 from app.routers import exports
 from app.models import User
 
@@ -60,6 +61,7 @@ app.include_router(ai_usage.router, tags=["AI Usage"])
 app.include_router(ai_analytics.router, tags=["AI Analytics (Admin)"])
 app.include_router(question_bank_router.router, prefix=f"{settings.API_PREFIX}/question-bank", tags=["Question Bank"])
 app.include_router(exports.router, tags=["Exports"])
+app.include_router(teacher_router.router, prefix=f"{settings.API_PREFIX}/teacher", tags=["Teacher"]) 
 
 # Serve media files if available (e.g., uploaded materials)
 try:

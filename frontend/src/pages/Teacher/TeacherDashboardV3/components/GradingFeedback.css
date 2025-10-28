@@ -552,6 +552,163 @@
   padding: 32px;
 }
 
+/* New: two-column modal layout */
+.grading-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 24px;
+}
+
+.grading-main {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.grading-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: sticky;
+  top: 16px;
+  height: fit-content;
+}
+
+.card,
+.sidebar-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+}
+
+/* Dark scheme adaptation */
+@media (prefers-color-scheme: dark) {
+  .grading-modal-large { background: #0b0f1a; }
+  .modal-header-grading { border-bottom-color: #1f2937; }
+  .modal-subtitle { color: #9ca3af; }
+  .card,
+  .sidebar-card { background: #0f1625; border-color: #1f2937; box-shadow: none; }
+  .student-info-card { background: #0f1625; }
+  .submission-content-section .section-title span,
+  .section-title span { color: #e5e7eb; }
+  .content-text-box { background: #0c1322; border-color: #1f2937; color: #d1d5db; }
+  .content-file-box { background: #0c1322; border-color: #1f2937; }
+  .answers-section { background: #071522; border-color: #0e2236; }
+  .answers-section strong { color: #c7d2fe; }
+  .answer-item { background: #0b1220; }
+  .empty-content p { color: #cbd5e1; }
+  .empty-content small { color: #94a3b8; }
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 12px;
+}
+
+.section-title.small {
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.file-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.grading-sidebar .manual-grading-form label {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.grading-sidebar .manual-grading-form input,
+.grading-sidebar .manual-grading-form textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #374151;
+  background: #ffffff;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.grading-sidebar .manual-grading-form textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.grading-sidebar .manual-grading-form input:focus,
+.grading-sidebar .manual-grading-form textarea:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102,126,234,0.12);
+}
+
+.btn-ai-grade.full,
+.btn-save-grade.full {
+  width: 100%;
+}
+
+.btn-ai-grade {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  background: linear-gradient(135deg, #7c3aed, #4f46e5);
+  box-shadow: 0 6px 14px rgba(79,70,229,0.35);
+}
+
+.btn-ai-grade:hover { transform: translateY(-1px); }
+.btn-ai-grade:disabled { opacity: 0.7; cursor: not-allowed; }
+
+.btn-save-grade {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 10px 14px;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  box-shadow: 0 6px 14px rgba(34,197,94,0.35);
+}
+
+.btn-save-grade:hover { transform: translateY(-1px); }
+
+.ai-summary { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+.ai-score-pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; background: #eef2ff; color: #4f46e5; font-weight: 800; width: fit-content; }
+.ai-summary-text { font-size: 13px; color: #6b7280; }
+
+@media (prefers-color-scheme: dark) {
+  .grading-sidebar .manual-grading-form input,
+  .grading-sidebar .manual-grading-form textarea { background: #0b1220; border-color: #1f2937; color: #e5e7eb; }
+  .btn-ai-grade { box-shadow: none; }
+  .btn-save-grade { box-shadow: none; }
+  .ai-score-pill { background: #1e1b4b; color: #c7d2fe; }
+  .ai-summary-text { color: #94a3b8; }
+}
+
+/* Minor layout helpers */
+.student-row { display: flex; align-items: center; gap: 16px; width: 100%; }
+.audio-player-control, .audio-player { width: 100%; }
+
 /* Student Info Card */
 .student-info-card {
   display: flex;
