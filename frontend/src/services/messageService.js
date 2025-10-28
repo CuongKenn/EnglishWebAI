@@ -15,7 +15,7 @@ const messageService = {
 
   // Send message
   sendMessage: async (data) => {
-    const response = await apiV1.post('/messages', data);
+    const response = await apiV1.post('/messages/', data);
     return response.data;
   },
 
