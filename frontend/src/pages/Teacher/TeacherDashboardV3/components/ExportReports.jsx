@@ -1,5 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Download, FileSpreadsheet, Calendar, Users, Filter, CheckCircle, FileText, Layers } from 'lucide-react';
+import exportService from '../../../../services/exportService';
+import { apiV1 } from '../../../../services/api';
+import { getClasses } from '../../../../services/classService';
 import './ExportReports.css';
 
 export default function ExportReports() {
@@ -7,20 +10,62 @@ export default function ExportReports() {
   const [selectedExercises, setSelectedExercises] = useState([]);
   const [selectedClasses, setSelectedClasses] = useState([]);
   const [dateRange, setDateRange] = useState({ from: '', to: '' });
+  const [format, setFormat] = useState('xlsx'); // xlsx | csv
+  const [loading, setLoading] = useState(false);
+  const [exercises, setExercises] = useState([]);
+  const [classes, setClasses] = useState([]);
 
-  // Mock data
-  const exercises = [
-    { id: 1, title: 'Bài tập Nghe Hiểu - Unit 5', class: 'Lớp 10A1', date: '2025-11-05', students: 25, graded: 20 },
-    { id: 2, title: 'Kiểm tra 15 phút - Viết', class: 'Lớp 10A2', date: '2025-11-03', students: 22, graded: 22 },
-    { id: 3, title: 'Bài tập Đọc - Unit 6', class: 'Lớp 10A1', date: '2025-11-08', students: 25, graded: 18 },
-    { id: 4, title: 'Kiểm tra Giữa kì', class: 'Lớp 11B1', date: '2025-11-10', students: 18, graded: 18 },
-  ];
+  useEffect(() => {
+    loadData();
+  }, []);
 
-  const classes = [
-    { id: 1, name: 'Lớp 10A1', students: 25 },
-    { id: 2, name: 'Lớp 10A2', students: 22 },
-    { id: 3, name: 'Lớp 11B1', students: 18 },
-  ];
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      
+      // Load classes first
+      const classesData = await getClasses();
+      const classesMap = {};
+      
+      const formattedClasses = classesData.map(c => {
+        classesMap[c.id] = c.name;
+        return {
+          id: c.id,
+          name: c.name,
+          students: c.student_count || 0
+        };
+      });
+      setClasses(formattedClasses);
+      
+      // Load all exercises from all classes
+      const allExercises = [];
+      for (const cls of classesData) {
+        try {
+          const exercisesResponse = await apiV1.get(`/exercises/by-class/${cls.id}`);
+          const classExercises = exercisesResponse.data.map(ex => ({
+            id: ex.id,
+            title: ex.title,
+            class: cls.name,
+            classId: cls.id,
+            date: new Date(ex.created_at).toISOString().split('T')[0],
+            students: cls.student_count || 0,
+            graded: ex.graded_count || 0,
+            type: ex.type || 'assignment'
+          }));
+          allExercises.push(...classExercises);
+        } catch (err) {
+          console.error(`Error loading exercises for class ${cls.id}:`, err);
+        }
+      }
+      
+      setExercises(allExercises);
+    } catch (error) {
+      console.error('Error loading data:', error);
+      alert('Lỗi khi tải dữ liệu. Vui lòng thử lại!');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleToggleExercise = (exerciseId) => {
     setSelectedExercises(prev =>
@@ -38,7 +83,7 @@ export default function ExportReports() {
     );
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (exportType === 'single' && selectedExercises.length === 0) {
       alert('Vui lòng chọn ít nhất 1 bài tập');
       return;
@@ -52,8 +97,51 @@ export default function ExportReports() {
       return;
     }
 
-    // Call API to export
-    alert('Đang xuất báo cáo Excel...');
+    try {
+      setLoading(true);
+
+      if (exportType === 'single' || exportType === 'multiple') {
+        // Export exercises
+        for (const exerciseId of selectedExercises) {
+          const exercise = exercises.find(e => e.id === exerciseId);
+          if (exercise) {
+            await exportService.downloadExerciseGrades(
+              exerciseId,
+              exercise.title,
+              format
+            );
+          }
+        }
+        alert(`✅ Đã xuất ${selectedExercises.length} bài tập thành công!`);
+      } else if (exportType === 'class') {
+        // Export class grades
+        for (const classId of selectedClasses) {
+          const classObj = classes.find(c => c.id === classId);
+          if (classObj) {
+            const options = {};
+            if (dateRange.from) options.from_date = dateRange.from;
+            if (dateRange.to) options.to_date = dateRange.to;
+            
+            await exportService.downloadClassGrades(
+              classId,
+              classObj.name,
+              format,
+              options
+            );
+          }
+        }
+        alert(`✅ Đã xuất ${selectedClasses.length} lớp thành công!`);
+      }
+
+      // Reset selections
+      setSelectedExercises([]);
+      setSelectedClasses([]);
+    } catch (error) {
+      console.error('Error exporting:', error);
+      alert('❌ Lỗi khi xuất file. Vui lòng thử lại!');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -66,6 +154,12 @@ export default function ExportReports() {
         </div>
       </div>
 
+      {loading && exercises.length === 0 ? (
+        <div className="loading-state" style={{ textAlign: 'center', padding: '40px' }}>
+          <p>Đang tải dữ liệu...</p>
+        </div>
+      ) : (
+        <>
       {/* Export Type Selection */}
       <div className="export-type-section">
         <h2>Chọn loại báo cáo</h2>
@@ -112,6 +206,12 @@ export default function ExportReports() {
               <span className="selected-count">{selectedExercises.length} đã chọn</span>
             </div>
             
+            {exercises.length === 0 ? (
+              <div className="empty-state" style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
+                <FileText size={48} style={{ opacity: 0.3, margin: '0 auto 16px' }} />
+                <p>Chưa có bài tập nào. Vui lòng tạo bài tập trước!</p>
+              </div>
+            ) : (
             <div className="exercise-list-export">
               {exercises.map((exercise) => (
                 <div
@@ -147,6 +247,7 @@ export default function ExportReports() {
                 </div>
               ))}
             </div>
+            )}
 
             <div className="export-options-box">
               <h4>📄 File sẽ bao gồm:</h4>
@@ -320,19 +421,41 @@ export default function ExportReports() {
               </>
             )}
           </div>
+
+          {/* Format selection */}
+          <div className="format-selection">
+            <label>Định dạng file:</label>
+            <div className="format-options">
+              <button
+                className={`format-btn ${format === 'xlsx' ? 'active' : ''}`}
+                onClick={() => setFormat('xlsx')}
+              >
+                <FileSpreadsheet size={18} />
+                Excel (.xlsx)
+              </button>
+              <button
+                className={`format-btn ${format === 'csv' ? 'active' : ''}`}
+                onClick={() => setFormat('csv')}
+              >
+                <FileText size={18} />
+                CSV (.csv)
+              </button>
+            </div>
+          </div>
         </div>
 
         <button
           className="btn-export-main"
           onClick={handleExport}
           disabled={
+            loading ||
             (exportType === 'single' && selectedExercises.length === 0) ||
             (exportType === 'multiple' && selectedExercises.length === 0) ||
             (exportType === 'class' && selectedClasses.length === 0)
           }
         >
           <Download size={20} />
-          Xuất file Excel
+          {loading ? 'Đang xuất...' : `Xuất file ${format.toUpperCase()}`}
         </button>
       </div>
 
@@ -351,6 +474,8 @@ export default function ExportReports() {
           </ul>
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 }
