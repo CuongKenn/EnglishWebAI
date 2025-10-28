@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import messageService from '../../../services/messageService';
-import userService from '../../../services/userService';
+import { getCurrentUser } from '../../../services/userService';
 import { 
   FaComments, 
   FaPaperPlane, 
@@ -15,6 +15,8 @@ const TeacherCommunication = () => {
   const navigate = useNavigate();
   const [conversations, setConversations] = useState([]);
   const [teachers, setTeachers] = useState([]);
+  const [children, setChildren] = useState([]);
+  const [selectedChild, setSelectedChild] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
@@ -27,8 +29,14 @@ const TeacherCommunication = () => {
   useEffect(() => {
     loadCurrentUser();
     loadConversations();
-    loadTeachers();
+    loadChildren();
   }, []);
+
+  useEffect(() => {
+    if (selectedChild) {
+      loadTeachersForChild(selectedChild.id);
+    }
+  }, [selectedChild]);
 
   useEffect(() => {
     if (selectedUser) {
@@ -47,7 +55,7 @@ const TeacherCommunication = () => {
 
   const loadCurrentUser = async () => {
     try {
-      const user = await userService.getCurrentUser();
+      const user = await getCurrentUser();
       setCurrentUserId(user.id);
     } catch (error) {
       console.error('Error loading current user:', error);
@@ -63,15 +71,42 @@ const TeacherCommunication = () => {
     }
   };
 
-  const loadTeachers = async () => {
+  const loadChildren = async () => {
     try {
       setLoading(true);
-      const data = await userService.getAllUsers();
-      // Filter only teachers
-      const teacherList = data.filter(user => user.role === 'teacher');
-      setTeachers(teacherList);
+      const response = await fetch('/api/v1/parent/children', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setChildren(data);
+        if (data.length > 0) {
+          setSelectedChild(data[0]);
+        }
+      }
     } catch (error) {
-      console.error('Error loading teachers:', error);
+      console.error('Error loading children:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadTeachersForChild = async (childId) => {
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/v1/parent/children/${childId}/teachers`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setTeachers(data);
+      }
+    } catch (error) {
+      console.error('Error loading teachers for child:', error);
     } finally {
       setLoading(false);
     }
@@ -203,6 +238,28 @@ const TeacherCommunication = () => {
             <h3>Tin nhắn</h3>
           </div>
 
+          {/* Child Selector */}
+          {children.length > 0 && (
+            <div className="child-selector">
+              <label htmlFor="child-select">Chọn con:</label>
+              <select 
+                id="child-select"
+                value={selectedChild?.id || ''}
+                onChange={(e) => {
+                  const child = children.find(c => c.id === parseInt(e.target.value));
+                  setSelectedChild(child);
+                }}
+                className="child-select-dropdown"
+              >
+                {children.map(child => (
+                  <option key={child.id} value={child.id}>
+                    {child.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* Active Conversations */}
           {conversations.length > 0 && (
             <div className="conversations-section">
@@ -266,15 +323,23 @@ const TeacherCommunication = () => {
                   onClick={() => handleSelectTeacher(teacher)}
                 >
                   <div className="teacher-avatar">
-                    {teacher.avatar ? (
-                      <img src={teacher.avatar} alt={teacher.full_name} />
+                    {teacher.avatar_url ? (
+                      <img src={teacher.avatar_url} alt={teacher.full_name} />
                     ) : (
                       <FaUserCircle />
                     )}
                   </div>
                   <div className="teacher-info">
                     <div className="teacher-name">{teacher.full_name}</div>
-                    <div className="teacher-email">{teacher.email}</div>
+                    <div className="teacher-classes">
+                      {teacher.classes && teacher.classes.length > 0 ? (
+                        <small style={{ color: '#666' }}>
+                          Lớp: {teacher.classes.join(', ')}
+                        </small>
+                      ) : (
+                        <div className="teacher-email">{teacher.email}</div>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}

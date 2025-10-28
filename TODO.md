@@ -1,175 +1,308 @@
-# EnglishWebAI - TODO List
+# EnglishWebAI - TODO List (Cập nhật 28/10/2025)
 
-## 📋 TỔNG QUAN CẤU TRÚC SẢN PHẨM (3 Mô-đun chính)
+## ✅ ĐÃ HOÀN THÀNH (Recent Progress)
 
-### ✅ MÔ-ĐUN 1: Trợ lý soạn phiếu học tập
-**Mục tiêu**: AI tự động tạo phiếu bài tập theo chương trình học
+### 🎉 Mô-đun 2: Auto AI Grading - DONE!
+**Backend**: `_auto_grade_submission()` trong `exercises.py`
+- ✅ Auto-trigger khi student submit Writing/Speaking
+- ✅ Gemini AI grading cho Writing: rubrics (content, organization, vocab, grammar, mechanics)
+- ✅ Azure Speech API cho Speaking: pronunciation, fluency, completeness, accuracy
+- ✅ Lưu `rubrics_scores`, `ai_feedback`, `ai_score` vào submission
+- ✅ Status "pending_review" - Teacher có thể review/confirm
 
-**Hiện trạng**:
-- ✅ Có `/question-bank/generate-test` - tạo đề từ config
-- ❌ Chưa có endpoint tạo phiếu theo tuần học/chủ đề/lớp
-- ❌ Chưa tích hợp phân phối chương trình môn học
+**Frontend Teacher**: `GradingFeedback.jsx`
+- ✅ Hiển thị rubrics scores dạng score cards + progress bars
+- ✅ Speaking assessment: 4 metrics visualization
+- ✅ Writing assessment: content/organization/vocab/grammar/mechanics
+- ✅ Recognized text (Speaking), word count (Writing)
+- ✅ Strengths, improvements, corrections display
+- ✅ Detailed feedback section
+- ✅ Teacher có thể edit feedback trước khi approve
 
-**Cần làm**:
-- [ ] Backend: Tạo endpoint `POST /ai/generate-exercise-sheet`
-  - Input: `{topic, grade, skill_type, week_number}`
-  - AI tự động tạo phiếu bài tập hoàn chỉnh theo chương trình
-  - Trả về: questions, scoring rubrics, time allocation
-- [ ] Frontend: Tạo page **ExerciseSheetGenerator** cho Teacher
-  - Form nhập: Chủ đề, Lớp, Kỹ năng, Tuần học
-  - Preview phiếu trước khi lưu
-  - Lưu vào exercise database với đầy đủ content
-
----
-
-### ⚠️ MÔ-ĐUN 2: Chấm & phản hồi tự động
-**Mục tiêu**: AI chấm bài Writing/Speaking, Teacher review trước khi gửi học sinh
-
-**Hiện trạng**:
-- ✅ Có `/teacher-grading/submissions/{id}/ai-grade` - lưu kết quả AI
-- ✅ Có AI services: `gemini_service.check_writing()`, `check_pronunciation()`
-- ⚠️ Chưa tự động trigger AI khi student submit
-- ⚠️ UI chưa hiển thị rubrics breakdown + error analysis chi tiết
-
-**Cần làm**:
-
-#### Backend
-- [ ] Auto-trigger AI grading khi submit Writing/Speaking
-  - Hook vào `POST /exercises/{id}/submit`
-  - Gọi `gemini_service` tự động
-  - Lưu `rubrics_scores`, `error_analysis`, `suggestions` vào submission
-- [ ] Improve AI feedback structure
-  - Rubrics: `{grammar: 8, vocabulary: 7, coherence: 9, mechanics: 6}`
-  - Error analysis: `[{type: "grammar", location: "line 2", error: "subject-verb", suggestion: "..."}]`
-  - Overall suggestions: string[]
-
-#### Frontend - Teacher
-- [ ] **GradingFeedback.jsx** improvements
-  - Hiển thị rubrics scores dạng progress bar
-  - Bảng error analysis với type/location/suggestion
-  - Textarea chỉnh sửa feedback
-  - Buttons: Approve (gửi nguyên), Edit & Send, Reject & Re-grade
-- [ ] Bulk grading: chấm nhiều bài cùng lúc
-
-#### Frontend - Student
-- [ ] **DoExercise.jsx** - renderResultView enhancements
-  - Score breakdown by rubrics
-  - Error analysis table với highlight location
-  - Suggestions section với action items
-  - "Làm lại" button nếu được phép
+### 🎨 Exercise Creation - Complete UI!
+**Frontend**: `CreateExerciseModalComplete.jsx` (1293 lines)
+- ✅ Skill type selector: Listening, Speaking, Reading, Writing
+- ✅ Test type: Skill Exercise, 15min Test, Midterm, Final
+- ✅ Creation methods: Manual, AI Generate, Question Bank
+- ✅ Content builder:
+  - Listening: Audio upload + Transcript
+  - Reading: Text input or File upload
+  - Speaking: Prompt + Instructions + Time settings
+  - Writing: Prompt + Type + Word limit + Instructions
+- ✅ Questions management: Add/Edit/Delete
+- ✅ Question Bank integration modal
+- ✅ AI generation options (files/prompt based)
+- ✅ Preview before create
 
 ---
 
-### ❌ MÔ-ĐUN 3: Theo dõi và phân tích tiến bộ
-**Mục tiêu**: Dashboard tiến bộ, biểu đồ, xuất báo cáo PDF/Excel
+## ⚠️ ĐANG THIẾU (High Priority)
 
-**Hiện trạng**:
-- ✅ Có `/teacher-grading/classes/{id}/analytics/students` - basic progress
-- ❌ Chưa có time-series data (tiến bộ theo tuần/tháng)
-- ❌ Chưa có grouping/clustering students
-- ❌ Export chỉ trả về "coming soon"
+### 1. 🎯 STUDENT VIEW - Error Analysis Display
+**File**: `DoExercise.jsx` - renderResultView()
+**Hiện trạng**: Chỉ hiển thị score/feedback cơ bản
 
 **Cần làm**:
+```jsx
+// Backend đã có data trong submission.rubrics_scores:
+{
+  speaking_assessment: {pronunciation: 85, fluency: 78, ...},
+  writing_assessment: {content: 8, grammar: 7, ...},
+  recognized_text: "...",
+  word_count: 245,
+  strengths: ["Good vocabulary", ...],
+  improvements: ["Work on grammar", ...],
+  corrections: ["error1 -> fix1", ...],
+  suggestions: "Practice more..."
+}
+```
 
-#### Database
-- [ ] Tạo bảng `student_progress_history`
-  ```sql
-  CREATE TABLE student_progress_history (
-    id INT PRIMARY KEY,
-    student_id INT,
-    class_id INT,
-    skill_type VARCHAR(20), -- listening|speaking|reading|writing
-    avg_score FLOAT,
-    submission_count INT,
-    week_start DATE,
-    week_end DATE,
-    created_at TIMESTAMP
-  )
+**Implement**:
+- [ ] Rubrics breakdown visualization (similar to GradingFeedback)
+- [ ] Error analysis table với highlight
+- [ ] Corrections list với before/after
+- [ ] Suggestions section actionable
+- [ ] Speaking: Audio player + recognized text comparison
+- [ ] Writing: Word count + criteria scores
+
+---
+
+### 2. 📊 ANALYTICS DASHBOARD - Chưa có trang
+**Hiện trạng**: 
+- `StatisticsReports.jsx` chỉ có mock data
+- Backend `/analytics/students` chỉ trả current state
+
+**Cần tạo**: `AnalyticsDashboard.jsx`
+
+**Features**:
+- [ ] **Line Chart**: Tiến bộ theo thời gian từng học sinh
+  - X-axis: Tuần/Tháng
+  - Y-axis: Average score
+  - Multiple lines: 4 skills
+  - Library: Chart.js hoặc Recharts
+  
+- [ ] **Bar Chart**: So sánh 4 skills across all students
+  - Grouped bars: Listening, Speaking, Reading, Writing
+  - Filter by class
+  
+- [ ] **Heatmap**: Performance matrix
+  - Rows: Students
+  - Columns: Skills
+  - Color: Score levels (green/yellow/red)
+  
+- [ ] **Table**: Nhóm học sinh yếu kỹ năng
+  - Auto clustering by skill scores
+  - Recommendations for each group
+  - Export list for intervention planning
+
+**Backend Endpoint**: Mở rộng `/analytics/students`
+```python
+GET /teacher-grading/classes/{id}/analytics/progress
+Query params:
+  - time_period: week|month|semester
+  - start_date, end_date
+  - skill_type (optional filter)
+  
+Response:
+{
+  time_series: [
+    {week: "2025-W01", listening: 7.5, speaking: 6.8, ...},
+    {week: "2025-W02", listening: 7.8, speaking: 7.1, ...}
+  ],
+  skill_comparison: {listening: 7.5, speaking: 6.8, reading: 8.2, writing: 7.1},
+  weak_groups: {
+    speaking_weak: [student_ids],
+    writing_weak: [student_ids],
+    recommendations: {...}
+  },
+  heatmap_data: [
+    {student_id: 1, name: "...", scores: {listening: 8, speaking: 6, ...}},
+    ...
+  ]
+}
+```
+
+---
+
+### 3. 📄 EXPORT PDF/EXCEL - Coming Soon
+**File**: `teacher_grading.py` - `export_progress_report()`
+**Hiện trạng**: Trả về `{"message": "PDF/Excel export coming soon"}`
+
+**Implement**:
+
+#### PDF Export (ReportLab / WeasyPrint)
+```python
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import SimpleDocTemplate, Table, Paragraph
+import matplotlib.pyplot as plt
+```
+
+**Template**:
+- [ ] School header (logo, name, address)
+- [ ] Class information section
+- [ ] Student list with scores table
+- [ ] Charts:
+  - Progress line chart (matplotlib → image → PDF)
+  - Skills radar chart
+- [ ] Summary statistics
+- [ ] Weak students identification
+- [ ] Recommendations section
+- [ ] Teacher signature area
+
+#### Excel Export (openpyxl)
+```python
+from openpyxl import Workbook
+from openpyxl.chart import LineChart, BarChart
+```
+
+**Sheets**:
+- [ ] **Overview**: Class summary, average scores, attendance
+- [ ] **Students Data**: Detailed table (student, all scores, submissions)
+- [ ] **Skill Analysis**: Breakdown by skill with charts
+- [ ] **Timeline**: Weekly/monthly progress data
+- [ ] **Recommendations**: Auto-generated based on data
+
+**Dependencies cần thêm**:
+```bash
+pip install reportlab weasyprint openpyxl matplotlib
+```
+
+---
+
+### 4. 💾 DATABASE - student_progress_history Table
+**Mục đích**: Tracking tiến bộ theo thời gian cho time-series charts
+
+**Migration**:
+```python
+# alembic/versions/010_student_progress_history.py
+def upgrade():
+    op.create_table(
+        'student_progress_history',
+        sa.Column('id', sa.Integer, primary_key=True),
+        sa.Column('student_id', sa.Integer, sa.ForeignKey('users.id')),
+        sa.Column('class_id', sa.Integer, sa.ForeignKey('classes.id')),
+        sa.Column('skill_type', sa.String(20)),  # listening|speaking|reading|writing
+        sa.Column('avg_score', sa.Float),
+        sa.Column('submission_count', sa.Integer),
+        sa.Column('week_start', sa.Date),
+        sa.Column('week_end', sa.Date),
+        sa.Column('created_at', sa.DateTime, default=datetime.utcnow)
+    )
+    op.create_index('ix_progress_student_week', 'student_progress_history', 
+                    ['student_id', 'week_start'])
+```
+
+**Background Task** (Celery / APScheduler):
+```python
+# Run every Sunday midnight
+@scheduler.task('cron', day_of_week='sun', hour=0)
+def aggregate_weekly_progress():
+    # Query all submissions from last week
+    # GROUP BY student_id, skill_type
+    # Calculate AVG(score), COUNT(*)
+    # INSERT INTO student_progress_history
+```
+
+---
+
+## � MEDIUM PRIORITY
+
+### 5. 🤖 Mô-đun 1: AI Exercise Sheet Generator
+**Hiện trạng**: 
+- `/question-bank/generate-test` có nhưng không tích hợp curriculum
+- `CreateExerciseModalComplete` đã có AI option
+
+**Cần làm**:
+- [ ] Endpoint mới: `POST /ai/generate-exercise-sheet`
+  ```python
+  {
+    "topic": "Present Perfect Tense",
+    "grade": "10",
+    "skill_type": "listening",
+    "week_number": 5,
+    "difficulty": "medium",
+    "curriculum_standard": "Vietnamese_MOE_2018"  # Optional
+  }
+  
+  Response:
+  {
+    "exercise": {
+      "title": "...",
+      "content": {...},
+      "questions": [...],
+      "suggested_rubrics": {...},
+      "estimated_time": 45
+    }
+  }
   ```
-- [ ] Cronjob/Background task: aggregate submissions → weekly snapshots
 
-#### Backend Analytics
-- [ ] Expand `/analytics/students` endpoint
-  - Query param: `time_period` (week|month|semester)
-  - Return: time-series data per skill
-  - Add `weak_groups`: students grouped by skill weakness
-- [ ] Endpoint: `GET /analytics/skill-comparison`
-  - Compare 4 skills across all students
-  - Return data for bar chart
-- [ ] Endpoint: `GET /analytics/class-heatmap`
-  - Matrix: students x skills
-  - Color by performance level
+- [ ] Frontend: Connect AI Generate button trong CreateExerciseModalComplete
+- [ ] Curriculum mapping data (JSON file với week-by-week topics)
 
-#### Backend Export
-- [ ] Implement PDF export (`reportlab` or `weasyprint`)
-  - Template: School header, student list, charts (matplotlib), recommendations
-  - Include: avg scores, skill breakdown, progress trends, weak areas
-- [ ] Implement Excel export (`openpyxl`)
-  - Sheets: Overview, Individual Student Data, Skill Analysis
-  - Charts embedded in Excel
+### 6. ⚡ BULK GRADING
+**Hiện trạng**: GradingFeedback chấm từng bài
 
-#### Frontend - Teacher Dashboard
-- [ ] Tạo page **AnalyticsDashboard.jsx**
-  - Line chart: tiến bộ theo thời gian (Chart.js hoặc Recharts)
-  - Bar chart: so sánh 4 skills
-  - Heatmap: performance matrix
-  - Table: nhóm học sinh yếu kỹ năng (với recommendations)
-  - Export buttons: PDF, Excel
-- [ ] Route: `/teacher/analytics/class/:classId`
+**Features**:
+- [ ] Checkbox select multiple submissions
+- [ ] Bulk actions:
+  - Approve all AI scores
+  - Apply feedback template to selected
+  - Batch export results
+- [ ] Queue system cho AI grading (nếu >50 bài)
+- [ ] Progress indicator
+
+### 7. 🧪 TESTING
+- [ ] Unit tests: `gemini_service.grade_writing()`
+- [ ] Unit tests: `azure_speech_service.assess_pronunciation()`
+- [ ] Integration: Submit → Auto grade → Teacher review workflow
+- [ ] Load tests: 100 submissions đồng thời
+- [ ] Analytics calculations accuracy
 
 ---
 
-## 🔧 TÍCH HỢP & CẢI THIỆN
+## � LOW PRIORITY
 
-### Exercise Creation Flow
-- [ ] **ExercisesTests.jsx** - Improve create form
-  - Add skill_type selector
-  - Content builder: Questions, Audio upload, Passage input
-  - Rubrics configuration (nếu enable AI grading)
-  - Preview modal trước khi tạo
-  - Validate: phải có skill_type + content trước khi save
+### 8. � PERFORMANCE
+- [ ] Cache classes/exercises list (Redis/localStorage)
+- [ ] Lazy load exercises với pagination
+- [ ] Background task cho AI grading (Celery)
+- [ ] Database indexes:
+  ```sql
+  CREATE INDEX idx_submissions_exercise_student ON exercise_submissions(exercise_id, student_id);
+  CREATE INDEX idx_submissions_status ON exercise_submissions(status);
+  CREATE INDEX idx_exercises_class_due ON exercises(class_id, due_at);
+  ```
 
-### AI Assistants Integration
-- [ ] Kiểm tra `/ai/writing`, `/ai/reading` có tích hợp vào exercise workflow chưa
-  - Student làm bài → gọi AI check realtime?
-  - Kết quả AI có lưu vào submission không?
-- [ ] SpeakingExercise: cần endpoint `/ai/speaking/check-pronunciation`
-
-### Testing
-- [ ] Unit tests cho AI services
-  - `gemini_service.check_writing()`
-  - `gemini_service.generate_exercise_sheet()`
-  - Auto-grading workflow
-- [ ] Integration tests
-  - Submit exercise → AI grade → Teacher review → Send to student
-
----
-
-## 📊 PRIORITY
-
-**🔥 HIGH (Core features thiếu)**
-1. Mô-đun 2: Auto AI grading khi submit
-2. Mô-đun 2: Teacher review UI với rubrics/errors
-3. Mô-đun 3: Analytics dashboard với charts
-4. Exercise creation form improvements
-5. Student view - Error analysis + suggestions
-
-**⚡ MEDIUM (Enhancements)**
-6. Mô-đun 1: AI Exercise Sheet Generator
-7. Mô-đun 3: Export PDF/Excel
-8. Database: student_progress_history table
-9. Bulk grading UI
-
-**🔹 LOW (Nice to have)**
-10. AI assistants integration check
-11. Speaking pronunciation check endpoint
-12. Unit tests coverage
+### 9. � MOBILE RESPONSIVE
+- [ ] GradingFeedback mobile layout
+- [ ] AnalyticsDashboard touch-friendly charts
+- [ ] CreateExerciseModal scrollable sections
 
 ---
 
 ## 📝 NOTES
-- ✅ Link sharing cho exercise: DONE (ExerciseDetailModal.jsx)
-- ⚠️ Nhiều exercise được tạo không có content → cần validate form
-- 🚧 Backend AI infrastructure đã sẵn, chỉ cần kết nối workflow
-- 📦 Dependencies cần thêm: `reportlab`, `openpyxl`, `matplotlib` (for charts in PDF)
+
+**✅ Hoàn thành gần đây**:
+- Auto AI grading cho Writing/Speaking
+- Teacher review UI với rubrics display
+- Complete exercise creation form
+- Link sharing cho exercises
+
+**🔥 Top 3 priority ngay**:
+1. Student view - Error analysis display (1-2h)
+2. Analytics dashboard với charts (4-6h)
+3. Export PDF/Excel implementation (6-8h)
+
+**📦 Dependencies cần cài**:
+```bash
+# Backend
+pip install reportlab weasyprint openpyxl matplotlib celery redis
+
+# Frontend
+npm install chart.js recharts react-chartjs-2
+```
+
+**🎯 Sprint goal**: 
+Hoàn thiện 3 mô-đun chính trong 2 tuần!
+
 

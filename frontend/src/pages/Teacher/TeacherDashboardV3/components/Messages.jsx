@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card } from '../../../../components/ui/card';
 import { Button } from '../../../../components/ui/button';
 import { Input } from '../../../../components/ui/input';
@@ -6,120 +6,188 @@ import { Avatar, AvatarFallback } from '../../../../components/ui/avatar';
 import { Badge } from '../../../../components/ui/badge';
 import { Search, Send, Paperclip, Smile, MoreVertical } from 'lucide-react';
 import { Textarea } from '../../../../components/ui/textarea';
+import messageService from '../../../../services/messageService';
+import { getCurrentUser } from '../../../../services/userService';
 
 const Messages = () => {
-  const [selectedChat, setSelectedChat] = useState('1');
+  const [selectedChat, setSelectedChat] = useState(null);
   const [messageInput, setMessageInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [conversations, setConversations] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [messages, setMessages] = useState([]);
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const messagesEndRef = useRef(null);
 
-  const conversations = [
-    {
-      id: '1',
-      name: 'Nguyễn Văn A',
-      role: 'Học sinh - 10A1',
-      lastMessage: 'Thầy ơi, em có thể nộp bài muộn được không ạ?',
-      time: '10 phút trước',
-      unread: 2,
-      avatar: 'NA',
-      online: true
-    },
-    {
-      id: '2',
-      name: 'Trần Thị B',
-      role: 'Phụ huynh',
-      lastMessage: 'Con em học tiếng Anh như thế nào ạ?',
-      time: '1 giờ trước',
-      unread: 0,
-      avatar: 'TB',
-      online: false
-    },
-    {
-      id: '3',
-      name: 'Lớp 10A2',
-      role: 'Nhóm lớp',
-      lastMessage: 'Thầy: Nhớ làm bài tập về nhà nhé các em',
-      time: '2 giờ trước',
-      unread: 0,
-      avatar: '10A2',
-      online: false
-    },
-    {
-      id: '4',
-      name: 'Lê Văn C',
-      role: 'Học sinh - 11B1',
-      lastMessage: 'Cảm ơn thầy đã giúp em!',
-      time: '3 giờ trước',
-      unread: 0,
-      avatar: 'LC',
-      online: true
-    },
-    {
-      id: '5',
-      name: 'Phạm Thị D',
-      role: 'Phụ huynh',
-      lastMessage: 'Thầy có thể gửi lịch học cho em không ạ?',
-      time: 'Hôm qua',
-      unread: 1,
-      avatar: 'PD',
-      online: false
+  useEffect(() => {
+    loadCurrentUser();
+    loadConversations();
+    loadUsers();
+  }, []);
+
+  useEffect(() => {
+    if (selectedChat) {
+      loadMessages(selectedChat);
     }
-  ];
+  }, [selectedChat]);
 
-  const messages = {
-    '1': [
-      {
-        id: '1',
-        sender: 'student',
-        content: 'Chào thầy ạ!',
-        time: '14:30',
-        date: '26/10/2025'
-      },
-      {
-        id: '2',
-        sender: 'teacher',
-        content: 'Chào em, có chuyện gì thế?',
-        time: '14:32',
-        date: '26/10/2025'
-      },
-      {
-        id: '3',
-        sender: 'student',
-        content: 'Thầy ơi, em có thể nộp bài muộn được không ạ? Em bị ốm nên chưa làm xong.',
-        time: '14:35',
-        date: '26/10/2025'
-      },
-      {
-        id: '4',
-        sender: 'teacher',
-        content: 'Ừ được, thầy cho em thêm 2 ngày. Nhưng nhớ làm bài đầy đủ nhé!',
-        time: '14:40',
-        date: '26/10/2025'
-      },
-      {
-        id: '5',
-        sender: 'student',
-        content: 'Vâng ạ, cảm ơn thầy nhiều!',
-        time: '14:41',
-        date: '26/10/2025'
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const loadCurrentUser = async () => {
+    try {
+      const user = await getCurrentUser();
+      setCurrentUserId(user.id);
+    } catch (error) {
+      console.error('Error loading current user:', error);
+    }
+  };
+
+  const loadConversations = async () => {
+    try {
+      const data = await messageService.getConversations();
+      setConversations(data);
+    } catch (error) {
+      console.error('Error loading conversations:', error);
+    }
+  };
+
+  const loadUsers = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/api/v1/users', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        // Include students and parents
+        const studentsAndParents = data.filter(u => u.role === 'student' || u.role === 'parent');
+        setUsers(studentsAndParents);
       }
-    ]
-  };
-
-  const currentConversation = conversations.find(c => c.id === selectedChat);
-  const currentMessages = messages[selectedChat] || [];
-
-  const handleSendMessage = () => {
-    if (messageInput.trim()) {
-      // Logic to send message
-      console.log('Sending message:', messageInput);
-      setMessageInput('');
+    } catch (error) {
+      console.error('Error loading users:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const filteredConversations = conversations.filter(conv =>
-    conv.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    conv.role.toLowerCase().includes(searchQuery.toLowerCase())
+  const loadMessages = async (userId) => {
+    try {
+      const data = await messageService.getMessages(userId);
+      setMessages(data);
+    } catch (error) {
+      console.error('Error loading messages:', error);
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!messageInput.trim() || !selectedChat || sending) return;
+
+    setSending(true);
+    try {
+      await messageService.sendMessage(selectedChat, messageInput.trim());
+      setMessageInput('');
+      await loadMessages(selectedChat);
+      await loadConversations();
+    } catch (error) {
+      console.error('Error sending message:', error);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleUserSelect = async (userId) => {
+    setSelectedChat(userId);
+    await loadMessages(userId);
+    
+    // Mark messages as read
+    try {
+      await messageService.markAsRead(userId);
+      await loadConversations();
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
+    }
+  };
+
+  const getConversationInfo = (userId) => {
+    const conversation = conversations.find(c => 
+      (c.sender_id === userId && c.receiver_id === currentUserId) ||
+      (c.receiver_id === userId && c.sender_id === currentUserId)
+    );
+    
+    const user = users.find(u => u.id === userId);
+    
+    return {
+      user,
+      lastMessage: conversation?.last_message || '',
+      unreadCount: conversation?.unread_count || 0,
+      updatedAt: conversation?.updated_at || ''
+    };
+  };
+
+  const formatTime = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Vừa xong';
+    if (diffMins < 60) return `${diffMins} phút trước`;
+    if (diffHours < 24) return `${diffHours} giờ trước`;
+    if (diffDays < 7) return `${diffDays} ngày trước`;
+    return date.toLocaleDateString('vi-VN');
+  };
+
+  const getInitials = (name) => {
+    if (!name) return '?';
+    const words = name.split(' ');
+    if (words.length >= 2) {
+      return words[0][0] + words[words.length - 1][0];
+    }
+    return name.substring(0, 2);
+  };
+
+  // Combine conversations and users
+  const allContactIds = new Set([
+    ...conversations.map(c => c.sender_id === currentUserId ? c.receiver_id : c.sender_id),
+    ...users.map(u => u.id)
+  ]);
+
+  const contactsList = Array.from(allContactIds)
+    .filter(id => id !== currentUserId)
+    .map(userId => {
+      const info = getConversationInfo(userId);
+      return {
+        id: userId,
+        ...info
+      };
+    })
+    .filter(contact => contact.user) // Only show contacts with user info
+    .sort((a, b) => {
+      // Sort by last message time
+      if (!a.updatedAt && !b.updatedAt) return 0;
+      if (!a.updatedAt) return 1;
+      if (!b.updatedAt) return -1;
+      return new Date(b.updatedAt) - new Date(a.updatedAt);
+    });
+
+  const filteredContacts = contactsList.filter(contact =>
+    contact.user?.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    contact.user?.role?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const selectedUser = users.find(u => u.id === selectedChat);
 
   return (
     <div className="p-8">
@@ -143,61 +211,76 @@ const Messages = () => {
             </div>
           </div>
           <div className="flex-1 overflow-y-auto">
-            {filteredConversations.map((conv) => (
-              <div
-                key={conv.id}
-                className={`p-4 border-b border-gray-100 cursor-pointer transition-colors ${
-                  selectedChat === conv.id ? 'bg-purple-50' : 'hover:bg-gray-50'
-                }`}
-                onClick={() => setSelectedChat(conv.id)}
-              >
-                <div className="flex gap-3">
-                  <div className="relative">
-                    <Avatar>
-                      <AvatarFallback className="bg-purple-500 text-white">
-                        {conv.avatar}
-                      </AvatarFallback>
-                    </Avatar>
-                    {conv.online && (
-                      <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <h4 className="text-sm font-semibold text-gray-900 truncate">{conv.name}</h4>
-                      <span className="text-xs text-gray-500">{conv.time}</span>
+            {loading ? (
+              <div className="p-4 text-center text-gray-500">Đang tải...</div>
+            ) : filteredContacts.length === 0 ? (
+              <div className="p-4 text-center text-gray-500">Chưa có tin nhắn</div>
+            ) : (
+              filteredContacts.map((contact) => (
+                <div
+                  key={contact.id}
+                  className={`p-4 border-b border-gray-100 cursor-pointer transition-colors ${
+                    selectedChat === contact.id ? 'bg-purple-50' : 'hover:bg-gray-50'
+                  }`}
+                  onClick={() => handleUserSelect(contact.id)}
+                >
+                  <div className="flex gap-3">
+                    <div className="relative">
+                      <Avatar>
+                        <AvatarFallback className="bg-purple-500 text-white">
+                          {getInitials(contact.user?.full_name)}
+                        </AvatarFallback>
+                      </Avatar>
                     </div>
-                    <p className="text-xs text-gray-500 mb-1">{conv.role}</p>
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm text-gray-600 truncate flex-1">{conv.lastMessage}</p>
-                      {conv.unread > 0 && (
-                        <Badge className="ml-2 bg-purple-500 text-white">
-                          {conv.unread}
-                        </Badge>
-                      )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <h4 className="text-sm font-semibold text-gray-900 truncate">
+                          {contact.user?.full_name}
+                        </h4>
+                        <span className="text-xs text-gray-500">
+                          {formatTime(contact.updatedAt)}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-500 mb-1">
+                        {contact.user?.role === 'parent' ? 'Phụ huynh' : 'Học sinh'}
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm text-gray-600 truncate flex-1">
+                          {contact.lastMessage || 'Chưa có tin nhắn'}
+                        </p>
+                        {contact.unreadCount > 0 && (
+                          <Badge className="ml-2 bg-purple-500 text-white">
+                            {contact.unreadCount}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 
         {/* Chat Area */}
         <div className="flex-1 flex flex-col">
-          {currentConversation ? (
+          {selectedUser ? (
             <>
               {/* Chat Header */}
               <div className="p-4 border-b border-gray-200 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <Avatar>
                     <AvatarFallback className="bg-purple-500 text-white">
-                      {currentConversation.avatar}
+                      {getInitials(selectedUser?.full_name)}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <h3 className="text-base font-semibold text-gray-900">{currentConversation.name}</h3>
-                    <p className="text-xs text-gray-500">{currentConversation.role}</p>
+                    <h3 className="text-base font-semibold text-gray-900">
+                      {selectedUser?.full_name}
+                    </h3>
+                    <p className="text-xs text-gray-500">
+                      {selectedUser?.role === 'parent' ? 'Phụ huynh' : 'Học sinh'} - {selectedUser?.email}
+                    </p>
                   </div>
                 </div>
                 <Button size="sm" variant="ghost">
@@ -207,27 +290,37 @@ const Messages = () => {
 
               {/* Messages */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {currentMessages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={`flex ${msg.sender === 'teacher' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div
-                      className={`max-w-md px-4 py-3 rounded-2xl ${
-                        msg.sender === 'teacher'
-                          ? 'bg-purple-500 text-white'
-                          : 'bg-gray-100 text-gray-900'
-                      }`}
-                    >
-                      <p className="text-sm">{msg.content}</p>
-                      <p className={`text-xs mt-1 ${
-                        msg.sender === 'teacher' ? 'text-purple-100' : 'text-gray-500'
-                      }`}>
-                        {msg.time}
-                      </p>
-                    </div>
+                {messages.length === 0 ? (
+                  <div className="flex items-center justify-center h-full text-gray-500">
+                    Chưa có tin nhắn. Hãy bắt đầu cuộc trò chuyện!
                   </div>
-                ))}
+                ) : (
+                  messages.map((msg) => (
+                    <div
+                      key={msg.id}
+                      className={`flex ${msg.sender_id === currentUserId ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div
+                        className={`max-w-md px-4 py-3 rounded-2xl ${
+                          msg.sender_id === currentUserId
+                            ? 'bg-purple-500 text-white'
+                            : 'bg-gray-100 text-gray-900'
+                        }`}
+                      >
+                        <p className="text-sm">{msg.content}</p>
+                        <p className={`text-xs mt-1 ${
+                          msg.sender_id === currentUserId ? 'text-purple-100' : 'text-gray-500'
+                        }`}>
+                          {new Date(msg.created_at).toLocaleTimeString('vi-VN', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                )}
+                <div ref={messagesEndRef} />
               </div>
 
               {/* Input Area */}
@@ -251,9 +344,9 @@ const Messages = () => {
                     }}
                     className="flex-1"
                   />
-                  <Button onClick={handleSendMessage} className="gap-2">
+                  <Button onClick={handleSendMessage} disabled={sending} className="gap-2">
                     <Send className="w-4 h-4" />
-                    Gửi
+                    {sending ? 'Đang gửi...' : 'Gửi'}
                   </Button>
                 </div>
               </div>
