@@ -1,375 +1,360 @@
-import { useState } from 'react';
-import { Card } from '../../../../components/ui/card';
-import { Button } from '../../../../components/ui/button';
-import { Input } from '../../../../components/ui/input';
-import { Badge } from '../../../../components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../../../../components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../../components/ui/tabs';
-import { Plus, Search, Eye, Edit, Trash2, Clock, Newspaper, TrendingUp, Globe, Sparkles } from 'lucide-react';
-import { Label } from '../../../../components/ui/label';
-import { Textarea } from '../../../../components/ui/textarea';
+import { useState, useEffect } from 'react';
+import { newsAPI } from '../../../../services/api';
+import './NewsArticles.css';
 
 const NewsArticles = () => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [isGenerateOpen, setIsGenerateOpen] = useState(false);
-
-  const articles = [
-    {
-      id: '1',
-      title: 'Breaking News: New Climate Agreement Reached',
-      category: 'environment',
-      level: 'intermediate',
-      source: 'BBC News',
-      date: '26/10/2025',
-      readTime: '5 phút',
-      vocabulary: 25,
-      thumbnail: '🌍',
-      excerpt: 'World leaders have agreed on a new climate framework to reduce carbon emissions by 50% before 2030...',
-      status: 'published'
-    },
-    {
-      id: '2',
-      title: 'Technology Breakthrough in AI Language Learning',
-      category: 'technology',
-      level: 'advanced',
-      source: 'TechCrunch',
-      date: '25/10/2025',
-      readTime: '8 phút',
-      vocabulary: 30,
-      thumbnail: '🤖',
-      excerpt: 'A new AI system has been developed that can help students learn languages more effectively...',
-      status: 'published'
-    },
-    {
-      id: '3',
-      title: 'Youth Sports Championship Brings Communities Together',
-      category: 'sports',
-      level: 'beginner',
-      source: 'Sports Daily',
-      date: '24/10/2025',
-      readTime: '4 phút',
-      vocabulary: 18,
-      thumbnail: '⚽',
-      excerpt: 'The annual youth sports championship saw participation from over 500 students across the region...',
-      status: 'draft'
-    },
-    {
-      id: '4',
-      title: 'Cultural Festival Celebrates Diversity',
-      category: 'culture',
-      level: 'intermediate',
-      source: 'Local Times',
-      date: '23/10/2025',
-      readTime: '6 phút',
-      vocabulary: 22,
-      thumbnail: '🎭',
-      excerpt: 'The city\'s annual cultural festival showcased performances and traditions from 20 different countries...',
-      status: 'published'
-    }
-  ];
-
-  const categories = [
-    { id: 'all', label: 'Tất cả', count: articles.length },
-    { id: 'technology', label: 'Công nghệ', count: articles.filter(a => a.category === 'technology').length },
-    { id: 'environment', label: 'Môi trường', count: articles.filter(a => a.category === 'environment').length },
-    { id: 'sports', label: 'Thể thao', count: articles.filter(a => a.category === 'sports').length },
-    { id: 'culture', label: 'Văn hóa', count: articles.filter(a => a.category === 'culture').length },
-    { id: 'education', label: 'Giáo dục', count: articles.filter(a => a.category === 'education').length }
-  ];
-
-  const getLevelColor = (level) => {
-    switch (level) {
-      case 'beginner': return 'bg-green-100 text-green-700';
-      case 'intermediate': return 'bg-yellow-100 text-yellow-700';
-      case 'advanced': return 'bg-red-100 text-red-700';
-      default: return 'bg-gray-100 text-gray-700';
-    }
-  };
-
-  const getLevelText = (level) => {
-    switch (level) {
-      case 'beginner': return 'Cơ bản';
-      case 'intermediate': return 'Trung cấp';
-      case 'advanced': return 'Nâng cao';
-      default: return level;
-    }
-  };
-
-  const filteredArticles = articles.filter(article => {
-    const matchSearch = article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                       article.excerpt.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchCategory = selectedCategory === 'all' || article.category === selectedCategory;
-    return matchSearch && matchCategory;
+  const [newsList, setNewsList] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [editingNews, setEditingNews] = useState(null);
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    content: '',
+    category: 'Thông báo',
+    icon: '📰',
+    type: 'announcement',
+    image: '',
+    status: 'published'
   });
 
+  const categories = ['Thông báo', 'Khuyến mãi', 'Học tập', 'Hướng dẫn', 'Sự kiện', 'Tính năng mới'];
+  const types = [
+    { value: 'announcement', label: 'Thông báo', icon: '📢' },
+    { value: 'promotion', label: 'Khuyến mãi', icon: '🎁' },
+    { value: 'tips', label: 'Mẹo học tập', icon: '💡' },
+    { value: 'guide', label: 'Hướng dẫn', icon: '📖' },
+    { value: 'event', label: 'Sự kiện', icon: '🎉' },
+    { value: 'feature', label: 'Tính năng mới', icon: '✨' }
+  ];
+
+  const icons = ['📰', '📢', '🎁', '💡', '📖', '🎉', '✨', '🚀', '🔥', '⭐', '🎯', '📚'];
+
+  useEffect(() => {
+    loadNews();
+  }, []);
+
+  const loadNews = async () => {
+    try {
+      setLoading(true);
+      const data = await newsAPI.getAllNewsForManagement();
+      setNewsList(data || []);
+    } catch (error) {
+      console.error('Error loading news:', error);
+      alert('Không thể tải danh sách tin tức');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOpenModal = (news = null) => {
+    if (news) {
+      setEditingNews(news);
+      setFormData({
+        title: news.title,
+        description: news.description || '',
+        content: news.content,
+        category: news.category,
+        icon: news.icon || '📰',
+        type: news.type,
+        image: news.image || '',
+        status: news.status
+      });
+    } else {
+      setEditingNews(null);
+      setFormData({
+        title: '',
+        description: '',
+        content: '',
+        category: 'Thông báo',
+        icon: '📰',
+        type: 'announcement',
+        image: '',
+        status: 'published'
+      });
+    }
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setEditingNews(null);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingNews) {
+        await newsAPI.updateNews(editingNews.id, formData);
+        alert('Cập nhật tin tức thành công!');
+      } else {
+        await newsAPI.createNews(formData);
+        alert('Tạo tin tức thành công!');
+      }
+      handleCloseModal();
+      loadNews();
+    } catch (error) {
+      console.error('Error saving news:', error);
+      alert('Lỗi: ' + (error?.detail || 'Không thể lưu tin tức'));
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa tin tức này?')) return;
+    
+    try {
+      await newsAPI.deleteNews(id);
+      alert('Đã xóa tin tức');
+      loadNews();
+    } catch (error) {
+      console.error('Error deleting news:', error);
+      alert('Không thể xóa tin tức');
+    }
+  };
+
+  const getStatusBadge = (status) => {
+    const badges = {
+      published: { text: 'Đã xuất bản', color: '#10b981' },
+      draft: { text: 'Nháp', color: '#f59e0b' },
+      archived: { text: 'Lưu trữ', color: '#6b7280' }
+    };
+    const badge = badges[status] || badges.published;
+    return (
+      <span style={{
+        padding: '0.25rem 0.75rem',
+        borderRadius: '12px',
+        fontSize: '0.85rem',
+        fontWeight: 600,
+        background: badge.color,
+        color: 'white'
+      }}>
+        {badge.text}
+      </span>
+    );
+  };
+
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Tin tức & Bài viết</h1>
-        <p className="text-gray-600">Quản lý tin tức và bài viết tiếng Anh cho học sinh</p>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-        <Card className="p-6">
-          <div className="flex items-center gap-4">
-            <div className="bg-blue-500 p-3 rounded-lg">
-              <Newspaper className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <p className="text-gray-600 text-sm">Tổng bài viết</p>
-              <p className="text-2xl font-bold text-gray-900">{articles.length}</p>
-            </div>
-          </div>
-        </Card>
-        <Card className="p-6">
-          <div className="flex items-center gap-4">
-            <div className="bg-green-500 p-3 rounded-lg">
-              <TrendingUp className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <p className="text-gray-600 text-sm">Đã xuất bản</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {articles.filter(a => a.status === 'published').length}
-              </p>
-            </div>
-          </div>
-        </Card>
-        <Card className="p-6">
-          <div className="flex items-center gap-4">
-            <div className="bg-orange-500 p-3 rounded-lg">
-              <Clock className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <p className="text-gray-600 text-sm">Bản nháp</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {articles.filter(a => a.status === 'draft').length}
-              </p>
-            </div>
-          </div>
-        </Card>
-        <Card className="p-6">
-          <div className="flex items-center gap-4">
-            <div className="bg-purple-500 p-3 rounded-lg">
-              <Globe className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <p className="text-gray-600 text-sm">Từ vựng</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {articles.reduce((sum, a) => sum + a.vocabulary, 0)}
-              </p>
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      {/* Filters */}
-      <Card className="p-4 mb-6">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <Input
-              placeholder="Tìm kiếm bài viết..."
-              className="pl-10"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          <Dialog open={isGenerateOpen} onOpenChange={setIsGenerateOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="gap-2">
-                <Sparkles className="w-4 h-4" />
-                Tạo bằng AI
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Tạo bài viết bằng AI</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div>
-                  <Label>Chủ đề</Label>
-                  <Input placeholder="VD: Climate change and its effects" />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Danh mục</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn danh mục" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="technology">Công nghệ</SelectItem>
-                        <SelectItem value="environment">Môi trường</SelectItem>
-                        <SelectItem value="sports">Thể thao</SelectItem>
-                        <SelectItem value="culture">Văn hóa</SelectItem>
-                        <SelectItem value="education">Giáo dục</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Cấp độ</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn cấp độ" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="beginner">Cơ bản</SelectItem>
-                        <SelectItem value="intermediate">Trung cấp</SelectItem>
-                        <SelectItem value="advanced">Nâng cao</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div>
-                  <Label>Độ dài (từ)</Label>
-                  <Input type="number" placeholder="300" defaultValue="300" />
-                </div>
-                <div className="flex gap-2 justify-end">
-                  <Button variant="outline" onClick={() => setIsGenerateOpen(false)}>Hủy</Button>
-                  <Button onClick={() => setIsGenerateOpen(false)} className="gap-2">
-                    <Sparkles className="w-4 h-4" />
-                    Tạo bài viết
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-            <DialogTrigger asChild>
-              <Button className="gap-2">
-                <Plus className="w-4 h-4" />
-                Thêm bài viết
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-3xl">
-              <DialogHeader>
-                <DialogTitle>Thêm bài viết mới</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto">
-                <div>
-                  <Label>Tiêu đề</Label>
-                  <Input placeholder="VD: Breaking News: ..." />
-                </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <Label>Danh mục</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn danh mục" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="technology">Công nghệ</SelectItem>
-                        <SelectItem value="environment">Môi trường</SelectItem>
-                        <SelectItem value="sports">Thể thao</SelectItem>
-                        <SelectItem value="culture">Văn hóa</SelectItem>
-                        <SelectItem value="education">Giáo dục</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Cấp độ</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn cấp độ" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="beginner">Cơ bản</SelectItem>
-                        <SelectItem value="intermediate">Trung cấp</SelectItem>
-                        <SelectItem value="advanced">Nâng cao</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Nguồn</Label>
-                    <Input placeholder="VD: BBC News" />
-                  </div>
-                </div>
-                <div>
-                  <Label>Tóm tắt</Label>
-                  <Textarea placeholder="Tóm tắt ngắn gọn về bài viết..." rows={3} />
-                </div>
-                <div>
-                  <Label>Nội dung</Label>
-                  <Textarea placeholder="Nhập nội dung bài viết..." rows={10} />
-                </div>
-                <div className="flex gap-2 justify-end pt-4">
-                  <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Hủy</Button>
-                  <Button variant="outline">Lưu nháp</Button>
-                  <Button onClick={() => setIsCreateOpen(false)}>Xuất bản</Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
+    <div className="manage-news-page">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">📰 Quản lý Tin tức</h1>
+          <p className="page-subtitle">Tạo và quản lý tin tức, thông báo cho hệ thống</p>
         </div>
-      </Card>
-
-      {/* Categories Tabs */}
-      <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="mb-6">
-        <TabsList className="flex-wrap h-auto">
-          {categories.map(cat => (
-            <TabsTrigger key={cat.id} value={cat.id}>
-              {cat.label} ({cat.count})
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
-
-      {/* Articles Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredArticles.map((article) => (
-          <Card key={article.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-            <div className="h-40 bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center text-6xl">
-              {article.thumbnail}
-            </div>
-            <div className="p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Badge className={getLevelColor(article.level)}>
-                  {getLevelText(article.level)}
-                </Badge>
-                <Badge variant="outline" className="capitalize">
-                  {article.category === 'technology' ? 'Công nghệ' :
-                   article.category === 'environment' ? 'Môi trường' :
-                   article.category === 'sports' ? 'Thể thao' :
-                   article.category === 'culture' ? 'Văn hóa' : 'Giáo dục'}
-                </Badge>
-              </div>
-              <h3 className="text-base font-semibold text-gray-900 mb-2 line-clamp-2">
-                {article.title}
-              </h3>
-              <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                {article.excerpt}
-              </p>
-              <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
-                <span>{article.source}</span>
-                <span>{article.date}</span>
-              </div>
-              <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
-                <span className="flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  {article.readTime}
-                </span>
-                <span>{article.vocabulary} từ vựng</span>
-              </div>
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline" className="flex-1 gap-2">
-                  <Eye className="w-4 h-4" />
-                  Xem
-                </Button>
-                <Button size="sm" variant="outline" className="gap-2">
-                  <Edit className="w-4 h-4" />
-                </Button>
-                <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700">
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          </Card>
-        ))}
+        <button className="btn-primary" onClick={() => handleOpenModal()}>
+          <span>➕</span> Tạo tin tức mới
+        </button>
       </div>
+
+      {loading ? (
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Đang tải...</p>
+        </div>
+      ) : (
+        <div className="news-table-container">
+          <table className="news-table">
+            <thead>
+              <tr>
+                <th>Tiêu đề</th>
+                <th>Danh mục</th>
+                <th>Trạng thái</th>
+                <th>Lượt xem</th>
+                <th>Lượt thích</th>
+                <th>Tác giả</th>
+                <th>Ngày tạo</th>
+                <th>Hành động</th>
+              </tr>
+            </thead>
+            <tbody>
+              {newsList.map((news) => (
+                <tr key={news.id}>
+                  <td>
+                    <div className="news-title-cell">
+                      <span className="news-icon-cell">{news.icon}</span>
+                      <div>
+                        <div className="news-title-text">{news.title}</div>
+                        <div className="news-desc-text">{news.description}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span className="category-badge">{news.category}</span>
+                  </td>
+                  <td>{getStatusBadge(news.status)}</td>
+                  <td>👁️ {news.views || 0}</td>
+                  <td>❤️ {news.likes || 0}</td>
+                  <td>{news.author_name}</td>
+                  <td>{new Date(news.created_at).toLocaleDateString('vi-VN')}</td>
+                  <td>
+                    <div className="action-buttons">
+                      <button 
+                        className="btn-edit" 
+                        onClick={() => handleOpenModal(news)}
+                        title="Chỉnh sửa"
+                      >
+                        ✏️
+                      </button>
+                      <button 
+                        className="btn-delete" 
+                        onClick={() => handleDelete(news.id)}
+                        title="Xóa"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {newsList.length === 0 && (
+            <div className="empty-state">
+              <div className="empty-icon">📰</div>
+              <h3>Chưa có tin tức nào</h3>
+              <p>Tạo tin tức đầu tiên để bắt đầu</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Modal */}
+      {showModal && (
+        <div className="modal-overlay" onClick={handleCloseModal}>
+          <div className="modal-content-news" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>{editingNews ? 'Chỉnh sửa tin tức' : 'Tạo tin tức mới'}</h2>
+              <button className="close-btn" onClick={handleCloseModal}>×</button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="news-form">
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Tiêu đề *</label>
+                  <input
+                    type="text"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    required
+                    placeholder="Nhập tiêu đề tin tức"
+                  />
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Mô tả ngắn</label>
+                  <textarea
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    rows={2}
+                    placeholder="Mô tả ngắn gọn về tin tức"
+                  />
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Nội dung *</label>
+                  <textarea
+                    value={formData.content}
+                    onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                    required
+                    rows={6}
+                    placeholder="Nội dung chi tiết của tin tức"
+                  />
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Danh mục</label>
+                  <select
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  >
+                    {categories.map((cat) => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>Loại</label>
+                  <select
+                    value={formData.type}
+                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                  >
+                    {types.map((type) => (
+                      <option key={type.value} value={type.value}>
+                        {type.icon} {type.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Icon</label>
+                  <div className="icon-selector">
+                    {icons.map((icon) => (
+                      <button
+                        key={icon}
+                        type="button"
+                        className={`icon-btn ${formData.icon === icon ? 'active' : ''}`}
+                        onClick={() => setFormData({ ...formData, icon })}
+                      >
+                        {icon}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>URL Hình ảnh</label>
+                  <input
+                    type="url"
+                    value={formData.image}
+                    onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                    placeholder="https://example.com/image.jpg"
+                  />
+                  {formData.image && (
+                    <div className="image-preview">
+                      <img src={formData.image} alt="Preview" />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Trạng thái</label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                  >
+                    <option value="published">Xuất bản</option>
+                    <option value="draft">Lưu nháp</option>
+                    <option value="archived">Lưu trữ</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="modal-actions">
+                <button type="button" className="btn-secondary" onClick={handleCloseModal}>
+                  Hủy
+                </button>
+                <button type="submit" className="btn-primary">
+                  {editingNews ? 'Cập nhật' : 'Tạo mới'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

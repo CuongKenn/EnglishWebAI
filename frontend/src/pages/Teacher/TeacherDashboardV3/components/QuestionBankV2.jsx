@@ -3,7 +3,8 @@ import {
   Plus, Search, FileQuestion, Zap, TrendingUp, AlertTriangle,
   Edit, Copy, Trash2, Upload, Download, Sparkles, Database, X, 
   Filter, ChevronDown, Check, Eye, Headphones, BookOpen, PenTool,
-  Bot, Settings, Play, Clock, Target, FileText, Wand2, Mic
+  Bot, Settings, Play, Clock, Target, FileText, Wand2, Mic,
+  RotateCcw, Save, Loader2
 } from 'lucide-react';
 import { Card } from '../../../../components/ui/card';
 import AddQuestionModal from './AddQuestionModal';
@@ -54,6 +55,8 @@ export default function QuestionBankV2() {
   });
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedTest, setGeneratedTest] = useState(null);
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState('');
   
   const fileInputRef = useRef(null);
 
@@ -440,9 +443,82 @@ export default function QuestionBankV2() {
       },
       timeLimit: 60,
       topics: [],
-      aiOnly: false
+      aiOnly: true,
+      avoidDuplicates: true
     });
     setGeneratedTest(null);
+    setSelectedTemplate('');
+  };
+  
+  // Template presets
+  const templates = [
+    {
+      id: 'balanced',
+      name: '⚖️ Cân bằng',
+      description: 'Cân bằng 4 kỹ năng, độ khó trung bình',
+      config: {
+        skillDistribution: { listening: 25, speaking: 25, reading: 25, writing: 25 },
+        difficultyDistribution: { easy: 30, medium: 50, hard: 20 },
+        totalQuestions: 20,
+        timeLimit: 60
+      }
+    },
+    {
+      id: 'reading_focus',
+      name: '📖 Tập trung Đọc',
+      description: '60% Reading, 40% các kỹ năng khác',
+      config: {
+        skillDistribution: { listening: 15, speaking: 10, reading: 60, writing: 15 },
+        difficultyDistribution: { easy: 20, medium: 50, hard: 30 },
+        totalQuestions: 25,
+        timeLimit: 75
+      }
+    },
+    {
+      id: 'listening_speaking',
+      name: '🎧🗣️ Nghe - Nói',
+      description: 'Tập trung vào kỹ năng giao tiếp',
+      config: {
+        skillDistribution: { listening: 45, speaking: 45, reading: 5, writing: 5 },
+        difficultyDistribution: { easy: 30, medium: 50, hard: 20 },
+        totalQuestions: 20,
+        timeLimit: 45
+      }
+    },
+    {
+      id: 'comprehensive',
+      name: '🎯 Toàn diện',
+      description: 'Đề thi đầy đủ, khó cao',
+      config: {
+        skillDistribution: { listening: 30, speaking: 20, reading: 30, writing: 20 },
+        difficultyDistribution: { easy: 10, medium: 40, hard: 50 },
+        totalQuestions: 40,
+        timeLimit: 120
+      }
+    },
+    {
+      id: 'beginner',
+      name: '🌱 Người mới',
+      description: 'Đề dễ cho học sinh mới',
+      config: {
+        skillDistribution: { listening: 30, speaking: 20, reading: 30, writing: 20 },
+        difficultyDistribution: { easy: 70, medium: 25, hard: 5 },
+        totalQuestions: 15,
+        timeLimit: 30
+      }
+    }
+  ];
+  
+  const handleApplyTemplate = (templateId) => {
+    const template = templates.find(t => t.id === templateId);
+    if (template) {
+      setAiGenerationConfig(prev => ({
+        ...prev,
+        ...template.config,
+        testName: prev.testName || template.name.replace(/[^\w\s]/g, '')
+      }));
+      setSelectedTemplate(templateId);
+    }
   };
 
   const handleImportClick = () => {
@@ -1130,12 +1206,44 @@ export default function QuestionBankV2() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Configuration Panel */}
           <Card className="p-6">
-            <div className="flex items-center gap-2 mb-6">
-              <Settings className="w-5 h-5 text-purple-600" />
-              <h3 className="text-lg font-semibold text-gray-900">Cấu hình đề thi</h3>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2">
+                <Settings className="w-5 h-5 text-purple-600" />
+                <h3 className="text-lg font-semibold text-gray-900">Cấu hình đề thi</h3>
+              </div>
+              {generatedTest && (
+                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+                  ✅ Đã sinh
+                </span>
+              )}
             </div>
 
             <div className="space-y-6">
+              {/* Quick Templates */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  📋 Mẫu nhanh
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {templates.map((template) => (
+                    <button
+                      key={template.id}
+                      onClick={() => handleApplyTemplate(template.id)}
+                      className={`p-3 text-left border rounded-lg hover:border-purple-500 transition-colors ${
+                        selectedTemplate === template.id
+                          ? 'border-purple-500 bg-purple-50'
+                          : 'border-gray-200'
+                      }`}
+                    >
+                      <div className="font-medium text-sm">{template.name}</div>
+                      <div className="text-xs text-gray-500 mt-1">{template.description}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="border-t border-gray-200 my-4"></div>
+
               {/* Test Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1250,69 +1358,127 @@ export default function QuestionBankV2() {
                 )}
               </div>
 
-              {/* Fallback option when AI lacks questions */}
-              <div className="rounded-lg bg-gray-50 p-4 border border-gray-200">
-                <label className="flex items-start gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="mt-1"
-                    checked={!aiGenerationConfig.aiOnly}
-                    onChange={(e) => setAiGenerationConfig(prev => ({
-                      ...prev,
-                      aiOnly: !e.target.checked
-                    }))}
-                  />
-                  <div>
-                    <div className="text-sm font-medium text-gray-900">Bổ sung từ ngân hàng nếu AI thiếu</div>
-                    <div className="text-xs text-gray-600">Giữ đúng tổng số câu bằng cách tự động lấy thêm từ ngân hàng cá nhân khi AI không sinh đủ ở một kỹ năng.</div>
-                  </div>
-                </label>
+              {/* Advanced Options Toggle */}
+              <div>
+                <button
+                  onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+                  className="flex items-center gap-2 text-sm text-purple-600 hover:text-purple-700 font-medium"
+                >
+                  <ChevronDown className={`w-4 h-4 transition-transform ${showAdvancedOptions ? 'rotate-180' : ''}`} />
+                  {showAdvancedOptions ? 'Ẩn' : 'Hiện'} tùy chọn nâng cao
+                </button>
               </div>
 
-              {/* Avoid duplicates option */}
-              <div className="rounded-lg bg-gray-50 p-4 border border-gray-200">
-                <label className="flex items-start gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="mt-1"
-                    checked={aiGenerationConfig.avoidDuplicates}
-                    onChange={(e) => setAiGenerationConfig(prev => ({
-                      ...prev,
-                      avoidDuplicates: e.target.checked
-                    }))}
-                  />
-                  <div>
-                    <div className="text-sm font-medium text-gray-900">Tránh trùng với ngân hàng</div>
-                    <div className="text-xs text-gray-600">AI sẽ sinh nội dung mới và bỏ qua các câu/đoạn đã có trong ngân hàng của bạn.</div>
+              {/* Advanced Options */}
+              {showAdvancedOptions && (
+                <div className="space-y-4 animate-fadeIn">
+                  {/* Difficulty Distribution */}
+                  <div className="rounded-lg bg-gradient-to-r from-blue-50 to-purple-50 p-4 border border-blue-200">
+                    <label className="block text-sm font-medium text-gray-900 mb-3">
+                      📊 Phân bố độ khó (%)
+                    </label>
+                    <div className="space-y-2">
+                      {Object.entries(aiGenerationConfig.difficultyDistribution).map(([level, percentage]) => (
+                        <div key={level} className="flex items-center gap-3">
+                          <div className="w-20 text-sm text-gray-700 capitalize">
+                            {level === 'easy' ? 'Dễ' : level === 'medium' ? 'TB' : 'Khó'}
+                          </div>
+                          <div className="flex-1">
+                            <input
+                              type="range"
+                              min="0"
+                              max="100"
+                              value={percentage}
+                              className="w-full"
+                              onChange={(e) => {
+                                const newValue = parseInt(e.target.value);
+                                setAiGenerationConfig(prev => ({
+                                  ...prev,
+                                  difficultyDistribution: {
+                                    ...prev.difficultyDistribution,
+                                    [level]: newValue
+                                  }
+                                }));
+                              }}
+                            />
+                          </div>
+                          <div className="w-12 text-sm text-gray-700 text-right">
+                            {percentage}%
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="text-xs text-gray-600 mt-2">
+                      Tổng: {Object.values(aiGenerationConfig.difficultyDistribution).reduce((sum, val) => sum + val, 0)}%
+                    </div>
                   </div>
-                </label>
-              </div>
+
+                  {/* Fallback option */}
+                  <div className="rounded-lg bg-gray-50 p-4 border border-gray-200">
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="mt-1"
+                        checked={!aiGenerationConfig.aiOnly}
+                        onChange={(e) => setAiGenerationConfig(prev => ({
+                          ...prev,
+                          aiOnly: !e.target.checked
+                        }))}
+                      />
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">Bổ sung từ ngân hàng nếu AI thiếu</div>
+                        <div className="text-xs text-gray-600">Tự động lấy thêm câu hỏi từ ngân hàng cá nhân khi AI không sinh đủ.</div>
+                      </div>
+                    </label>
+                  </div>
+
+                  {/* Avoid duplicates option */}
+                  <div className="rounded-lg bg-gray-50 p-4 border border-gray-200">
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="mt-1"
+                        checked={aiGenerationConfig.avoidDuplicates}
+                        onChange={(e) => setAiGenerationConfig(prev => ({
+                          ...prev,
+                          avoidDuplicates: e.target.checked
+                        }))}
+                      />
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">Tránh trùng với ngân hàng</div>
+                        <div className="text-xs text-gray-600">AI sẽ sinh nội dung mới và bỏ qua các câu/đoạn đã có.</div>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              )}
 
               {/* Action Buttons */}
               <div className="flex gap-3">
                 <button
                   onClick={handleAIGeneration}
-                  disabled={isGenerating}
-                  className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 px-4 rounded-lg hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2"
+                  disabled={isGenerating || Object.values(aiGenerationConfig.skillDistribution).reduce((sum, val) => sum + val, 0) !== 100}
+                  className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 px-4 rounded-lg hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2 font-semibold shadow-lg hover:shadow-xl"
                 >
                   {isGenerating ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                      Đang tạo đề...
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                      Đang sinh đề với AI...
                     </>
                   ) : (
                     <>
-                      <Wand2 className="w-4 h-4" />
-                      Tạo đề thi bằng AI
+                      <Sparkles className="w-5 h-5 animate-pulse" />
+                      Sinh đề tự động với AI
                     </>
                   )}
                 </button>
                 <button
                   onClick={handleResetConfig}
                   disabled={isGenerating}
+                  title="Đặt lại cấu hình"
                   className="px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
                 >
-                  <X className="w-4 h-4" />
+                  <RotateCcw className="w-4 h-4" />
                   Reset
                 </button>
               </div>
@@ -1321,12 +1487,53 @@ export default function QuestionBankV2() {
 
           {/* Preview Panel */}
           <Card className="p-6">
-            <div className="flex items-center gap-2 mb-6">
-              <Eye className="w-5 h-5 text-purple-600" />
-              <h3 className="text-lg font-semibold text-gray-900">Xem trước đề thi</h3>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2">
+                <Eye className="w-5 h-5 text-purple-600" />
+                <h3 className="text-lg font-semibold text-gray-900">Xem trước đề thi</h3>
+              </div>
+              {generatedTest && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleExportTest}
+                    className="flex items-center gap-1 px-3 py-1 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  >
+                    <Download className="w-3 h-3" />
+                    DOCX
+                  </button>
+                  <button
+                    onClick={handleSaveTestToBank}
+                    className="flex items-center gap-1 px-3 py-1 text-xs bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  >
+                    <Save className="w-3 h-3" />
+                    Lưu
+                  </button>
+                </div>
+              )}
             </div>
 
-            {generatedTest ? (
+            {isGenerating ? (
+              <div className="space-y-4 animate-fadeIn">
+                <div className="flex flex-col items-center justify-center py-12">
+                  <div className="relative w-24 h-24 mb-6">
+                    <div className="absolute inset-0 border-4 border-purple-200 rounded-full"></div>
+                    <div className="absolute inset-0 border-4 border-purple-600 rounded-full border-t-transparent animate-spin"></div>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Sparkles className="w-8 h-8 text-purple-600 animate-pulse" />
+                    </div>
+                  </div>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-2">AI đang sinh đề...</h4>
+                  <p className="text-sm text-gray-600 text-center max-w-md">
+                    Gemini Flash đang phân tích yêu cầu và tạo câu hỏi phù hợp. Quá trình này có thể mất 10-30 giây tùy số lượng câu.
+                  </p>
+                  <div className="mt-6 w-full max-w-md">
+                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-purple-500 to-pink-500 animate-pulse" style={{width: '60%'}}></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : generatedTest ? (
               <div className="space-y-4">
                 <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-lg">
                   <h4 className="font-semibold text-gray-900 mb-2">{generatedTest.name}</h4>
@@ -1405,35 +1612,63 @@ export default function QuestionBankV2() {
                   );
                 })()}
 
-                <div className="space-y-3 max-h-64 overflow-y-auto">
-                  {generatedTest.questions.slice(0, 5).map((question, index) => (
-                    <div key={question.id} className="p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-start gap-2">
-                        <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded font-medium">
-                          {index + 1}
-                        </span>
-                        <div className="flex-1">
-                          <p className="text-sm text-gray-900 line-clamp-2">
-                            {question.question_text}
-                          </p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className={`px-2 py-1 rounded text-xs ${getDifficultyColor(question.difficulty)}`}>
-                              {question.difficulty.toUpperCase()}
-                            </span>
-                            <span className={`px-2 py-1 rounded text-xs ${getSkillColor(question.skill_type)}`}>
-                              {question.skill_type.toUpperCase()}
-                            </span>
-                            <span className="text-xs text-gray-500">{question.points} điểm</span>
+                {/* Enhanced Question List */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h5 className="text-sm font-medium text-gray-700">
+                      📝 Danh sách câu hỏi
+                    </h5>
+                    <div className="flex gap-2 text-xs">
+                      <span className="px-2 py-1 bg-green-100 text-green-700 rounded">
+                        {generatedTest.questions.filter(q => q.difficulty === 'easy').length} dễ
+                      </span>
+                      <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded">
+                        {generatedTest.questions.filter(q => q.difficulty === 'medium').length} TB
+                      </span>
+                      <span className="px-2 py-1 bg-red-100 text-red-700 rounded">
+                        {generatedTest.questions.filter(q => q.difficulty === 'hard').length} khó
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
+                    {generatedTest.questions.map((question, index) => (
+                      <div
+                        key={question.id || index}
+                        className="border border-gray-200 rounded-lg p-3 hover:shadow-md hover:border-purple-300 transition-all duration-200 bg-white"
+                      >
+                        <div className="flex items-start gap-3">
+                          <span className="bg-gradient-to-br from-purple-100 to-pink-100 text-purple-800 text-sm font-bold px-2.5 py-1 rounded-lg shrink-0">
+                            #{index + 1}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-gray-900 font-medium mb-2 line-clamp-2">
+                              {question.question_text}
+                            </p>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className={`text-xs px-2 py-1 rounded font-medium ${getDifficultyColor(question.difficulty)}`}>
+                                {question.difficulty === 'easy' ? '🟢 Dễ' : 
+                                 question.difficulty === 'medium' ? '🟡 TB' : '🔴 Khó'}
+                              </span>
+                              <span className={`text-xs px-2 py-1 rounded font-medium ${getSkillColor(question.skill_type)}`}>
+                                {question.skill_type === 'listening' ? '🎧 Nghe' : 
+                                 question.skill_type === 'speaking' ? '🗣️ Nói' :
+                                 question.skill_type === 'reading' ? '📖 Đọc' : '✍️ Viết'}
+                              </span>
+                              {question.topic && (
+                                <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded">
+                                  {question.topic}
+                                </span>
+                              )}
+                              <span className="text-xs text-purple-600 font-semibold ml-auto">
+                                {question.points || 1} điểm
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                  {generatedTest.questions.length > 5 && (
-                    <div className="text-center text-sm text-gray-500 py-2">
-                      ... và {generatedTest.questions.length - 5} câu hỏi khác
-                    </div>
-                  )}
+                    ))}
+                  </div>
                 </div>
 
                 <div className="flex gap-3 pt-4">
