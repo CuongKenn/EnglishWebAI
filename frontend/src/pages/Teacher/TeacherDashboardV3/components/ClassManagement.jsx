@@ -36,7 +36,7 @@ export default function ClassManagement() {
       setClasses(response.data);
     } catch (error) {
       console.error('Error fetching classes:', error);
-      alert('Lß╗ùi khi tß║úi danh s├ích lß╗¢p hß╗ìc!');
+  alert('Lỗi khi tải danh sách lớp học!');
     } finally {
       setLoading(false);
     }
@@ -49,7 +49,7 @@ export default function ClassManagement() {
       setStudents(response.data);
     } catch (error) {
       console.error('Error fetching students:', error);
-      alert('Lß╗ùi khi tß║úi danh s├ích hß╗ìc sinh!');
+  alert('Lỗi khi tải danh sách học sinh!');
     } finally {
       setLoading(false);
     }
@@ -75,7 +75,7 @@ export default function ClassManagement() {
         status: 'active'
       });
       
-      alert('Th├¬m hß╗ìc sinh th├ánh c├┤ng!');
+  alert('Thêm học sinh thành công!');
       setShowAddModal(false);
       setNewStudent({ name: '', email: '', phone: '' });
       fetchStudents(selectedClass.id); // Refresh list
@@ -108,8 +108,8 @@ export default function ClassManagement() {
     <div className="class-modal-overlay" onClick={() => setShowAddModal(false)}>
       <div className="class-modal" onClick={(e) => e.stopPropagation()}>
         <div className="class-modal-header">
-          <h2>Th├¬m Hß╗ìc sinh</h2>
-          <button className="modal-close-btn" onClick={() => setShowAddModal(false)}>├ù</button>
+          <h2>Thêm Học sinh</h2>
+          <button className="modal-close-btn" onClick={() => setShowAddModal(false)}>×</button>
         </div>
 
         <div className="class-modal-body">
@@ -129,14 +129,14 @@ export default function ClassManagement() {
         </div>
 
         <div className="class-modal-footer">
-          <button className="btn-cancel-class" onClick={() => setShowAddModal(false)}>Hß╗ºy</button>
+          <button className="btn-cancel-class" onClick={() => setShowAddModal(false)}>Hủy</button>
           <button 
             className="btn-add-class"
             onClick={handleAddStudent}
             disabled={loading}
           >
             <UserPlus size={18} />
-            {loading ? '─Éang th├¬m...' : 'Th├¬m hß╗ìc sinh'}
+            {loading ? 'Đang thêm...' : 'Thêm học sinh'}
           </button>
         </div>
       </div>
@@ -147,8 +147,8 @@ export default function ClassManagement() {
     <div className="class-modal-overlay" onClick={() => setShowImportModal(false)}>
       <div className="class-modal" onClick={(e) => e.stopPropagation()}>
         <div className="class-modal-header">
-          <h2>Import Hß╗ìc sinh tß╗½ Excel</h2>
-          <button className="modal-close-btn" onClick={() => setShowImportModal(false)}>├ù</button>
+          <h2>Import Học sinh từ Excel</h2>
+          <button className="modal-close-btn" onClick={() => setShowImportModal(false)}>×</button>
         </div>
 
         <div className="class-modal-body">
@@ -157,44 +157,44 @@ export default function ClassManagement() {
             <div className="template-info">
               <Download size={24} className="template-icon" />
               <div>
-                <h4>Tß║úi file mß║½u</h4>
-                <p>Tß║úi file Excel mß║½u ─æß╗â import hß╗ìc sinh ─æ├║ng ─æß╗ïnh dß║íng</p>
+                <h4>Tải file mẫu</h4>
+                <p>Tải file Excel mẫu để import học sinh đúng định dạng</p>
               </div>
             </div>
             <button className="btn-download-template">
               <Download size={16} />
-              Tß║úi file mß║½u
+              Tải file mẫu
             </button>
           </div>
 
           {/* Upload Area */}
           <div className="upload-area">
             <Upload size={48} className="upload-icon" />
-            <h4>K├⌐o thß║ú file Excel v├áo ─æ├óy</h4>
-            <p>hoß║╖c</p>
-            <button className="btn-browse">Chß╗ìn file tß╗½ m├íy t├¡nh</button>
-            <span className="upload-hint">Hß╗ù trß╗ú: .xlsx, .xls (Tß╗æi ─æa 5MB)</span>
+            <h4>Kéo thả file Excel vào đây</h4>
+            <p>hoặc</p>
+            <button className="btn-browse">Chọn file từ máy tính</button>
+            <span className="upload-hint">Hỗ trợ: .xlsx, .xls (Tối đa 5MB)</span>
           </div>
 
           {/* Format Guide */}
           <div className="format-guide">
-            <h4>≡ƒôï ─Éß╗ïnh dß║íng file Excel:</h4>
+            <h4>Định dạng file Excel:</h4>
             <table className="format-table">
               <thead>
                 <tr>
-                  <th>Hß╗ì v├á t├¬n</th>
+                  <th>Họ và tên</th>
                   <th>Email</th>
-                  <th>Sß╗æ ─æiß╗çn thoß║íi</th>
+                  <th>Số điện thoại</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td>Nguyß╗àn V─ân A</td>
+                  <td>Nguyễn Văn A</td>
                   <td>nguyenvana@gmail.com</td>
                   <td>0123456789</td>
                 </tr>
                 <tr>
-                  <td>Trß║ºn Thß╗ï B</td>
+                  <td>Trần Thị B</td>
                   <td>tranthib@gmail.com</td>
                   <td>0987654321</td>
                 </tr>
@@ -204,10 +204,10 @@ export default function ClassManagement() {
         </div>
 
         <div className="class-modal-footer">
-          <button className="btn-cancel-class" onClick={() => setShowImportModal(false)}>Hß╗ºy</button>
+          <button className="btn-cancel-class" onClick={() => setShowImportModal(false)}>Hủy</button>
           <button className="btn-add-class">
             <Upload size={18} />
-            Import hß╗ìc sinh
+            Import học sinh
           </button>
         </div>
       </div>
@@ -219,8 +219,8 @@ export default function ClassManagement() {
       {/* Header */}
       <div className="class-header">
         <div className="class-header-left">
-          <h1>Quß║ún l├╜ Lß╗¢p hß╗ìc</h1>
-          <p>Quß║ún l├╜ hß╗ìc sinh trong c├íc lß╗¢p bß║ín ─æang dß║íy</p>
+          <h1>Quản lý Lớp học</h1>
+          <p>Quản lý học sinh trong các lớp bạn đang dạy</p>
         </div>
       </div>
 
@@ -229,16 +229,16 @@ export default function ClassManagement() {
         <div className="classes-sidebar">
           <div className="sidebar-title">
             <Users size={20} />
-            <span>Lß╗¢p hß╗ìc cß╗ºa t├┤i</span>
+      <span>Lớp học của tôi</span>
           </div>
           <div className="classes-list">
             {loading && classes.length === 0 ? (
               <div style={{padding: '20px', textAlign: 'center', color: '#666'}}>
-                ─Éang tß║úi...
+        Đang tải...
               </div>
             ) : classes.length === 0 ? (
               <div style={{padding: '20px', textAlign: 'center', color: '#666'}}>
-                Ch╞░a c├│ lß╗¢p hß╗ìc n├áo
+        Chưa có lớp học nào
               </div>
             ) : (
               classes.map((cls) => (
@@ -252,7 +252,7 @@ export default function ClassManagement() {
                   </div>
                   <div className="class-item-info">
                     <div className="class-item-name">{cls.name}</div>
-                    <div className="class-item-count">{cls.student_count || 0} hß╗ìc sinh</div>
+          <div className="class-item-count">{cls.student_count || 0} học sinh</div>
                   </div>
                   {selectedClass?.id === cls.id && <div className="class-item-indicator" />}
                 </div>
@@ -266,8 +266,8 @@ export default function ClassManagement() {
           {!selectedClass ? (
             <div className="empty-state-class">
               <Users size={80} strokeWidth={1} />
-              <h3>Chß╗ìn lß╗¢p hß╗ìc</h3>
-              <p>Chß╗ìn mß╗Öt lß╗¢p hß╗ìc b├¬n tr├íi ─æß╗â xem danh s├ích hß╗ìc sinh</p>
+              <h3>Chọn lớp học</h3>
+              <p>Chọn một lớp học bên trái để xem danh sách học sinh</p>
             </div>
           ) : (
             <>
@@ -275,12 +275,12 @@ export default function ClassManagement() {
               <div className="panel-header">
                 <div className="panel-header-left">
                   <h2>{selectedClass.name}</h2>
-                  <span className="student-count-badge">{students.length} hß╗ìc sinh</span>
+                  <span className="student-count-badge">{students.length} học sinh</span>
                 </div>
                 <div className="panel-header-actions">
                   <button className="btn-action-class primary" onClick={() => setShowAddModal(true)}>
                     <UserPlus size={18} />
-                    Th├¬m hß╗ìc sinh
+                    Thêm học sinh
                   </button>
                   <button className="btn-action-class secondary" onClick={() => setShowImportModal(true)}>
                     <Upload size={18} />
@@ -294,7 +294,7 @@ export default function ClassManagement() {
                 <Search size={20} className="search-icon" />
                 <input
                   type="text"
-                  placeholder="T├¼m kiß║┐m hß╗ìc sinh theo t├¬n hoß║╖c email..."
+                  placeholder="Tìm kiếm học sinh theo tên hoặc email..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="search-input-class"
@@ -305,12 +305,12 @@ export default function ClassManagement() {
               <div className="students-table">
                 {loading ? (
                   <div style={{padding: '40px', textAlign: 'center', color: '#666'}}>
-                    ─Éang tß║úi danh s├ích hß╗ìc sinh...
+          Đang tải danh sách học sinh...
                   </div>
                 ) : filteredStudents.length === 0 ? (
                   <div className="empty-search-state">
                     <Search size={48} strokeWidth={1} />
-                    <p>{searchTerm ? 'Kh├┤ng t├¼m thß║Ñy hß╗ìc sinh n├áo' : 'Ch╞░a c├│ hß╗ìc sinh trong lß╗¢p'}</p>
+          <p>{searchTerm ? 'Không tìm thấy học sinh nào' : 'Chưa có học sinh trong lớp'}</p>
                   </div>
                 ) : (
                   filteredStudents.map((student) => (
@@ -331,19 +331,19 @@ export default function ClassManagement() {
                         <div className={`student-status ${student.status}`}>
                           {student.status === 'active' ? (
                             <>
-                              <CheckCircle size={14} />
-                              <span>─Éang hß╗ìc</span>
+                <CheckCircle size={14} />
+                <span>Đang học</span>
                             </>
                           ) : (
                             <>
-                              <XCircle size={14} />
-                              <span>Nghß╗ë hß╗ìc</span>
+                <XCircle size={14} />
+                <span>Nghỉ học</span>
                             </>
                           )}
                         </div>
                         <button 
                           className="btn-remove-student" 
-                          title="X├│a hß╗ìc sinh"
+              title="Xóa học sinh"
                           onClick={() => handleRemoveStudent(student.id)}
                         >
                           <Trash2 size={16} />
@@ -368,12 +368,12 @@ export default function ClassManagement() {
           <Users size={24} />
         </div>
         <div className="info-content-class">
-          <h4>≡ƒÆí H╞░ß╗¢ng dß║½n quß║ún l├╜ hß╗ìc sinh</h4>
+          <h4>Hướng dẫn quản lý học sinh</h4>
           <ul>
-            <li><strong>Th├¬m hß╗ìc sinh:</strong> Click "Th├¬m hß╗ìc sinh", nhß║¡p email cß╗ºa hß╗ìc sinh ─æ├ú ─æ─âng k├╜ trong hß╗ç thß╗æng</li>
-            <li><strong>X├│a hß╗ìc sinh:</strong> Click icon ≡ƒùæ∩╕Å b├¬n cß║ính t├¬n hß╗ìc sinh ─æß╗â gß╗í khß╗Åi lß╗¢p</li>
-            <li><strong>T├¼m kiß║┐m:</strong> Sß╗¡ dß╗Ñng thanh t├¼m kiß║┐m ─æß╗â lß╗ìc hß╗ìc sinh theo t├¬n hoß║╖c email</li>
-            <li><strong>L╞░u ├╜:</strong> Hß╗ìc sinh phß║úi c├│ t├ái khoß║ún trong hß╗ç thß╗æng tr╞░ß╗¢c khi ─æ╞░ß╗úc th├¬m v├áo lß╗¢p</li>
+            <li><strong>Thêm học sinh:</strong> Click "Thêm học sinh", nhập email của học sinh đã đăng ký trong hệ thống</li>
+            <li><strong>Xóa học sinh:</strong> Click icon thùng rác bên cạnh tên học sinh để gỡ khỏi lớp</li>
+            <li><strong>Tìm kiếm:</strong> Sử dụng thanh tìm kiếm để lọc học sinh theo tên hoặc email</li>
+            <li><strong>Lưu ý:</strong> Học sinh phải có tài khoản trong hệ thống trước khi được thêm vào lớp</li>
           </ul>
         </div>
       </div>

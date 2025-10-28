@@ -72,6 +72,40 @@ export default function ExerciseDetailModal({ exercise, onClose, onUpdate, onDel
       [field]: value
     });
   };
+
+  const handleDeleteQuestion = (questionIndex) => {
+    if (!window.confirm(`⚠️ Bạn có chắc muốn xóa câu hỏi ${questionIndex + 1}?`)) {
+      return;
+    }
+    
+    const updatedQuestions = editedExercise.content.questions.filter((_, idx) => idx !== questionIndex);
+    
+    setEditedExercise({
+      ...editedExercise,
+      content: {
+        ...editedExercise.content,
+        questions: updatedQuestions
+      }
+    });
+    
+    alert(`✅ Đã xóa câu hỏi ${questionIndex + 1}`);
+  };
+
+  const handleEditQuestion = (questionIndex, field, value) => {
+    const updatedQuestions = [...editedExercise.content.questions];
+    updatedQuestions[questionIndex] = {
+      ...updatedQuestions[questionIndex],
+      [field]: value
+    };
+    
+    setEditedExercise({
+      ...editedExercise,
+      content: {
+        ...editedExercise.content,
+        questions: updatedQuestions
+      }
+    });
+  };
   
   return (
     <div className="exercise-modal-overlay" onClick={onClose}>
@@ -297,16 +331,62 @@ export default function ExerciseDetailModal({ exercise, onClose, onUpdate, onDel
         {/* Questions */}
         {exercise.content.questions && exercise.content.questions.length > 0 && (
           <div className="content-block">
-            <h3>Câu hỏi ({exercise.content.questions.length})</h3>
+            <h3>Câu hỏi ({isEditMode ? editedExercise.content.questions.length : exercise.content.questions.length})</h3>
             <div className="questions-list-detail">
-              {exercise.content.questions.map((q, idx) => (
+              {(isEditMode ? editedExercise.content.questions : exercise.content.questions).map((q, idx) => (
                 <div key={idx} className="question-detail-card">
                   <div className="question-header-detail">
                     <span className="question-number">Câu {idx + 1}</span>
-                    <span className="question-points">{q.points} điểm</span>
+                    <span className="question-points">
+                      {isEditMode ? (
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.5"
+                          value={q.points}
+                          onChange={(e) => handleEditQuestion(idx, 'points', parseFloat(e.target.value))}
+                          style={{ width: '60px', padding: '4px', border: '1px solid #ddd', borderRadius: '4px' }}
+                        />
+                      ) : q.points} điểm
+                    </span>
                     <span className="question-type-badge">{getQuestionTypeLabel(q.type)}</span>
+                    {isEditMode && (
+                      <button 
+                        className="btn-delete-question"
+                        onClick={() => handleDeleteQuestion(idx)}
+                        title="Xóa câu hỏi"
+                        style={{
+                          marginLeft: 'auto',
+                          padding: '6px 12px',
+                          background: '#ef4444',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          fontSize: '13px'
+                        }}
+                      >
+                        <Trash2 size={14} />
+                        Xóa
+                      </button>
+                    )}
                   </div>
-                  <p className="question-text-detail">{q.question}</p>
+                  
+                  {isEditMode ? (
+                    <textarea
+                      className="form-textarea-ex"
+                      value={q.question}
+                      onChange={(e) => handleEditQuestion(idx, 'question', e.target.value)}
+                      placeholder="Nhập nội dung câu hỏi..."
+                      rows="2"
+                      style={{ marginTop: '8px', width: '100%' }}
+                    />
+                  ) : (
+                    <p className="question-text-detail">{q.question}</p>
+                  )}
                   
                   {q.type === 'multiple_choice' && (
                     <div className="options-detail">
@@ -323,13 +403,38 @@ export default function ExerciseDetailModal({ exercise, onClose, onUpdate, onDel
                   
                   {(q.type === 'fill_blank' || q.type === 'short_answer') && (
                     <div className="answer-detail">
-                      <strong>Đáp án:</strong> {q.correct_answer}
+                      <strong>Đáp án:</strong> 
+                      {isEditMode ? (
+                        <input
+                          type="text"
+                          className="form-input-ex"
+                          value={q.correct_answer}
+                          onChange={(e) => handleEditQuestion(idx, 'correct_answer', e.target.value)}
+                          placeholder="Nhập đáp án đúng..."
+                          style={{ marginLeft: '8px', width: '300px' }}
+                        />
+                      ) : (
+                        ` ${q.correct_answer}`
+                      )}
                     </div>
                   )}
                   
                   {q.type === 'true_false' && (
                     <div className="answer-detail">
-                      <strong>Đáp án:</strong> {q.correct_answer === 'true' ? 'Đúng' : 'Sai'}
+                      <strong>Đáp án:</strong> 
+                      {isEditMode ? (
+                        <select
+                          className="form-select-ex"
+                          value={q.correct_answer}
+                          onChange={(e) => handleEditQuestion(idx, 'correct_answer', e.target.value)}
+                          style={{ marginLeft: '8px', width: '120px' }}
+                        >
+                          <option value="true">Đúng</option>
+                          <option value="false">Sai</option>
+                        </select>
+                      ) : (
+                        ` ${q.correct_answer === 'true' ? 'Đúng' : 'Sai'}`
+                      )}
                     </div>
                   )}
                 </div>
@@ -429,16 +534,62 @@ export default function ExerciseDetailModal({ exercise, onClose, onUpdate, onDel
         {/* Questions (same as Listening) */}
         {exercise.content.questions && exercise.content.questions.length > 0 && (
           <div className="content-block">
-            <h3>Câu hỏi ({exercise.content.questions.length})</h3>
+            <h3>Câu hỏi ({isEditMode ? editedExercise.content.questions.length : exercise.content.questions.length})</h3>
             <div className="questions-list-detail">
-              {exercise.content.questions.map((q, idx) => (
+              {(isEditMode ? editedExercise.content.questions : exercise.content.questions).map((q, idx) => (
                 <div key={idx} className="question-detail-card">
                   <div className="question-header-detail">
                     <span className="question-number">Câu {idx + 1}</span>
-                    <span className="question-points">{q.points} điểm</span>
+                    <span className="question-points">
+                      {isEditMode ? (
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.5"
+                          value={q.points}
+                          onChange={(e) => handleEditQuestion(idx, 'points', parseFloat(e.target.value))}
+                          style={{ width: '60px', padding: '4px', border: '1px solid #ddd', borderRadius: '4px' }}
+                        />
+                      ) : q.points} điểm
+                    </span>
                     <span className="question-type-badge">{getQuestionTypeLabel(q.type)}</span>
+                    {isEditMode && (
+                      <button 
+                        className="btn-delete-question"
+                        onClick={() => handleDeleteQuestion(idx)}
+                        title="Xóa câu hỏi"
+                        style={{
+                          marginLeft: 'auto',
+                          padding: '6px 12px',
+                          background: '#ef4444',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          fontSize: '13px'
+                        }}
+                      >
+                        <Trash2 size={14} />
+                        Xóa
+                      </button>
+                    )}
                   </div>
-                  <p className="question-text-detail">{q.question}</p>
+                  
+                  {isEditMode ? (
+                    <textarea
+                      className="form-textarea-ex"
+                      value={q.question}
+                      onChange={(e) => handleEditQuestion(idx, 'question', e.target.value)}
+                      placeholder="Nhập nội dung câu hỏi..."
+                      rows="2"
+                      style={{ marginTop: '8px', width: '100%' }}
+                    />
+                  ) : (
+                    <p className="question-text-detail">{q.question}</p>
+                  )}
                   
                   {q.type === 'multiple_choice' && (
                     <div className="options-detail">
@@ -450,6 +601,43 @@ export default function ExerciseDetailModal({ exercise, onClose, onUpdate, onDel
                           {opt} {opt[0] === q.correct_answer && <span className="correct-mark">✓ Đúng</span>}
                         </div>
                       ))}
+                    </div>
+                  )}
+                  
+                  {(q.type === 'fill_blank' || q.type === 'short_answer') && (
+                    <div className="answer-detail">
+                      <strong>Đáp án:</strong> 
+                      {isEditMode ? (
+                        <input
+                          type="text"
+                          className="form-input-ex"
+                          value={q.correct_answer}
+                          onChange={(e) => handleEditQuestion(idx, 'correct_answer', e.target.value)}
+                          placeholder="Nhập đáp án đúng..."
+                          style={{ marginLeft: '8px', width: '300px' }}
+                        />
+                      ) : (
+                        ` ${q.correct_answer}`
+                      )}
+                    </div>
+                  )}
+                  
+                  {q.type === 'true_false' && (
+                    <div className="answer-detail">
+                      <strong>Đáp án:</strong> 
+                      {isEditMode ? (
+                        <select
+                          className="form-select-ex"
+                          value={q.correct_answer}
+                          onChange={(e) => handleEditQuestion(idx, 'correct_answer', e.target.value)}
+                          style={{ marginLeft: '8px', width: '120px' }}
+                        >
+                          <option value="true">Đúng</option>
+                          <option value="false">Sai</option>
+                        </select>
+                      ) : (
+                        ` ${q.correct_answer === 'true' ? 'Đúng' : 'Sai'}`
+                      )}
                     </div>
                   )}
                 </div>
