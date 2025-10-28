@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "../ui/button";
 import { Card } from "../ui/card";
 import { Badge } from "../ui/badge";
@@ -15,6 +15,33 @@ export function FlashcardAI() {
   const [favorites, setFavorites] = useState([]);
   const [allFlashcards, setAllFlashcards] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  
+  // Refs for Web Speech API
+  const speechSynthRef = useRef(null);
+
+  // Initialize Web Speech API
+  useEffect(() => {
+    if ('speechSynthesis' in window) {
+      speechSynthRef.current = window.speechSynthesis;
+    }
+
+    // Cleanup on unmount or page reload
+    const handleBeforeUnload = () => {
+      if (speechSynthRef.current) {
+        speechSynthRef.current.cancel();
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      if (speechSynthRef.current) {
+        speechSynthRef.current.cancel();
+      }
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
 
   // Load flashcards khi component mount
   useEffect(() => {
@@ -25,207 +52,104 @@ export function FlashcardAI() {
   const loadFlashcards = async () => {
     setLoading(true);
     try {
-      // Try to load all levels from API
+      // Load all levels from AI API
       const levels = ["A1", "A2", "B1", "B2", "C1", "C2"];
       const allCards = [];
       
+      console.log('🔄 Loading flashcards from AI...');
+      
       for (const level of levels) {
         try {
-          const cards = await getFlashcards(level, 3); // 3 cards per level
+          const cards = await getFlashcards(level, 7); // 7 cards per level from AI (tổng 42 cards)
+          console.log(`✅ Loaded ${cards?.length || 0} cards for level ${level}`);
           if (cards && Array.isArray(cards) && cards.length > 0) {
             allCards.push(...cards);
           }
         } catch (err) {
-          console.log(`Failed to load ${level} flashcards from API, using mock data`);
+          console.error(`❌ Failed to load ${level} flashcards from API:`, err);
         }
       }
       
-      // Always use mock data for now since API is not ready
-      // This ensures flashcards always display
-      const mockCards = getMockFlashcards();
-      setAllFlashcards(mockCards);
-      aiUsageAPI.logUsage('flashcard', { action: 'load' });
+      // Use AI-generated cards
+      if (allCards.length > 0) {
+        console.log(`✅ Successfully loaded ${allCards.length} flashcards from AI`);
+        setAllFlashcards(allCards);
+        aiUsageAPI.logUsage('flashcard', { action: 'load', source: 'ai', count: allCards.length });
+      } else {
+        console.error("❌ AI failed to generate any flashcards. Please check backend logs.");
+        alert("Không thể tải flashcards từ AI. Vui lòng kiểm tra GEMINI_API_KEY trong backend .env file.");
+        aiUsageAPI.logUsage('flashcard', { action: 'load', status: 'error', source: 'none' });
+      }
       
     } catch (error) {
-      console.error("Error loading flashcards:", error);
-      // Always fallback to mock data
-      setAllFlashcards(getMockFlashcards());
-      aiUsageAPI.logUsage('flashcard', { action: 'load', status: 'error' });
+      console.error("❌ Error loading flashcards:", error);
+      alert("Lỗi khi tải flashcards: " + error.message);
+      aiUsageAPI.logUsage('flashcard', { action: 'load', status: 'error', source: 'none' });
     } finally {
       setLoading(false);
     }
   };
 
-  const getMockFlashcards = () => [
-    // A1 Level
-    {
-      id: 1,
-      word: "Hello",
-      pronunciation: "/həˈloʊ/",
-      meaning: "Xin chào",
-      example: "Hello, my name is John.",
-      category: "Greetings",
-      level: "A1",
-    },
-    {
-      id: 2,
-      word: "Thank you",
-      pronunciation: "/θæŋk juː/",
-      meaning: "Cảm ơn",
-      example: "Thank you for your help.",
-      category: "Greetings",
-      level: "A1",
-    },
-    {
-      id: 3,
-      word: "Good",
-      pronunciation: "/ɡʊd/",
-      meaning: "Tốt",
-      example: "This is a good book.",
-      category: "Adjectives",
-      level: "A1",
-    },
-    // A2 Level
-    {
-      id: 4,
-      word: "Important",
-      pronunciation: "/ɪmˈpɔːrtnt/",
-      meaning: "Quan trọng",
-      example: "Education is very important.",
-      category: "Adjectives",
-      level: "A2",
-    },
-    {
-      id: 5,
-      word: "Difficult",
-      pronunciation: "/ˈdɪfɪkəlt/",
-      meaning: "Khó khăn",
-      example: "This exercise is difficult.",
-      category: "Adjectives",
-      level: "A2",
-    },
-    {
-      id: 6,
-      word: "Understand",
-      pronunciation: "/ˌʌndərˈstænd/",
-      meaning: "Hiểu",
-      example: "I understand the lesson now.",
-      category: "Verbs",
-      level: "A2",
-    },
-    // B1 Level
-    {
-      id: 7,
-      word: "Achieve",
-      pronunciation: "/əˈtʃiːv/",
-      meaning: "Đạt được",
-      example: "She achieved her goal of getting into university.",
-      category: "Achievement",
-      level: "B1",
-    },
-    {
-      id: 8,
-      word: "Environment",
-      pronunciation: "/ɪnˈvaɪrənmənt/",
-      meaning: "Môi trường",
-      example: "We must protect the environment.",
-      category: "Nature",
-      level: "B1",
-    },
-    {
-      id: 9,
-      word: "Technology",
-      pronunciation: "/tekˈnɑːlədʒi/",
-      meaning: "Công nghệ",
-      example: "Technology is changing our lives.",
-      category: "Technology",
-      level: "B1",
-    },
-    // B2 Level
-    {
-      id: 10,
-      word: "Artificial",
-      pronunciation: "/ˌɑːrtɪˈfɪʃl/",
-      meaning: "Nhân tạo",
-      example: "Artificial intelligence is transforming education.",
-      category: "Technology",
-      level: "B2",
-    },
-    {
-      id: 11,
-      word: "Significant",
-      pronunciation: "/sɪɡˈnɪfɪkənt/",
-      meaning: "Quan trọng, đáng kể",
-      example: "There has been a significant improvement.",
-      category: "Academic",
-      level: "B2",
-    },
-    {
-      id: 12,
-      word: "Demonstrate",
-      pronunciation: "/ˈdemənstreɪt/",
-      meaning: "Chứng minh, thể hiện",
-      example: "The study demonstrates the benefits of exercise.",
-      category: "Academic",
-      level: "B2",
-    },
-    // C1 Level
-    {
-      id: 13,
-      word: "Unprecedented",
-      pronunciation: "/ʌnˈpresɪdentɪd/",
-      meaning: "Chưa từng có",
-      example: "The pandemic caused unprecedented challenges.",
-      category: "Advanced",
-      level: "C1",
-    },
-    {
-      id: 14,
-      word: "Advocate",
-      pronunciation: "/ˈædvəkeɪt/",
-      meaning: "Ủng hộ, biện hộ",
-      example: "She advocates for environmental protection.",
-      category: "Formal",
-      level: "C1",
-    },
-    {
-      id: 15,
-      word: "Compelling",
-      pronunciation: "/kəmˈpelɪŋ/",
-      meaning: "Thuyết phục, hấp dẫn",
-      example: "He presented a compelling argument.",
-      category: "Academic",
-      level: "C1",
-    },
-    // C2 Level
-    {
-      id: 16,
-      word: "Ubiquitous",
-      pronunciation: "/juːˈbɪkwɪtəs/",
-      meaning: "Phổ biến khắp nơi",
-      example: "Smartphones have become ubiquitous in modern society.",
-      category: "Advanced",
-      level: "C2",
-    },
-    {
-      id: 17,
-      word: "Paradigm",
-      pronunciation: "/ˈpærədaɪm/",
-      meaning: "Mô hình, khuôn mẫu",
-      example: "This represents a paradigm shift in education.",
-      category: "Academic",
-      level: "C2",
-    },
-    {
-      id: 18,
-      word: "Nuanced",
-      pronunciation: "/ˈnuːɑːnst/",
-      meaning: "Tinh tế, có sắc thái",
-      example: "The issue requires a nuanced understanding.",
-      category: "Advanced",
-      level: "C2",
-    },
-  ];
+
+  // ========== TEXT-TO-SPEECH FUNCTIONS ==========
+  
+  const speakWord = (word) => {
+    if (!speechSynthRef.current) {
+      alert('Trình duyệt của bạn không hỗ trợ Text-to-Speech');
+      return;
+    }
+
+    // Cancel any ongoing speech
+    speechSynthRef.current.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(word);
+    utterance.lang = 'en-US';
+    utterance.rate = 0.8; // Slower for pronunciation
+    utterance.pitch = 1;
+
+    // Get available voices
+    const voices = speechSynthRef.current.getVoices();
+    const englishVoice = voices.find(voice => voice.lang.startsWith('en-'));
+    if (englishVoice) {
+      utterance.voice = englishVoice;
+    }
+
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+
+    speechSynthRef.current.speak(utterance);
+  };
+
+  const speakExample = (example) => {
+    if (!speechSynthRef.current) {
+      alert('Trình duyệt của bạn không hỗ trợ Text-to-Speech');
+      return;
+    }
+
+    // Cancel any ongoing speech
+    speechSynthRef.current.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(example);
+    utterance.lang = 'en-US';
+    utterance.rate = 0.9; // Normal speed for sentences
+    utterance.pitch = 1;
+
+    // Get available voices
+    const voices = speechSynthRef.current.getVoices();
+    const englishVoice = voices.find(voice => voice.lang.startsWith('en-'));
+    if (englishVoice) {
+      utterance.voice = englishVoice;
+    }
+
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+
+    speechSynthRef.current.speak(utterance);
+  };
+
+  // ========== LEVEL INFO ==========
 
   const levelInfo = {
     A1: {
@@ -279,6 +203,10 @@ export function FlashcardAI() {
     : 0;
 
   const handleNext = () => {
+    // Cancel any ongoing speech
+    if (speechSynthRef.current) {
+      speechSynthRef.current.cancel();
+    }
     setIsFlipped(false);
     if (currentIndex < filteredFlashcards.length - 1) {
       setCurrentIndex(currentIndex + 1);
@@ -317,6 +245,10 @@ export function FlashcardAI() {
   };
 
   const handleLevelChange = (level) => {
+    // Cancel any ongoing speech
+    if (speechSynthRef.current) {
+      speechSynthRef.current.cancel();
+    }
     setSelectedLevel(level);
     setCurrentIndex(0);
     setIsFlipped(false);
@@ -376,6 +308,20 @@ export function FlashcardAI() {
         <p className="text-gray-600">
           Học từ vựng hiệu quả với hệ thống flashcard theo cấp độ CEFR & IELTS
         </p>
+      </div>
+
+      {/* AI Generation Notice */}
+      <div className="rounded-lg border-2 border-purple-400 bg-purple-50 p-4">
+        <div className="flex items-center gap-3">
+          <GraduationCap className="h-5 w-5 text-purple-700" />
+          <div>
+            <p className="font-medium text-purple-900">🤖 Từ vựng được sinh bởi AI</p>
+            <p className="text-sm text-purple-700">
+              Mỗi flashcard được Gemini AI tạo ra dựa trên chuẩn CEFR, phù hợp với từng cấp độ của bạn.
+              Từ vựng được chọn lọc và giải thích rõ ràng để tối ưu quá trình học tập.
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* CEFR Level Selection */}
@@ -523,10 +469,12 @@ export function FlashcardAI() {
                   className="text-white hover:bg-white/20"
                   onClick={(e) => {
                     e.stopPropagation();
+                    speakWord(currentCard.word);
                   }}
+                  disabled={isSpeaking}
                 >
-                  <Volume2 className="mr-2 h-5 w-5" />
-                  Nghe phát âm
+                  <Volume2 className={`mr-2 h-5 w-5 ${isSpeaking ? 'animate-pulse' : ''}`} />
+                  {isSpeaking ? 'Đang phát âm...' : 'Nghe phát âm'}
                 </Button>
                 <p className="mt-8 text-sm text-white/70">
                   👆 Nhấn để xem nghĩa
@@ -553,10 +501,12 @@ export function FlashcardAI() {
                   className="text-white hover:bg-white/20"
                   onClick={(e) => {
                     e.stopPropagation();
+                    speakExample(currentCard.example);
                   }}
+                  disabled={isSpeaking}
                 >
-                  <Volume2 className="mr-2 h-5 w-5" />
-                  Nghe câu ví dụ
+                  <Volume2 className={`mr-2 h-5 w-5 ${isSpeaking ? 'animate-pulse' : ''}`} />
+                  {isSpeaking ? 'Đang đọc...' : 'Nghe câu ví dụ'}
                 </Button>
                 <p className="mt-8 text-sm text-white/70">
                   👆 Nhấn để xem từ vựng
