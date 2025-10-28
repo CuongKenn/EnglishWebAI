@@ -58,12 +58,12 @@ const Navbar = ({ userRole = 'student', isLoggedIn: isLoggedInProp = false, onLo
         ];
       
       case 'parent':
-        // Parent: Dashboard + các trang theo dõi
+        // Parent: các trang theo dõi + Thông tin chung cuối
         return [
-          { path: '/parent-dashboard', label: 'Dashboard', icon: 'fa-gauge-high', special: true },
           { path: '/track-progress', label: 'Theo dõi tiến độ', icon: 'fa-chart-line' },
           { path: '/notifications', label: 'Thông báo', icon: 'fa-bell' },
-          { path: '/teacher-communication', label: 'Trao đổi', icon: 'fa-message' }
+          { path: '/teacher-communication', label: 'Trao đổi', icon: 'fa-message' },
+          { path: '/parent-dashboard', label: 'Thông tin chung', icon: 'fa-gauge-high', special: true }
         ];
       
       case 'admin':

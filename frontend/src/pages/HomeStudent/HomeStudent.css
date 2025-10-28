@@ -168,6 +168,7 @@
   flex-direction: column;
   align-items: center;
   gap: 0;
+  padding-bottom: 80px;
 }
 
 /* Top Badge */
@@ -249,7 +250,7 @@
 
 .typing-cursor-blink {
   display: inline-block;
-  margin-left: 4px;
+  margin-left: 12px;
   animation: cursorBlink 0.8s infinite;
   color: #ffd700;
 }
@@ -368,8 +369,9 @@
 /* CTA Buttons */
 .hero-cta-buttons {
   display: flex;
-  gap: 16px;
+  gap: 24px;
   animation: fadeInUp 0.6s ease-out 0.55s both;
+  flex-wrap: wrap;
 }
 
 .cta-btn {
@@ -378,6 +380,7 @@
   justify-content: center;
   gap: 12px;
   padding: 18px 38px;
+  margin: 0;
   border-radius: 16px;
   font-size: 17px;
   font-weight: 600;
@@ -387,6 +390,7 @@
   transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   letter-spacing: 0.2px;
   text-align: center;
+  min-width: auto;
 }
 
 .cta-btn i {
@@ -433,7 +437,7 @@
 /* Scroll Indicator */
 .scroll-indicator {
   position: absolute;
-  bottom: 30px;
+  bottom: 40px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -1957,17 +1961,18 @@
 
 .cta-buttons {
   display: flex;
-  gap: 16px;
+  gap: 24px;
   justify-content: center;
   flex-wrap: wrap;
 }
 
-.cta-btn {
+.cta-section .cta-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
   padding: 16px 32px;
+  margin: 0;
   border-radius: 12px;
   font-size: 16px;
   font-weight: 700;
@@ -2029,9 +2034,11 @@
   /* Hero */
   .hero-section-new { height: 100vh; }
   .hero-content-wrapper { padding: 0 20px; }
+  .hero-main-content { padding-bottom: 100px; }
   .hero-main-title { font-size: 48px; }
   .title-highlight { min-height: 60px; }
   .hero-main-subtitle { font-size: 16px; max-width: 90%; }
+  .scroll-indicator { bottom: 30px; }
   .hero-search-container { max-width: 100%; margin-bottom: 24px; }
   .search-box-large { 
     padding: 6px 6px 6px 20px;
@@ -2048,7 +2055,7 @@
   }
   .hero-cta-buttons { 
     flex-direction: column;
-    gap: 12px;
+    gap: 20px;
     width: 100%;
   }
   .cta-btn { 
@@ -2094,9 +2101,9 @@
   .cta-buttons { 
     flex-direction: column; 
     width: 100%;
-    gap: 12px;
+    gap: 20px;
   }
-  .cta-btn {
+  .cta-section .cta-btn {
     width: 100%;
     justify-content: center;
   }

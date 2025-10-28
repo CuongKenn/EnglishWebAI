@@ -50,6 +50,10 @@ import TeacherMaterials from './pages/Teacher/TeacherMaterials/TeacherMaterials'
 
 // Import Parent Pages
 import ParentDashboard from './pages/Parent/ParentDashboard/ParentDashboard';
+import ParentDashboardV2 from './pages/Parent/ParentDashboardV2/ParentDashboardV2';
+import TrackProgressPage from './pages/Parent/TrackProgress/TrackProgressPage';
+import NotificationsPage from './pages/Parent/Notifications/NotificationsPage';
+import TeacherCommunicationPage from './pages/Parent/TeacherCommunication/TeacherCommunicationPage';
 
 // Import Welcome Notification
 import WelcomeNotification from './components/WelcomeNotification/WelcomeNotification';
@@ -413,9 +417,49 @@ function App() {
         }
       />
 
-      {/* Parent Dashboard - Protected */}
+      {/* Parent Dashboard V2 - NEW Beautiful Design */}
       <Route
         path="/parent-dashboard"
+        element={
+          <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="parent">
+            <ParentDashboardV2 />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Parent - Track Progress Page */}
+      <Route
+        path="/track-progress"
+        element={
+          <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="parent">
+            <TrackProgressPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Parent - Notifications Page */}
+      <Route
+        path="/notifications"
+        element={
+          <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="parent">
+            <NotificationsPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Parent - Teacher Communication Page */}
+      <Route
+        path="/teacher-communication"
+        element={
+          <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="parent">
+            <TeacherCommunicationPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Parent Dashboard - Legacy */}
+      <Route
+        path="/parent-dashboard-legacy"
         element={
           <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="parent">
             <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
