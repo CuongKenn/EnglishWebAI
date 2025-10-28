@@ -53,7 +53,7 @@ import ParentDashboard from './pages/Parent/ParentDashboard/ParentDashboard';
 import ParentDashboardV2 from './pages/Parent/ParentDashboardV2/ParentDashboardV2';
 import TrackProgressPage from './pages/Parent/TrackProgress/TrackProgressPage';
 import NotificationsPage from './pages/Parent/Notifications/NotificationsPage';
-import TeacherCommunicationPage from './pages/Parent/TeacherCommunication/TeacherCommunicationPage';
+import TeacherCommunication from './pages/Parent/TeacherCommunication/TeacherCommunication';
 
 // Import Welcome Notification
 import WelcomeNotification from './components/WelcomeNotification/WelcomeNotification';
@@ -454,7 +454,7 @@ function App() {
         path="/teacher-communication"
         element={
           <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="parent">
-            <TeacherCommunicationPage />
+            <TeacherCommunication />
           </ProtectedRoute>
         }
       />

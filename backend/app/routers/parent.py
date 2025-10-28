@@ -7,6 +7,7 @@ from app.core.dependencies import get_current_active_user
 from app.models.user import User, UserRole
 from app.models.parent_student import ParentStudent
 from app.models.enrollment import Enrollment
+from app.models.classroom import Classroom
 from app.models.attendance import AttendanceRecord
 from app.models.submission import Submission
 from app.models.exercise import Exercise
@@ -267,3 +268,81 @@ async def link_student(
         "student_email": student.email,
         "is_verified": False
     }
+
+
+# New endpoint for Teacher-Parent chat
+class TeacherInfo(BaseModel):
+    id: int
+    full_name: str
+    email: str
+    avatar_url: Optional[str] = None
+    classes: List[str]  # List of class names teaching this child
+    
+    class Config:
+        from_attributes = True
+
+
+@router.get("/children/{child_id}/teachers", response_model=List[TeacherInfo])
+async def get_child_teachers(
+    child_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get all teachers teaching a specific child
+    Parent can use this to find teachers to chat with
+    """
+    if current_user.role != UserRole.PARENT:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only parents can access this endpoint"
+        )
+    
+    # Verify this child belongs to the parent
+    link = db.query(ParentStudent).filter(
+        ParentStudent.parent_id == current_user.id,
+        ParentStudent.student_id == child_id,
+        ParentStudent.is_verified == True
+    ).first()
+    
+    if not link:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This child is not linked to your account"
+        )
+    
+    # Get all classes the child is enrolled in
+    enrollments = db.query(Enrollment).filter(
+        Enrollment.user_id == child_id,
+        Enrollment.status == "active"
+    ).all()
+    
+    # Get unique teachers and their classes
+    teachers_dict = {}
+    for enrollment in enrollments:
+        classroom = db.query(Classroom).filter(Classroom.id == enrollment.class_id).first()
+        if not classroom or not classroom.teacher_id:
+            continue
+        
+        teacher_id = classroom.teacher_id
+        if teacher_id not in teachers_dict:
+            teacher = db.query(User).filter(User.id == teacher_id).first()
+            if teacher:
+                teachers_dict[teacher_id] = {
+                    "id": teacher.id,
+                    "full_name": teacher.full_name,
+                    "email": teacher.email,
+                    "avatar_url": teacher.avatar_url,
+                    "classes": []
+                }
+        
+        if teacher_id in teachers_dict:
+            teachers_dict[teacher_id]["classes"].append(classroom.name)
+    
+    # Convert to list
+    teachers_list = [
+        TeacherInfo(**teacher_data) 
+        for teacher_data in teachers_dict.values()
+    ]
+    
+    return teachers_list

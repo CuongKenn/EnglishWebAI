@@ -69,7 +69,7 @@ const Messages = () => {
       const data = await userService.getAllUsers();
       // Filter out current user and show parents + students
       const filteredUsers = data.filter(user => 
-        user.role === 'parent' || user.role === 'student'
+        user.role === 'parent' || user.role === 'student' || user.role === 'PARENT' || user.role === 'USER'
       );
       setUsers(filteredUsers);
     } catch (error) {
