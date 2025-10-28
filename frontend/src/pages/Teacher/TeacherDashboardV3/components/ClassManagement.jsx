@@ -63,7 +63,7 @@ export default function ClassManagement() {
   const handleAddStudent = async () => {
     if (!selectedClass) return;
     if (!newStudent.email) {
-      alert('Vui l├▓ng nhß║¡p email hß╗ìc sinh!');
+      alert('Vui lòng nhập email học sinh!');
       return;
     }
 
@@ -81,7 +81,7 @@ export default function ClassManagement() {
       fetchStudents(selectedClass.id); // Refresh list
     } catch (error) {
       console.error('Error adding student:', error);
-      alert(error.response?.data?.detail || 'Lß╗ùi khi th├¬m hß╗ìc sinh! Kiß╗âm tra email ─æ├ú ─æ├║ng v├á user ─æ├ú tß╗ôn tß║íi ch╞░a.');
+      alert(error.response?.data?.detail || 'Lỗi khi thêm học sinh!  Kiểm tra email');
     } finally {
       setLoading(false);
     }
@@ -89,16 +89,16 @@ export default function ClassManagement() {
 
   const handleRemoveStudent = async (studentId) => {
     if (!selectedClass) return;
-    if (!confirm('Bß║ín c├│ chß║»c muß╗æn x├│a hß╗ìc sinh n├áy khß╗Åi lß╗¢p?')) return;
+    if (!confirm('Bạn có chắc?')) return;
 
     setLoading(true);
     try {
       await apiV1.delete(`/classes/${selectedClass.id}/students/${studentId}`);
-      alert('─É├ú x├│a hß╗ìc sinh khß╗Åi lß╗¢p!');
+      alert('Đã xóa');
       fetchStudents(selectedClass.id); // Refresh list
     } catch (error) {
       console.error('Error removing student:', error);
-      alert('Lß╗ùi khi x├│a hß╗ìc sinh!');
+      alert('Lỗi khi xóa');
     } finally {
       setLoading(false);
     }
@@ -114,16 +114,16 @@ export default function ClassManagement() {
 
         <div className="class-modal-body">
           <div className="form-group-class">
-            <label>Email hß╗ìc sinh <span style={{color: 'red'}}>*</span></label>
+            <label>Email học sinh <span style={{color: 'red'}}>*</span></label>
             <input 
               type="email" 
               className="form-input-class" 
-              placeholder="nguyenvana@gmail.com" 
+              placeholder="example@gmail.com" 
               value={newStudent.email}
               onChange={(e) => setNewStudent({...newStudent, email: e.target.value})}
             />
             <small style={{color: '#666', fontSize: '12px'}}>
-              Nhß║¡p email cß╗ºa t├ái khoß║ún hß╗ìc sinh ─æ├ú ─æ─âng k├╜ trong hß╗ç thß╗æng
+              Nhập email của tài khoản học sinh.
             </small>
           </div>
         </div>
