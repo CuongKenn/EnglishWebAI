@@ -135,14 +135,15 @@ export default function ExerciseHub() {
       
       const allExercises = exercisesRes.data;
       console.log('All exercises from API:', allExercises);
-      // Filter: exercises include assignment, skill_exercise, and items without type
-      // Tests include quiz and test types
-      setExercises(allExercises.filter(e => 
-        e.type === 'assignment' || 
-        e.type === 'skill_exercise' || 
-        !e.type
-      ));
-      setTests(allExercises.filter(e => e.type === 'quiz' || e.type === 'test'));
+      
+      // Filter exercises vs tests
+      // Tests: quiz, test, test_15min, midterm, final
+      // Exercises: assignment, skill_exercise, or items without type
+      const testTypes = ['quiz', 'test', 'test_15min', 'midterm', 'final'];
+      
+      setTests(allExercises.filter(e => testTypes.includes(e.type)));
+      setExercises(allExercises.filter(e => !testTypes.includes(e.type)));
+      
       setStatistics(statsRes.data);
       
       const submissionsRes = await apiV1.get('/exercises/my-submissions');
@@ -186,7 +187,8 @@ export default function ExerciseHub() {
 
   const getFilteredExercises = () => {
     if (activeTab === 'all') {
-      return exercises;
+      // Show both exercises and tests
+      return [...exercises, ...tests];
     } else if (activeTab === 'tests') {
       return tests;
     } else if (activeTab === 'grades') {

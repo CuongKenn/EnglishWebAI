@@ -126,13 +126,34 @@ export default function DoExercise() {
     
     setIsSubmitting(true);
     try {
-      const submissionData = {
-        answers,
-        content_text: exercise.skill_type === 'writing' ? content : null,
-        content_url: exercise.skill_type === 'speaking' ? recordedAudio : null
-      };
+      // Prepare submission data
+      const formData = new FormData();
       
-      await apiV1.post(`/exercises/${exerciseId}/submit`, submissionData);
+      // Add answers if exists
+      if (answers && Object.keys(answers).length > 0) {
+        formData.append('answers', JSON.stringify(answers));
+      }
+      
+      // Add writing content if exists
+      if (exercise.skill_type === 'writing' && content) {
+        formData.append('content_text', content);
+      }
+      
+      // Add speaking audio if exists
+      if (exercise.skill_type === 'speaking' && recordedAudio) {
+        // Convert blob URL to actual file
+        const response = await fetch(recordedAudio);
+        const blob = await response.blob();
+        const audioFile = new File([blob], `speaking_${Date.now()}.wav`, { type: 'audio/wav' });
+        formData.append('audio_file', audioFile);
+      }
+      
+      await apiV1.post(`/exercises/${exerciseId}/submit`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      
       alert('Nộp bài thành công!');
       navigate('/exercise-hub');
     } catch (error) {
@@ -219,17 +240,13 @@ export default function DoExercise() {
     console.log('[renderExerciseContent] destructured exerciseContent:', exerciseContent);
 
     // Check if content exists
-    if (!exerciseContent || !skill_type) {
-      console.error('[renderExerciseContent] exerciseContent or skill_type is missing!');
+    if (!exerciseContent) {
+      console.error('[renderExerciseContent] exerciseContent is missing!');
       return (
         <div className="error-container">
           <AlertCircle size={64} />
           <h2>Bài tập chưa có nội dung</h2>
           <p>Giáo viên chưa thiết lập nội dung cho bài tập này.</p>
-          <p style={{ fontSize: '14px', color: '#999', marginTop: '10px' }}>
-            {!skill_type && 'Loại kỹ năng chưa được chỉ định. '}
-            {!exerciseContent && 'Nội dung bài tập chưa có.'}
-          </p>
           <button 
             onClick={() => navigate('/exercise-hub')}
             style={{
@@ -244,6 +261,94 @@ export default function DoExercise() {
           >
             Quay lại danh sách
           </button>
+        </div>
+      );
+    }
+
+    // COMPREHENSIVE TEST (Mid-term/Final)
+    if (!skill_type && exerciseContent.type === 'comprehensive_test') {
+      console.log('[COMPREHENSIVE TEST] exerciseContent:', exerciseContent);
+      const questions = exerciseContent.questions || [];
+      console.log('[COMPREHENSIVE TEST] questions:', questions);
+      
+      return (
+        <div className="comprehensive-test-exercise">
+          <div className="test-instructions">
+            <h3>📝 Đề thi</h3>
+            <p>Trả lời tất cả {questions.length} câu hỏi dưới đây</p>
+          </div>
+          
+          {questions.map((q, idx) => (
+            <div key={q.id} className="question-card">
+              <div className="question-header">
+                <span className="question-number">Câu {idx + 1}</span>
+                <span className="question-points">{q.points || 1} điểm</span>
+              </div>
+              <div className="question-text">{q.question}</div>
+              
+              {q.type === 'multiple_choice' && (
+                <div className="options-list">
+                  {q.options && q.options.map((opt, optIdx) => (
+                    <label key={optIdx} className="option-item">
+                      <input
+                        type="radio"
+                        name={`question-${q.id}`}
+                        value={String.fromCharCode(65 + optIdx)}
+                        checked={answers[q.id] === String.fromCharCode(65 + optIdx)}
+                        onChange={(e) => handleAnswerChange(q.id, e.target.value)}
+                      />
+                      <span>{String.fromCharCode(65 + optIdx)}. {opt}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+              
+              {q.type === 'fill_blank' && (
+                <input
+                  type="text"
+                  className="answer-input"
+                  placeholder="Nhập câu trả lời..."
+                  value={answers[q.id] || ''}
+                  onChange={(e) => handleAnswerChange(q.id, e.target.value)}
+                />
+              )}
+              
+              {q.type === 'true_false' && (
+                <div className="true-false-options">
+                  <label className="option-item">
+                    <input
+                      type="radio"
+                      name={`question-${q.id}`}
+                      value="True"
+                      checked={answers[q.id] === 'True'}
+                      onChange={(e) => handleAnswerChange(q.id, e.target.value)}
+                    />
+                    <span>✓ Đúng</span>
+                  </label>
+                  <label className="option-item">
+                    <input
+                      type="radio"
+                      name={`question-${q.id}`}
+                      value="False"
+                      checked={answers[q.id] === 'False'}
+                      onChange={(e) => handleAnswerChange(q.id, e.target.value)}
+                    />
+                    <span>✗ Sai</span>
+                  </label>
+                </div>
+              )}
+              
+              {q.type === 'short_answer' && (
+                <textarea
+                  className="answer-textarea"
+                  placeholder="Nhập câu trả lời của bạn..."
+                  rows="4"
+                  value={answers[q.id] || ''}
+                  onChange={(e) => handleAnswerChange(q.id, e.target.value)}
+                />
+              )}
+            </div>
+          ))}
         </div>
       );
     }

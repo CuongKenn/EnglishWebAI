@@ -23,12 +23,8 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   const [dueDate, setDueDate] = useState('');
   const [maxScore, setMaxScore] = useState(10);
   
-  // Mid-term/Final test file
-  const [testFile, setTestFile] = useState(null);
-  const testFileInputRef = useRef(null);
-  
   // Import file
-  const [importFile, setImportFile] = useState(null);
+  const [importFile, setImportFile] = useState('');
   const importFileInputRef = useRef(null);
   
   // Listening fields
@@ -94,11 +90,6 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   }, []);
   
   // File handlers
-  const handleTestFileUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) setTestFile(file);
-  };
-  
   const handleImportFileUpload = (e) => {
     const file = e.target.files[0];
     if (file) setImportFile(file);
@@ -206,10 +197,10 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
     // Add content based on creation method
     if (creationMethod === 'manual') {
       if (isMidtermOrFinal) {
-        // Mid-term/Final: Just file upload
+        // Mid-term/Final: Question-based format like other exercises
         exercise.content = {
-          type: 'document',
-          file_url: testFile ? URL.createObjectURL(testFile) : null
+          type: 'comprehensive_test',
+          questions
         };
       } else {
         // Skill-based
@@ -484,48 +475,15 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   function renderMidtermFinalForm() {
     return (
       <div className="midterm-final-form">
-        <h4 className="section-title">📄 Upload đề thi</h4>
-        <p className="section-desc">Upload file Word hoặc PDF chứa đề thi hoàn chỉnh</p>
+        <h4 className="section-title">� Câu hỏi kiểm tra</h4>
+        <p className="section-desc">Thêm các câu hỏi cho đề {testType === 'midterm' ? 'giữa kỳ' : 'cuối kỳ'}</p>
         
-        <div className="form-section-ex">
-          <div 
-            className="file-upload-zone" 
-            onClick={() => testFileInputRef.current?.click()}
-          >
-            <input 
-              ref={testFileInputRef}
-              type="file" 
-              accept=".pdf,.doc,.docx"
-              onChange={handleTestFileUpload}
-              style={{ display: 'none' }}
-            />
-            {!testFile ? (
-              <>
-                <FileText size={48} className="upload-icon" />
-                <p>Click để chọn file đề thi</p>
-                <span className="upload-hint">Word (.docx) hoặc PDF - Tối đa 10MB</span>
-              </>
-            ) : (
-              <div className="file-preview-box">
-                <FileText size={32} />
-                <div className="file-info">
-                  <span className="file-name">{testFile.name}</span>
-                  <span className="file-size">{(testFile.size / 1024 / 1024).toFixed(2)} MB</span>
-                </div>
-                <button 
-                  onClick={(e) => { e.stopPropagation(); setTestFile(null); }}
-                  className="btn-remove-file"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
+        {/* Questions Section */}
+        {renderQuestions()}
         
         <div className="info-box-note">
           <span className="info-icon">💡</span>
-          <p>File đề thi nên bao gồm đầy đủ câu hỏi và đáp án để sinh viên làm bài</p>
+          <p>Bạn có thể tự tạo câu hỏi hoặc chọn từ Ngân hàng câu hỏi. Đề thi nên có đa dạng các loại câu hỏi.</p>
         </div>
       </div>
     );
@@ -1132,21 +1090,45 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
                   value={q.type}
                   onChange={(e) => updateQuestion(idx, 'type', e.target.value)}
                 >
-                  <option value="multiple_choice">Trắc nghiệm</option>
-                  <option value="fill_blank">Điền từ</option>
-                  <option value="true_false">Đúng/Sai</option>
-                  <option value="short_answer">Tự luận ngắn</option>
+                  <optgroup label="Trắc nghiệm">
+                    <option value="multiple_choice">Trắc nghiệm (A/B/C/D)</option>
+                    <option value="fill_blank">Điền từ</option>
+                    <option value="true_false">Đúng/Sai</option>
+                  </optgroup>
+                  <optgroup label="Tự luận">
+                    <option value="short_answer">Tự luận ngắn</option>
+                    <option value="essay">Tự luận dài (Essay)</option>
+                  </optgroup>
+                  <optgroup label="Kỹ năng">
+                    <option value="speaking">Speaking (Nói)</option>
+                    <option value="listening">Listening (Nghe)</option>
+                    <option value="reading">Reading (Đọc)</option>
+                    <option value="writing">Writing (Viết)</option>
+                  </optgroup>
                 </select>
               </div>
               
               <div className="form-section-ex">
-                <label>Câu hỏi</label>
-                <input 
-                  type="text"
+                <label>
+                  {q.type === 'listening' && '🎧 Đề bài Listening'}
+                  {q.type === 'reading' && '📖 Đoạn văn Reading'}
+                  {q.type === 'speaking' && '🗣️ Yêu cầu Speaking'}
+                  {q.type === 'writing' && '✍️ Đề bài Writing'}
+                  {!['listening', 'reading', 'speaking', 'writing'].includes(q.type) && 'Câu hỏi'}
+                </label>
+                <textarea
                   className="form-input-ex"
-                  placeholder="Nhập câu hỏi..."
+                  placeholder={
+                    q.type === 'listening' ? 'Nhập đề bài hoặc link audio...' :
+                    q.type === 'reading' ? 'Nhập đoạn văn để học sinh đọc...' :
+                    q.type === 'speaking' ? 'Nhập yêu cầu: "Hãy nói về..." hoặc câu để đọc...' :
+                    q.type === 'writing' ? 'Nhập đề bài: "Viết một đoạn văn về..."' :
+                    'Nhập câu hỏi...'
+                  }
                   value={q.question}
                   onChange={(e) => updateQuestion(idx, 'question', e.target.value)}
+                  rows={q.type === 'reading' || q.type === 'writing' ? 5 : 3}
+                  style={{ resize: 'vertical' }}
                 />
               </div>
               
@@ -1205,6 +1187,87 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
                     <option value="true">Đúng</option>
                     <option value="false">Sai</option>
                   </select>
+                </div>
+              )}
+              
+              {/* Skill-based questions: Speaking, Listening, Reading, Writing */}
+              {q.type === 'speaking' && (
+                <div className="form-section-ex">
+                  <div className="info-box" style={{ background: '#f0f9ff', padding: '12px', borderRadius: '8px', marginBottom: '12px' }}>
+                    <p style={{ margin: 0, fontSize: '13px', color: '#0369a1' }}>
+                      ℹ️ <strong>Chấm tự động bằng Azure Speech API:</strong> Phát âm, độ trôi chảy, tính hoàn chỉnh
+                    </p>
+                  </div>
+                  <label>Văn bản tham khảo (optional - để AI so sánh)</label>
+                  <textarea
+                    className="form-input-ex"
+                    placeholder="Nhập văn bản tham khảo mà học sinh cần đọc (nếu có)..."
+                    value={q.reference_text || ''}
+                    onChange={(e) => updateQuestion(idx, 'reference_text', e.target.value)}
+                    rows={3}
+                  />
+                </div>
+              )}
+              
+              {q.type === 'writing' && (
+                <div className="form-section-ex">
+                  <div className="info-box" style={{ background: '#fef3c7', padding: '12px', borderRadius: '8px', marginBottom: '12px' }}>
+                    <p style={{ margin: 0, fontSize: '13px', color: '#92400e' }}>
+                      ℹ️ <strong>Chấm tự động bằng Gemini AI:</strong> Nội dung, tổ chức, từ vựng, ngữ pháp, kỹ thuật
+                    </p>
+                  </div>
+                  <label>Yêu cầu độ dài (optional)</label>
+                  <input
+                    type="number"
+                    className="form-input-ex"
+                    placeholder="Số từ tối thiểu (VD: 150)"
+                    value={q.min_words || ''}
+                    onChange={(e) => updateQuestion(idx, 'min_words', Number(e.target.value))}
+                  />
+                </div>
+              )}
+              
+              {q.type === 'listening' && (
+                <div className="form-section-ex">
+                  <div className="info-box" style={{ background: '#f3e8ff', padding: '12px', borderRadius: '8px', marginBottom: '12px' }}>
+                    <p style={{ margin: 0, fontSize: '13px', color: '#6b21a8' }}>
+                      ℹ️ <strong>Audio file:</strong> Học sinh nghe audio và trả lời câu hỏi
+                    </p>
+                  </div>
+                  <label>Link audio hoặc upload file</label>
+                  <input
+                    type="text"
+                    className="form-input-ex"
+                    placeholder="https://... hoặc /media/audio/..."
+                    value={q.audio_url || ''}
+                    onChange={(e) => updateQuestion(idx, 'audio_url', e.target.value)}
+                  />
+                  <label style={{ marginTop: '12px' }}>Câu hỏi sau khi nghe</label>
+                  <textarea
+                    className="form-input-ex"
+                    placeholder="VD: What is the main topic? Who are the speakers?"
+                    value={q.listening_question || ''}
+                    onChange={(e) => updateQuestion(idx, 'listening_question', e.target.value)}
+                    rows={2}
+                  />
+                </div>
+              )}
+              
+              {q.type === 'reading' && (
+                <div className="form-section-ex">
+                  <div className="info-box" style={{ background: '#dcfce7', padding: '12px', borderRadius: '8px', marginBottom: '12px' }}>
+                    <p style={{ margin: 0, fontSize: '13px', color: '#166534' }}>
+                      ℹ️ <strong>Reading comprehension:</strong> Học sinh đọc đoạn văn và trả lời
+                    </p>
+                  </div>
+                  <label>Câu hỏi sau khi đọc</label>
+                  <textarea
+                    className="form-input-ex"
+                    placeholder="VD: What is the main idea? According to the passage..."
+                    value={q.reading_question || ''}
+                    onChange={(e) => updateQuestion(idx, 'reading_question', e.target.value)}
+                    rows={2}
+                  />
                 </div>
               )}
               
