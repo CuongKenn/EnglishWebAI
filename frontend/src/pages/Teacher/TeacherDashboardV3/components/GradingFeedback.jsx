@@ -58,7 +58,7 @@ export default function GradingFeedback() {
       console.log('Exercises response:', response.data);
       setExercises(response.data);
       if (response.data.length > 0 && !selectedExercise) {
-        setSelectedExercise(response.data[0].id);
+        setSelectedExercise(response.data[0]); // Set full object instead of just ID
       }
     } catch (error) {
       console.error('Error fetching exercises:', error);
@@ -71,9 +71,9 @@ export default function GradingFeedback() {
   const fetchSubmissions = async () => {
     try {
       setLoading(true);
-      console.log('Fetching submissions for class:', selectedClass, 'exercise:', selectedExercise);
+      console.log('Fetching submissions for class:', selectedClass, 'exercise:', selectedExercise?.id);
       const response = await apiV1.get(`/exercises/teacher-grading/classes/${selectedClass}/submissions`, {
-        params: { exercise_id: selectedExercise }
+        params: { exercise_id: selectedExercise?.id }
       });
       console.log('Submissions response:', response.data);
       setSubmissions(response.data);
@@ -86,7 +86,10 @@ export default function GradingFeedback() {
   };
 
   const handleSelectExercise = (exerciseId) => {
-    setSelectedExercise(exerciseId);
+    const exercise = exercises.find(e => e.id === exerciseId);
+    if (exercise) {
+      setSelectedExercise(exercise);
+    }
   };
 
   const handleGradeSubmission = (submission) => {
@@ -192,14 +195,19 @@ export default function GradingFeedback() {
             {/* Submission Content */}
             <div className="submission-content-section">
               <h3>📝 Bài làm của học sinh</h3>
+              
+              {/* Text Content */}
               {selectedSubmission.content_text && (
                 <div className="content-text-box">
-                  {selectedSubmission.content_text}
+                  <strong>Nội dung văn bản:</strong>
+                  <p>{selectedSubmission.content_text}</p>
                 </div>
               )}
-              {selectedSubmission.content_url && (
+              
+              {/* File/Audio Content */}
+              {selectedSubmission.content_url && !selectedSubmission.content_url.startsWith('blob:') && (
                 <div className="content-file-box">
-                  {selectedSubmission.content_url.endsWith('.mp3') ? (
+                  {selectedSubmission.content_url.endsWith('.mp3') || selectedSubmission.content_url.endsWith('.wav') ? (
                     <>
                       <FileAudio size={24} />
                       <audio controls src={selectedSubmission.content_url} className="audio-player" />
@@ -212,6 +220,32 @@ export default function GradingFeedback() {
                       </a>
                     </>
                   )}
+                </div>
+              )}
+              
+              {/* Answers (for exercises with questions) */}
+              {selectedSubmission.answers && Object.keys(selectedSubmission.answers).length > 0 && (
+                <div className="answers-section">
+                  <strong>Câu trả lời:</strong>
+                  <div className="answers-list">
+                    {Object.entries(selectedSubmission.answers).map(([questionId, answer]) => (
+                      <div key={questionId} className="answer-item">
+                        <span className="question-label">Câu {questionId}:</span>
+                        <span className="answer-text">{typeof answer === 'object' ? JSON.stringify(answer) : answer}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Empty state */}
+              {!selectedSubmission.content_text && 
+               (!selectedSubmission.content_url || selectedSubmission.content_url.startsWith('blob:')) && 
+               (!selectedSubmission.answers || Object.keys(selectedSubmission.answers).length === 0) && (
+                <div className="empty-content">
+                  <AlertCircle size={32} />
+                  <p>Chưa có nội dung bài làm hoặc file đã bị xóa</p>
+                  <small>File audio/video blob chỉ tồn tại tạm thời trong phiên làm bài</small>
                 </div>
               )}
             </div>
