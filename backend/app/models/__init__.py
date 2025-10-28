@@ -23,6 +23,8 @@ from app.models.system_config import SystemConfig
 from app.models.course import Course, CourseExercise, CourseSubmission, CourseUnit, CourseQuestion
 from app.models.question_bank import QuestionBankItem
 from app.models.question_bank_test import QuestionBankTest
+from app.models.lesson_plan import LessonPlan
+from app.models.worksheet import Worksheet
 
 __all__ = [
     "User",
@@ -48,4 +50,6 @@ __all__ = [
     "CourseUnit",
     "CourseQuestion",
     "QuestionBankItem",
+    "LessonPlan",
+    "Worksheet",
 ]

@@ -8,6 +8,7 @@ import { Search, Send, Paperclip, Smile, MoreVertical } from 'lucide-react';
 import { Textarea } from '../../../../components/ui/textarea';
 import messageService from '../../../../services/messageService';
 import { getCurrentUser } from '../../../../services/userService';
+import { apiV1 } from '../../../../services/api';
 
 const Messages = () => {
   const [selectedChat, setSelectedChat] = useState(null);
@@ -61,17 +62,12 @@ const Messages = () => {
 
   const loadUsers = async () => {
     try {
-      const response = await fetch('/api/v1/users', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-        }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        // Include students and parents
-        const studentsAndParents = data.filter(u => u.role === 'student' || u.role === 'parent');
-        setUsers(studentsAndParents);
-      }
+      // Call with trailing slash to avoid a 307 redirect
+      const response = await apiV1.get('/users/');
+      const data = response.data;
+      // Include students and parents
+      const studentsAndParents = data.filter(u => u.role === 'student' || u.role === 'parent');
+      setUsers(studentsAndParents);
     } catch (error) {
       console.error('Error loading users:', error);
     } finally {
@@ -121,18 +117,16 @@ const Messages = () => {
   };
 
   const getConversationInfo = (userId) => {
-    const conversation = conversations.find(c => 
-      (c.sender_id === userId && c.receiver_id === currentUserId) ||
-      (c.receiver_id === userId && c.sender_id === currentUserId)
-    );
-    
+    // Backend returns ConversationPreview with fields: user_id, last_message, last_message_time, unread_count
+    const conversation = conversations.find(c => c.user_id === userId);
+
     const user = users.find(u => u.id === userId);
-    
+
     return {
       user,
       lastMessage: conversation?.last_message || '',
       unreadCount: conversation?.unread_count || 0,
-      updatedAt: conversation?.updated_at || ''
+      updatedAt: conversation?.last_message_time || ''
     };
   };
 
@@ -163,7 +157,8 @@ const Messages = () => {
 
   // Combine conversations and users
   const allContactIds = new Set([
-    ...conversations.map(c => c.sender_id === currentUserId ? c.receiver_id : c.sender_id),
+    // Each conversation preview corresponds to one other user
+    ...conversations.map(c => c.user_id),
     ...users.map(u => u.id)
   ]);
 

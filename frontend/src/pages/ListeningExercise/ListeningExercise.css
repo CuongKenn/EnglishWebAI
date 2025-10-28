@@ -802,6 +802,45 @@
   color: #495057;
 }
 
+/* Notification */
+.notification {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 16px;
+  z-index: 1000;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  animation: slideDown 0.3s ease-out;
+}
+
+.notification.error {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.notification svg {
+  flex-shrink: 0;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .listening-exercise-page {
@@ -955,5 +994,3 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
 }
-
-

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import messageService from '../../../services/messageService';
 import { getCurrentUser } from '../../../services/userService';
+import { apiV1 } from '../../../services/api';
 import { 
   FaComments, 
   FaPaperPlane, 

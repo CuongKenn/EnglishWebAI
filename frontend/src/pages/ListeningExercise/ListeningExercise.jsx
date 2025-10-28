@@ -45,11 +45,15 @@ const ListeningExercise = () => {
   const [selectedAnswers, setSelectedAnswers] = useState({});
   const [notes, setNotes] = useState({});
   const [showHint, setShowHint] = useState(false);
+
   const [listeningData, setListeningData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [results, setResults] = useState(null);
   const [selectedLevel, setSelectedLevel] = useState('intermediate');
+
+  const [notification, setNotification] = useState(null);
+
 
   // Refs
   const audioRef = useRef(null);
@@ -298,7 +302,11 @@ const ListeningExercise = () => {
   const submitExercise = async () => {
     const answeredQuestions = Object.keys(selectedAnswers).length;
     if (answeredQuestions < listeningData.totalQuestions) {
-      alert(`Vui lòng trả lời tất cả ${listeningData.totalQuestions} câu hỏi trước khi nộp bài`);
+      setNotification({
+        type: 'error',
+        message: `Vui lòng trả lời tất cả ${listeningData.totalQuestions} câu hỏi trước khi nộp bài`
+      });
+      setTimeout(() => setNotification(null), 3000);
       return;
     }
 
@@ -848,6 +856,14 @@ const ListeningExercise = () => {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Notification */}
+      {notification && (
+        <div className={`notification ${notification.type}`}>
+          <AlertCircle size={20} />
+          <span>{notification.message}</span>
         </div>
       )}
 

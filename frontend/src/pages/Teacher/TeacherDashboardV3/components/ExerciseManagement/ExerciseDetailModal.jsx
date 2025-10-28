@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { 
   X, Download, Edit, Trash2, File, FileAudio, 
   Eye, Clock, Award, Sparkles, Users, Copy, Check 
@@ -10,6 +10,21 @@ export default function ExerciseDetailModal({ exercise, onClose, onUpdate, onDel
   const [editedExercise, setEditedExercise] = useState({ ...exercise });
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState('info'); // info | content | questions
+  
+  const statusLabel = useMemo(() => (exercise?.status === 'active' ? 'Đang mở' : exercise?.status === 'closed' ? 'Đã đóng' : (exercise?.status || '')),[exercise?.status]);
+  const statusClass = useMemo(() => (exercise?.status === 'active' ? 'open' : 'closed'),[exercise?.status]);
+  const submissionsRatio = useMemo(() => {
+    const done = Number(exercise?.submissions || 0);
+    const total = Number(exercise?.totalStudents || 0);
+    if (!total) return 0;
+    return Math.min(100, Math.round((done / total) * 100));
+  }, [exercise?.submissions, exercise?.totalStudents]);
+  const formatDateTime = (d) => {
+    try {
+      const date = new Date(d);
+      return date.toLocaleString('vi-VN', { hour12: false });
+    } catch { return ''; }
+  };
   
   const handleCopyLink = () => {
     const link = `${window.location.origin}/exercise/${exercise?.id}`;
@@ -173,9 +188,9 @@ export default function ExerciseDetailModal({ exercise, onClose, onUpdate, onDel
             <>
               <div className="detail-info-section">
                 <h3>Thông tin chung</h3>
-                <div className="info-grid">
-                  <div className="info-item">
-                    <span className="info-label">Hạn nộp:</span>
+                <div className="summary-grid">
+                  <div className="summary-card">
+                    <div className="summary-title">Hạn nộp</div>
                     {isEditMode ? (
                       <input
                         type="datetime-local"
@@ -185,33 +200,31 @@ export default function ExerciseDetailModal({ exercise, onClose, onUpdate, onDel
                         onChange={(e) => handleFieldChange('dueDate', e.target.value)}
                       />
                     ) : (
-                      <span className="info-value">{new Date(exercise.dueDate).toLocaleString('vi-VN')}</span>
+                      <div className="summary-value time">{formatDateTime(exercise.dueDate)}</div>
                     )}
                   </div>
-                  <div className="info-item">
-                    <span className="info-label">Điểm tối đa:</span>
+                  <div className="summary-card">
+                    <div className="summary-title">Điểm tối đa</div>
                     {isEditMode ? (
                       <input
                         type="number"
                         className="form-input-ex"
-                        style={{ width: '100%' }}
                         min="1"
                         value={editedExercise.maxScore}
                         onChange={(e) => handleFieldChange('maxScore', Number(e.target.value))}
                       />
                     ) : (
-                      <span className="info-value">{exercise.maxScore} điểm</span>
+                      <div className="summary-value score">{exercise.maxScore} điểm</div>
                     )}
                   </div>
-                  <div className="info-item">
-                    <span className="info-label">Trạng thái:</span>
-                    <span className={`status-badge-detail ${exercise.status}`}>
-                      {exercise.status === 'active' ? 'Đang mở' : 'Đã đóng'}
-                    </span>
+                  <div className="summary-card">
+                    <div className="summary-title">Trạng thái</div>
+                    <div className={`status-chip ${statusClass}`}>{statusLabel}</div>
                   </div>
-                  <div className="info-item">
-                    <span className="info-label">Bài nộp:</span>
-                    <span className="info-value">{exercise.submissions}/{exercise.totalStudents}</span>
+                  <div className="summary-card">
+                    <div className="summary-title">Bài nộp</div>
+                    <div className="summary-value submissions">{exercise.submissions}/{exercise.totalStudents}</div>
+                    <div className="progress-bar-wrap"><div className="progress-bar-fill" style={{ width: `${submissionsRatio}%` }} /></div>
                   </div>
                 </div>
               </div>
