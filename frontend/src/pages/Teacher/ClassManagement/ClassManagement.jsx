@@ -6,13 +6,22 @@ const ClassManagement = () => {
   const [classes, setClasses] = useState([]);
   const [selectedClass, setSelectedClass] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const [modalType, setModalType] = useState(''); // 'students', 'attendance', 'schedule'
+  const [modalType, setModalType] = useState(''); // 'students', 'attendance', 'schedule', 'materials'
   const [students, setStudents] = useState([]);
   const [attendance, setAttendance] = useState({});
   const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().slice(0, 10));
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterSubject, setFilterSubject] = useState('all');
+  
+  // Materials state
+  const [materials, setMaterials] = useState([]);
+  const [uploadFile, setUploadFile] = useState(null);
+  const [materialForm, setMaterialForm] = useState({
+    title: '',
+    description: '',
+    type: 'file'
+  });
 
   useEffect(() => {
     loadClasses();
@@ -72,6 +81,51 @@ const ClassManagement = () => {
     }
   };
 
+  const loadMaterials = async (classId) => {
+    try {
+      const res = await apiClient.get(`/api/v1/materials/by-class/${classId}`);
+      setMaterials(res.data || []);
+    } catch (error) {
+      console.error('Failed to load materials:', error);
+    }
+  };
+
+  const handleFileUpload = async (e) => {
+    e.preventDefault();
+    if (!uploadFile || !selectedClass) return;
+
+    try {
+      setLoading(true);
+      
+      // Upload file first
+      const formData = new FormData();
+      formData.append('file', uploadFile);
+      
+      const uploadRes = await apiClient.post('/api/v1/materials/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      // Create material record
+      await apiClient.post('/api/v1/materials/', {
+        class_id: selectedClass.id,
+        title: materialForm.title || uploadFile.name,
+        description: materialForm.description,
+        type: uploadRes.data.file_type || 'file',
+        file_path: uploadRes.data.file_path,
+        url: uploadRes.data.public_url
+      });
+
+      alert('✅ Đã tải lên học liệu thành công!');
+      setUploadFile(null);
+      setMaterialForm({ title: '', description: '', type: 'file' });
+      await loadMaterials(selectedClass.id);
+    } catch (error) {
+      alert('❌ Lỗi: ' + (error.response?.data?.detail || 'Không thể tải lên file'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const openModal = async (cls, type) => {
     setSelectedClass(cls);
     setModalType(type);
@@ -82,6 +136,8 @@ const ClassManagement = () => {
       if (type === 'attendance') {
         await loadAttendance(cls.id, attendanceDate);
       }
+    } else if (type === 'materials') {
+      await loadMaterials(cls.id);
     }
   };
 
@@ -181,6 +237,12 @@ const ClassManagement = () => {
                 ✓ Điểm danh
               </button>
               <button 
+                className="action-btn info"
+                onClick={() => openModal(cls, 'materials')}
+              >
+                📁 Học liệu
+              </button>
+              <button 
                 className="action-btn outline"
                 onClick={() => openModal(cls, 'schedule')}
               >
@@ -207,6 +269,7 @@ const ClassManagement = () => {
               <h2>
                 {modalType === 'students' && `📋 Danh sách học sinh - ${selectedClass?.name}`}
                 {modalType === 'attendance' && `✓ Điểm danh - ${selectedClass?.name}`}
+                {modalType === 'materials' && `📁 Học liệu & Tài liệu - ${selectedClass?.name}`}
                 {modalType === 'schedule' && `📅 Lịch học - ${selectedClass?.name}`}
               </h2>
               <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
@@ -303,6 +366,103 @@ const ClassManagement = () => {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              )}
+
+              {modalType === 'materials' && (
+                <div className="materials-section">
+                  {/* Upload Form */}
+                  <form onSubmit={handleFileUpload} className="upload-form">
+                    <h3 className="form-title">📤 Tải lên học liệu mới</h3>
+                    <div className="upload-grid">
+                      <div className="form-field">
+                        <label>Tiêu đề:</label>
+                        <input 
+                          type="text"
+                          placeholder="Tên học liệu..."
+                          value={materialForm.title}
+                          onChange={(e) => setMaterialForm({...materialForm, title: e.target.value})}
+                        />
+                      </div>
+                      <div className="form-field full-width">
+                        <label>Mô tả (tùy chọn):</label>
+                        <textarea 
+                          placeholder="Mô tả nội dung học liệu..."
+                          value={materialForm.description}
+                          onChange={(e) => setMaterialForm({...materialForm, description: e.target.value})}
+                          rows="2"
+                        />
+                      </div>
+                      <div className="form-field full-width">
+                        <label>Chọn file (PDF, Word, PowerPoint, Image, Audio, Video):</label>
+                        <input 
+                          type="file"
+                          accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.jpg,.jpeg,.png,.mp3,.mp4"
+                          onChange={(e) => setUploadFile(e.target.files[0])}
+                          required
+                        />
+                        {uploadFile && (
+                          <div className="file-info">
+                            📎 {uploadFile.name} ({(uploadFile.size / 1024).toFixed(1)} KB)
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <button type="submit" className="btn-upload" disabled={!uploadFile || loading}>
+                      {loading ? '⏳ Đang tải lên...' : '📤 Tải lên học liệu'}
+                    </button>
+                  </form>
+
+                  {/* Materials List */}
+                  <div className="materials-list">
+                    <h3 className="list-title">📚 Danh sách học liệu ({materials.length})</h3>
+                    {materials.length > 0 ? (
+                      <div className="materials-grid">
+                        {materials.map(material => {
+                          const getFileIcon = (type) => {
+                            const icons = {
+                              presentation: '📊',
+                              document: '📄',
+                              pdf: '📕',
+                              image: '🖼️',
+                              audio: '🎵',
+                              video: '🎬',
+                              text: '📝'
+                            };
+                            return icons[type] || '📁';
+                          };
+
+                          return (
+                            <div key={material.id} className="material-card">
+                              <div className="material-icon">{getFileIcon(material.type)}</div>
+                              <div className="material-info">
+                                <h4 className="material-title">{material.title}</h4>
+                                <p className="material-desc">{material.description || 'Không có mô tả'}</p>
+                                <div className="material-meta">
+                                  <span className="material-type">{material.type}</span>
+                                  <span className="material-date">
+                                    {new Date(material.created_at).toLocaleDateString('vi-VN')}
+                                  </span>
+                                </div>
+                              </div>
+                              {material.url && (
+                                <a 
+                                  href={material.url} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="btn-download"
+                                >
+                                  ⬇️ Tải về
+                                </a>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="no-materials">Chưa có học liệu nào</p>
+                    )}
+                  </div>
                 </div>
               )}
 

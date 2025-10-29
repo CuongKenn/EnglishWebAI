@@ -1,7 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List, Optional
+import csv
+import io
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.models.user import User, UserRole
@@ -716,3 +719,189 @@ async def delete_class_lesson(
     db.delete(lesson)
     db.commit()
     return {"message": "Đã xóa bài học"}
+
+
+# ==================== Import Students from CSV ====================
+
+@router.get("/students/import-template")
+async def download_students_import_template():
+    """
+    Download CSV template file for importing students
+    """
+    # Create CSV content
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # Write header
+    writer.writerow(['email', 'name', 'phone'])
+    
+    # Write sample data
+    writer.writerow(['student1@example.com', 'Nguyễn Văn A', '0123456789'])
+    writer.writerow(['student2@example.com', 'Trần Thị B', '0987654321'])
+    writer.writerow(['student3@example.com', 'Lê Văn C', '0369852147'])
+    
+    # Create response
+    output.seek(0)
+    return StreamingResponse(
+        io.BytesIO(output.getvalue().encode('utf-8-sig')),  # UTF-8 BOM for Excel compatibility
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": "attachment; filename=students_import_template.csv"
+        }
+    )
+
+
+@router.post("/{class_id}/students/import")
+async def import_students_from_csv(
+    class_id: int,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Import students to class from CSV file
+    
+    CSV Format:
+    email,name,phone
+    student1@example.com,Nguyễn Văn A,0123456789
+    student2@example.com,Trần Thị B,0987654321
+    
+    Returns:
+    - imported: Number of students successfully added
+    - failed: Number of students that failed
+    - errors: List of error messages
+    - students: List of successfully added student info
+    """
+    # Ensure user can manage this class
+    _ensure_can_manage_class(db, current_user, class_id)
+    
+    # Check class exists
+    classroom = db.query(Classroom).filter(Classroom.id == class_id).first()
+    if not classroom:
+        raise HTTPException(status_code=404, detail="Lớp học không tồn tại")
+    
+    # Check file type
+    if not file.filename.lower().endswith(('.csv', '.txt')):
+        raise HTTPException(status_code=400, detail="Chỉ chấp nhận file CSV (.csv)")
+    
+    # Read and parse CSV
+    try:
+        contents = await file.read()
+        # Try UTF-8 first, then UTF-8-BOM, then latin1
+        try:
+            decoded = contents.decode('utf-8-sig')
+        except UnicodeDecodeError:
+            try:
+                decoded = contents.decode('utf-8')
+            except UnicodeDecodeError:
+                decoded = contents.decode('latin1')
+        
+        csv_reader = csv.DictReader(io.StringIO(decoded))
+        
+        # Validate headers
+        if not csv_reader.fieldnames or 'email' not in csv_reader.fieldnames:
+            raise HTTPException(
+                status_code=400, 
+                detail="File CSV phải có cột 'email'. Định dạng: email,name,phone"
+            )
+        
+        imported = 0
+        failed = 0
+        errors = []
+        added_students = []
+        
+        for row_num, row in enumerate(csv_reader, start=2):  # Start from 2 (header is row 1)
+            try:
+                email = row.get('email', '').strip()
+                name = row.get('name', '').strip()
+                phone = row.get('phone', '').strip()
+                
+                if not email:
+                    errors.append(f"Dòng {row_num}: Email không được để trống")
+                    failed += 1
+                    continue
+                
+                # Validate email format
+                if '@' not in email or '.' not in email:
+                    errors.append(f"Dòng {row_num}: Email không hợp lệ: {email}")
+                    failed += 1
+                    continue
+                
+                # Find or create user
+                user = db.query(User).filter(User.email == email).first()
+                
+                if not user:
+                    # Create new student account
+                    user = User(
+                        email=email,
+                        username=email.split('@')[0],  # Use email prefix as username
+                        full_name=name or email.split('@')[0],
+                        role=UserRole.STUDENT,
+                        phone=phone if phone else None
+                    )
+                    # Set default password (should be changed on first login)
+                    user.set_password("student123")  # Default password
+                    db.add(user)
+                    db.flush()  # Get user.id
+                else:
+                    # Update user info if provided
+                    if name:
+                        user.full_name = name
+                    if phone:
+                        user.phone = phone
+                
+                # Check if already enrolled
+                existing = db.query(Enrollment).filter(
+                    Enrollment.class_id == class_id,
+                    Enrollment.student_id == user.id
+                ).first()
+                
+                if existing:
+                    if existing.status == 'active':
+                        errors.append(f"Dòng {row_num}: Học sinh {email} đã có trong lớp")
+                        failed += 1
+                        continue
+                    else:
+                        # Reactivate enrollment
+                        existing.status = 'active'
+                        existing.role = 'student'
+                else:
+                    # Create new enrollment
+                    enrollment = Enrollment(
+                        class_id=class_id,
+                        student_id=user.id,
+                        status='active',
+                        role='student'
+                    )
+                    db.add(enrollment)
+                
+                imported += 1
+                added_students.append({
+                    "id": user.id,
+                    "email": user.email,
+                    "name": user.full_name,
+                    "phone": user.phone
+                })
+                
+            except Exception as e:
+                errors.append(f"Dòng {row_num}: Lỗi - {str(e)}")
+                failed += 1
+                continue
+        
+        # Commit all changes
+        db.commit()
+        
+        return {
+            "imported": imported,
+            "failed": failed,
+            "total": imported + failed,
+            "errors": errors[:20],  # Limit to first 20 errors
+            "students": added_students,
+            "message": f"Đã import {imported}/{imported + failed} học sinh thành công"
+        }
+        
+    except csv.Error as e:
+        raise HTTPException(status_code=400, detail=f"Lỗi đọc file CSV: {str(e)}")
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Lỗi import: {str(e)}")

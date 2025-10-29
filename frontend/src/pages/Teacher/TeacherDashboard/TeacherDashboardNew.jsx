@@ -15,6 +15,8 @@ import StatisticsReports from '../StatisticsReports/StatisticsReports';
 import OnlineTeaching from '../OnlineTeaching/OnlineTeaching';
 import TeacherOverview from '../TeacherOverview/TeacherOverview';
 import CoursesManage from '../CoursesManage/CoursesManage';
+import WeeklyAssessments from '../WeeklyAssessments/WeeklyAssessments';
+import ErrorAnalysisExport from '../ErrorAnalysis/ErrorAnalysisExport';
 
 const TeacherDashboardNew = ({ onLogout }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -155,6 +157,24 @@ const TeacherDashboardNew = ({ onLogout }) => {
                   <span className="link-text">Chấm điểm & Phản hồi</span>
                 </Link>
               </li>
+              <li className="sidebar-menu-item">
+                <Link 
+                  to="/teacher-dashboard/weekly-assessments" 
+                  className={`sidebar-link ${isActive('/teacher-dashboard/weekly-assessments') ? 'active' : ''}`}
+                >
+                  <span className="link-icon">📋</span>
+                  <span className="link-text">Phiếu đánh giá tuần</span>
+                </Link>
+              </li>
+              <li className="sidebar-menu-item">
+                <Link 
+                  to="/teacher-dashboard/error-analysis" 
+                  className={`sidebar-link ${isActive('/teacher-dashboard/error-analysis') ? 'active' : ''}`}
+                >
+                  <span className="link-icon">📊</span>
+                  <span className="link-text">Xuất phân tích lỗi</span>
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -224,6 +244,8 @@ const TeacherDashboardNew = ({ onLogout }) => {
             <Route path="/question-bank" element={<QuestionBank />} />
             <Route path="/assignments" element={<AssignmentsTests />} />
             <Route path="/grading" element={<GradingFeedback />} />
+            <Route path="/weekly-assessments" element={<WeeklyAssessments />} />
+            <Route path="/error-analysis" element={<ErrorAnalysisExport />} />
             <Route path="/statistics" element={<StatisticsReports />} />
             <Route path="/online-teaching" element={<OnlineTeaching />} />
             <Route path="/calendar" element={<ComingSoon title="Lịch giảng dạy" />} />

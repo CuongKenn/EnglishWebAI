@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, UserPlus, Upload, Download, Search, Trash2, Mail, User, CheckCircle, XCircle } from 'lucide-react';
+import { Users, UserPlus, Upload, Download, Search, Trash2, Mail, User, CheckCircle, XCircle, FileText, Presentation } from 'lucide-react';
 import { apiV1 } from '../../../../services/api';
 import './ClassManagement.css';
 
@@ -9,8 +9,20 @@ export default function ClassManagement() {
   const [selectedClass, setSelectedClass] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showMaterialsModal, setShowMaterialsModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
+  const [materials, setMaterials] = useState([]);
+  const [uploadFile, setUploadFile] = useState(null);
+  const [materialForm, setMaterialForm] = useState({
+    title: '',
+    description: '',
+    type: 'file'
+  });
+  // Import students state
+  const [importFile, setImportFile] = useState(null);
+  const [importing, setImporting] = useState(false);
+  const [importResults, setImportResults] = useState(null);
   const [newStudent, setNewStudent] = useState({
     name: '',
     email: '',
@@ -104,6 +116,120 @@ export default function ClassManagement() {
     }
   };
 
+  const fetchMaterials = async (classId) => {
+    setLoading(true);
+    try {
+      const response = await apiV1.get(`/classes/${classId}/materials`);
+      setMaterials(response.data || []);
+    } catch (error) {
+      console.error('Error fetching materials:', error);
+      alert('Lỗi khi tải danh sách tài liệu!');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFileUpload = async (e) => {
+    e.preventDefault();
+    if (!uploadFile || !selectedClass) {
+      alert('Vui lòng chọn file và nhập tiêu đề!');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Step 1: Upload file
+      const formData = new FormData();
+      formData.append('file', uploadFile);
+      const uploadRes = await apiV1.post('/materials/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      // Step 2: Create material record
+      await apiV1.post('/materials', {
+        title: materialForm.title || uploadFile.name,
+        description: materialForm.description,
+        type: uploadRes.data.file_type || 'file',
+        url: uploadRes.data.file_path,
+        class_id: selectedClass.id
+      });
+
+      alert('✅ Tải lên thành công!');
+      setUploadFile(null);
+      setMaterialForm({ title: '', description: '', type: 'file' });
+      fetchMaterials(selectedClass.id);
+    } catch (error) {
+      console.error('Error uploading material:', error);
+      alert('❌ Lỗi khi tải lên: ' + (error.response?.data?.detail || error.message));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Import students handlers
+  const handleDownloadTemplate = async () => {
+    try {
+      const response = await apiV1.get('/classes/students/import-template', {
+        responseType: 'blob'
+      });
+      
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'students_import_template.csv');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error('Error downloading template:', error);
+      alert('❌ Lỗi khi tải file mẫu');
+    }
+  };
+
+  const handleImportStudents = async () => {
+    if (!importFile || !selectedClass) {
+      alert('Vui lòng chọn file CSV!');
+      return;
+    }
+
+    setImporting(true);
+    setImportResults(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', importFile);
+      
+      const response = await apiV1.post(`/classes/${selectedClass.id}/students/import`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      setImportResults(response.data);
+      
+      // Refresh students list
+      await fetchStudents(selectedClass.id);
+      
+      // Show success message
+      if (response.data.imported > 0) {
+        alert(`✅ ${response.data.message}\n\nThành công: ${response.data.imported}\nThất bại: ${response.data.failed}`);
+      }
+      
+      // Clear file input
+      setImportFile(null);
+      
+    } catch (error) {
+      console.error('Error importing students:', error);
+      alert('❌ Lỗi khi import: ' + (error.response?.data?.detail || error.message));
+      setImportResults({
+        imported: 0,
+        failed: 0,
+        errors: [error.response?.data?.detail || error.message]
+      });
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const renderAddStudentModal = () => (
     <div className="class-modal-overlay" onClick={() => setShowAddModal(false)}>
       <div className="class-modal" onClick={(e) => e.stopPropagation()}>
@@ -144,71 +270,449 @@ export default function ClassManagement() {
   );
 
   const renderImportModal = () => (
-    <div className="class-modal-overlay" onClick={() => setShowImportModal(false)}>
-      <div className="class-modal" onClick={(e) => e.stopPropagation()}>
+    <div className="class-modal-overlay" onClick={() => {
+      setShowImportModal(false);
+      setImportFile(null);
+      setImportResults(null);
+    }}>
+      <div className="class-modal large-modal" onClick={(e) => e.stopPropagation()} style={{maxWidth: '900px'}}>
         <div className="class-modal-header">
-          <h2>Import Học sinh từ Excel</h2>
-          <button className="modal-close-btn" onClick={() => setShowImportModal(false)}>×</button>
+          <h2>📊 Import Học sinh từ CSV/Excel</h2>
+          <button className="modal-close-btn" onClick={() => {
+            setShowImportModal(false);
+            setImportFile(null);
+            setImportResults(null);
+          }}>×</button>
         </div>
 
         <div className="class-modal-body">
-          {/* Download Template */}
-          <div className="download-template-section">
-            <div className="template-info">
-              <Download size={24} className="template-icon" />
+          {/* Step 1: Download Template */}
+          <div className="download-template-section" style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '20px',
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            borderRadius: '12px',
+            marginBottom: '25px',
+            color: 'white'
+          }}>
+            <div className="template-info" style={{display: 'flex', gap: '15px', alignItems: 'center'}}>
+              <div style={{
+                background: 'rgba(255,255,255,0.2)',
+                padding: '12px',
+                borderRadius: '10px'
+              }}>
+                <Download size={28} />
+              </div>
               <div>
-                <h4>Tải file mẫu</h4>
-                <p>Tải file Excel mẫu để import học sinh đúng định dạng</p>
+                <h4 style={{margin: 0, fontSize: '16px', fontWeight: '600'}}>Bước 1: Tải file mẫu CSV</h4>
+                <p style={{margin: '5px 0 0 0', fontSize: '13px', opacity: 0.9}}>
+                  Tải xuống file mẫu và điền thông tin học sinh theo đúng định dạng
+                </p>
               </div>
             </div>
-            <button className="btn-download-template">
-              <Download size={16} />
+            <button 
+              className="btn-download-template"
+              onClick={handleDownloadTemplate}
+              style={{
+                background: 'white',
+                color: '#667eea',
+                border: 'none',
+                padding: '12px 24px',
+                borderRadius: '8px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                transition: 'all 0.3s',
+                boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+              }}
+            >
+              <Download size={18} />
               Tải file mẫu
             </button>
           </div>
 
-          {/* Upload Area */}
-          <div className="upload-area">
-            <Upload size={48} className="upload-icon" />
-            <h4>Kéo thả file Excel vào đây</h4>
-            <p>hoặc</p>
-            <button className="btn-browse">Chọn file từ máy tính</button>
-            <span className="upload-hint">Hỗ trợ: .xlsx, .xls (Tối đa 5MB)</span>
+          {/* Step 2: Upload File */}
+          <div style={{marginBottom: '25px'}}>
+            <h3 style={{marginBottom: '15px', fontSize: '16px', fontWeight: '600', color: '#1f2937'}}>
+              Bước 2: Chọn file CSV đã điền thông tin
+            </h3>
+            <div className="upload-area" style={{
+              border: '2px dashed #cbd5e1',
+              borderRadius: '12px',
+              padding: '40px',
+              textAlign: 'center',
+              background: importFile ? '#f0fdf4' : '#f8fafc',
+              transition: 'all 0.3s'
+            }}>
+              <input
+                type="file"
+                id="csv-upload"
+                accept=".csv,.txt"
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (file) {
+                    setImportFile(file);
+                    setImportResults(null);
+                  }
+                }}
+                style={{display: 'none'}}
+              />
+              
+              {!importFile ? (
+                <>
+                  <Upload size={48} style={{color: '#94a3b8', margin: '0 auto 15px'}} />
+                  <h4 style={{margin: '0 0 8px 0', fontSize: '16px', color: '#1f2937'}}>
+                    Kéo thả file CSV vào đây
+                  </h4>
+                  <p style={{margin: '0 0 15px 0', fontSize: '14px', color: '#64748b'}}>hoặc</p>
+                  <label 
+                    htmlFor="csv-upload"
+                    className="btn-browse"
+                    style={{
+                      display: 'inline-block',
+                      background: '#3b82f6',
+                      color: 'white',
+                      padding: '12px 24px',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontWeight: '500',
+                      transition: 'all 0.3s'
+                    }}
+                  >
+                    <Upload size={16} style={{display: 'inline', marginRight: '8px'}} />
+                    Chọn file từ máy tính
+                  </label>
+                  <div style={{marginTop: '12px', fontSize: '13px', color: '#64748b'}}>
+                    Hỗ trợ: .csv, .txt (Tối đa 5MB)
+                  </div>
+                </>
+              ) : (
+                <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px'}}>
+                  <CheckCircle size={32} style={{color: '#10b981'}} />
+                  <div style={{textAlign: 'left'}}>
+                    <div style={{fontSize: '15px', fontWeight: '600', color: '#1f2937'}}>
+                      {importFile.name}
+                    </div>
+                    <div style={{fontSize: '13px', color: '#64748b', marginTop: '4px'}}>
+                      {(importFile.size / 1024).toFixed(1)} KB
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setImportFile(null)}
+                    style={{
+                      background: '#ef4444',
+                      color: 'white',
+                      border: 'none',
+                      padding: '8px 16px',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontSize: '13px'
+                    }}
+                  >
+                    Xóa
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
+          {/* Import Results */}
+          {importResults && (
+            <div style={{
+              padding: '20px',
+              background: importResults.imported > 0 ? '#f0fdf4' : '#fef2f2',
+              border: `1px solid ${importResults.imported > 0 ? '#86efac' : '#fecaca'}`,
+              borderRadius: '12px',
+              marginBottom: '20px'
+            }}>
+              <h4 style={{
+                margin: '0 0 12px 0',
+                fontSize: '16px',
+                fontWeight: '600',
+                color: importResults.imported > 0 ? '#166534' : '#991b1b'
+              }}>
+                {importResults.imported > 0 ? '✅ Kết quả Import' : '❌ Import thất bại'}
+              </h4>
+              <div style={{fontSize: '14px', color: '#1f2937', marginBottom: '12px'}}>
+                <div>✅ Thành công: <strong>{importResults.imported}</strong> học sinh</div>
+                <div>❌ Thất bại: <strong>{importResults.failed}</strong> học sinh</div>
+                <div>📊 Tổng: <strong>{importResults.total}</strong> dòng</div>
+              </div>
+              {importResults.errors && importResults.errors.length > 0 && (
+                <div>
+                  <div style={{fontSize: '13px', fontWeight: '600', marginBottom: '8px', color: '#dc2626'}}>
+                    Lỗi chi tiết:
+                  </div>
+                  <div style={{
+                    maxHeight: '150px',
+                    overflowY: 'auto',
+                    background: 'white',
+                    padding: '12px',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    color: '#64748b'
+                  }}>
+                    {importResults.errors.map((err, idx) => (
+                      <div key={idx} style={{marginBottom: '4px'}}>• {err}</div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Format Guide */}
-          <div className="format-guide">
-            <h4>Định dạng file Excel:</h4>
-            <table className="format-table">
+          <div className="format-guide" style={{
+            padding: '20px',
+            background: '#f8fafc',
+            borderRadius: '12px',
+            border: '1px solid #e2e8f0'
+          }}>
+            <h4 style={{margin: '0 0 15px 0', fontSize: '15px', fontWeight: '600', color: '#1f2937'}}>
+              📋 Định dạng file CSV:
+            </h4>
+            <table className="format-table" style={{
+              width: '100%',
+              borderCollapse: 'collapse',
+              fontSize: '13px'
+            }}>
               <thead>
-                <tr>
-                  <th>Họ và tên</th>
-                  <th>Email</th>
-                  <th>Số điện thoại</th>
+                <tr style={{background: '#e2e8f0'}}>
+                  <th style={{padding: '10px', textAlign: 'left', borderBottom: '2px solid #cbd5e1'}}>email</th>
+                  <th style={{padding: '10px', textAlign: 'left', borderBottom: '2px solid #cbd5e1'}}>name</th>
+                  <th style={{padding: '10px', textAlign: 'left', borderBottom: '2px solid #cbd5e1'}}>phone</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td>Nguyễn Văn A</td>
-                  <td>nguyenvana@gmail.com</td>
-                  <td>0123456789</td>
+                  <td style={{padding: '10px', borderBottom: '1px solid #e2e8f0'}}>student1@example.com</td>
+                  <td style={{padding: '10px', borderBottom: '1px solid #e2e8f0'}}>Nguyễn Văn A</td>
+                  <td style={{padding: '10px', borderBottom: '1px solid #e2e8f0'}}>0123456789</td>
                 </tr>
                 <tr>
-                  <td>Trần Thị B</td>
-                  <td>tranthib@gmail.com</td>
-                  <td>0987654321</td>
+                  <td style={{padding: '10px', borderBottom: '1px solid #e2e8f0'}}>student2@example.com</td>
+                  <td style={{padding: '10px', borderBottom: '1px solid #e2e8f0'}}>Trần Thị B</td>
+                  <td style={{padding: '10px', borderBottom: '1px solid #e2e8f0'}}>0987654321</td>
                 </tr>
               </tbody>
             </table>
+            <div style={{marginTop: '12px', fontSize: '12px', color: '#64748b'}}>
+              <strong>Lưu ý:</strong>
+              <ul style={{margin: '8px 0 0 20px', padding: 0}}>
+                <li>Cột <code>email</code> là bắt buộc</li>
+                <li>Nếu email chưa có tài khoản, hệ thống tự tạo với mật khẩu mặc định: <code>student123</code></li>
+                <li>Học sinh cần đổi mật khẩu khi đăng nhập lần đầu</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div className="class-modal-footer" style={{display: 'flex', gap: '12px', justifyContent: 'flex-end'}}>
+          <button 
+            className="btn-cancel-class" 
+            onClick={() => {
+              setShowImportModal(false);
+              setImportFile(null);
+              setImportResults(null);
+            }}
+            style={{
+              padding: '10px 20px',
+              background: '#f1f5f9',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: '500'
+            }}
+          >
+            Đóng
+          </button>
+          <button 
+            className="btn-add-class"
+            onClick={handleImportStudents}
+            disabled={!importFile || importing}
+            style={{
+              padding: '10px 20px',
+              background: importFile && !importing ? '#3b82f6' : '#cbd5e1',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: importFile && !importing ? 'pointer' : 'not-allowed',
+              fontWeight: '500',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+          >
+            {importing ? (
+              <>
+                <div style={{
+                  width: '16px',
+                  height: '16px',
+                  border: '2px solid white',
+                  borderTop: '2px solid transparent',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite'
+                }}></div>
+                Đang import...
+              </>
+            ) : (
+              <>
+                <Upload size={18} />
+                Import học sinh
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const getFileIcon = (type) => {
+    const icons = {
+      presentation: <Presentation size={24} className="file-type-icon presentation" />,
+      document: <FileText size={24} className="file-type-icon document" />,
+      pdf: <FileText size={24} className="file-type-icon pdf" />,
+      image: <FileText size={24} className="file-type-icon image" />,
+      audio: <FileText size={24} className="file-type-icon audio" />,
+      video: <FileText size={24} className="file-type-icon video" />,
+      text: <FileText size={24} className="file-type-icon text" />
+    };
+    return icons[type] || <FileText size={24} className="file-type-icon" />;
+  };
+
+  const renderMaterialsModal = () => (
+    <div className="class-modal-overlay" onClick={() => setShowMaterialsModal(false)}>
+      <div className="class-modal large-modal" onClick={(e) => e.stopPropagation()} style={{maxWidth: '900px'}}>
+        <div className="class-modal-header">
+          <h2>📁 Tài liệu lớp học - {selectedClass?.name}</h2>
+          <button className="modal-close-btn" onClick={() => setShowMaterialsModal(false)}>×</button>
+        </div>
+
+        <div className="class-modal-body">
+          {/* Upload Form */}
+          <form onSubmit={handleFileUpload} className="material-upload-form" style={{marginBottom: '30px', padding: '20px', background: '#f8f9fa', borderRadius: '8px'}}>
+            <h3 style={{marginBottom: '15px', fontSize: '16px', fontWeight: '600'}}>📤 Tải lên tài liệu mới</h3>
+            <div style={{display: 'grid', gap: '15px'}}>
+              <div className="form-group-class">
+                <label>Tiêu đề:</label>
+                <input 
+                  type="text"
+                  className="form-input-class"
+                  placeholder="Tên tài liệu..."
+                  value={materialForm.title}
+                  onChange={(e) => setMaterialForm({...materialForm, title: e.target.value})}
+                />
+              </div>
+              <div className="form-group-class">
+                <label>Mô tả (tùy chọn):</label>
+                <textarea 
+                  className="form-input-class"
+                  placeholder="Mô tả nội dung..."
+                  value={materialForm.description}
+                  onChange={(e) => setMaterialForm({...materialForm, description: e.target.value})}
+                  rows="2"
+                  style={{resize: 'vertical'}}
+                />
+              </div>
+              <div className="form-group-class">
+                <label>Chọn file (PDF, Word, PowerPoint, Image, Audio, Video):</label>
+                <input 
+                  type="file"
+                  className="form-input-class"
+                  accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.jpg,.jpeg,.png,.mp3,.mp4"
+                  onChange={(e) => setUploadFile(e.target.files[0])}
+                  required
+                  style={{padding: '8px'}}
+                />
+                {uploadFile && (
+                  <div style={{marginTop: '8px', fontSize: '13px', color: '#666'}}>
+                    📎 {uploadFile.name} ({(uploadFile.size / 1024).toFixed(1)} KB)
+                  </div>
+                )}
+              </div>
+            </div>
+            <button 
+              type="submit" 
+              className="btn-add-class" 
+              disabled={!uploadFile || loading}
+              style={{marginTop: '15px'}}
+            >
+              <Upload size={18} />
+              {loading ? 'Đang tải lên...' : '📤 Tải lên tài liệu'}
+            </button>
+          </form>
+
+          {/* Materials List */}
+          <div className="materials-list-section">
+            <h3 style={{marginBottom: '15px', fontSize: '16px', fontWeight: '600'}}>
+              📚 Danh sách tài liệu ({materials.length})
+            </h3>
+            {loading && materials.length === 0 ? (
+              <div style={{padding: '40px', textAlign: 'center', color: '#666'}}>
+                Đang tải...
+              </div>
+            ) : materials.length === 0 ? (
+              <div className="empty-state-class">
+                <FileText size={48} strokeWidth={1} />
+                <p>Chưa có tài liệu nào</p>
+              </div>
+            ) : (
+              <div style={{display: 'grid', gap: '12px'}}>
+                {materials.map(material => (
+                  <div 
+                    key={material.id} 
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '15px',
+                      padding: '15px',
+                      background: '#fff',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px',
+                      transition: 'all 0.2s'
+                    }}
+                    className="material-card-hover"
+                  >
+                    <div style={{flexShrink: 0}}>
+                      {getFileIcon(material.type)}
+                    </div>
+                    <div style={{flex: 1, minWidth: 0}}>
+                      <h4 style={{fontSize: '14px', fontWeight: '600', marginBottom: '4px', color: '#1f2937'}}>
+                        {material.title}
+                      </h4>
+                      <p style={{fontSize: '13px', color: '#6b7280', marginBottom: '6px'}}>
+                        {material.description || 'Không có mô tả'}
+                      </p>
+                      <div style={{display: 'flex', gap: '12px', fontSize: '12px', color: '#9ca3af'}}>
+                        <span>📁 {material.type}</span>
+                        <span>📅 {new Date(material.created_at).toLocaleDateString('vi-VN')}</span>
+                      </div>
+                    </div>
+                    {material.url && (
+                      <a 
+                        href={material.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="btn-action-class secondary"
+                        style={{flexShrink: 0}}
+                      >
+                        <Download size={16} />
+                        Tải về
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
         <div className="class-modal-footer">
-          <button className="btn-cancel-class" onClick={() => setShowImportModal(false)}>Hủy</button>
-          <button className="btn-add-class">
-            <Upload size={18} />
-            Import học sinh
-          </button>
+          <button className="btn-cancel-class" onClick={() => setShowMaterialsModal(false)}>Đóng</button>
         </div>
       </div>
     </div>
@@ -286,6 +790,13 @@ export default function ClassManagement() {
                     <Upload size={18} />
                     Import Excel
                   </button>
+                  <button className="btn-action-class secondary" onClick={() => {
+                    setShowMaterialsModal(true);
+                    fetchMaterials(selectedClass.id);
+                  }}>
+                    <FileText size={18} />
+                    Tài liệu lớp học
+                  </button>
                 </div>
               </div>
 
@@ -361,6 +872,7 @@ export default function ClassManagement() {
       {/* Modals */}
       {showAddModal && renderAddStudentModal()}
       {showImportModal && renderImportModal()}
+      {showMaterialsModal && renderMaterialsModal()}
 
       {/* Info Box */}
       <div className="info-box-class">
