@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { 
   Calendar, GraduationCap, BookOpen, Target,
@@ -7,12 +7,15 @@ import {
 } from 'lucide-react';
 import ConsistentSidebarLayout from '../../components/Layout/ConsistentSidebarLayout';
 import './LearningProfile.css';
+import { studentProfileAPI } from '../../services/api';
 
 const LearningProfile = () => {
   const navigate = useNavigate();
   const [activeMenuItem, setActiveMenuItem] = useState('profile');
   const [selectedPeriod, setSelectedPeriod] = useState('all-time');
   const [isContentPushed, setIsContentPushed] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const handleMenuItemClick = (itemId) => {
     setActiveMenuItem(itemId);
@@ -24,25 +27,20 @@ const LearningProfile = () => {
     }, 300);
   };
 
-  // Dữ liệu thống kê tổng quan
-  const overallStats = {
-    totalTime: '47 giờ 32 phút',
-    totalCups: 268,
-    totalTests: 42,
-    totalLessons: 156,
-    streak: 12,
-    level: 8,
-    rank: 'Gold',
-    completionRate: 78
-  };
+  // Dữ liệu thống kê tổng quan (từ backend)
+  const [overallStats, setOverallStats] = useState({
+    totalTime: '-',
+    totalCups: 0,
+    totalTests: 0,
+    totalLessons: 0,
+    streak: 0,
+    level: 0,
+    rank: 'Bronze',
+    completionRate: 0,
+  });
 
-  // Thống kê theo 4 kỹ năng chính
-  const skillStats = [
-    { skill: 'Nghe', icon: '🎧', score: 7.5, maxScore: 10, progress: 75, color: '#3b82f6' },
-    { skill: 'Nói', icon: '🗣️', score: 6.8, maxScore: 10, progress: 68, color: '#ec4899' },
-    { skill: 'Đọc', icon: '📖', score: 8.2, maxScore: 10, progress: 82, color: '#10b981' },
-    { skill: 'Viết', icon: '✍️', score: 7.0, maxScore: 10, progress: 70, color: '#f59e0b' }
-  ];
+  // Thống kê theo kỹ năng chính (từ backend)
+  const [skillStats, setSkillStats] = useState([]);
 
   // Thành tích đạt được
   const achievements = [
@@ -54,14 +52,44 @@ const LearningProfile = () => {
     { id: 6, icon: '🌟', title: 'Star Student', description: 'Hoàn thành 100 bài học', earned: false, progress: 78, target: 100 }
   ];
 
-  // Lịch sử học tập gần đây
-  const recentActivity = [
-    { id: 1, type: 'lesson', title: 'Hoàn thành Unit 15: Present Perfect', date: '24/10/2024', time: '14:30', score: 95 },
-    { id: 2, type: 'test', title: 'Kiểm tra Grammar - Part 3', date: '24/10/2024', time: '10:15', score: 88 },
-    { id: 3, type: 'achievement', title: 'Đạt thành tích: Streak Master', date: '23/10/2024', time: '18:20' },
-    { id: 4, type: 'lesson', title: 'Hoàn thành Unit 14: Past Perfect', date: '23/10/2024', time: '16:45', score: 92 },
-    { id: 5, type: 'lesson', title: 'Hoàn thành Unit 13: Modal Verbs', date: '22/10/2024', time: '15:30', score: 85 }
-  ];
+  // Lịch sử học tập gần đây (từ backend)
+  const [recentActivity, setRecentActivity] = useState([]);
+
+  useEffect(() => {
+    let mounted = true;
+    async function load() {
+      try {
+        setLoading(true);
+        setError(null);
+        const [overview, skills, recent] = await Promise.all([
+          studentProfileAPI.getOverview(),
+          studentProfileAPI.getSkills(),
+          studentProfileAPI.getRecent(),
+        ]);
+        if (!mounted) return;
+        // totalTime may be null from backend
+        setOverallStats({
+          totalTime: overview.totalTime || '-',
+          totalCups: overview.totalCups || 0,
+          totalTests: overview.totalTests || 0,
+          totalLessons: overview.totalLessons || 0,
+          streak: overview.streak || 0,
+          level: overview.level || 0,
+          rank: overview.rank || 'Bronze',
+          completionRate: overview.completionRate || 0,
+        });
+        setSkillStats(Array.isArray(skills) ? skills : []);
+        setRecentActivity(Array.isArray(recent) ? recent : []);
+      } catch (e) {
+        if (!mounted) return;
+        setError(e?.detail || 'Không thể tải hồ sơ học tập');
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+    load();
+    return () => { mounted = false; };
+  }, []);
 
   // Khuyến nghị
   const recommendations = [
@@ -125,6 +153,16 @@ const LearningProfile = () => {
 
         {/* Content */}
         <div className="profile-content">
+          {loading && (
+            <div className="stats-section">
+              <h2 className="section-title">Đang tải hồ sơ học tập...</h2>
+            </div>
+          )}
+          {error && (
+            <div className="stats-section">
+              <h2 className="section-title" style={{ color: '#ef4444' }}>{error}</h2>
+            </div>
+          )}
           {/* Overall Stats Cards */}
           <section className="stats-section">
             <h2 className="section-title">Thống kê tổng quan</h2>
@@ -134,7 +172,7 @@ const LearningProfile = () => {
                   <Clock size={32} />
                 </div>
                 <div className="stat-data">
-                  <span className="stat-value-large">{overallStats.totalTime}</span>
+                  <span className="stat-value-large">{overallStats.totalTime || '-'}</span>
                   <span className="stat-label-large">Tổng thời gian học</span>
                 </div>
               </div>
@@ -245,7 +283,6 @@ const LearningProfile = () => {
                   <div className={`activity-type-icon ${activity.type}`}>
                     {activity.type === 'lesson' && <BookOpen size={20} />}
                     {activity.type === 'test' && <Target size={20} />}
-                    {activity.type === 'achievement' && <Trophy size={20} />}
                   </div>
                   <div className="activity-details">
                     <h4>{activity.title}</h4>
@@ -263,6 +300,16 @@ const LearningProfile = () => {
                   )}
                 </div>
               ))}
+              {(!loading && recentActivity.length === 0) && (
+                <div className="activity-item">
+                  <div className="activity-details">
+                    <h4>Chưa có hoạt động nào</h4>
+                    <div className="activity-meta">
+                      <span>Bắt đầu làm bài để thấy tiến độ tại đây</span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </section>
 

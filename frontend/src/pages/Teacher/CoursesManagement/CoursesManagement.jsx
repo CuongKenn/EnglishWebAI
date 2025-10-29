@@ -157,7 +157,9 @@ const CoursesManagement = () => {
       setIsCreateOpen(false);
       await loadCourses();
     } catch (error) {
-      setMessage({ type: 'error', text: error?.detail || 'Tạo khóa học thất bại' });
+      console.error('Create course error:', error);
+      const errorMsg = error?.response?.data?.detail || error?.detail || error?.message || 'Tạo khóa học thất bại';
+      setMessage({ type: 'error', text: errorMsg });
     } finally {
       setFormLoading(false);
     }
@@ -186,7 +188,9 @@ const CoursesManagement = () => {
       setIsEditOpen(false);
       await loadCourses();
     } catch (error) {
-      setMessage({ type: 'error', text: error?.detail || 'Cập nhật thất bại' });
+      console.error('Update course error:', error);
+      const errorMsg = error?.response?.data?.detail || error?.detail || error?.message || 'Cập nhật thất bại';
+      setMessage({ type: 'error', text: errorMsg });
     } finally {
       setFormLoading(false);
     }
@@ -198,14 +202,15 @@ const CoursesManagement = () => {
     
     setFormLoading(true);
     try {
-      // TODO: Implement delete endpoint in backend
-      // await coursesManageAPI.deleteCourse(selectedCourse.id);
+      await coursesAPI.deleteCourse(selectedCourse.id);
       setMessage({ type: 'success', text: 'Xóa khóa học thành công!' });
       setIsDeleteConfirmOpen(false);
       setSelectedCourse(null);
       await loadCourses();
     } catch (error) {
-      setMessage({ type: 'error', text: error?.detail || 'Xóa khóa học thất bại' });
+      console.error('Delete course error:', error);
+      const errorMsg = error?.response?.data?.detail || error?.detail || error?.message || 'Xóa khóa học thất bại';
+      setMessage({ type: 'error', text: errorMsg });
     } finally {
       setFormLoading(false);
     }
@@ -1223,8 +1228,7 @@ const UnitQuestionsModal = ({ unit, course, onClose, onRefresh }) => {
                       onClick={async () => {
                         if (window.confirm('Bạn có chắc muốn xóa câu hỏi này?')) {
                           try {
-                            // TODO: Implement delete question API
-                            // await coursesAPI.deleteQuestion(unit.id, q.id);
+                            await coursesAPI.deleteQuestion(unit.id, q.id);
                             await loadQuestions();
                             if (onRefresh) onRefresh();
                           } catch (error) {
@@ -1402,8 +1406,7 @@ const CourseDetailModal = ({ course, onClose, onEdit }) => {
                         onClick={async () => {
                           if (window.confirm(`Bạn có chắc muốn xóa bài học "${unit.title}"?`)) {
                             try {
-                              // TODO: Backend endpoint
-                              // await coursesAPI.deleteUnit(course.id, unit.id);
+                                await coursesAPI.deleteUnit(course.id, unit.id);
                               await loadUnits();
                             } catch (error) {
                               console.error('Error deleting unit:', error);

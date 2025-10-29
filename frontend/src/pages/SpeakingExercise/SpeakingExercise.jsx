@@ -21,8 +21,10 @@ import {
   ThumbsUp,
   ThumbsDown,
   RefreshCw,
-  X
+  X,
+  Loader2
 } from 'lucide-react';
+import apiClient from '../../services/api';
 import './SpeakingExercise.css';
 
 const SpeakingExercise = () => {
@@ -42,6 +44,8 @@ const SpeakingExercise = () => {
   const [recordingError, setRecordingError] = useState(null);
   const [showHint, setShowHint] = useState(false);
   const [showCompletionMessage, setShowCompletionMessage] = useState(false);
+  const [isAssessing, setIsAssessing] = useState(false);
+  const [assessmentResults, setAssessmentResults] = useState(null);
 
   // Refs
   const mediaRecorderRef = useRef(null);
@@ -53,7 +57,7 @@ const SpeakingExercise = () => {
   // Handle completion
   const handleComplete = () => {
     // Calculate final score (mock calculation based on mock results)
-    const finalScore = Math.round((mockResults.fluency + mockResults.grammar + mockResults.pronunciation + mockResults.vocabulary) / 4 * 10) / 10;
+    const finalScore = Math.round((currentResults.fluency + currentResults.grammar + currentResults.pronunciation + currentResults.vocabulary) / 4 * 10) / 10;
 
     // Save completion data to localStorage
     const completionData = {
@@ -322,13 +326,34 @@ const SpeakingExercise = () => {
       return;
     }
 
-    // TODO: API call to submit recording
-    console.log('Submitting recording:', audioBlob);
+    setIsAssessing(true);
+    setRecordingError(null);
 
-    // Simulate API response
-    setTimeout(() => {
+    try {
+      // Prepare form data
+      const formData = new FormData();
+      formData.append('audio', audioBlob, 'recording.webm');
+      formData.append('reference_text', currentQuestionData.question);
+
+      // Call API
+      const response = await apiClient.post('/api/v1/ai/speaking-practice/assess', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      console.log('[submitRecording] API response:', response.data);
+
+      // Store results
+      setAssessmentResults(response.data);
       setShowResults(true);
-    }, 2000);
+
+    } catch (error) {
+      console.error('[submitRecording] Error:', error);
+      setRecordingError(error.response?.data?.detail || 'Không thể chấm điểm. Vui lòng thử lại.');
+    } finally {
+      setIsAssessing(false);
+    }
   };
 
   // Manual upload fallback
@@ -348,10 +373,13 @@ const SpeakingExercise = () => {
 
   // Calculate score from results
   const calculateScore = () => {
-    // Aggregate score from pronunciation, fluency, grammar, vocabulary
-    const totalScore = mockResults.pronunciation + mockResults.fluency + mockResults.grammar + mockResults.vocabulary;
-    return Math.round(totalScore / 4); // Average out of 100
+    if (!assessmentResults) return 0;
+    // Use score from API
+    return Math.round(assessmentResults.score * 10) / 10;
   };
+
+  // Get current results (from API or fallback to mock for display)
+  const currentResults = assessmentResults || mockResults;
 
   // Next question
   const nextQuestion = () => {
@@ -536,11 +564,11 @@ const SpeakingExercise = () => {
               <div className="results-tabs">
                 <button className="tab-btn active">Nhận xét chung</button>
                 <button className="tab-btn">
-                  <span className="tab-number good">{mockResults.feedback.goodExpressions}</span>
+                  <span className="tab-number good">{currentResults.feedback.goodExpressions}</span>
                   Diễn đạt hay
                 </button>
                 <button className="tab-btn">
-                  <span className="tab-number error">{mockResults.feedback.errors}</span>
+                  <span className="tab-number error">{currentResults.feedback.errors}</span>
                   Lỗi trong bài
                 </button>
               </div>
@@ -549,21 +577,46 @@ const SpeakingExercise = () => {
             <div className="results-content">
               <div className="transcription-section">
                 <p className="transcription-text">
-                  {mockResults.detailedFeedback.map((item, index) => (
-                    <span
-                      key={index}
-                      className={`transcription-word ${item.type}`}
-                      title={item.suggestion || ''}
-                    >
-                      {item.text}
-                      {item.position && <sup>{item.position}</sup>}
-                    </span>
-                  ))}
+                  {currentResults.transcription || 'Không nhận diện được giọng nói'}
                 </p>
               </div>
 
+              {currentResults.aiGeneratedFeedback && (
+                <div className="ai-feedback-section" style={{ 
+                  marginTop: '20px', 
+                  padding: '15px', 
+                  backgroundColor: '#f8f9fa', 
+                  borderRadius: '8px',
+                  whiteSpace: 'pre-wrap'
+                }}>
+                  <h4 style={{ marginBottom: '10px', color: '#6366f1' }}>📝 Nhận xét chi tiết từ AI</h4>
+                  <div style={{ lineHeight: '1.6' }}>
+                    {currentResults.aiGeneratedFeedback}
+                  </div>
+                </div>
+              )}
+
+              {currentResults.detailedFeedback && currentResults.detailedFeedback.length > 0 && (
+                <div className="detailed-errors" style={{ marginTop: '20px' }}>
+                  <h4>Chi tiết lỗi và gợi ý:</h4>
+                  {currentResults.detailedFeedback.map((item, index) => (
+                    <div key={index} className={`feedback-item ${item.type}`} style={{
+                      padding: '10px',
+                      margin: '8px 0',
+                      borderLeft: `3px solid ${item.type === 'error' ? '#ef4444' : '#22c55e'}`,
+                      backgroundColor: item.type === 'error' ? '#fee' : '#efe'
+                    }}>
+                      <strong>{item.text}</strong>
+                      {item.suggestion && <span> → {item.suggestion}</span>}
+                      {item.explanation && <p style={{ marginTop: '5px', fontSize: '0.9em' }}>{item.explanation}</p>}
+                      {item.comment && <p style={{ marginTop: '5px', fontSize: '0.9em' }}>{item.comment}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="feedback-summary">
-                <p>{mockResults.feedback.generalComments} nhận xét trên nội dung bài nói</p>
+                <p>{currentResults.transcription ? `Bạn đã nói: "${currentResults.transcription}"` : 'Nhận xét trên nội dung bài nói'}</p>
               </div>
 
               <div className="score-breakdown">
@@ -572,40 +625,40 @@ const SpeakingExercise = () => {
                   <div className="score-bar">
                     <div
                       className="score-fill"
-                      style={{ width: `${(mockResults.pronunciation / 10) * 100}%` }}
+                      style={{ width: `${(currentResults.pronunciation / 10) * 100}%` }}
                     ></div>
                   </div>
-                  <span className="score-value">{mockResults.pronunciation}/10</span>
+                  <span className="score-value">{currentResults.pronunciation}/10</span>
                 </div>
                 <div className="score-item">
                   <span className="score-label">Fluency</span>
                   <div className="score-bar">
                     <div
                       className="score-fill"
-                      style={{ width: `${(mockResults.fluency / 10) * 100}%` }}
+                      style={{ width: `${(currentResults.fluency / 10) * 100}%` }}
                     ></div>
                   </div>
-                  <span className="score-value">{mockResults.fluency}/10</span>
+                  <span className="score-value">{currentResults.fluency}/10</span>
                 </div>
                 <div className="score-item">
                   <span className="score-label">Grammar</span>
                   <div className="score-bar">
                     <div
                       className="score-fill"
-                      style={{ width: `${(mockResults.grammar / 10) * 100}%` }}
+                      style={{ width: `${(currentResults.grammar / 10) * 100}%` }}
                     ></div>
                   </div>
-                  <span className="score-value">{mockResults.grammar}/10</span>
+                  <span className="score-value">{currentResults.grammar}/10</span>
                 </div>
                 <div className="score-item">
                   <span className="score-label">Vocabulary</span>
                   <div className="score-bar">
                     <div
                       className="score-fill"
-                      style={{ width: `${(mockResults.vocabulary / 10) * 100}%` }}
+                      style={{ width: `${(currentResults.vocabulary / 10) * 100}%` }}
                     ></div>
                   </div>
-                  <span className="score-value">{mockResults.vocabulary}/10</span>
+                  <span className="score-value">{currentResults.vocabulary}/10</span>
                 </div>
               </div>
             </div>
@@ -629,10 +682,19 @@ const SpeakingExercise = () => {
             <button
               className="submit-btn"
               onClick={submitRecording}
-              disabled={!audioBlob || isCompleted}
+              disabled={!audioBlob || isCompleted || isAssessing}
             >
-              <Target size={16} />
-              Nộp bài
+              {isAssessing ? (
+                <>
+                  <Loader2 size={16} className="spinner" />
+                  Đang chấm điểm...
+                </>
+              ) : (
+                <>
+                  <Target size={16} />
+                  Nộp bài
+                </>
+              )}
             </button>
           ) : (
           <button

@@ -582,6 +582,26 @@ export const coursesAPI = {
     }
   },
 
+  // Update a course (teacher/admin)
+  updateCourse: async (courseId, data) => {
+    try {
+      const response = await apiClient.put(`/api/v1/courses/${courseId}`, data);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Delete a course (teacher/admin)
+  deleteCourse: async (courseId) => {
+    try {
+      const response = await apiClient.delete(`/api/v1/courses/${courseId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
   // Create an exercise (teacher/admin)
   createCourseExercise: async (courseId, data) => {
     try {
@@ -596,6 +616,16 @@ export const coursesAPI = {
   submitCourseExercise: async (courseId, exerciseId, submission) => {
     try {
       const response = await apiClient.post(`/api/v1/courses/${courseId}/exercises/${exerciseId}/submit`, submission);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Submit unit answers (for writing/listening exercises)
+  submitUnitAnswers: async (unitId, submission) => {
+    try {
+      const response = await apiClient.post(`/api/v1/courses/units/${unitId}/submit`, submission);
       return response.data;
     } catch (error) {
       throw error.response ? error.response.data : error;
@@ -630,6 +660,22 @@ export const coursesAPI = {
   createQuestion: async (unitId, data) => {
     try {
       const response = await apiClient.post(`/api/v1/courses/units/${unitId}/questions`, data);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+  deleteUnit: async (_courseId, unitId) => {
+    try {
+      const response = await apiClient.delete(`/api/v1/courses/units/${unitId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+  deleteQuestion: async (unitId, questionId) => {
+    try {
+      const response = await apiClient.delete(`/api/v1/courses/units/${unitId}/questions/${questionId}`);
       return response.data;
     } catch (error) {
       throw error.response ? error.response.data : error;
@@ -1281,6 +1327,36 @@ export const aiUsageAPI = {
       // Do not throw to avoid breaking UX; surface optional debugging
       // console.warn('AI usage log failed', error);
       return null;
+    }
+  },
+};
+
+// ===========================
+// Student Profile API
+// ===========================
+export const studentProfileAPI = {
+  getOverview: async () => {
+    try {
+      const response = await apiClient.get('/api/v1/student/profile/overview');
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+  getSkills: async () => {
+    try {
+      const response = await apiClient.get('/api/v1/student/profile/skills');
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+  getRecent: async () => {
+    try {
+      const response = await apiClient.get('/api/v1/student/profile/recent');
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
     }
   },
 };

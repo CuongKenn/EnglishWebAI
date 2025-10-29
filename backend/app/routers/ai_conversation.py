@@ -3,8 +3,11 @@ AI Conversation Router
 Handles AI-powered conversation endpoints
 """
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
 from sqlalchemy.orm import Session
+from typing import Optional
+import tempfile
+import os
 from app.schemas.ai_conversation import (
     ConversationRequest,
     ConversationResponse,
@@ -12,6 +15,7 @@ from app.schemas.ai_conversation import (
     ConversationSuggestionsResponse
 )
 from app.services.gemini_service import gemini_service
+from app.services.azure_speech_service import azure_speech_service
 from app.models.user import User
 from app.core.dependencies import get_current_user
 from app.core.database import get_db
@@ -89,3 +93,176 @@ async def get_conversation_suggestions(
             status_code=500,
             detail=f"Failed to get suggestions: {str(e)}"
         )
+
+
+@router.post("/speaking-practice/assess")
+async def assess_speaking_practice(
+    audio: UploadFile = File(...),
+    reference_text: str = Form(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Assess speaking practice audio using Azure Speech + Gemini
+    
+    - Receives audio recording and reference text
+    - Returns pronunciation scores, transcription, and detailed AI feedback
+    - Uses Azure for pronunciation assessment
+    - Uses Gemini for grammar/vocabulary analysis and feedback generation
+    """
+    temp_file = None
+    try:
+        # Save uploaded audio to temp file
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.webm')
+        content = await audio.read()
+        temp_file.write(content)
+        temp_file.close()
+        
+        print(f"[assess_speaking_practice] Audio saved: {temp_file.name}, ref: {reference_text[:50]}")
+        
+        # Get Azure pronunciation assessment
+        assessment = azure_speech_service.assess_pronunciation(
+            audio_file_path=temp_file.name,
+            reference_text=reference_text,
+            language="en-US"
+        )
+        
+        if "error" in assessment:
+            raise HTTPException(status_code=500, detail=assessment["error"])
+        
+        recognized_text = assessment.get('recognized_text', '')
+        pronunciation_score = assessment.get('pronunciation_score', 0)
+        fluency_score = assessment.get('fluency_score', 0)
+        completeness_score = assessment.get('completeness_score', 0)
+        accuracy_score = assessment.get('accuracy_score', 0)
+        
+        print(f"[assess_speaking_practice] Azure scores - Pronunciation: {pronunciation_score}, Fluency: {fluency_score}")
+        
+        # Use Gemini to analyze grammar, vocabulary, and generate detailed feedback
+        gemini_prompt = f"""Phân tích chi tiết bài nói tiếng Anh của học sinh:
+
+**Nội dung yêu cầu:** {reference_text}
+**Nội dung học sinh nói:** {recognized_text}
+
+**Điểm số từ Azure Speech:**
+- Phát âm (Pronunciation): {pronunciation_score:.1f}/100
+- Độ trôi chảy (Fluency): {fluency_score:.1f}/100
+- Hoàn thiện (Completeness): {completeness_score:.1f}/100
+- Chính xác (Accuracy): {accuracy_score:.1f}/100
+
+Hãy phân tích và trả về kết quả theo định dạng JSON sau:
+
+{{
+  "grammar_score": <điểm ngữ pháp 0-10>,
+  "vocabulary_score": <điểm từ vựng 0-10>,
+  "grammar_errors": [
+    {{"text": "lỗi ngữ pháp", "suggestion": "sửa đúng", "explanation": "giải thích"}}, ...
+  ],
+  "vocabulary_comments": [
+    {{"text": "từ/cụm từ", "type": "good|error", "comment": "nhận xét"}}, ...
+  ],
+  "general_feedback": "Nhận xét chung về bài nói (2-3 câu)",
+  "improvement_tips": ["Lời khuyên 1", "Lời khuyên 2", "Lời khuyên 3"]
+}}
+
+Chỉ trả về JSON, không có text khác."""
+
+        try:
+            gemini_response = await gemini_service.generate_text(gemini_prompt)
+            # Parse JSON from Gemini response
+            import json
+            import re
+            # Extract JSON from markdown code block if present
+            json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', gemini_response, re.DOTALL)
+            if json_match:
+                gemini_data = json.loads(json_match.group(1))
+            else:
+                gemini_data = json.loads(gemini_response)
+            
+            print(f"[assess_speaking_practice] Gemini analysis complete")
+        except Exception as e:
+            print(f"[assess_speaking_practice] Gemini analysis failed: {e}")
+            # Fallback values
+            gemini_data = {
+                "grammar_score": round(accuracy_score / 10, 1),
+                "vocabulary_score": round(completeness_score / 10, 1),
+                "grammar_errors": [],
+                "vocabulary_comments": [],
+                "general_feedback": "Không thể phân tích chi tiết. Vui lòng thử lại.",
+                "improvement_tips": []
+            }
+        
+        # Calculate final detailed feedback from azure_speech_service
+        score_result = azure_speech_service.calculate_speaking_score(assessment, max_score=10.0)
+        
+        # Aggregate all errors and good expressions
+        detailed_feedback = []
+        error_count = len(gemini_data.get('grammar_errors', []))
+        good_count = len([v for v in gemini_data.get('vocabulary_comments', []) if v.get('type') == 'good'])
+        
+        # Add grammar errors
+        for idx, error in enumerate(gemini_data.get('grammar_errors', [])[:5]):  # Limit to 5
+            detailed_feedback.append({
+                "type": "error",
+                "text": error.get('text', ''),
+                "position": idx + 1,
+                "suggestion": error.get('suggestion', ''),
+                "explanation": error.get('explanation', '')
+            })
+        
+        # Add vocabulary comments
+        for idx, vocab in enumerate(gemini_data.get('vocabulary_comments', [])[:5]):  # Limit to 5
+            detailed_feedback.append({
+                "type": vocab.get('type', 'good'),
+                "text": vocab.get('text', ''),
+                "position": len(detailed_feedback) + 1,
+                "comment": vocab.get('comment', '')
+            })
+        
+        # Log usage
+        try:
+            AIAnalyticsService.log_usage(
+                db, 
+                user_id=current_user.id, 
+                feature="speaking_practice",
+                metadata={"action": "assess", "reference_length": len(reference_text)}
+            )
+        except Exception:
+            pass
+        
+        # Return comprehensive response
+        return {
+            "success": True,
+            "transcription": recognized_text,
+            "score": round((pronunciation_score + fluency_score + gemini_data['grammar_score'] * 10 + gemini_data['vocabulary_score'] * 10) / 4, 1),
+            "feedback": {
+                "generalComments": len(gemini_data.get('improvement_tips', [])),
+                "goodExpressions": good_count,
+                "errors": error_count
+            },
+            "detailedFeedback": detailed_feedback,
+            "pronunciation": round(pronunciation_score / 10, 1),
+            "fluency": round(fluency_score / 10, 1),
+            "grammar": gemini_data['grammar_score'],
+            "vocabulary": gemini_data['vocabulary_score'],
+            "aiGeneratedFeedback": score_result.get('detailed_feedback', ''),
+            "improvementTips": gemini_data.get('improvement_tips', [])
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[assess_speaking_practice] Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to assess speaking: {str(e)}"
+        )
+    finally:
+        # Cleanup temp file
+        if temp_file and os.path.exists(temp_file.name):
+            try:
+                os.unlink(temp_file.name)
+            except:
+                pass

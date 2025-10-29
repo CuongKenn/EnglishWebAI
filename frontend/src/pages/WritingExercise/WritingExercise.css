@@ -546,6 +546,65 @@
   justify-content: center;
 }
 
+/* AI Feedback Styles */
+.ai-feedback-section {
+  margin-top: 24px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  text-align: left;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.ai-feedback-section h4 {
+  margin: 0 0 16px 0;
+  color: #1a202c;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.ai-feedback-text,
+.ai-breakdown,
+.ai-strengths,
+.ai-improvements,
+.ai-corrections {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: white;
+  border-radius: 8px;
+  border-left: 4px solid #3b82f6;
+}
+
+.ai-strengths {
+  border-left-color: #10b981;
+}
+
+.ai-improvements {
+  border-left-color: #f59e0b;
+}
+
+.ai-corrections {
+  border-left-color: #ef4444;
+}
+
+.ai-feedback-section p {
+  margin: 4px 0;
+  color: #4b5563;
+  line-height: 1.6;
+}
+
+.ai-feedback-section ul {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.ai-feedback-section li {
+  margin: 6px 0;
+  color: #4b5563;
+  line-height: 1.5;
+}
+
 .back-to-profile-btn {
   display: flex;
   align-items: center;
