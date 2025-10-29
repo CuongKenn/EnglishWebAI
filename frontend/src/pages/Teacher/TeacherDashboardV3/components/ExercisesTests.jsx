@@ -73,7 +73,7 @@ const ExercisesTests = () => {
             dueDate: test.due_at ? new Date(test.due_at).toLocaleDateString('vi-VN') : null,
             status: 'published',
             totalStudents: cls.student_count || 0,
-            completedStudents: 0,
+            completedStudents: test.submission_count || 0,  // Use submission_count from API
             createdDate: new Date(test.created_at).toLocaleDateString('vi-VN'),
             maxScore: test.max_score,
             description: test.description

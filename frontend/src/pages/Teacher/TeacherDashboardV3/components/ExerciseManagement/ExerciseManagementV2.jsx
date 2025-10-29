@@ -51,7 +51,7 @@ export default function ExerciseManagementV2() {
             classId: cls.id,
             dueDate: ex.due_at,
             maxScore: ex.max_score || 10,
-            submissions: 0, // TODO: get from submissions API
+            submissions: ex.submission_count || 0,  // Use submission_count from API
             totalStudents: cls.student_count || 0,
             status: 'active',
             content: ex.content || {}

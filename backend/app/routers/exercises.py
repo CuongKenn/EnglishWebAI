@@ -80,6 +80,25 @@ class ExerciseDetailResponse(BaseModel):
     lesson_title: Optional[str]
     my_submission: Optional[SubmissionResponse]
 
+
+class ExerciseWithStatsResponse(BaseModel):
+    id: int
+    title: str
+    description: Optional[str]
+    type: str
+    skill_type: Optional[str]
+    max_score: Optional[float]
+    due_at: Optional[datetime]
+    duration: Optional[int]
+    content: Optional[dict]
+    created_at: datetime
+    class_id: Optional[int]
+    lesson_id: Optional[int]
+    submission_count: int = 0
+    
+    class Config:
+        from_attributes = True
+
     class Config:
         from_attributes = True
 
@@ -986,15 +1005,42 @@ def _get_exercise_class_id(db: Session, exercise: Exercise) -> Optional[int]:
     return None
 
 
-@router.get("/by-class/{class_id}", response_model=List[ExerciseResponse])
+@router.get("/by-class/{class_id}", response_model=List[ExerciseWithStatsResponse])
 async def list_exercises_by_class_teacher(
     class_id: int,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     _ensure_can_manage_class(db, current_user, class_id)
-    rows = db.query(Exercise).filter(Exercise.class_id == class_id).all()
-    return rows
+    
+    # Get exercises with submission count
+    exercises = db.query(Exercise).filter(Exercise.class_id == class_id).all()
+    
+    results = []
+    for exercise in exercises:
+        # Count submissions for this exercise
+        submission_count = db.query(func.count(Submission.id)).filter(
+            Submission.exercise_id == exercise.id
+        ).scalar() or 0
+        
+        exercise_dict = {
+            "id": exercise.id,
+            "title": exercise.title,
+            "description": exercise.description,
+            "type": exercise.type,
+            "skill_type": exercise.skill_type,
+            "max_score": exercise.max_score,
+            "due_at": exercise.due_at,
+            "duration": exercise.duration,
+            "content": exercise.content,
+            "created_at": exercise.created_at,
+            "class_id": exercise.class_id,
+            "lesson_id": exercise.lesson_id,
+            "submission_count": submission_count
+        }
+        results.append(exercise_dict)
+    
+    return results
 
 
 @router.get("/by-lesson/{lesson_id}", response_model=List[ExerciseResponse])

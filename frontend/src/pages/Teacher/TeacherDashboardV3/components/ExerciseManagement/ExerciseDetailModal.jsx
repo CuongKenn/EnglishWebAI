@@ -1,15 +1,20 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback, memo, useEffect } from 'react';
 import { 
   X, Download, Edit, Trash2, File, FileAudio, 
   Eye, Clock, Award, Sparkles, Users, Copy, Check 
 } from 'lucide-react';
 import './ExerciseManagement.css';
 
-export default function ExerciseDetailModal({ exercise, onClose, onUpdate, onDelete }) {
+const ExerciseDetailModal = memo(function ExerciseDetailModal({ exercise, onClose, onUpdate, onDelete }) {
   const [isEditMode, setIsEditMode] = useState(false);
-  const [editedExercise, setEditedExercise] = useState({ ...exercise });
+  const [editedExercise, setEditedExercise] = useState(exercise);
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState('info'); // info | content | questions
+  
+  // Update editedExercise when exercise prop changes
+  useEffect(() => {
+    setEditedExercise(exercise);
+  }, [exercise]);
   
   const statusLabel = useMemo(() => (exercise?.status === 'active' ? 'Đang mở' : exercise?.status === 'closed' ? 'Đã đóng' : (exercise?.status || '')),[exercise?.status]);
   const statusClass = useMemo(() => (exercise?.status === 'active' ? 'open' : 'closed'),[exercise?.status]);
@@ -19,21 +24,23 @@ export default function ExerciseDetailModal({ exercise, onClose, onUpdate, onDel
     if (!total) return 0;
     return Math.min(100, Math.round((done / total) * 100));
   }, [exercise?.submissions, exercise?.totalStudents]);
-  const formatDateTime = (d) => {
+  
+  const formatDateTime = useCallback((d) => {
     try {
       const date = new Date(d);
       return date.toLocaleString('vi-VN', { hour12: false });
     } catch { return ''; }
-  };
+  }, []);
   
-  const handleCopyLink = () => {
+  const handleCopyLink = useCallback(() => {
     const link = `${window.location.origin}/exercise/${exercise?.id}`;
     navigator.clipboard.writeText(link).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
-  };
-  const getSkillIcon = (skill) => {
+  }, [exercise?.id]);
+  
+  const getSkillIcon = useCallback((skill) => {
     const icons = {
       listening: '🎧',
       speaking: '🗣️',
@@ -41,9 +48,9 @@ export default function ExerciseDetailModal({ exercise, onClose, onUpdate, onDel
       writing: '✍️'
     };
     return icons[skill] || '📝';
-  };
+  }, []);
   
-  const getTypeLabel = (type) => {
+  const getTypeLabel = useCallback((type) => {
     const labels = {
       skill_exercise: 'Bài tập Kỹ năng',
       test_15min: 'Kiểm tra 15 phút',
@@ -51,15 +58,36 @@ export default function ExerciseDetailModal({ exercise, onClose, onUpdate, onDel
       final: 'Kiểm tra Cuối kì'
     };
     return labels[type] || type;
-  };
+  }, []);
   
-  const handleDownload = async () => {
-    // TODO: Call API to download exercise as PDF
+  const getQuestionTypeLabel = useCallback((type) => {
+    const labels = {
+      multiple_choice: 'Trắc nghiệm',
+      fill_blank: 'Điền từ',
+      true_false: 'Đúng/Sai',
+      short_answer: 'Tự luận ngắn'
+    };
+    return labels[type] || type;
+  }, []);
+  
+  const getWritingTypeLabel = useCallback((type) => {
+    const labels = {
+      essay: 'Essay (Tiểu luận)',
+      letter: 'Letter (Thư)',
+      email: 'Email',
+      report: 'Report (Báo cáo)',
+      story: 'Story (Truyện ngắn)',
+      review: 'Review (Bài nhận xét)'
+    };
+    return labels[type] || type;
+  }, []);
+  
+  const handleDownload = useCallback(async () => {
     console.log('Downloading exercise:', exercise.id);
     alert('Đang tải xuống file PDF...');
-  };
+  }, [exercise.id]);
   
-  const handleSaveEdit = () => {
+  const handleSaveEdit = useCallback(() => {
     // Validate before saving
     if (!editedExercise.title || !editedExercise.title.trim()) {
       alert('⚠️ Vui lòng nhập tiêu đề bài tập!');
@@ -74,54 +102,56 @@ export default function ExerciseDetailModal({ exercise, onClose, onUpdate, onDel
     // Call parent's update handler
     onUpdate(editedExercise);
     setIsEditMode(false);
-  };
+  }, [editedExercise, onUpdate]);
   
-  const handleCancelEdit = () => {
+  const handleCancelEdit = useCallback(() => {
     // Reset to original values
     setEditedExercise({ ...exercise });
     setIsEditMode(false);
-  };
+  }, [exercise]);
   
-  const handleFieldChange = (field, value) => {
-    setEditedExercise({
-      ...editedExercise,
+  const handleFieldChange = useCallback((field, value) => {
+    setEditedExercise(prev => ({
+      ...prev,
       [field]: value
-    });
-  };
+    }));
+  }, []);
 
-  const handleDeleteQuestion = (questionIndex) => {
+  const handleDeleteQuestion = useCallback((questionIndex) => {
     if (!window.confirm(`⚠️ Bạn có chắc muốn xóa câu hỏi ${questionIndex + 1}?`)) {
       return;
     }
     
     const updatedQuestions = editedExercise.content.questions.filter((_, idx) => idx !== questionIndex);
     
-    setEditedExercise({
-      ...editedExercise,
+    setEditedExercise(prev => ({
+      ...prev,
       content: {
-        ...editedExercise.content,
+        ...prev.content,
         questions: updatedQuestions
       }
-    });
+    }));
     
     alert(`✅ Đã xóa câu hỏi ${questionIndex + 1}`);
-  };
+  }, [editedExercise.content.questions]);
 
-  const handleEditQuestion = (questionIndex, field, value) => {
-    const updatedQuestions = [...editedExercise.content.questions];
-    updatedQuestions[questionIndex] = {
-      ...updatedQuestions[questionIndex],
-      [field]: value
-    };
-    
-    setEditedExercise({
-      ...editedExercise,
-      content: {
-        ...editedExercise.content,
-        questions: updatedQuestions
-      }
+  const handleEditQuestion = useCallback((questionIndex, field, value) => {
+    setEditedExercise(prev => {
+      const updatedQuestions = [...prev.content.questions];
+      updatedQuestions[questionIndex] = {
+        ...updatedQuestions[questionIndex],
+        [field]: value
+      };
+      
+      return {
+        ...prev,
+        content: {
+          ...prev.content,
+          questions: updatedQuestions
+        }
+      };
     });
-  };
+  }, []);
   
   return (
     <div className="exercise-modal-overlay" onClick={onClose}>
@@ -921,27 +951,6 @@ export default function ExerciseDetailModal({ exercise, onClose, onUpdate, onDel
       </div>
     );
   }
-  
-  function getQuestionTypeLabel(type) {
-    const labels = {
-      multiple_choice: 'Trắc nghiệm',
-      fill_blank: 'Điền từ',
-      true_false: 'Đúng/Sai',
-      short_answer: 'Tự luận ngắn'
-    };
-    return labels[type] || type;
-  }
-  
-  function getWritingTypeLabel(type) {
-    const labels = {
-      essay: 'Essay (Tiểu luận)',
-      letter: 'Letter (Thư)',
-      email: 'Email',
-      report: 'Report (Báo cáo)',
-      story: 'Story (Truyện ngắn)',
-      review: 'Review (Bài nhận xét)'
-    };
-    return labels[type] || type;
-  }
-}
+});
 
+export default ExerciseDetailModal;
