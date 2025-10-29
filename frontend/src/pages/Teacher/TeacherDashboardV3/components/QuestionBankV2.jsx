@@ -1502,7 +1502,7 @@ export default function QuestionBankV2() {
                     DOCX
                   </button>
                   <button
-                    onClick={handleSaveTestToBank}
+                    onClick={handleSaveToBank}
                     className="flex items-center gap-1 px-3 py-1 text-xs bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
                   >
                     <Save className="w-3 h-3" />
