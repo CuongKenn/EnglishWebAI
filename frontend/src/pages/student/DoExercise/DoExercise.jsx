@@ -114,11 +114,13 @@ export default function DoExercise() {
       const exerciseSubmission = response.data.find(s => s.exercise_id === parseInt(exerciseId));
       console.log('[DoExercise] Found submission:', exerciseSubmission);
       
-      if (exerciseSubmission && exerciseSubmission.score !== null) {
-        // Has graded submission, show result view
+      const hasFinalScore = !!exerciseSubmission && exerciseSubmission.score !== null;
+      const hasAIScore = !!exerciseSubmission && exerciseSubmission.ai_score !== null;
+      if (exerciseSubmission && (hasFinalScore || hasAIScore)) {
+        // Has graded submission (teacher or AI), show result view
         setSubmission(exerciseSubmission);
         setViewMode('result');
-        console.log('[DoExercise] Submission is graded, showing result view');
+        console.log('[DoExercise] Submission has score (final or AI), showing result view');
       } else if (exerciseSubmission) {
         // Has submission but not graded yet
         setSubmission(exerciseSubmission);
@@ -217,14 +219,17 @@ export default function DoExercise() {
         }
       }
       
-      await apiV1.post(`/exercises/${exerciseId}/submit`, formData, {
+      const res = await apiV1.post(`/exercises/${exerciseId}/submit`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       });
-      
-      alert('Nộp bài thành công!');
-      navigate('/exercise-hub');
+      const sub = res?.data;
+      if (sub) {
+        setSubmission(sub);
+        setViewMode('result');
+      }
+      alert('Nộp bài thành công! Hệ thống đã chấm tự động nếu có thể.');
     } catch (error) {
       console.error('Error submitting:', error);
       alert('Lỗi khi nộp bài: ' + (error.response?.data?.detail || error.message));
@@ -1025,6 +1030,14 @@ export default function DoExercise() {
   const renderResultView = () => {
     if (!submission || !exercise) return null;
 
+    const effectiveScore = (submission.score ?? submission.ai_score);
+    const gradedByAI = submission.score == null && submission.ai_score != null;
+    const statusLabel = submission.status === 'graded'
+      ? 'Đã chấm'
+      : gradedByAI
+        ? 'Đã chấm (AI) - chờ giáo viên duyệt'
+        : (submission.status === 'pending_review' ? 'Đang chờ duyệt' : (submission.status || '')); 
+
     return (
       <div className="result-view-container">
         {/* Header */}
@@ -1042,10 +1055,10 @@ export default function DoExercise() {
           </div>
           <div className="result-score-display">
             <div className="score-badge">
-              <span className="score-number">{submission.score}</span>
+              <span className="score-number">{effectiveScore ?? '-'}</span>
               <span className="score-total">/{exercise.max_score || 10}</span>
             </div>
-            <div className="score-label">Điểm</div>
+            <div className="score-label">{gradedByAI ? 'Điểm AI (tạm thời)' : 'Điểm'}</div>
           </div>
         </div>
 
@@ -1063,7 +1076,7 @@ export default function DoExercise() {
           )}
           <div className="info-item">
             <span className="info-label">📊 Trạng thái:</span>
-            <span className="info-value status-graded">Đã chấm</span>
+            <span className="info-value status-graded">{statusLabel}</span>
           </div>
         </div>
 
@@ -1074,6 +1087,93 @@ export default function DoExercise() {
             <div className="feedback-content">
               {submission.feedback}
             </div>
+          </div>
+        )}
+
+        {submission.ai_feedback && (
+          <div className="feedback-card">
+            <h3>🤖 Phản hồi AI</h3>
+            <div className="feedback-content">
+              {submission.ai_feedback}
+            </div>
+          </div>
+        )}
+
+        {/* Rubrics / Breakdown */}
+        {submission.rubrics_scores && (
+          <div className="feedback-card">
+            <h3>📊 Chi tiết chấm điểm</h3>
+            {/* Writing breakdown */}
+            {submission.rubrics_scores.writing_assessment && (
+              <div className="rubric-section">
+                <h4>✍️ Writing assessment</h4>
+                <ul>
+                  {Object.entries(submission.rubrics_scores.writing_assessment).map(([k, v]) => (
+                    <li key={k}><strong>{k}:</strong> {String(v)}</li>
+                  ))}
+                </ul>
+                {submission.rubrics_scores.word_count != null && (
+                  <p><strong>Word count:</strong> {submission.rubrics_scores.word_count}</p>
+                )}
+                {Array.isArray(submission.rubrics_scores.strengths) && submission.rubrics_scores.strengths.length > 0 && (
+                  <div>
+                    <strong>Điểm mạnh:</strong>
+                    <ul>
+                      {submission.rubrics_scores.strengths.map((s, i) => <li key={i}>{s}</li>)}
+                    </ul>
+                  </div>
+                )}
+                {Array.isArray(submission.rubrics_scores.improvements) && submission.rubrics_scores.improvements.length > 0 && (
+                  <div>
+                    <strong>Cần cải thiện:</strong>
+                    <ul>
+                      {submission.rubrics_scores.improvements.map((s, i) => <li key={i}>{s}</li>)}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Speaking breakdown */}
+            {submission.rubrics_scores.speaking_assessment && (
+              <div className="rubric-section">
+                <h4>🗣️ Speaking assessment</h4>
+                <ul>
+                  {Object.entries(submission.rubrics_scores.speaking_assessment).map(([k, v]) => (
+                    <li key={k}><strong>{k}:</strong> {String(v)}</li>
+                  ))}
+                </ul>
+                {submission.rubrics_scores.recognized_text && (
+                  <p><strong>Recognized text:</strong> {submission.rubrics_scores.recognized_text}</p>
+                )}
+                {submission.rubrics_scores.detailed_feedback && (
+                  <details>
+                    <summary>Chi tiết</summary>
+                    <pre style={{ whiteSpace: 'pre-wrap' }}>{submission.rubrics_scores.detailed_feedback}</pre>
+                  </details>
+                )}
+              </div>
+            )}
+
+            {/* Objective questions auto-grade breakdown */}
+            {submission.rubrics_scores.auto_grade_results && (
+              <div className="rubric-section">
+                <h4>🧮 Trắc nghiệm tự chấm</h4>
+                <ul>
+                  {Object.entries(submission.rubrics_scores.auto_grade_results).map(([qid, res]) => (
+                    <li key={qid}>
+                      <strong>Câu {qid}:</strong> {res.correct ? 'Đúng' : 'Sai'}
+                      {res.student_answer != null && (
+                        <> — Trả lời: {String(res.student_answer)}{res.correct_answer != null ? ` (Đúng: ${String(res.correct_answer)})` : ''}</>
+                      )}
+                      {res.earned != null && res.points != null && (
+                        <> — Điểm: {res.earned}/{res.points}</>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         )}
 
@@ -1166,7 +1266,7 @@ export default function DoExercise() {
           disabled={isSubmitting || (exercise.skill_type === 'writing' && exercise.content?.word_limit && wordCount < exercise.content.word_limit.min)}
         >
           <Send size={18} />
-          {isSubmitting ? 'Đang nộp...' : 'Nộp bài'}
+          {isSubmitting ? 'Đang nộp...' : 'Nộp bài và xem kết quả'}
         </button>
       </div>
         </>

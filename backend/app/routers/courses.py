@@ -6,7 +6,7 @@ from typing import List, Optional
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, get_current_active_user
 from app.models.user import User, UserRole
-from app.models.course import Course, CourseExercise, CourseSubmission, CourseUnit
+from app.models.course import Course, CourseExercise, CourseSubmission, CourseUnit, CourseQuestion
 from app.schemas.course import (
     CourseCreate,
     CourseUpdate,
@@ -61,7 +61,8 @@ async def list_courses(
         Course.is_active,
         Course.level,
         Course.created_by,
-    ).filter(Course.is_active == True)
+        User.full_name,
+    ).outerjoin(User, User.id == Course.created_by).filter(Course.is_active == True)
     if grade is not None:
         q = q.filter(Course.grade == int(grade))
     if skill:
@@ -94,14 +95,52 @@ async def list_courses(
         .all()
     )
 
-    # For now, progress and cups earned are not tracked by unit yet
-    completed_counts = {cid: 0 for cid in course_ids}
-    cups_map = {cid: 0 for cid in course_ids}
+    # Calculate actual student progress based on unit completions
+    # A unit is "completed" if the student has answered questions in that unit
+    # Get distinct units where student has submissions via CourseQuestion -> CourseSubmission
+    # Note: CourseSubmission table needs a question_id field for this to work properly
+    # For now, we'll use a simpler approach based on course exercises
+    
+    # Check if student has any submissions for exercises in each course
+    student_activity = (
+        db.query(
+            Course.id.label('course_id'),
+            func.count(func.distinct(CourseExercise.id)).label('completed_exercises')
+        )
+        .join(CourseExercise, CourseExercise.course_id == Course.id)
+        .join(CourseSubmission, CourseSubmission.exercise_id == CourseExercise.id)
+        .filter(
+            Course.id.in_(course_ids),
+            CourseSubmission.student_id == current_user.id
+        )
+        .group_by(Course.id)
+        .all()
+    )
+    # Map completed exercises to "completed units" as a rough estimate
+    completed_counts = {row.course_id: min(row.completed_exercises, units_counts.get(row.course_id, 0)) 
+                       for row in student_activity}
+
+    # Calculate cups earned based on submission scores
+    student_cups = (
+        db.query(
+            Course.id.label('course_id'),
+            func.coalesce(func.sum(CourseSubmission.score), 0).label('cups_earned')
+        )
+        .join(CourseExercise, CourseExercise.course_id == Course.id)
+        .join(CourseSubmission, CourseSubmission.exercise_id == CourseExercise.id)
+        .filter(
+            Course.id.in_(course_ids),
+            CourseSubmission.student_id == current_user.id
+        )
+        .group_by(Course.id)
+        .all()
+    )
+    cups_map = {row.course_id: int(row.cups_earned or 0) for row in student_cups}
 
     out: List[CourseListItem] = []
     out: List[CourseListItem] = []
     for r in rows:
-        cid, title, grade_v, skill_v, is_active, level_v, created_by = r
+        cid, title, grade_v, skill_v, is_active, level_v, created_by, creator_name = r
         total_units = int(units_counts.get(cid, 0))
         completed_units = int(completed_counts.get(cid, 0))
         total_cups = int(cups_total_map.get(cid, 0) or 0)
@@ -116,7 +155,7 @@ async def list_courses(
         else:
             status_str = "not-started"
 
-        instructor = "?????" if (created_by and (created_by % 2 == 0)) else "?????"
+        instructor = creator_name if creator_name else "Giáo viên"
 
         out.append({
             "id": cid,
@@ -214,6 +253,30 @@ async def update_course(
     return course
 
 
+@router.delete("/{course_id}", status_code=204)
+async def delete_course(
+    course_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Xóa khóa học (hard delete).
+    Chỉ admin/superadmin hoặc người tạo khóa học mới có quyền xóa.
+    """
+    course = db.query(Course).filter(Course.id == course_id).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Không tìm thấy khóa học")
+    
+    # Kiểm tra quyền: chỉ admin/superadmin hoặc người tạo
+    if current_user.role not in (UserRole.ADMIN, UserRole.SUPERADMIN) and course.created_by != current_user.id:
+        raise HTTPException(status_code=403, detail="Không có quyền xóa khóa học này")
+    
+    # Hard delete
+    db.delete(course)
+    db.commit()
+    return None
+
+
 @router.post("/{course_id}/exercises", response_model=CourseExerciseResponse, status_code=201)
 async def create_course_exercise(
     course_id: int,
@@ -307,6 +370,68 @@ async def submit_course_exercise(
 
     sub = CourseSubmission(
         exercise_id=exercise_id,
+        student_id=current_user.id,
+        content_text=payload.content_text,
+        content_url=payload.content_url,
+        status="submitted",
+    )
+    db.add(sub)
+    db.commit()
+    db.refresh(sub)
+    return sub
+
+
+@router.post("/units/{unit_id}/submit", response_model=CourseSubmissionResponse)
+async def submit_unit_answers(
+    unit_id: int,
+    payload: CourseSubmissionCreate,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Submit answers for a course unit (for writing/listening/etc exercises in courses)
+    Creates a CourseExercise if not exists, then saves submission
+    """
+    from app.models.course import CourseUnit
+    unit = db.query(CourseUnit).filter(CourseUnit.id == unit_id).first()
+    if not unit:
+        raise HTTPException(status_code=404, detail="Không tìm thấy bài học")
+
+    # Find or create a CourseExercise for this unit
+    exercise = (
+        db.query(CourseExercise)
+        .filter(CourseExercise.course_id == unit.course_id, CourseExercise.title == unit.title)
+        .first()
+    )
+    if not exercise:
+        exercise = CourseExercise(
+            course_id=unit.course_id,
+            title=unit.title,
+            description=unit.description,
+            type="assignment",
+            max_score=unit.max_cups or 10,
+            order_index=unit.order_index,
+        )
+        db.add(exercise)
+        db.commit()
+        db.refresh(exercise)
+
+    # Update if exists, else create submission
+    sub = (
+        db.query(CourseSubmission)
+        .filter(CourseSubmission.exercise_id == exercise.id, CourseSubmission.student_id == current_user.id)
+        .first()
+    )
+    if sub:
+        sub.content_text = payload.content_text
+        sub.content_url = payload.content_url
+        sub.status = "submitted"
+        db.commit()
+        db.refresh(sub)
+        return sub
+
+    sub = CourseSubmission(
+        exercise_id=exercise.id,
         student_id=current_user.id,
         content_text=payload.content_text,
         content_url=payload.content_url,
@@ -529,5 +654,66 @@ async def create_unit_question(
         "order_index": q.order_index,
         "created_at": q.created_at,
     }
+
+
+@router.delete("/units/{unit_id}", status_code=204)
+async def delete_course_unit(
+    unit_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """Xóa một bài (unit) trong khóa học. Chỉ giáo viên hoặc admin được phép.
+
+    Lưu ý: Ràng buộc FK đã cấu hình CASCADE nên câu hỏi trong unit sẽ bị xóa theo.
+    """
+    from app.models.course import CourseUnit, Course, CourseQuestion
+    unit = db.query(CourseUnit).filter(CourseUnit.id == unit_id).first()
+    if not unit:
+        raise HTTPException(status_code=404, detail="Không tìm thấy bài (unit)")
+
+    # Quyền: giáo viên, admin, superadmin
+    if current_user.role not in (UserRole.TEACHER, UserRole.ADMIN, UserRole.SUPERADMIN):
+        raise HTTPException(status_code=403, detail="Chỉ giáo viên hoặc admin mới được xóa bài")
+
+    try:
+        db.delete(unit)
+        db.commit()
+        return None
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/units/{unit_id}/questions/{question_id}", status_code=204)
+async def delete_unit_question(
+    unit_id: int,
+    question_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """Xóa một câu hỏi trong bài (unit). Chỉ giáo viên hoặc admin được phép."""
+    from app.models.course import CourseUnit, CourseQuestion
+    unit = db.query(CourseUnit).filter(CourseUnit.id == unit_id).first()
+    if not unit:
+        raise HTTPException(status_code=404, detail="Không tìm thấy bài (unit)")
+
+    q = (
+        db.query(CourseQuestion)
+        .filter(CourseQuestion.id == question_id, CourseQuestion.unit_id == unit_id)
+        .first()
+    )
+    if not q:
+        raise HTTPException(status_code=404, detail="Không tìm thấy câu hỏi")
+
+    if current_user.role not in (UserRole.TEACHER, UserRole.ADMIN, UserRole.SUPERADMIN):
+        raise HTTPException(status_code=403, detail="Chỉ giáo viên hoặc admin mới được xóa câu hỏi")
+
+    try:
+        db.delete(q)
+        db.commit()
+        return None
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
 

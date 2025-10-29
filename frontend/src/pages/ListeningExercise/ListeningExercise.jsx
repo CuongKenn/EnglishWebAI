@@ -24,7 +24,7 @@ import {
   Headphones,
   X
 } from 'lucide-react';
-import { getListeningLesson, submitListeningAnswers } from '../../services/aiService';
+import { coursesAPI } from '../../services/api';
 import './ListeningExercise.css';
 
 const ListeningExercise = () => {
@@ -50,9 +50,11 @@ const ListeningExercise = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [results, setResults] = useState(null);
-  const [selectedLevel, setSelectedLevel] = useState('intermediate');
 
   const [notification, setNotification] = useState(null);
+  const [courseData, setCourseData] = useState(null);
+  const [unitData, setUnitData] = useState(null);
+  const [questions, setQuestions] = useState([]);
 
 
   // Refs
@@ -61,44 +63,81 @@ const ListeningExercise = () => {
   const speechSynthRef = useRef(null);
   const utteranceRef = useRef(null);
 
-  // Load listening data from API
+  // Load listening data from server (not AI)
   useEffect(() => {
     const fetchListeningData = async () => {
       setLoading(true);
       setError(null);
       try {
-        const data = await getListeningLesson(selectedLevel);
-        // Transform API response to match expected format
-        const transformedData = {
-          id: data.id,
-          title: data.title,
-          courseTitle: 'AI Listening Exercise',
-          difficulty: data.level,
-          estimatedTime: parseInt(data.duration.split(':')[0]) || 5,
-          totalQuestions: data.questions.length,
-          audioUrl: data.audio_url,
-          duration: parseDuration(data.duration),
-          transcript: data.transcript,
-          questions: data.questions.map((q, idx) => ({
-            id: idx + 1,
-            question: q.question,
-            options: q.options,
-            correctAnswer: q.correct,
-            explanation: `Correct answer is ${String.fromCharCode(65 + q.correct)}.`
-          }))
-        };
-        setListeningData(transformedData);
+        // Load course data
+        const course = await coursesAPI.getCourse(courseId);
+        setCourseData(course);
+
+        // Load units
+        const units = await coursesAPI.getUnits(courseId);
+        const unit = units.find(u => u.id === parseInt(lessonId));
+        if (!unit) {
+          throw new Error('Không tìm thấy bài học');
+        }
+        setUnitData(unit);
+
+        // Load questions from server
+        const qs = await coursesAPI.getQuestions(parseInt(lessonId));
+        setQuestions(qs || []);
+
+        // Find audio URL from first question with media_url
+        const audioQuestion = (qs || []).find(q => q.media_url);
+        const audioUrl = audioQuestion?.media_url || null;
+
+        // Parse question data
+        const parsedQuestions = (qs || []).map((q, idx) => {
+          let options = [];
+          let correctAnswer = 0;
+          try {
+            if (q.options_json) {
+              options = JSON.parse(q.options_json);
+            }
+            if (q.answer_json) {
+              const answerData = JSON.parse(q.answer_json);
+              correctAnswer = answerData.correct || 0;
+            }
+          } catch (e) {
+            console.error('Error parsing question data:', e, q);
+          }
+
+          return {
+            id: q.id,
+            question: q.prompt || `Câu ${idx + 1}`,
+            options: options.length > 0 ? options : ['A', 'B', 'C', 'D'],
+            correctAnswer: correctAnswer,
+            explanation: `Đáp án đúng là ${String.fromCharCode(65 + correctAnswer)}.`
+          };
+        });
+
+        // Build listeningData structure
+        setListeningData({
+          id: lessonId,
+          title: unit.title,
+          courseTitle: course.title,
+          difficulty: course.level || 'Intermediate',
+          estimatedTime: 5,
+          totalQuestions: parsedQuestions.length,
+          audioUrl: audioUrl,
+          duration: 180, // default 3 minutes
+          transcript: '', // No transcript from server
+          questions: parsedQuestions
+        });
+
       } catch (err) {
         console.error('Error loading listening exercise:', err);
         let errorMessage = 'Không thể tải bài tập. Vui lòng thử lại sau.';
         
-        // Check for specific error messages
-        if (err.response?.status === 503) {
-          errorMessage = 'AI service chưa được cấu hình. Vui lòng liên hệ quản trị viên để thêm GEMINI_API_KEY.';
-        } else if (err.response?.data?.detail) {
+        if (err.response?.data?.detail) {
           errorMessage = err.response.data.detail;
         } else if (err.message === 'Network Error') {
           errorMessage = 'Không thể kết nối với server. Vui lòng kiểm tra xem backend đang chạy.';
+        } else if (err.message) {
+          errorMessage = err.message;
         }
         
         setError(errorMessage);
@@ -107,8 +146,10 @@ const ListeningExercise = () => {
       }
     };
 
-    fetchListeningData();
-  }, [selectedLevel]);
+    if (courseId && lessonId) {
+      fetchListeningData();
+    }
+  }, [courseId, lessonId]);
 
   // Timer effect
   useEffect(() => {
@@ -118,15 +159,6 @@ const ListeningExercise = () => {
 
     return () => clearInterval(timer);
   }, []);
-
-  // Helper function to parse duration string to seconds
-  const parseDuration = (durationStr) => {
-    const parts = durationStr.split(':');
-    if (parts.length === 2) {
-      return parseInt(parts[0]) * 60 + parseInt(parts[1]);
-    }
-    return 180; // default 3 minutes
-  };
 
   // Audio event handlers
   useEffect(() => {
@@ -311,10 +343,7 @@ const ListeningExercise = () => {
     }
 
     try {
-      // Submit to API
-      await submitListeningAnswers(listeningData.id, selectedAnswers);
-
-      // Calculate results
+      // Calculate results locally
       let correctCount = 0;
       const detailedResults = listeningData.questions.map(q => {
         const isCorrect = selectedAnswers[q.id] === q.correctAnswer;
@@ -330,6 +359,13 @@ const ListeningExercise = () => {
       });
 
       const score = Math.round((correctCount / listeningData.totalQuestions) * 100);
+
+      // Submit answers as JSON to backend
+      const answersJson = JSON.stringify(selectedAnswers);
+      await coursesAPI.submitUnitAnswers(parseInt(lessonId), {
+        content_text: answersJson,
+        content_url: null
+      });
       
       setResults({
         score: score,
@@ -350,7 +386,7 @@ const ListeningExercise = () => {
   };
 
   // Reset exercise
-  const resetExercise = async () => {
+  const resetExercise = () => {
     setCurrentQuestion(0);
     setIsPlaying(false);
     setIsCompleted(false);
@@ -368,47 +404,6 @@ const ListeningExercise = () => {
     if (speechSynthRef.current) {
       speechSynthRef.current.cancel();
     }
-
-    // Load new exercise
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await getListeningLesson(selectedLevel);
-      const transformedData = {
-        id: data.id,
-        title: data.title,
-        courseTitle: 'AI Listening Exercise',
-        difficulty: data.level,
-        estimatedTime: parseInt(data.duration.split(':')[0]) || 5,
-        totalQuestions: data.questions.length,
-        audioUrl: data.audio_url,
-        duration: parseDuration(data.duration),
-        transcript: data.transcript,
-        questions: data.questions.map((q, idx) => ({
-          id: idx + 1,
-          question: q.question,
-          options: q.options,
-          correctAnswer: q.correct,
-          explanation: `Correct answer is ${String.fromCharCode(65 + q.correct)}.`
-        }))
-      };
-      setListeningData(transformedData);
-    } catch (err) {
-      console.error('Error loading new exercise:', err);
-      let errorMessage = 'Không thể tải bài tập mới. Vui lòng thử lại.';
-      
-      if (err.response?.status === 503) {
-        errorMessage = 'AI service chưa được cấu hình. Vui lòng liên hệ quản trị viên để thêm GEMINI_API_KEY.';
-      } else if (err.response?.data?.detail) {
-        errorMessage = err.response.data.detail;
-      } else if (err.message === 'Network Error') {
-        errorMessage = 'Không thể kết nối với server. Vui lòng kiểm tra xem backend đang chạy.';
-      }
-      
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
   };
 
   // Show loading state
@@ -424,7 +419,7 @@ const ListeningExercise = () => {
           gap: '1rem'
         }}>
           <RefreshCw size={48} className="animate-spin" style={{ color: '#10b981' }} />
-          <p style={{ fontSize: '1.2rem', color: '#6b7280' }}>Đang sinh đề bài listening với AI...</p>
+          <p style={{ fontSize: '1.2rem', color: '#6b7280' }}>Đang tải bài listening...</p>
         </div>
       </div>
     );
@@ -482,57 +477,6 @@ const ListeningExercise = () => {
         <div className="course-info">
           <h1 className="course-title">{listeningData.courseTitle}</h1>
           <p className="course-subtitle">{listeningData.title}</p>
-          <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.875rem', color: '#6b7280', fontWeight: '500' }}>Chọn cấp độ:</span>
-            <button
-              onClick={() => setSelectedLevel('beginner')}
-              disabled={loading}
-              style={{
-                padding: '0.25rem 0.75rem',
-                fontSize: '0.875rem',
-                borderRadius: '0.375rem',
-                border: selectedLevel === 'beginner' ? '2px solid #10b981' : '1px solid #d1d5db',
-                backgroundColor: selectedLevel === 'beginner' ? '#d1fae5' : 'white',
-                color: selectedLevel === 'beginner' ? '#065f46' : '#6b7280',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                fontWeight: selectedLevel === 'beginner' ? '600' : '400'
-              }}
-            >
-              Beginner
-            </button>
-            <button
-              onClick={() => setSelectedLevel('intermediate')}
-              disabled={loading}
-              style={{
-                padding: '0.25rem 0.75rem',
-                fontSize: '0.875rem',
-                borderRadius: '0.375rem',
-                border: selectedLevel === 'intermediate' ? '2px solid #10b981' : '1px solid #d1d5db',
-                backgroundColor: selectedLevel === 'intermediate' ? '#d1fae5' : 'white',
-                color: selectedLevel === 'intermediate' ? '#065f46' : '#6b7280',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                fontWeight: selectedLevel === 'intermediate' ? '600' : '400'
-              }}
-            >
-              Intermediate
-            </button>
-            <button
-              onClick={() => setSelectedLevel('advanced')}
-              disabled={loading}
-              style={{
-                padding: '0.25rem 0.75rem',
-                fontSize: '0.875rem',
-                borderRadius: '0.375rem',
-                border: selectedLevel === 'advanced' ? '2px solid #10b981' : '1px solid #d1d5db',
-                backgroundColor: selectedLevel === 'advanced' ? '#d1fae5' : 'white',
-                color: selectedLevel === 'advanced' ? '#065f46' : '#6b7280',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                fontWeight: selectedLevel === 'advanced' ? '600' : '400'
-              }}
-            >
-              Advanced
-            </button>
-          </div>
         </div>
 
         <div className="header-right">
@@ -684,14 +628,19 @@ const ListeningExercise = () => {
 
         {/* Questions Section */}
         <div className="questions-section">
-          {listeningData.questions.map((question, index) => (
+          {(!listeningData.questions || listeningData.questions.length === 0) && (
+            <div style={{ padding: '20px', textAlign: 'center', color: '#6b7280' }}>
+              <p>Không có câu hỏi nào.</p>
+            </div>
+          )}
+          {listeningData.questions && listeningData.questions.map((question, index) => (
             <div key={question.id} className="question-card">
               <div className="question-header">
                 <h3 className="question-text">{question.id}. {question.question}</h3>
               </div>
 
               <div className="options-container">
-                {question.options.map((option, optionIndex) => (
+                {question.options && question.options.map((option, optionIndex) => (
                   <div key={optionIndex} className="option-item">
                     <div className="option-content">
                       <div className="option-letter">

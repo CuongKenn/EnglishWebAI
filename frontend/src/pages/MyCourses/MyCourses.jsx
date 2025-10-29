@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   BookOpen, Award, CheckCircle, Clock,
   TrendingUp, Star, Lock, Play, ChevronRight,
-  Home, Calendar, User
+  Home, Calendar, User, Headphones, Mic, BookText, PenTool
 } from 'lucide-react';
 import './MyCourses.css';
 import { coursesAPI } from '../../services/api';
@@ -27,6 +27,23 @@ const statusLabels = {
   'in-progress': 'Đang học',
   'not-started': 'Chưa học',
   'locked': 'Khóa'
+};
+
+// Function to get skill icon
+const getSkillIcon = (skill) => {
+  const iconProps = { size: 64, strokeWidth: 1.5 };
+  switch(skill?.toLowerCase()) {
+    case 'listening':
+      return <Headphones {...iconProps} />;
+    case 'speaking':
+      return <Mic {...iconProps} />;
+    case 'reading':
+      return <BookText {...iconProps} />;
+    case 'writing':
+      return <PenTool {...iconProps} />;
+    default:
+      return <BookOpen {...iconProps} />;
+  }
 };
 
 const MyCourses = () => {
@@ -221,7 +238,9 @@ const MyCourses = () => {
                   background: `linear-gradient(135deg, ${colors.bg} 0%, ${colors.accent}20 100%)` 
                 }}
               >
-                <div className="instructor-badge">{course.instructor}</div>
+                <div className="instructor-badge" style={{ color: colors.accent }}>
+                  {getSkillIcon(course.category)}
+                </div>
                 <div className="level-badge" style={{ background: colors.accent }}>
                   {course.level}
                 </div>

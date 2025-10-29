@@ -16,6 +16,8 @@ import {
   X
 } from 'lucide-react';
 import './WritingExercise.css';
+import { coursesAPI } from '../../services/api';
+import { aiAPI } from '../../services/api';
 
 const WritingExercise = () => {
   const { courseId, lessonId } = useParams();
@@ -30,32 +32,79 @@ const WritingExercise = () => {
   const [isSaved, setIsSaved] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const [showCompletionMessage, setShowCompletionMessage] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [aiResult, setAiResult] = useState(null);
 
-  // Mock data cho bài writing - sẽ được thay thế bằng API call
-  const writingData = {
-    id: lessonId || '1',
-    title: 'Writing Unit 1',
-    courseTitle: 'Writing Học bài',
-    difficulty: 'Beginner',
-    estimatedTime: 30, // minutes
-    wordLimit: 350,
-    currentQuestion: 1,
-    totalQuestions: 1,
-    question: {
-      id: 1,
-      type: 'essay',
-      instruction: 'Write a body paragraph to answer this question below',
-      prompt: 'The best way to solve the traffic and transportation problem is to encourage people to live in cities rather than suburbs or countryside. Do you agree or disagree?',
-      additionalInstruction: 'You do not need to write the Introduction or conclusion to this essay.',
-      wordLimit: 350,
-      gradingCriteria: [
-        'Content and Ideas (40%)',
-        'Organization and Structure (25%)',
-        'Language Use (25%)',
-        'Mechanics (10%)'
-      ]
+  // Real data from server
+  const [writingData, setWritingData] = useState(null);
+  const [courseData, setCourseData] = useState(null);
+  const [unitData, setUnitData] = useState(null);
+  const [questions, setQuestions] = useState([]);
+
+  // Load real data from server
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Load course data
+        const course = await coursesAPI.getCourse(courseId);
+        setCourseData(course);
+
+        // Load units
+        const units = await coursesAPI.getUnits(courseId);
+        const unit = units.find(u => u.id === parseInt(lessonId));
+        if (!unit) {
+          throw new Error('Không tìm thấy bài học');
+        }
+        setUnitData(unit);
+
+        // Load questions
+        const qs = await coursesAPI.getQuestions(parseInt(lessonId));
+        setQuestions(qs || []);
+
+        // Build writingData structure
+        const firstQuestion = qs && qs.length > 0 ? qs[0] : null;
+        setWritingData({
+          id: lessonId,
+          title: unit.title,
+          courseTitle: course.title,
+          difficulty: course.level || 'Intermediate',
+          estimatedTime: 30,
+          wordLimit: 350,
+          currentQuestion: 1,
+          totalQuestions: qs?.length || 1,
+          question: firstQuestion ? {
+            id: firstQuestion.id,
+            type: firstQuestion.type || 'essay',
+            instruction: 'Viết bài luận theo yêu cầu dưới đây',
+            prompt: firstQuestion.prompt || '',
+            additionalInstruction: firstQuestion.answer_json ? JSON.parse(firstQuestion.answer_json).instruction : '',
+            wordLimit: 350,
+            gradingCriteria: [
+              'Nội dung và ý tưởng (40%)',
+              'Tổ chức và cấu trúc (25%)',
+              'Sử dụng ngôn ngữ (25%)',
+              'Cơ học viết (10%)'
+            ]
+          } : null
+        });
+
+      } catch (err) {
+        console.error('Error loading writing exercise:', err);
+        setError(err?.detail || err?.message || 'Không thể tải bài tập');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (courseId && lessonId) {
+      loadData();
     }
-  };
+  }, [courseId, lessonId]);
 
   // Timer effect
   useEffect(() => {
@@ -123,18 +172,35 @@ const WritingExercise = () => {
   };
 
   // Submit essay
-  const submitEssay = () => {
+  const submitEssay = async () => {
     if (wordCount < 50) {
       alert('Bài viết phải có ít nhất 50 từ');
       return;
     }
 
-    if (!isCompleted) {
+    try {
+      setSubmitting(true);
+
+      // Call AI to grade writing first
+      const result = await aiAPI.checkWriting(
+        userEssay,
+        'essay',
+        writingData?.difficulty?.toLowerCase() || 'intermediate'
+      );
+
+      setAiResult(result);
+
+      // Submit to course API with AI result
+      await coursesAPI.submitUnitAnswers(parseInt(lessonId), {
+        content_text: userEssay,
+        content_url: null
+      });
+
       setIsCompleted(true);
       setIsSaved(true);
 
       // Calculate score and save completion data
-      const score = calculateScore();
+      const score = result?.score || calculateScore();
       const completionData = {
         lessonId,
         courseId,
@@ -142,7 +208,8 @@ const WritingExercise = () => {
         completedAt: new Date().toISOString(),
         type: 'writing',
         wordCount,
-        timeSpent
+        timeSpent,
+        aiResult: result
       };
 
       // Save to localStorage
@@ -150,10 +217,16 @@ const WritingExercise = () => {
       const existing = JSON.parse(localStorage.getItem(key) || '{}');
       existing[lessonId] = completionData;
       localStorage.setItem(key, JSON.stringify(existing));
-    }
 
-    // Show completion message (whether newly submitted or reopening)
-    setShowCompletionMessage(true);
+      // Show completion message
+      setShowCompletionMessage(true);
+
+    } catch (error) {
+      console.error('Error submitting essay:', error);
+      alert('Lỗi khi nộp bài: ' + (error?.detail || error?.message || 'Vui lòng thử lại'));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   // Reset exercise
@@ -161,7 +234,63 @@ const WritingExercise = () => {
     setUserEssay('');
     setIsCompleted(false);
     setTimeSpent(0);
+    setAiResult(null);
   };
+
+  if (loading) {
+    return (
+      <div className="writing-exercise-page">
+        <div className="writing-header">
+          <div className="header-left">
+            <button className="writing-back-btn" onClick={() => navigate(-1)}>
+              <ArrowLeft size={20} />
+              Quay lại
+            </button>
+          </div>
+        </div>
+        <div style={{ padding: '40px', textAlign: 'center' }}>
+          <p>Đang tải bài tập...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="writing-exercise-page">
+        <div className="writing-header">
+          <div className="header-left">
+            <button className="writing-back-btn" onClick={() => navigate(-1)}>
+              <ArrowLeft size={20} />
+              Quay lại
+            </button>
+          </div>
+        </div>
+        <div style={{ padding: '40px', textAlign: 'center', color: '#ef4444' }}>
+          <AlertCircle size={48} style={{ marginBottom: '16px' }} />
+          <p>{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!writingData || !writingData.question) {
+    return (
+      <div className="writing-exercise-page">
+        <div className="writing-header">
+          <div className="header-left">
+            <button className="writing-back-btn" onClick={() => navigate(-1)}>
+              <ArrowLeft size={20} />
+              Quay lại
+            </button>
+          </div>
+        </div>
+        <div style={{ padding: '40px', textAlign: 'center' }}>
+          <p>Không có câu hỏi nào trong bài này</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="writing-exercise-page">
@@ -298,10 +427,10 @@ const WritingExercise = () => {
           <button
             className="submit-btn"
             onClick={submitEssay}
-            disabled={wordCount < 50}
+            disabled={wordCount < 50 || submitting}
           >
             <Target size={16} />
-            {isCompleted ? 'Xem kết quả' : 'Nộp bài'}
+            {submitting ? 'Đang nộp...' : (isCompleted ? 'Xem kết quả' : 'Nộp bài')}
           </button>
         </div>
       </div>
@@ -322,7 +451,7 @@ const WritingExercise = () => {
 
             <CheckCircle size={64} color="#10b981" />
             <h3>Hoàn thành bài tập!</h3>
-            <p>Bài viết của bạn đã được nộp thành công.</p>
+            <p>Bài viết của bạn đã được nộp thành công và chấm bởi AI.</p>
 
             <div className="completion-stats">
               <div className="stat-item">
@@ -335,9 +464,63 @@ const WritingExercise = () => {
               </div>
               <div className="stat-item">
                 <Award size={16} />
-                <span>{calculateScore()} điểm</span>
+                <span>{aiResult?.score || calculateScore()} điểm</span>
               </div>
             </div>
+
+            {aiResult && (
+              <div className="ai-feedback-section">
+                <h4>📝 Phản hồi từ AI</h4>
+                {aiResult.feedback && (
+                  <div className="ai-feedback-text">
+                    <p><strong>Nhận xét chung:</strong></p>
+                    <p>{aiResult.feedback}</p>
+                  </div>
+                )}
+                {aiResult.breakdown && (
+                  <div className="ai-breakdown">
+                    <p><strong>Chi tiết đánh giá:</strong></p>
+                    <ul>
+                      {Object.entries(aiResult.breakdown).map(([key, value]) => (
+                        <li key={key}>
+                          <strong>{key}:</strong> {value}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {aiResult.strengths && aiResult.strengths.length > 0 && (
+                  <div className="ai-strengths">
+                    <p><strong>✅ Điểm mạnh:</strong></p>
+                    <ul>
+                      {aiResult.strengths.map((strength, idx) => (
+                        <li key={idx}>{strength}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {aiResult.improvements && aiResult.improvements.length > 0 && (
+                  <div className="ai-improvements">
+                    <p><strong>📈 Cần cải thiện:</strong></p>
+                    <ul>
+                      {aiResult.improvements.map((improvement, idx) => (
+                        <li key={idx}>{improvement}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {aiResult.corrections && aiResult.corrections.length > 0 && (
+                  <div className="ai-corrections">
+                    <p><strong>✏️ Sửa lỗi:</strong></p>
+                    <ul>
+                      {aiResult.corrections.map((correction, idx) => (
+                        <li key={idx}>{correction}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="completion-actions">
               <button
