@@ -25,6 +25,7 @@ from app.models.question_bank import QuestionBankItem
 from app.models.question_bank_test import QuestionBankTest
 from app.models.lesson_plan import LessonPlan
 from app.models.worksheet import Worksheet
+from app.models.weekly_assessment import WeeklyAssessment
 
 __all__ = [
     "User",
@@ -52,4 +53,5 @@ __all__ = [
     "QuestionBankItem",
     "LessonPlan",
     "Worksheet",
+    "WeeklyAssessment",
 ]
