@@ -21,9 +21,11 @@ import {
   ThumbsUp,
   ThumbsDown,
   RefreshCw,
-  X
+  X,
+  Loader
 } from 'lucide-react';
 import './SpeakingExercise.css';
+import { coursesAPI } from '../../services/api';
 
 const SpeakingExercise = () => {
   const { courseId, lessonId } = useParams();
@@ -70,72 +72,59 @@ const SpeakingExercise = () => {
     navigate('/learning-profile');
   };
 
-  // Mock data cho bài speaking - sẽ được thay thế bằng API call
-  const speakingData = {
+  // Load data from API
+  const [speakingData, setSpeakingData] = useState({
     id: lessonId || '1',
-    title: 'Speaking Unit 1',
+    title: 'Loading...',
     courseTitle: 'Speaking Học bài',
     difficulty: 'Beginner',
-    estimatedTime: 10, // minutes
-    totalQuestions: 4,
-    questions: [
-      {
-        id: 1,
-        question: "Are you a student?",
-        instruction: "Ghi âm câu trả lời của bạn cho câu hỏi IELTS Speaking sau đây",
-        timeLimit: 60, // seconds
-        minSentences: 2,
-        audioUrl: null // Will be loaded from backend
-      },
-      {
-        id: 2,
-        question: "What type of films do you like best?",
-        instruction: "Ghi âm câu trả lời của bạn cho câu hỏi IELTS Speaking sau đây",
-        timeLimit: 60,
-        minSentences: 2,
-        audioUrl: null
-      },
-      {
-        id: 3,
-        question: "Do you prefer to study alone or with others?",
-        instruction: "Ghi âm câu trả lời của bạn cho câu hỏi IELTS Speaking sau đây",
-        timeLimit: 60,
-        minSentences: 2,
-        audioUrl: null
-      },
-      {
-        id: 4,
-        question: "What is your favorite subject?",
-        instruction: "Ghi âm câu trả lời của bạn cho câu hỏi IELTS Speaking sau đây",
-        timeLimit: 60,
-        minSentences: 2,
-        audioUrl: null
-      }
-    ]
-  };
+    estimatedTime: 10,
+    totalQuestions: 0,
+    questions: []
+  });
+  const [apiLoading, setApiLoading] = useState(true);
+  const [apiError, setApiError] = useState('');
 
-  // Mock results data - sẽ được thay thế bằng API response
-  const mockResults = {
-    transcription: "Yeah, I'm student. I'm studying information and technologies in Information and Technologies University in Thanh Nguyen City.",
-    score: 75,
-    feedback: {
-      generalComments: 6,
-      goodExpressions: 1,
-      errors: 9
-    },
-    detailedFeedback: [
-      { type: 'error', text: 'student', position: 1, suggestion: 'a student' },
-      { type: 'good', text: 'I\'m studying information', position: 2 },
-      { type: 'error', text: 'and technologies', position: 3, suggestion: 'technology' },
-      { type: 'error', text: 'in Information and', position: 4, suggestion: 'at' },
-      { type: 'error', text: 'Technologies', position: 5, suggestion: 'Technology' },
-      { type: 'error', text: 'University', position: 6, suggestion: 'University' }
-    ],
-    pronunciation: 7.5,
-    fluency: 6.8,
-    grammar: 7.2,
-    vocabulary: 7.0
-  };
+  // Load unit data from API
+  useEffect(() => {
+    const loadUnitData = async () => {
+      if (!lessonId) return;
+      
+      setApiLoading(true);
+      try {
+        const questions = await coursesAPI.getQuestions(lessonId);
+        
+        if (!questions || questions.length === 0) {
+          setApiError('Bài học chưa có câu hỏi');
+          return;
+        }
+
+        setSpeakingData({
+          id: lessonId,
+          title: `Speaking Unit ${lessonId}`,
+          courseTitle: 'Speaking Học bài',
+          difficulty: 'Beginner',
+          estimatedTime: questions.length * 2,
+          totalQuestions: questions.length,
+          questions: questions.map((q, index) => ({
+            id: q.id,
+            question: q.prompt,
+            instruction: "Ghi âm câu trả lời của bạn cho câu hỏi sau đây",
+            timeLimit: 60,
+            minSentences: 2,
+            audioUrl: q.media_url || null
+          }))
+        });
+      } catch (error) {
+        console.error('Error loading speaking unit:', error);
+        setApiError(error?.detail || 'Không thể tải bài học');
+      } finally {
+        setApiLoading(false);
+      }
+    };
+    
+    loadUnitData();
+  }, [lessonId]);
 
   // Timer effect
   useEffect(() => {
@@ -181,15 +170,33 @@ const SpeakingExercise = () => {
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
+      
+      // Try to use audio/webm;codecs=opus first, fallback to default
+      let mimeType = 'audio/webm;codecs=opus';
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = 'audio/webm';
+      }
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = ''; // Use default
+      }
+      
+      const options = mimeType ? { mimeType } : {};
+      const mediaRecorder = new MediaRecorder(stream, options);
       const chunks = [];
 
       mediaRecorder.ondataavailable = (event) => {
-        chunks.push(event.data);
+        if (event.data.size > 0) {
+          chunks.push(event.data);
+        }
       };
 
       mediaRecorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'audio/wav' });
+        // Create blob with proper mime type
+        const blob = new Blob(chunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+        console.log('[RECORDING] Created blob:', {
+          size: blob.size,
+          type: blob.type
+        });
         setAudioBlob(blob);
         setAudioUrl(URL.createObjectURL(blob));
         stream.getTracks().forEach(track => track.stop());
@@ -226,26 +233,61 @@ const SpeakingExercise = () => {
   };
 
   // Submit recording
+  const [assessmentResults, setAssessmentResults] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
   const submitRecording = async () => {
     if (!audioBlob) {
       alert('Vui lòng ghi âm trước khi nộp bài');
       return;
     }
 
-    // TODO: API call to submit recording
-    console.log('Submitting recording:', audioBlob);
+    setIsSubmitting(true);
+    try {
+      const currentQ = speakingData.questions[currentQuestion];
+      const referenceText = currentQ.question || currentQ.question_text || currentQ.prompt || '';
+      
+      console.log('[SPEAKING] Submitting audio:', {
+        audioSize: audioBlob.size,
+        audioType: audioBlob.type,
+        referenceText,
+        unitId: lessonId
+      });
 
-    // Simulate API response
-    setTimeout(() => {
+      // Call real API with correct params order: (unitId, audioBlob, referenceText)
+      const result = await coursesAPI.submitSpeakingAudio(parseInt(lessonId), audioBlob, referenceText);
+      
+      console.log('[SPEAKING] API Response:', result);
+      
+      // Store results
+      setAssessmentResults(result);
       setShowResults(true);
-    }, 2000);
+      
+    } catch (error) {
+      console.error('[SPEAKING ERROR]', error);
+      // Better error message extraction
+      let errorMsg = 'Không xác định';
+      if (error.detail) {
+        if (Array.isArray(error.detail)) {
+          errorMsg = error.detail.map(e => e.msg || e.message).join(', ');
+        } else {
+          errorMsg = error.detail;
+        }
+      } else if (error.message) {
+        errorMsg = error.message;
+      }
+      alert(`Lỗi khi đánh giá: ${errorMsg}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Calculate score from results
   const calculateScore = () => {
-    // Aggregate score from pronunciation, fluency, grammar, vocabulary
-    const totalScore = mockResults.pronunciation + mockResults.fluency + mockResults.grammar + mockResults.vocabulary;
-    return Math.round(totalScore / 4); // Average out of 100
+    if (assessmentResults) {
+      return Math.round(assessmentResults.score * 10); // Convert to 0-100 scale
+    }
+    return 0;
   };
 
   // Next question
@@ -276,6 +318,49 @@ const SpeakingExercise = () => {
   };
 
   const currentQuestionData = speakingData.questions[currentQuestion];
+
+  // Loading state
+  if (apiLoading) {
+    return (
+      <div className="speaking-exercise-page">
+        <div className="speaking-header">
+          <button className="speaking-back-btn" onClick={() => navigate(-1)}>
+            <ArrowLeft size={20} />
+            Quay lại
+          </button>
+        </div>
+        <div className="speaking-content" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+          <div style={{ textAlign: 'center' }}>
+            <Loader className="animate-spin" size={48} style={{ margin: '0 auto 16px' }} />
+            <h2>Đang tải bài học...</h2>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (apiError) {
+    return (
+      <div className="speaking-exercise-page">
+        <div className="speaking-header">
+          <button className="speaking-back-btn" onClick={() => navigate(-1)}>
+            <ArrowLeft size={20} />
+            Quay lại
+          </button>
+        </div>
+        <div className="speaking-content" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+          <div style={{ textAlign: 'center' }}>
+            <AlertCircle size={48} style={{ color: '#ef4444', margin: '0 auto 16px' }} />
+            <h2>{apiError}</h2>
+            <button onClick={() => navigate(-1)} style={{ marginTop: '16px' }}>
+              Quay lại
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="speaking-exercise-page">
@@ -415,18 +500,18 @@ const SpeakingExercise = () => {
         )}
 
         {/* Results Section */}
-        {showResults && (
+        {showResults && assessmentResults && (
           <div className="results-section">
             <div className="results-header">
               <h3 className="results-title">Kết quả</h3>
               <div className="results-tabs">
                 <button className="tab-btn active">Nhận xét chung</button>
                 <button className="tab-btn">
-                  <span className="tab-number good">{mockResults.feedback.goodExpressions}</span>
+                  <span className="tab-number good">{assessmentResults.good_count || 0}</span>
                   Diễn đạt hay
                 </button>
                 <button className="tab-btn">
-                  <span className="tab-number error">{mockResults.feedback.errors}</span>
+                  <span className="tab-number error">{assessmentResults.error_count || 0}</span>
                   Lỗi trong bài
                 </button>
               </div>
@@ -434,64 +519,70 @@ const SpeakingExercise = () => {
 
             <div className="results-content">
               <div className="transcription-section">
+                <h4>Ghi âm của bạn:</h4>
                 <p className="transcription-text">
-                  {mockResults.detailedFeedback.map((item, index) => (
+                  {assessmentResults.words_feedback && assessmentResults.words_feedback.map((word, index) => (
                     <span
                       key={index}
-                      className={`transcription-word ${item.type}`}
-                      title={item.suggestion || ''}
+                      className={`transcription-word ${word.type}`}
+                      title={word.error_type !== 'None' ? `Accuracy: ${word.accuracy}%` : ''}
                     >
-                      {item.text}
-                      {item.position && <sup>{item.position}</sup>}
+                      {word.text}{' '}
                     </span>
                   ))}
+                </p>
+                <p className="transcription-reference">
+                  <strong>Văn bản nhận diện được:</strong> {assessmentResults.recognized_text || 'Không nhận diện được'}
                 </p>
               </div>
 
               <div className="feedback-summary">
-                <p>{mockResults.feedback.generalComments} nhận xét trên nội dung bài nói</p>
+                <p>{assessmentResults.feedback || 'Bạn đã hoàn thành bài tập!'}</p>
+                {assessmentResults.detailed_feedback && (
+                  <p className="detailed-feedback">{assessmentResults.detailed_feedback}</p>
+                )}
               </div>
 
               <div className="score-breakdown">
                 <div className="score-item">
-                  <span className="score-label">Pronunciation</span>
+                  <span className="score-label">PRONUNCIATION</span>
                   <div className="score-bar">
                     <div
                       className="score-fill"
-                      style={{ width: `${(mockResults.pronunciation / 10) * 100}%` }}
+                      style={{ width: `${(assessmentResults.breakdown.pronunciation / 10) * 100}%` }}
                     ></div>
                   </div>
-                  <span className="score-value">{mockResults.pronunciation}/10</span>
+                  <span className="score-value">{assessmentResults.breakdown.pronunciation.toFixed(1)}/10</span>
                 </div>
                 <div className="score-item">
-                  <span className="score-label">Fluency</span>
+                  <span className="score-label">FLUENCY</span>
                   <div className="score-bar">
                     <div
                       className="score-fill"
-                      style={{ width: `${(mockResults.fluency / 10) * 100}%` }}
+                      style={{ width: `${(assessmentResults.breakdown.fluency / 10) * 100}%` }}
                     ></div>
                   </div>
-                  <span className="score-value">{mockResults.fluency}/10</span>
+                  <span className="score-value">{assessmentResults.breakdown.fluency.toFixed(1)}/10</span>
                 </div>
                 <div className="score-item">
-                  <span className="score-label">Grammar</span>
+                  <span className="score-label">GRAMMAR</span>
                   <div className="score-bar">
                     <div
                       className="score-fill"
-                      style={{ width: `${(mockResults.grammar / 10) * 100}%` }}
+                      style={{ width: `${(assessmentResults.breakdown.accuracy / 10) * 100}%` }}
                     ></div>
                   </div>
-                  <span className="score-value">{mockResults.grammar}/10</span>
+                  <span className="score-value">{assessmentResults.breakdown.accuracy.toFixed(1)}/10</span>
                 </div>
                 <div className="score-item">
-                  <span className="score-label">Vocabulary</span>
+                  <span className="score-label">VOCABULARY</span>
                   <div className="score-bar">
                     <div
                       className="score-fill"
-                      style={{ width: `${(mockResults.vocabulary / 10) * 100}%` }}
+                      style={{ width: `${(assessmentResults.breakdown.completeness / 10) * 100}%` }}
                     ></div>
                   </div>
-                  <span className="score-value">{mockResults.vocabulary}/10</span>
+                  <span className="score-value">{assessmentResults.breakdown.completeness.toFixed(1)}/10</span>
                 </div>
               </div>
             </div>
@@ -515,10 +606,19 @@ const SpeakingExercise = () => {
             <button
               className="submit-btn"
               onClick={submitRecording}
-              disabled={!audioBlob || isCompleted}
+              disabled={!audioBlob || isCompleted || isSubmitting}
             >
-              <Target size={16} />
-              Nộp bài
+              {isSubmitting ? (
+                <>
+                  <Loader size={16} className="spinning" />
+                  Đang đánh giá...
+                </>
+              ) : (
+                <>
+                  <Target size={16} />
+                  Nộp bài
+                </>
+              )}
             </button>
           ) : (
           <button

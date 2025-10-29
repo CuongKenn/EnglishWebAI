@@ -6,7 +6,8 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api': 'http://localhost:8000', // Đảm bảo rằng mọi yêu cầu bắt đầu bằng /api sẽ được chuyển tiếp đến backend
+      '/api': 'http://localhost:8000', // Proxy API requests to backend
+      '/media': 'http://localhost:8000', // Proxy media files (audio, images, etc.) to backend
     }
   }
 });

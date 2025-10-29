@@ -563,6 +563,26 @@ export const coursesAPI = {
     }
   },
 
+  // Update course (teacher/admin)
+  updateCourse: async (courseId, data) => {
+    try {
+      const response = await apiClient.put(`/api/v1/courses/${courseId}`, data);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Delete course (teacher/admin)
+  deleteCourse: async (courseId) => {
+    try {
+      const response = await apiClient.delete(`/api/v1/courses/${courseId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
   // List exercises in a course
   getCourseExercises: async (courseId) => {
     try {
@@ -620,6 +640,22 @@ export const coursesAPI = {
       throw error.response ? error.response.data : error;
     }
   },
+  updateUnit: async (courseId, unitId, data) => {
+    try {
+      const response = await apiClient.put(`/api/v1/courses/${courseId}/units/${unitId}`, data);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+  deleteUnit: async (courseId, unitId) => {
+    try {
+      const response = await apiClient.delete(`/api/v1/courses/${courseId}/units/${unitId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
   getQuestions: async (unitId) => {
     try {
       const response = await apiClient.get(`/api/v1/courses/units/${unitId}/questions`);
@@ -633,6 +669,179 @@ export const coursesAPI = {
       const response = await apiClient.post(`/api/v1/courses/units/${unitId}/questions`, data);
       return response.data;
     } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+  deleteQuestion: async (unitId, questionId) => {
+    try {
+      const response = await apiClient.delete(`/api/v1/courses/units/${unitId}/questions/${questionId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+  
+  // Upload files
+  uploadAudio: async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await apiClient.post('/api/v1/courses/upload/audio', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+  uploadDocument: async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await apiClient.post('/api/v1/courses/upload/document', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Upload thumbnail
+  uploadThumbnail: async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await apiClient.post('/api/v1/courses/upload/thumbnail', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Student progress
+  submitUnit: async (unitId, answers) => {
+    try {
+      const response = await apiClient.post(`/api/v1/courses/units/${unitId}/submit`, { answers });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+  
+  // Submit speaking audio for AI grading
+  submitSpeaking: async (audioBlob, referenceText, unitId) => {
+    try {
+      const formData = new FormData();
+      
+      // Determine file extension based on blob type
+      let filename = 'speaking.webm';
+      if (audioBlob.type.includes('wav')) {
+        filename = 'speaking.wav';
+      } else if (audioBlob.type.includes('mp3')) {
+        filename = 'speaking.mp3';
+      } else if (audioBlob.type.includes('ogg')) {
+        filename = 'speaking.ogg';
+      }
+      
+      formData.append('audio', audioBlob, filename);
+      formData.append('reference_text', referenceText);
+      formData.append('unit_id', unitId.toString());
+      
+      console.log('[API] Submitting speaking:', {
+        audioSize: audioBlob.size,
+        audioType: audioBlob.type,
+        filename,
+        referenceText,
+        unitId
+      });
+      
+      const response = await apiClient.post('/api/v1/courses/speaking/submit', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('[API ERROR] submitSpeaking:', error);
+      throw error.response ? error.response.data : error;
+    }
+  },
+  
+  getMyProgress: async (courseId = null) => {
+    try {
+      const params = courseId ? { course_id: courseId } : {};
+      const response = await apiClient.get('/api/v1/courses/progress/my', { params });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+  getUnitAttempts: async (unitId) => {
+    try {
+      const response = await apiClient.get(`/api/v1/courses/units/${unitId}/attempts`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // AI Feedback for exercises
+  getListeningFeedback: async (score, correctAnswers, totalQuestions, timeSpent, unitId) => {
+    try {
+      const response = await apiClient.post('/api/v1/courses/feedback/listening', {
+        score,
+        correct_answers: correctAnswers,
+        total_questions: totalQuestions,
+        time_spent: timeSpent,
+        unit_id: unitId
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Get listening feedback error:', error);
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  getReadingFeedback: async (score, correctAnswers, totalQuestions, timeSpent, unitId) => {
+    try {
+      const response = await apiClient.post('/api/v1/courses/feedback/reading', {
+        score,
+        correct_answers: correctAnswers,
+        total_questions: totalQuestions,
+        time_spent: timeSpent,
+        unit_id: unitId
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Get reading feedback error:', error);
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  getWritingFeedback: async (essayText, wordCount, targetWords, timeSpent, unitId) => {
+    try {
+      const response = await apiClient.post('/api/v1/courses/feedback/writing', {
+        essay_text: essayText,
+        word_count: wordCount,
+        target_words: targetWords,
+        time_spent: timeSpent,
+        unit_id: unitId
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Get writing feedback error:', error);
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Learning Profile Stats
+  getLearningProfileStats: async () => {
+    try {
+      const response = await apiClient.get('/api/v1/courses/learning-profile/stats');
+      return response.data;
+    } catch (error) {
+      console.error('Get learning profile stats error:', error);
       throw error.response ? error.response.data : error;
     }
   },

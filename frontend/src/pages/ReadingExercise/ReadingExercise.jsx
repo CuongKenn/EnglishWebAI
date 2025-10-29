@@ -11,9 +11,12 @@ import {
   Award,
   Star,
   X,
-  BookOpen
+  BookOpen,
+  Loader,
+  AlertCircle
 } from 'lucide-react';
 import './ReadingExercise.css';
+import { coursesAPI } from '../../services/api';
 
 const ReadingExercise = () => {
   const { courseId, lessonId } = useParams();
@@ -28,14 +31,82 @@ const ReadingExercise = () => {
   const [showHint, setShowHint] = useState(false);
   const [showCompletionMessage, setShowCompletionMessage] = useState(false);
 
-  // Mock data cho bài reading - sẽ được thay thế bằng API call
-  const readingData = {
+  // Load data from API
+  const [readingData, setReadingData] = useState({
     id: lessonId || '1',
-    title: 'Reading Unit 1',
+    title: 'Loading...',
     courseTitle: 'Reading Học bài',
     difficulty: 'Beginner',
-    estimatedTime: 15, // minutes
-    totalQuestions: 5,
+    estimatedTime: 15,
+    totalQuestions: 0,
+    passage: {
+      title: 'Loading...',
+      subtitle: '',
+      paragraphs: []
+    }
+  });
+  const [apiLoading, setApiLoading] = useState(true);
+  const [apiError, setApiError] = useState('');
+
+  // Load unit data from API
+  useEffect(() => {
+    const loadUnitData = async () => {
+      if (!lessonId) return;
+      
+      setApiLoading(true);
+      try {
+        const questions = await coursesAPI.getQuestions(lessonId);
+        
+        if (!questions || questions.length === 0) {
+          setApiError('Bài học chưa có câu hỏi');
+          return;
+        }
+
+        // Get passage text from first question's prompt (teacher should put passage in first question)
+        const passageText = questions[0]?.media_url || questions[0]?.prompt || 'No passage provided';
+
+        // Convert questions to the format expected by the UI
+        const formattedQuestions = questions.map((q, index) => ({
+          id: q.id,
+          type: 'multiple-choice',
+          instruction: q.prompt,
+          options: q.options || [],
+          correctAnswer: q.answer?.correct || 0
+        }));
+
+        setReadingData({
+          id: lessonId,
+          title: `Reading Unit ${lessonId}`,
+          courseTitle: 'Reading Học bài',
+          difficulty: 'Beginner',
+          estimatedTime: questions.length * 2,
+          totalQuestions: questions.length,
+          passage: {
+            title: 'Reading Passage',
+            subtitle: '',
+            paragraphs: [
+              {
+                id: 'A',
+                content: passageText,
+                heading: 'Reading Passage',
+                questions: formattedQuestions
+              }
+            ]
+          }
+        });
+      } catch (error) {
+        console.error('Error loading reading unit:', error);
+        setApiError(error?.detail || 'Không thể tải bài học');
+      } finally {
+        setApiLoading(false);
+      }
+    };
+    
+    loadUnitData();
+  }, [lessonId]);
+
+  // OLD MOCK DATA BELOW - keeping structure for reference
+  const oldMockData = {
     passage: {
       title: 'The rainmakers',
       subtitle: 'Science and technology work with nature to bring rain when and where it is needed.',
@@ -264,6 +335,49 @@ const ReadingExercise = () => {
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
+
+  // Loading state
+  if (apiLoading) {
+    return (
+      <div className="reading-exercise-page">
+        <div className="reading-header">
+          <button className="back-btn reading-back-btn" onClick={() => navigate(-1)}>
+            <ArrowLeft size={20} />
+            Quay lại
+          </button>
+        </div>
+        <div className="reading-content" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+          <div style={{ textAlign: 'center' }}>
+            <Loader className="animate-spin" size={48} style={{ margin: '0 auto 16px' }} />
+            <h2>Đang tải bài học...</h2>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (apiError) {
+    return (
+      <div className="reading-exercise-page">
+        <div className="reading-header">
+          <button className="back-btn reading-back-btn" onClick={() => navigate(-1)}>
+            <ArrowLeft size={20} />
+            Quay lại
+          </button>
+        </div>
+        <div className="reading-content" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+          <div style={{ textAlign: 'center' }}>
+            <AlertCircle size={48} style={{ color: '#ef4444', margin: '0 auto 16px' }} />
+            <h2>{apiError}</h2>
+            <button onClick={() => navigate(-1)} style={{ marginTop: '16px' }}>
+              Quay lại
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="reading-exercise-page">

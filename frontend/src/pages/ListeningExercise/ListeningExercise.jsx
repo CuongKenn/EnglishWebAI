@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -22,9 +22,11 @@ import {
   SkipBack,
   SkipForward,
   Headphones,
-  X
+  X,
+  Loader
 } from 'lucide-react';
 import './ListeningExercise.css';
+import { coursesAPI } from '../../services/api';
 
 const ListeningExercise = () => {
   const { courseId, lessonId } = useParams();
@@ -49,91 +51,92 @@ const ListeningExercise = () => {
   const audioRef = useRef(null);
   const timerRef = useRef(null);
 
-  // Mock data cho bài listening - sẽ được thay thế bằng API call
-  const listeningData = {
+  // Load data from API
+  const [listeningData, setListeningData] = useState({
     id: lessonId || '1',
-    title: 'Listening Unit 1',
+    title: 'Loading...',
     courseTitle: 'Listening Học bài',
     difficulty: 'Beginner',
-    estimatedTime: 15, // minutes
-    totalQuestions: 5,
-    audioUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav', // Mock audio URL
-    duration: 148, // seconds
-    questions: [
-      {
-        id: 1,
-        question: "When are the experimental areas closed to the public?",
-        options: [
-          "All the year round",
-          "Almost all the year",
-          "A short time every year"
-        ],
-        correctAnswer: 2,
-        explanation: "The experimental areas are closed for only a short time every year for maintenance."
-      },
-      {
-        id: 2,
-        question: "How can you move around the park?",
-        options: [
-          "By tram, walking or bicycle",
-          "By solar car or bicycle",
-          "By bicycle, walking or bus"
-        ],
-        correctAnswer: 0,
-        explanation: "Visitors can move around the park by tram, walking, or bicycle."
-      },
-      {
-        id: 3,
-        question: "The rare breed animals kept in the park include",
-        options: [
-          "Lions and tigers",
-          "Elephants and giraffes",
-          "Endangered species from local area"
-        ],
-        correctAnswer: 2,
-        explanation: "The park focuses on keeping rare breed animals that are endangered species from the local area."
-      },
-      {
-        id: 4,
-        question: "What is the main purpose of the visitor center?",
-        options: [
-          "To sell souvenirs",
-          "To provide information about the park",
-          "To house the animals"
-        ],
-        correctAnswer: 1,
-        explanation: "The visitor center's main purpose is to provide information about the park to visitors."
-      },
-      {
-        id: 5,
-        question: "How often are guided tours available?",
-        options: [
-          "Every hour",
-          "Twice daily",
-          "Only on weekends"
-        ],
-        correctAnswer: 0,
-        explanation: "Guided tours are available every hour for visitors."
-      }
-    ]
-  };
+    estimatedTime: 15,
+    totalQuestions: 0,
+    audioUrl: '',
+    duration: 0,
+    questions: []
+  });
+  const [apiLoading, setApiLoading] = useState(true);
+  const [apiError, setApiError] = useState('');
 
-  // Mock results data - sẽ được thay thế bằng API response
-  const mockResults = {
-    score: 80,
-    totalQuestions: listeningData.totalQuestions,
-    correctAnswers: 4,
-    incorrectAnswers: 1,
-    timeSpent: timeSpent,
-    detailedResults: listeningData.questions.map(q => ({
+  // Load unit data from API
+  useEffect(() => {
+    const loadUnitData = async () => {
+      if (!lessonId) return;
+      
+      setApiLoading(true);
+      try {
+        // Load questions for this unit
+        const questions = await coursesAPI.getQuestions(lessonId);
+        
+        if (!questions || questions.length === 0) {
+          setApiError('Bài học chưa có câu hỏi');
+          return;
+        }
+
+        // Get audio URL from first question (for listening exercises)
+        const audioUrl = questions[0]?.media_url || '';
+        
+        setListeningData({
+          id: lessonId,
+          title: `Listening Unit ${lessonId}`,
+          courseTitle: 'Listening Học bài',
+          difficulty: 'Beginner',
+          estimatedTime: questions.length * 2, // 2 mins per question
+          totalQuestions: questions.length,
+          audioUrl: audioUrl,
+          duration: 148, // Will be updated when audio loads
+          questions: questions.map((q, index) => ({
+            id: q.id,
+            question: q.prompt,
+            options: q.options || [],
+            correctAnswer: q.answer?.correct || 0,
+            explanation: q.answer?.explanation || ''
+          }))
+        });
+      } catch (error) {
+        console.error('Error loading unit data:', error);
+        setApiError('Không thể tải bài học');
+      } finally {
+        setApiLoading(false);
+      }
+    };
+
+    loadUnitData();
+  }, [lessonId]);
+
+  // Calculate results
+  const mockResults = useMemo(() => {
+    const detailedResults = listeningData.questions.map(q => ({
       questionId: q.id,
       question: q.question,
       userAnswer: selectedAnswers[q.id],
       correctAnswer: q.correctAnswer,
       isCorrect: selectedAnswers[q.id] === q.correctAnswer,
       explanation: q.explanation
-    }))
-  };
+    }));
+
+    const correctCount = detailedResults.filter(r => r.isCorrect).length;
+    const score = listeningData.totalQuestions > 0 
+      ? Math.round((correctCount / listeningData.totalQuestions) * 100) 
+      : 0;
+
+    return {
+      score,
+      totalQuestions: listeningData.totalQuestions,
+      correctAnswers: correctCount,
+      incorrectAnswers: listeningData.totalQuestions - correctCount,
+      timeSpent,
+      detailedResults
+    };
+  }, [listeningData, selectedAnswers, timeSpent]);
 
   // Timer effect
   useEffect(() => {
@@ -147,7 +150,7 @@ const ListeningExercise = () => {
   // Audio event handlers
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio || !listeningData.audioUrl) return;
 
     const handleTimeUpdate = () => {
       setAudioProgress(audio.currentTime);
@@ -155,22 +158,40 @@ const ListeningExercise = () => {
 
     const handleLoadedMetadata = () => {
       setAudioDuration(audio.duration);
+      console.log('Audio duration loaded:', audio.duration);
     };
 
     const handleEnded = () => {
       setIsPlaying(false);
     };
 
+    const handleError = (e) => {
+      console.error('Audio error:', e);
+      console.error('Audio URL:', listeningData.audioUrl);
+    };
+
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
     audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('error', handleError);
+
+    // Force load audio metadata
+    if (audio.readyState >= 1) {
+      // Metadata already loaded
+      setAudioDuration(audio.duration);
+      console.log('Audio already loaded, duration:', audio.duration);
+    } else {
+      // Load metadata
+      audio.load();
+    }
 
     return () => {
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
       audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('error', handleError);
     };
-  }, []);
+  }, [listeningData.audioUrl]); // Re-run when audio URL changes
 
   // Format time
   const formatTime = (seconds) => {
@@ -247,23 +268,26 @@ const ListeningExercise = () => {
   };
 
   // Submit exercise
-  const submitExercise = () => {
+  const submitExercise = async () => {
     const answeredQuestions = Object.keys(selectedAnswers).length;
     if (answeredQuestions < listeningData.totalQuestions) {
       alert(`Vui lòng trả lời tất cả ${listeningData.totalQuestions} câu hỏi trước khi nộp bài`);
       return;
     }
 
-    // TODO: API call to submit answers
-    console.log('Submitting answers:', selectedAnswers);
-    console.log('Notes:', notes);
-
-    // Simulate API response
-    setTimeout(() => {
+    try {
+      // Submit to API
+      const result = await coursesAPI.submitUnit(lessonId, selectedAnswers);
+      console.log('Submit result:', result);
+      
+      // Show results
       setShowResults(true);
       setIsCompleted(true);
       setShowCompletionMessage(true);
-    }, 2000);
+    } catch (error) {
+      console.error('Error submitting answers:', error);
+      alert('Có lỗi khi nộp bài. Vui lòng thử lại!');
+    }
   };
 
   // Reset exercise
@@ -282,6 +306,71 @@ const ListeningExercise = () => {
   };
 
   const currentQuestionData = listeningData.questions[currentQuestion];
+
+  // Loading state
+  if (apiLoading) {
+    return (
+      <div className="listening-exercise-page">
+        <div className="listening-header">
+          <button className="listening-back-btn" onClick={() => navigate(-1)}>
+            <ArrowLeft size={20} />
+            Quay lại
+          </button>
+        </div>
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          height: '70vh',
+          gap: '20px'
+        }}>
+          <Loader size={48} className="animate-spin" style={{ color: '#6366f1' }} />
+          <h3 style={{ color: '#475569' }}>Đang tải bài học...</h3>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (apiError) {
+    return (
+      <div className="listening-exercise-page">
+        <div className="listening-header">
+          <button className="listening-back-btn" onClick={() => navigate(-1)}>
+            <ArrowLeft size={20} />
+            Quay lại
+          </button>
+        </div>
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          height: '70vh',
+          gap: '20px'
+        }}>
+          <AlertCircle size={64} style={{ color: '#ef4444' }} />
+          <h3 style={{ color: '#475569' }}>{apiError}</h3>
+          <button 
+            onClick={() => navigate(-1)}
+            style={{
+              padding: '12px 24px',
+              background: '#6366f1',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: '600'
+            }}
+          >
+            Quay lại
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="listening-exercise-page">

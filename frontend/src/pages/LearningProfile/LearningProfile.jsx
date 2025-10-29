@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { 
   Calendar, GraduationCap, BookOpen, Target,
   Award, TrendingUp, Clock, CheckCircle, Star, Trophy,
-  Zap, Heart, Book, MessageCircle, ChevronRight, BarChart3
+  Zap, Heart, Book, MessageCircle, ChevronRight, BarChart3, Loader
 } from 'lucide-react';
 import ConsistentSidebarLayout from '../../components/Layout/ConsistentSidebarLayout';
+import { coursesAPI } from '../../services/api';
 import './LearningProfile.css';
 
 const LearningProfile = () => {
@@ -13,6 +14,11 @@ const LearningProfile = () => {
   const [activeMenuItem, setActiveMenuItem] = useState('profile');
   const [selectedPeriod, setSelectedPeriod] = useState('all-time');
   const [isContentPushed, setIsContentPushed] = useState(false);
+  
+  // NEW: State for real data
+  const [loading, setLoading] = useState(true);
+  const [profileStats, setProfileStats] = useState(null);
+  const [error, setError] = useState(null);
 
   const handleMenuItemClick = (itemId) => {
     setActiveMenuItem(itemId);
@@ -24,24 +30,91 @@ const LearningProfile = () => {
     }, 300);
   };
 
-  // Dữ liệu thống kê tổng quan
-  const overallStats = {
-    totalTime: '47 giờ 32 phút',
-    totalCups: 268,
-    totalTests: 42,
-    totalLessons: 156,
-    streak: 12,
-    level: 8,
+  // Fetch real data from API
+  useEffect(() => {
+    const fetchProfileStats = async () => {
+      try {
+        setLoading(true);
+        const response = await coursesAPI.getLearningProfileStats();
+        
+        if (response.success) {
+          setProfileStats(response.stats);
+        }
+      } catch (error) {
+        console.error('Failed to load profile stats:', error);
+        setError('Không thể tải thống kê. Vui lòng thử lại sau.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfileStats();
+  }, []);
+
+  // Computed values from real data or fallback to defaults
+  const overallStats = profileStats ? {
+    totalTime: profileStats.total_time.formatted,
+    totalCups: profileStats.total_cups,
+    totalTests: profileStats.total_tests,
+    totalLessons: profileStats.total_lessons_completed,
+    streak: 0, // TODO: Implement streak tracking
+    level: 8, // TODO: Calculate from total_cups or other metrics
     rank: 'Gold',
-    completionRate: 78
+    completionRate: 78 // TODO: Calculate from completed/total
+  } : {
+    totalTime: '0 giờ 0 phút',
+    totalCups: 0,
+    totalTests: 0,
+    totalLessons: 0,
+    streak: 0,
+    level: 1,
+    rank: 'Bronze',
+    completionRate: 0
   };
 
-  // Thống kê theo 4 kỹ năng chính
-  const skillStats = [
-    { skill: 'Nghe', icon: '🎧', score: 7.5, maxScore: 10, progress: 75, color: '#3b82f6' },
-    { skill: 'Nói', icon: '🗣️', score: 6.8, maxScore: 10, progress: 68, color: '#ec4899' },
-    { skill: 'Đọc', icon: '📖', score: 8.2, maxScore: 10, progress: 82, color: '#10b981' },
-    { skill: 'Viết', icon: '✍️', score: 7.0, maxScore: 10, progress: 70, color: '#f59e0b' }
+  // Thống kê theo 4 kỹ năng chính - FROM REAL DATA
+  const skillStats = profileStats ? [
+    { 
+      skill: 'Nghe', 
+      icon: '🎧', 
+      score: profileStats.skills.listening.score, 
+      maxScore: profileStats.skills.listening.max_score, 
+      progress: profileStats.skills.listening.percentage, 
+      color: '#3b82f6',
+      attempts: profileStats.skills.listening.attempts_count
+    },
+    { 
+      skill: 'Nói', 
+      icon: '🗣️', 
+      score: profileStats.skills.speaking.score, 
+      maxScore: profileStats.skills.speaking.max_score, 
+      progress: profileStats.skills.speaking.percentage, 
+      color: '#ec4899',
+      attempts: profileStats.skills.speaking.attempts_count
+    },
+    { 
+      skill: 'Đọc', 
+      icon: '📖', 
+      score: profileStats.skills.reading.score, 
+      maxScore: profileStats.skills.reading.max_score, 
+      progress: profileStats.skills.reading.percentage, 
+      color: '#10b981',
+      attempts: profileStats.skills.reading.attempts_count
+    },
+    { 
+      skill: 'Viết', 
+      icon: '✍️', 
+      score: profileStats.skills.writing.score, 
+      maxScore: profileStats.skills.writing.max_score, 
+      progress: profileStats.skills.writing.percentage, 
+      color: '#f59e0b',
+      attempts: profileStats.skills.writing.attempts_count
+    }
+  ] : [
+    { skill: 'Nghe', icon: '🎧', score: 0, maxScore: 10, progress: 0, color: '#3b82f6', attempts: 0 },
+    { skill: 'Nói', icon: '🗣️', score: 0, maxScore: 10, progress: 0, color: '#ec4899', attempts: 0 },
+    { skill: 'Đọc', icon: '📖', score: 0, maxScore: 10, progress: 0, color: '#10b981', attempts: 0 },
+    { skill: 'Viết', icon: '✍️', score: 0, maxScore: 10, progress: 0, color: '#f59e0b', attempts: 0 }
   ];
 
   // Thành tích đạt được
@@ -69,6 +142,54 @@ const LearningProfile = () => {
     { id: 2, title: 'Ôn tập Grammar Units 10-12', reason: 'Củng cố kiến thức cũ', priority: 'medium' },
     { id: 3, title: 'Thực hành Speaking hàng ngày', reason: 'Tăng điểm Speaking', priority: 'high' }
   ];
+
+  // Loading state
+  if (loading) {
+    return (
+      <ConsistentSidebarLayout 
+        activeMenuItem={activeMenuItem}
+        onMenuItemClick={handleMenuItemClick}
+        courseTitle="Học bài"
+      >
+        <div className="profile-content-wrapper" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+          <div style={{ textAlign: 'center' }}>
+            <Loader className="animate-spin" size={48} style={{ margin: '0 auto 16px', color: '#8b5cf6' }} />
+            <p style={{ color: '#6b7280' }}>Đang tải thống kê...</p>
+          </div>
+        </div>
+      </ConsistentSidebarLayout>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <ConsistentSidebarLayout 
+        activeMenuItem={activeMenuItem}
+        onMenuItemClick={handleMenuItemClick}
+        courseTitle="Học bài"
+      >
+        <div className="profile-content-wrapper" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+          <div style={{ textAlign: 'center' }}>
+            <p style={{ color: '#ef4444', marginBottom: '16px' }}>{error}</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              style={{ 
+                padding: '12px 24px', 
+                background: '#8b5cf6', 
+                color: 'white', 
+                border: 'none', 
+                borderRadius: '8px', 
+                cursor: 'pointer' 
+              }}
+            >
+              Thử lại
+            </button>
+          </div>
+        </div>
+      </ConsistentSidebarLayout>
+    );
+  }
 
   return (
     <ConsistentSidebarLayout 

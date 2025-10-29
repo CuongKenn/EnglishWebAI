@@ -137,6 +137,147 @@ export const coursesManageAPI = {
       throw error.response ? error.response.data : error;
     }
   },
+
+  // Upload audio for listening questions
+  uploadAudio: async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await apiClient.post(`${BASE_URL}/upload/audio`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Upload document for reading questions
+  uploadDocument: async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await apiClient.post(`${BASE_URL}/upload/document`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Student: Submit unit attempt
+  submitUnit: async (unitId, answers) => {
+    try {
+      const response = await apiClient.post(`${BASE_URL}/units/${unitId}/submit`, { answers });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Student: Get my progress
+  getMyProgress: async (courseId = null) => {
+    try {
+      const params = courseId ? { course_id: courseId } : {};
+      const response = await apiClient.get(`${BASE_URL}/progress/my`, { params });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Student: Get unit attempts
+  getUnitAttempts: async (unitId) => {
+    try {
+      const response = await apiClient.get(`${BASE_URL}/units/${unitId}/attempts`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Upload thumbnail image
+  uploadThumbnail: async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await apiClient.post(`${BASE_URL}/upload/thumbnail`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // Submit speaking audio with AI grading
+  submitSpeakingAudio: async (unitId, audioBlob, referenceText) => {
+    try {
+      const formData = new FormData();
+      formData.append('audio', audioBlob, 'recording.wav');
+      formData.append('reference_text', referenceText);
+      formData.append('unit_id', unitId);
+      
+      const response = await apiClient.post(`${BASE_URL}/speaking/submit`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 60000 // 60 seconds for AI processing
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Submit speaking error:', error);
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // AI Feedback endpoints
+  getListeningFeedback: async (score, correctAnswers, totalQuestions, timeSpent, unitId) => {
+    try {
+      const response = await apiClient.post(`${BASE_URL}/feedback/listening`, {
+        score,
+        correct_answers: correctAnswers,
+        total_questions: totalQuestions,
+        time_spent: timeSpent,
+        unit_id: unitId
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Get listening feedback error:', error);
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  getReadingFeedback: async (score, correctAnswers, totalQuestions, timeSpent, unitId) => {
+    try {
+      const response = await apiClient.post(`${BASE_URL}/feedback/reading`, {
+        score,
+        correct_answers: correctAnswers,
+        total_questions: totalQuestions,
+        time_spent: timeSpent,
+        unit_id: unitId
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Get reading feedback error:', error);
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  getWritingFeedback: async (essayText, wordCount, targetWords, timeSpent, unitId) => {
+    try {
+      const response = await apiClient.post(`${BASE_URL}/feedback/writing`, {
+        essay_text: essayText,
+        word_count: wordCount,
+        target_words: targetWords,
+        time_spent: timeSpent,
+        unit_id: unitId
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Get writing feedback error:', error);
+      throw error.response ? error.response.data : error;
+    }
+  },
 };
 
 export default coursesManageAPI;

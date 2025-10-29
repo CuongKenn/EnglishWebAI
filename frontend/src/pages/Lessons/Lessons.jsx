@@ -1,16 +1,75 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   TrendingUp, Clock, Award, CheckCircle, Circle,
   Calendar, BarChart3, Sparkles, Play, ChevronRight, BookOpen, Target
 } from 'lucide-react';
 import ConsistentSidebarLayout from '../../components/Layout/ConsistentSidebarLayout';
+import { coursesAPI } from '../../services/api';
 import './Lessons.css';
 
 const Lessons = () => {
   const navigate = useNavigate();
   const [activeMenuItem, setActiveMenuItem] = useState('overview');
   const [isContentPushed, setIsContentPushed] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [progressData, setProgressData] = useState([]);
+  const [studyProgress, setStudyProgress] = useState({
+    currentScore: 0,
+    targetScore: 5.0,
+    cupsEarned: 0,
+    totalCups: 0,
+    unitsCompleted: 0,
+    totalUnits: 0,
+    progress: 0,
+    streakDays: 0,
+    totalLessons: 0,
+    completedLessons: 0
+  });
+  
+  // Load progress data
+  useEffect(() => {
+    loadProgress();
+  }, []);
+
+  const loadProgress = async () => {
+    setLoading(true);
+    try {
+      const data = await coursesAPI.getMyProgress();
+      setProgressData(data);
+      
+      // Calculate aggregate stats
+      let totalCups = 0;
+      let totalUnits = 0;
+      let completedUnits = 0;
+      let totalCourses = data.length;
+      
+      data.forEach(course => {
+        totalCups += course.total_cups;
+        totalUnits += course.units_total;
+        completedUnits += course.units_completed;
+      });
+      
+      const progress = totalUnits > 0 ? Math.round((completedUnits / totalUnits) * 100) : 0;
+      
+      setStudyProgress({
+        currentScore: 3.5,
+        targetScore: 5.0,
+        cupsEarned: totalCups,
+        totalCups: totalCups * 2, // Potential total
+        unitsCompleted: completedUnits,
+        totalUnits: totalUnits,
+        progress: progress,
+        streakDays: 7,
+        totalLessons: totalCourses,
+        completedLessons: Math.floor(totalCourses * (progress / 100))
+      });
+    } catch (error) {
+      console.error('Error loading progress:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
   
   // Dữ liệu mô phỏng
   const userInfo = {
@@ -27,31 +86,24 @@ const Lessons = () => {
     hasLesson: false
   };
 
-  const studyProgress = {
-    currentScore: 3.5,
-    targetScore: 5.0,
-    cupsEarned: 68,
-    totalCups: 180,
-    unitsCompleted: 28,
-    totalUnits: 60,
-    progress: 46, // phần trăm
-    streakDays: 7,
-    totalLessons: 24,
-    completedLessons: 11
-  };
-
   const learningStats = [
     { label: 'Tổng thời lượng', value: '15 phút', icon: Clock, color: '#3b82f6' },
-    { label: 'Tổng số cúp đạt', value: '68', icon: Award, color: '#f59e0b' },
-    { label: 'Tổng số bài test', value: '12', icon: Target, color: '#ef4444' },
-    { label: 'Tổng số bài học', value: '24', icon: BookOpen, color: '#10b981' }
+    { label: 'Tổng số cúp đạt', value: studyProgress.cupsEarned.toString(), icon: Award, color: '#f59e0b' },
+    { label: 'Tổng số bài test', value: studyProgress.unitsCompleted.toString(), icon: Target, color: '#ef4444' },
+    { label: 'Tổng số bài học', value: studyProgress.totalUnits.toString(), icon: BookOpen, color: '#10b981' }
   ];
 
-  const recentLessons = [
-    { id: 1, title: 'Unit 15: Present Perfect', status: 'completed', score: 85 },
-    { id: 2, title: 'Unit 16: Past Continuous', status: 'in-progress', score: null },
-    { id: 3, title: 'Unit 17: Future Tenses', status: 'locked', score: null }
-  ];
+  // Get recent units from progress
+  const recentLessons = progressData.length > 0 && progressData[0].units 
+    ? progressData[0].units.slice(0, 3).map(unit => ({
+        id: unit.unit_id,
+        title: unit.unit_title,
+        status: unit.is_completed ? 'completed' : 'in-progress',
+        score: unit.score
+      }))
+    : [
+        { id: 1, title: 'Chưa có bài học', status: 'locked', score: null }
+      ];
 
   const handleMenuItemClick = (itemId) => {
     setActiveMenuItem(itemId);

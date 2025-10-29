@@ -13,9 +13,11 @@ import {
   FileText,
   Save,
   AlertCircle,
-  X
+  X,
+  Loader
 } from 'lucide-react';
 import './WritingExercise.css';
+import { coursesAPI } from '../../services/api';
 
 const WritingExercise = () => {
   const { courseId, lessonId } = useParams();
@@ -31,31 +33,80 @@ const WritingExercise = () => {
   const [showHint, setShowHint] = useState(false);
   const [showCompletionMessage, setShowCompletionMessage] = useState(false);
 
-  // Mock data cho bài writing - sẽ được thay thế bằng API call
-  const writingData = {
+  // Load data from API
+  const [writingData, setWritingData] = useState({
     id: lessonId || '1',
-    title: 'Writing Unit 1',
+    title: 'Loading...',
     courseTitle: 'Writing Học bài',
     difficulty: 'Beginner',
-    estimatedTime: 30, // minutes
+    estimatedTime: 30,
     wordLimit: 350,
     currentQuestion: 1,
-    totalQuestions: 1,
+    totalQuestions: 0,
     question: {
       id: 1,
       type: 'essay',
-      instruction: 'Write a body paragraph to answer this question below',
-      prompt: 'The best way to solve the traffic and transportation problem is to encourage people to live in cities rather than suburbs or countryside. Do you agree or disagree?',
-      additionalInstruction: 'You do not need to write the Introduction or conclusion to this essay.',
+      instruction: 'Loading...',
+      prompt: 'Loading...',
+      additionalInstruction: '',
       wordLimit: 350,
-      gradingCriteria: [
-        'Content and Ideas (40%)',
-        'Organization and Structure (25%)',
-        'Language Use (25%)',
-        'Mechanics (10%)'
-      ]
+      gradingCriteria: []
     }
-  };
+  });
+  const [apiLoading, setApiLoading] = useState(true);
+  const [apiError, setApiError] = useState('');
+
+  // Load unit data from API
+  useEffect(() => {
+    const loadUnitData = async () => {
+      if (!lessonId) return;
+      
+      setApiLoading(true);
+      try {
+        const questions = await coursesAPI.getQuestions(lessonId);
+        
+        if (!questions || questions.length === 0) {
+          setApiError('Bài học chưa có câu hỏi');
+          return;
+        }
+
+        // Get first question for writing task
+        const firstQuestion = questions[0];
+
+        setWritingData({
+          id: lessonId,
+          title: `Writing Unit ${lessonId}`,
+          courseTitle: 'Writing Học bài',
+          difficulty: 'Beginner',
+          estimatedTime: 30,
+          wordLimit: 350,
+          currentQuestion: 1,
+          totalQuestions: questions.length,
+          question: {
+            id: firstQuestion.id,
+            type: 'essay',
+            instruction: 'Write an essay to answer the question below',
+            prompt: firstQuestion.prompt,
+            additionalInstruction: firstQuestion.media_url || '',
+            wordLimit: 350,
+            gradingCriteria: [
+              'Content and Ideas (40%)',
+              'Organization and Structure (25%)',
+              'Language Use (25%)',
+              'Mechanics (10%)'
+            ]
+          }
+        });
+      } catch (error) {
+        console.error('Error loading writing unit:', error);
+        setApiError(error?.detail || 'Không thể tải bài học');
+      } finally {
+        setApiLoading(false);
+      }
+    };
+    
+    loadUnitData();
+  }, [lessonId]);
 
   // Timer effect
   useEffect(() => {
@@ -162,6 +213,49 @@ const WritingExercise = () => {
     setIsCompleted(false);
     setTimeSpent(0);
   };
+
+  // Loading state
+  if (apiLoading) {
+    return (
+      <div className="writing-exercise-page">
+        <div className="writing-header">
+          <button className="writing-back-btn" onClick={() => navigate(-1)}>
+            <ArrowLeft size={20} />
+            Quay lại
+          </button>
+        </div>
+        <div className="writing-content" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+          <div style={{ textAlign: 'center' }}>
+            <Loader className="animate-spin" size={48} style={{ margin: '0 auto 16px' }} />
+            <h2>Đang tải bài học...</h2>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (apiError) {
+    return (
+      <div className="writing-exercise-page">
+        <div className="writing-header">
+          <button className="writing-back-btn" onClick={() => navigate(-1)}>
+            <ArrowLeft size={20} />
+            Quay lại
+          </button>
+        </div>
+        <div className="writing-content" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+          <div style={{ textAlign: 'center' }}>
+            <AlertCircle size={48} style={{ color: '#ef4444', margin: '0 auto 16px' }} />
+            <h2>{apiError}</h2>
+            <button onClick={() => navigate(-1)} style={{ marginTop: '16px' }}>
+              Quay lại
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="writing-exercise-page">

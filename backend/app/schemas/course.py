@@ -10,6 +10,7 @@ class CourseBase(BaseModel):
     skill: str = Field(pattern=r"^(listening|speaking|reading|writing)$")
     level: Optional[str] = None
     is_active: Optional[bool] = True
+    thumbnail_url: Optional[str] = None
 
 
 class CourseCreate(CourseBase):
@@ -23,12 +24,13 @@ class CourseUpdate(BaseModel):
     skill: Optional[str] = Field(default=None, pattern=r"^(listening|speaking|reading|writing)$")
     level: Optional[str] = None
     is_active: Optional[bool] = None
+    thumbnail_url: Optional[str] = None
 
 
 class CourseListItem(BaseModel):
     id: int
     name: str
-    category: str  # listening|speaking|reading|writing
+    category: str  # listening|speaking|reading|writing (mirror of skill)
     gradeLabel: str
     totalUnits: int
     completedUnits: int
@@ -37,14 +39,17 @@ class CourseListItem(BaseModel):
     status: str  # completed|in-progress|not-started|locked
     instructor: Optional[str] = None
     level: Optional[str] = None
+    thumbnail_url: Optional[str] = None
 
 
 class CourseResponse(CourseBase):
     id: int
+    category: Optional[str] = None  # Mirror of skill for backward compatibility
     created_by: Optional[int]
     created_at: datetime
     updated_at: Optional[datetime]
     is_premium: bool = False
+    thumbnail_url: Optional[str] = None
 
     class Config:
         from_attributes = True

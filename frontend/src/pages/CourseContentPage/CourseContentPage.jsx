@@ -55,66 +55,25 @@ const CourseContentPage = () => {
     catch { /* ignore */ }
   };
 
-  // Hàm xử lý click vào bài học
+  // Hàm xử lý click vào bài học - Route to correct exercise page based on skill
   const handleLessonClick = (unit) => {
-    // Debug: Log courseData để kiểm tra
-    console.log('Course Data:', courseData);
-    console.log('Course Title:', courseData?.title);
-    console.log('Course Category:', courseData?.category);
+    // Get skill from courseData (check both 'skill' and 'category' for backward compatibility)
+    const courseSkill = courseData?.skill || courseData?.category || '';
     
-    // Kiểm tra nếu là khóa học Reading thì điều hướng đến trang reading exercise
-    const isReadingCourse = courseData && (
-      courseData.category === 'reading' || 
-      courseData.title?.toLowerCase().includes('reading') ||
-      courseData.title?.toLowerCase().includes('đọc')
-    );
+    console.log('Course Skill:', courseSkill);
+    console.log('Navigating to exercise for unit:', unit.id);
     
-    // Kiểm tra nếu là khóa học Writing thì điều hướng đến trang writing exercise
-    const isWritingCourse = courseData && (
-      courseData.category === 'writing' || 
-      courseData.title?.toLowerCase().includes('writing') ||
-      courseData.title?.toLowerCase().includes('viết')
-    );
-    
-    // Kiểm tra nếu là khóa học Speaking thì điều hướng đến trang speaking exercise
-    const isSpeakingCourse = courseData && (
-      courseData.category === 'speaking' || 
-      courseData.title?.toLowerCase().includes('speaking') ||
-      courseData.title?.toLowerCase().includes('nói')
-    );
-    
-    // Kiểm tra nếu là khóa học Listening thì điều hướng đến trang listening exercise
-    const isListeningCourse = courseData && (
-      courseData.category === 'listening' || 
-      courseData.title?.toLowerCase().includes('listening') ||
-      courseData.title?.toLowerCase().includes('nghe')
-    );
-    
-    // Fallback: Kiểm tra title hiện tại của trang
-    const currentTitleReading = title?.toLowerCase().includes('reading') || title?.toLowerCase().includes('đọc');
-    const currentTitleWriting = title?.toLowerCase().includes('writing') || title?.toLowerCase().includes('viết');
-    const currentTitleSpeaking = title?.toLowerCase().includes('speaking') || title?.toLowerCase().includes('nói');
-    const currentTitleListening = title?.toLowerCase().includes('listening') || title?.toLowerCase().includes('nghe');
-    
-    console.log('Is Reading Course:', isReadingCourse);
-    console.log('Is Writing Course:', isWritingCourse);
-    console.log('Is Speaking Course:', isSpeakingCourse);
-    console.log('Is Listening Course:', isListeningCourse);
-    console.log('Current Title Reading Check:', currentTitleReading);
-    console.log('Current Title Writing Check:', currentTitleWriting);
-    console.log('Current Title Speaking Check:', currentTitleSpeaking);
-    console.log('Current Title Listening Check:', currentTitleListening);
-    
-    if (isReadingCourse || currentTitleReading) {
+    // Direct routing based on skill
+    if (courseSkill === 'reading') {
       navigate(`/reading-exercise/${courseId}/${unit.id}`);
-    } else if (isWritingCourse || currentTitleWriting) {
+    } else if (courseSkill === 'writing') {
       navigate(`/writing-exercise/${courseId}/${unit.id}`);
-    } else if (isSpeakingCourse || currentTitleSpeaking) {
+    } else if (courseSkill === 'speaking') {
       navigate(`/speaking-exercise/${courseId}/${unit.id}`);
-    } else if (isListeningCourse || currentTitleListening) {
+    } else if (courseSkill === 'listening') {
       navigate(`/listening-exercise/${courseId}/${unit.id}`);
     } else {
-      // Với các loại khóa học khác, mở/đóng panel câu hỏi như cũ
+      // Fallback: show questions panel for other types
       setOpenUnitId(openUnitId === unit.id ? null : unit.id);
       if (!questions[unit.id]) {
         loadQuestions(unit.id);
@@ -157,54 +116,16 @@ const CourseContentPage = () => {
                       </div>
                       <div className="lesson-actions">
                         <span className="badge">{u.questions} câu hỏi</span>
-                        {((courseData && (courseData.category === 'reading' || courseData.title?.toLowerCase().includes('reading') || courseData.title?.toLowerCase().includes('đọc'))) || (title?.toLowerCase().includes('reading') || title?.toLowerCase().includes('đọc'))) && (
-                          <button 
-                            className="start-lesson-btn"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/reading-exercise/${courseId}/${u.id}`);
-                            }}
-                          >
-                            <Play size={14} />
-                            Bắt đầu học
-                          </button>
-                        )}
-                        {((courseData && (courseData.category === 'writing' || courseData.title?.toLowerCase().includes('writing') || courseData.title?.toLowerCase().includes('viết'))) || (title?.toLowerCase().includes('writing') || title?.toLowerCase().includes('viết'))) && (
-                          <button 
-                            className="start-lesson-btn"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/writing-exercise/${courseId}/${u.id}`);
-                            }}
-                          >
-                            <Play size={14} />
-                            Bắt đầu học
-                          </button>
-                        )}
-                        {((courseData && (courseData.category === 'speaking' || courseData.title?.toLowerCase().includes('speaking') || courseData.title?.toLowerCase().includes('nói'))) || (title?.toLowerCase().includes('speaking') || title?.toLowerCase().includes('nói'))) && (
-                          <button 
-                            className="start-lesson-btn"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/speaking-exercise/${courseId}/${u.id}`);
-                            }}
-                          >
-                            <Play size={14} />
-                            Bắt đầu học
-                          </button>
-                        )}
-                        {((courseData && (courseData.category === 'listening' || courseData.title?.toLowerCase().includes('listening') || courseData.title?.toLowerCase().includes('nghe'))) || (title?.toLowerCase().includes('listening') || title?.toLowerCase().includes('nghe'))) && (
-                          <button 
-                            className="start-lesson-btn"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/listening-exercise/${courseId}/${u.id}`);
-                            }}
-                          >
-                            <Play size={14} />
-                            Bắt đầu học
-                          </button>
-                        )}
+                        <button 
+                          className="start-lesson-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleLessonClick(u);
+                          }}
+                        >
+                          <Play size={14} />
+                          Bắt đầu học
+                        </button>
                       </div>
 
                       {openUnitId === u.id && (

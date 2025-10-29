@@ -22,6 +22,17 @@ const categoryColors = {
   general: { bg: '#e2e8f0', text: '#1e293b', accent: '#64748b' }
 };
 
+// Skill icons for thumbnails
+const skillIcons = {
+  listening: '🎧',
+  speaking: '🗣️',
+  reading: '📖',
+  writing: '✍️',
+  vocabulary: '📚',
+  grammar: '📝',
+  pronunciation: '🔊'
+};
+
 const statusLabels = {
   'completed': 'Đã hoàn thành',
   'in-progress': 'Đang học',
@@ -221,7 +232,25 @@ const MyCourses = () => {
                   background: `linear-gradient(135deg, ${colors.bg} 0%, ${colors.accent}20 100%)` 
                 }}
               >
-                <div className="instructor-badge">{course.instructor}</div>
+                <div className="course-thumbnail">
+                  {course.thumbnail_url ? (
+                    <img 
+                      src={course.thumbnail_url} 
+                      alt={course.name} 
+                      className="thumbnail-image"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'block';
+                      }}
+                    />
+                  ) : null}
+                  <span 
+                    className="thumbnail-icon" 
+                    style={{ display: course.thumbnail_url ? 'none' : 'block' }}
+                  >
+                    {skillIcons[course.category] || '📚'}
+                  </span>
+                </div>
                 <div className="level-badge" style={{ background: colors.accent }}>
                   {course.level}
                 </div>

@@ -1,58 +1,107 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List
+from sqlalchemy import func
+from typing import List, Optional
 from app.core.database import get_db
-from app.core.dependencies import get_current_user
+from app.core.dependencies import get_current_user, get_current_active_user
 from app.models.user import User
 from app.models.lesson import Lesson
 from app.models.material import Material
+from app.models.course import Course, CourseUnit, CourseProgress
 from app.schemas.student import LessonListResponse, LessonResponse
 
 router = APIRouter()
 
-@router.get("/", response_model=List[LessonListResponse])
+
+# Icon mapping for skills
+SKILL_ICONS = {
+    "listening": "🎧",
+    "speaking": "🗣️",
+    "reading": "📖",
+    "writing": "✍️",
+}
+
+SKILL_COLORS = {
+    "listening": "#10b981",
+    "speaking": "#8b5cf6",
+    "reading": "#3b82f6",
+    "writing": "#f97316",
+}
+
+
+@router.get("/", response_model=List[dict])
 async def get_lessons(
-    grade: str = None,
-    subject: str = None,
+    grade: Optional[int] = None,
+    skill: Optional[str] = None,
     skip: int = 0,
     limit: int = 100,
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
-    Lấy danh sách các khóa học/bài học có sẵn
+    Lấy danh sách các khóa học có sẵn (thay thế mock data bằng courses thật)
     """
-    query = db.query(Lesson)
+    # Query active courses
+    query = db.query(Course).filter(Course.is_active == True)
+    
+    if grade:
+        query = query.filter(Course.grade == grade)
+    if skill:
+        query = query.filter(Course.skill == skill)
+    
+    query = query.order_by(Course.grade.asc(), Course.skill.asc())
     query = query.offset(skip).limit(limit)
-    lessons = query.all()
+    courses = query.all()
     
-    # Mock data response matching frontend expectations
-    mock_lessons = []
-    lesson_templates = [
-        {"title": "Mẫu giáo", "icon": "🧸", "color": "pink", "grade": "Mẫu giáo"},
-        {"title": "Lớp 1", "icon": "🌈", "color": "yellow", "grade": "Lớp 1"},
-        {"title": "Lớp 2", "icon": "🎨", "color": "orange", "grade": "Lớp 2"},
-        {"title": "Lớp 3", "icon": "📚", "color": "blue", "grade": "Lớp 3"},
-        {"title": "Lớp 4", "icon": "✏️", "color": "green", "grade": "Lớp 4"},
-        {"title": "Lớp 5", "icon": "🎯", "color": "purple", "grade": "Lớp 5"},
-    ]
-    
-    for idx, template in enumerate(lesson_templates):
-        mock_lessons.append({
-            "id": idx + 1,
-            "title": template["title"],
-            "description": f"Chương trình học tiếng Anh {template['title']}",
+    result = []
+    for course in courses:
+        # Get unit count
+        unit_count = db.query(func.count(CourseUnit.id)).filter(
+            CourseUnit.course_id == course.id
+        ).scalar() or 0
+        
+        # Get student's progress
+        completed_units = db.query(func.count(CourseProgress.id)).filter(
+            CourseProgress.course_id == course.id,
+            CourseProgress.user_id == current_user.id,
+            CourseProgress.is_completed == True,
+            CourseProgress.unit_id.isnot(None)
+        ).scalar() or 0
+        
+        total_cups = db.query(func.sum(CourseUnit.max_cups)).filter(
+            CourseUnit.course_id == course.id
+        ).scalar() or 0
+        
+        earned_cups = db.query(func.sum(CourseProgress.cups_earned)).filter(
+            CourseProgress.course_id == course.id,
+            CourseProgress.user_id == current_user.id,
+            CourseProgress.unit_id.isnot(None)
+        ).scalar() or 0
+        
+        progress = round((completed_units / unit_count * 100) if unit_count > 0 else 0, 1)
+        
+        result.append({
+            "id": course.id,
+            "title": course.title,
+            "description": course.description or f"Khóa học {course.skill} lớp {course.grade}",
             "subject": "Tiếng Anh",
-            "grade": template["grade"],
-            "difficulty": "Trung bình",
-            "lessons": 15 + (idx * 2),
-            "duration": f"{2 + idx} tuần",
-            "progress": 0,
-            "image": template["icon"],
-            "color": template["color"],
-            "chapters": []
+            "grade": f"Lớp {course.grade}",
+            "skill": course.skill,
+            "level": course.level or "Intermediate",
+            "difficulty": course.level or "Trung bình",
+            "lessons": unit_count,
+            "duration": f"{unit_count} bài",
+            "progress": progress,
+            "image": SKILL_ICONS.get(course.skill, "📚"),
+            "color": SKILL_COLORS.get(course.skill, "#64748b"),
+            "totalUnits": unit_count,
+            "completedUnits": completed_units,
+            "totalCups": total_cups,
+            "earnedCups": earned_cups,
+            "thumbnail_url": course.thumbnail_url,
         })
     
-    return mock_lessons
+    return result
 
 @router.get("/{lesson_id}", response_model=LessonResponse)
 async def get_lesson(

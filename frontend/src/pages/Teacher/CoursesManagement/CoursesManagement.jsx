@@ -135,10 +135,12 @@ const CoursesManagement = () => {
     setMessage(null);
 
     try {
-      // TODO: Upload thumbnail first when backend is ready
-      // const thumbnailUrl = formData.thumbnailFile 
-      //   ? await coursesManageAPI.uploadThumbnail(formData.thumbnailFile)
-      //   : null;
+      // Upload thumbnail first if provided
+      let thumbnailUrl = null;
+      if (formData.thumbnailFile) {
+        const uploadResult = await coursesAPI.uploadThumbnail(formData.thumbnailFile);
+        thumbnailUrl = uploadResult.url;
+      }
 
       const payload = {
         title: formData.title,
@@ -147,8 +149,7 @@ const CoursesManagement = () => {
         skill: formData.skill,
         level: formData.level,
         is_active: true,
-        // thumbnail_url: thumbnailUrl, // TODO: Add when backend ready
-        // duration_hours: Number(formData.durationHours), // TODO: Add when backend ready
+        thumbnail_url: thumbnailUrl,
       };
 
       await coursesAPI.createCourse(payload);
@@ -172,13 +173,20 @@ const CoursesManagement = () => {
     setMessage(null);
 
     try {
-      // TODO: Upload new thumbnail if changed
+      // Upload new thumbnail if changed
+      let thumbnailUrl = selectedCourse.thumbnail_url || null;
+      if (formData.thumbnailFile) {
+        const uploadResult = await coursesAPI.uploadThumbnail(formData.thumbnailFile);
+        thumbnailUrl = uploadResult.url;
+      }
+
       const payload = {
         title: formData.title,
         description: formData.description || undefined,
         grade: Number(formData.grade),
         skill: formData.skill,
         level: formData.level,
+        thumbnail_url: thumbnailUrl,
       };
 
       await coursesAPI.updateCourse(selectedCourse.id, payload);
@@ -198,8 +206,7 @@ const CoursesManagement = () => {
     
     setFormLoading(true);
     try {
-      // TODO: Implement delete endpoint in backend
-      // await coursesManageAPI.deleteCourse(selectedCourse.id);
+      await coursesAPI.deleteCourse(selectedCourse.id);
       setMessage({ type: 'success', text: 'Xóa khóa học thành công!' });
       setIsDeleteConfirmOpen(false);
       setSelectedCourse(null);
@@ -825,27 +832,34 @@ const UnitQuestionsModal = ({ unit, course, onClose, onRefresh }) => {
   };
 
   // Handle audio file upload
-  const handleAudioUpload = (e) => {
+  const handleAudioUpload = async (e) => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 50 * 1024 * 1024) {
         alert('File audio không được vượt quá 50MB');
         return;
       }
-      const allowedTypes = ['audio/mpeg', 'audio/wav', 'audio/ogg'];
+      const allowedTypes = ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/mp4'];
       if (!allowedTypes.includes(file.type)) {
-        alert('Chỉ chấp nhận file MP3, WAV, OGG');
+        alert('Chỉ chấp nhận file MP3, WAV, OGG, M4A');
         return;
       }
       setUploadedAudio(file);
-      // TODO: Upload to server and get URL
-      // const url = await uploadAudioFile(file);
-      // setQuestionForm({ ...questionForm, media_url: url });
+      
+      // Upload to server
+      try {
+        const response = await coursesAPI.uploadAudio(file);
+        setQuestionForm({ ...questionForm, media_url: response.url });
+      } catch (error) {
+        console.error('Error uploading audio:', error);
+        alert('Không thể upload file audio');
+        setUploadedAudio(null);
+      }
     }
   };
 
   // Handle document file upload
-  const handleDocumentUpload = (e) => {
+  const handleDocumentUpload = async (e) => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 10 * 1024 * 1024) {
@@ -863,7 +877,19 @@ const UnitQuestionsModal = ({ unit, course, onClose, onRefresh }) => {
         return;
       }
       setUploadedDocument(file);
-      // TODO: Upload to server
+      
+      // Upload to server
+      try {
+        const response = await coursesAPI.uploadDocument(file);
+        // Store document URL in prompt or separate field if needed
+        if (response.preview) {
+          setQuestionForm({ ...questionForm, prompt: response.preview });
+        }
+      } catch (error) {
+        console.error('Error uploading document:', error);
+        alert('Không thể upload file');
+        setUploadedDocument(null);
+      }
     }
   };
 
@@ -1218,24 +1244,24 @@ const UnitQuestionsModal = ({ unit, course, onClose, onRefresh }) => {
                         </div>
                       )}
                     </div>
-                    <button
-                      className="cm-btn-icon-sm cm-btn-danger"
-                      onClick={async () => {
-                        if (window.confirm('Bạn có chắc muốn xóa câu hỏi này?')) {
-                          try {
-                            // TODO: Implement delete question API
-                            // await coursesAPI.deleteQuestion(unit.id, q.id);
-                            await loadQuestions();
-                            if (onRefresh) onRefresh();
-                          } catch (error) {
-                            console.error('Error deleting question:', error);
+                      <button
+                        className="cm-btn-icon-sm cm-btn-danger"
+                        onClick={async () => {
+                          if (window.confirm('Bạn có chắc muốn xóa câu hỏi này?')) {
+                            try {
+                              await coursesAPI.deleteQuestion(unit.id, q.id);
+                              await loadQuestions();
+                              if (onRefresh) onRefresh();
+                            } catch (error) {
+                              console.error('Error deleting question:', error);
+                              alert('Không thể xóa câu hỏi');
+                            }
                           }
-                        }
-                      }}
-                      title="Xóa câu hỏi"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                        }}
+                        title="Xóa câu hỏi"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                   </div>
                 ))
               )}
@@ -1402,11 +1428,11 @@ const CourseDetailModal = ({ course, onClose, onEdit }) => {
                         onClick={async () => {
                           if (window.confirm(`Bạn có chắc muốn xóa bài học "${unit.title}"?`)) {
                             try {
-                              // TODO: Backend endpoint
-                              // await coursesAPI.deleteUnit(course.id, unit.id);
+                              await coursesAPI.deleteUnit(course.id, unit.id);
                               await loadUnits();
                             } catch (error) {
                               console.error('Error deleting unit:', error);
+                              alert('Không thể xóa bài học');
                             }
                           }
                         }}

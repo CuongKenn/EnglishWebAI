@@ -21,6 +21,7 @@ class Course(Base):
     is_premium = Column(Boolean, nullable=False, default=False, server_default="0")
     level = Column(String, nullable=True)    # Beginner|Intermediate|Advanced...
     is_active = Column(Boolean, server_default="1", nullable=False)
+    thumbnail_url = Column(String, nullable=True)  # NEW: course thumbnail
     created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -107,3 +108,40 @@ class CourseQuestion(Base):
 
     def __repr__(self) -> str:
         return f"<CourseQuestion(id={self.id}, unit_id={self.unit_id}, type={self.type})>"
+
+
+class CourseProgress(Base):
+    """Track student progress in courses."""
+    __tablename__ = "course_progress"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    course_id = Column(Integer, ForeignKey("courses.id", ondelete="CASCADE"), nullable=False, index=True)
+    unit_id = Column(Integer, ForeignKey("course_units.id", ondelete="CASCADE"), nullable=True, index=True)
+    is_completed = Column(Boolean, default=False, nullable=False)
+    cups_earned = Column(Integer, default=0, nullable=False)
+    score = Column(Integer, nullable=True)  # For unit scores
+    started_at = Column(DateTime(timezone=True), server_default=func.now())
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    def __repr__(self) -> str:
+        return f"<CourseProgress(id={self.id}, user_id={self.user_id}, course_id={self.course_id}, unit_id={self.unit_id})>"
+
+
+class UnitAttempt(Base):
+    """Track student attempts at completing units."""
+    __tablename__ = "unit_attempts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    unit_id = Column(Integer, ForeignKey("course_units.id", ondelete="CASCADE"), nullable=False, index=True)
+    answers_json = Column(Text, nullable=True)  # Store student's answers
+    score = Column(Integer, nullable=True)
+    max_score = Column(Integer, nullable=True)
+    cups_earned = Column(Integer, default=0, nullable=False)
+    is_passed = Column(Boolean, default=False, nullable=False)
+    submitted_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    def __repr__(self) -> str:
+        return f"<UnitAttempt(id={self.id}, user_id={self.user_id}, unit_id={self.unit_id}, score={self.score})>"

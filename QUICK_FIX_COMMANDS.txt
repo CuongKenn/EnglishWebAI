@@ -1,0 +1,43 @@
+=================================================================
+QUICK FIX COMMANDS - COPY VÀ PASTE VÀO TERMINAL
+=================================================================
+
+>> BƯỚC 1: Kiểm tra Docker đang chạy
+docker ps
+
+>> BƯỚC 2: Fix database trong Docker (CHẠY LỆNH NÀY!)
+docker exec -it englishwebai_backend python force_recreate_table.py
+
+>> BƯỚC 3: Restart container
+docker restart englishwebai_backend
+
+>> BƯỚC 4: Kiểm tra logs
+docker logs englishwebai_backend --tail 20
+
+=================================================================
+ALL-IN-ONE (Chạy tất cả một lúc):
+=================================================================
+
+docker exec -it englishwebai_backend python force_recreate_table.py && docker restart englishwebai_backend && echo "DONE! Now test in browser."
+
+=================================================================
+NẾU TÊN CONTAINER KHÁC (kiểm tra bằng 'docker ps'):
+=================================================================
+
+Thay "englishwebai_backend" bằng tên đúng, ví dụ:
+
+docker exec -it englishwebai-backend-1 python force_recreate_table.py && docker restart englishwebai-backend-1
+
+=================================================================
+SAU KHI CHẠY XONG:
+=================================================================
+
+1. Mở browser
+2. Refresh trang (F5)
+3. Vào Teacher Dashboard
+4. Thử tạo course với thumbnail
+5. Lỗi sẽ biến mất!
+
+=================================================================
+
+
