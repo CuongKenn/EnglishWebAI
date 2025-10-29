@@ -68,8 +68,6 @@ const TeacherDashboardV3 = ({ onLogout }) => {
         return <StudentAnalytics />;
       case 'support-groups':
         return <SupportGroups />;
-      case 'student-analytics':
-        return <ProgressAnalytics />;
       case 'statistics':
         return <Statistics />;
       case 'export-reports':
