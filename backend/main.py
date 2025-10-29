@@ -14,6 +14,7 @@ from app.routers import teacher_grading as teacher_router
 from app.routers import teacher_analytics
 from app.routers import exports
 from app.routers import lesson_plans, worksheets, weekly_assessments
+from app.routers import student_progress
 from app.models import User
 
 # Create database tables
@@ -71,6 +72,7 @@ app.include_router(teacher_analytics.router, prefix=f"{settings.API_PREFIX}/teac
 app.include_router(lesson_plans.router, tags=["Lesson Plans"])
 app.include_router(worksheets.router, tags=["Worksheets"])
 app.include_router(weekly_assessments.router, tags=["Weekly Assessments"]) 
+app.include_router(student_progress.router, tags=["Student Progress"])
 
 # Serve media files if available (e.g., uploaded materials)
 try:

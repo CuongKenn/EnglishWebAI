@@ -17,3 +17,127 @@
 /* Include all styles from StudentProgress.css with same structure */
 /* (Tôi sẽ giữ nguyên các styles đã có, chỉ đổi tên class chính) */
 
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 30px;
+}
+
+.progress-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 8px;
+}
+
+.progress-subtitle {
+  font-size: 16px;
+  color: #64748b;
+}
+
+.detailed-report-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.detailed-report-btn:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.detailed-report-container {
+  margin-bottom: 30px;
+}
+
+.child-selector {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+}
+
+.child-tab {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.child-tab:hover {
+  border-color: #3b82f6;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+.child-tab.active {
+  border-color: #3b82f6;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.child-tab-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.child-tab.active .child-tab-avatar {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.child-tab-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.child-tab-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.child-tab.active .child-tab-name {
+  color: white;
+}
+
+.child-tab-grade {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.child-tab.active .child-tab-grade {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.progress-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+

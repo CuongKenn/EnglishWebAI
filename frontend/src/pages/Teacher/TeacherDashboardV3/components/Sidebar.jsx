@@ -32,6 +32,7 @@ const Sidebar = ({ currentPage, onNavigate }) => {
         { id: 'lesson-plans', label: 'Tạo giáo án', icon: Wand2 },
         { id: 'worksheets', label: 'Tạo phiếu học tập', icon: Sparkles },
         { id: 'student-analytics', label: 'Phân tích tiến độ', icon: TrendingUp },
+        { id: 'student-progress', label: 'Báo cáo tiến bộ', icon: FileBarChart },
         { id: 'support-groups', label: 'Nhóm cần hỗ trợ', icon: Users }
       ]
     },

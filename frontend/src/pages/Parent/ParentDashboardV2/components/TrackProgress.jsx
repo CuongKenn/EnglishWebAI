@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { parentAPI } from '../../../../services/parentService';
-import { TrendingUp, BookOpen, Award, Calendar, ChevronRight, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { TrendingUp, BookOpen, Award, Calendar, ChevronRight, CheckCircle, Clock, AlertCircle, FileText } from 'lucide-react';
+import { StudentProgressDashboard } from '../../../../components/StudentProgress';
 import './TrackProgress.css';
 
 const TrackProgress = () => {
@@ -8,6 +9,7 @@ const TrackProgress = () => {
   const [children, setChildren] = useState([]);
   const [selectedChild, setSelectedChild] = useState(null);
   const [childProgress, setChildProgress] = useState(null);
+  const [showDetailedReport, setShowDetailedReport] = useState(false);
 
   useEffect(() => {
     loadChildren();
@@ -102,6 +104,15 @@ const TrackProgress = () => {
           <h1 className="progress-title">Theo dõi tiến độ</h1>
           <p className="progress-subtitle">Xem chi tiết quá trình học tập của con em</p>
         </div>
+        {selectedChild && (
+          <button
+            className="detailed-report-btn"
+            onClick={() => setShowDetailedReport(!showDetailedReport)}
+          >
+            <FileText size={18} />
+            {showDetailedReport ? 'Xem tổng quan' : 'Báo cáo chi tiết'}
+          </button>
+        )}
       </div>
 
       {/* Child Selector */}
@@ -123,8 +134,18 @@ const TrackProgress = () => {
         </div>
       )}
 
+      {/* Detailed Report View */}
+      {selectedChild && showDetailedReport && (
+        <div className="detailed-report-container">
+          <StudentProgressDashboard
+            studentId={selectedChild.id}
+            showExport={true}
+          />
+        </div>
+      )}
+
       {/* Progress Content */}
-      {selectedChild && childProgress && (
+      {selectedChild && childProgress && !showDetailedReport && (
         <div className="progress-content">
           {/* Attendance Section */}
           <div className="progress-section">

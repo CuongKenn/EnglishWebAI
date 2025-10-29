@@ -18,6 +18,7 @@ import Schedule from './components/Schedule';
 import MyClassesTeacher from './components/MyClassesTeacher';
 import WorksheetGenerator from './components/WorksheetGenerator';
 import StudentAnalytics from './components/StudentAnalytics';
+import StudentProgressView from './components/StudentProgressView';
 import SupportGroups from './components/SupportGroups';
 import ProgressAnalytics from './components/ProgressAnalytics';
 import ExportReports from './components/ExportReports';
@@ -72,6 +73,8 @@ const TeacherDashboardV3 = ({ onLogout }) => {
         return <Worksheets />;
       case 'student-analytics':
         return <StudentAnalytics />;
+      case 'student-progress':
+        return <StudentProgressView />;
       case 'support-groups':
         return <SupportGroups />;
       case 'statistics':

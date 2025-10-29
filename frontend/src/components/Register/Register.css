@@ -328,18 +328,41 @@
 
 .adventure-text h1 {
   font-size: 3.5rem;
-  font-weight: 700;
+  font-weight: 800;
   color: white;
   line-height: 1.2;
-  text-shadow: 0 0 30px rgba(138, 118, 255, 0.8);
+  text-shadow: 
+    0 0 40px rgba(255, 255, 255, 0.8),
+    0 0 80px rgba(167, 139, 250, 0.6),
+    0 4px 20px rgba(0, 0, 0, 0.5);
+  letter-spacing: 3px;
 }
 
 .adventure-text .highlight {
-  background: linear-gradient(90deg, #a78bfa, #ec4899);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  animation: gradientShift 3s ease infinite;
+  color: #fbbf24;
+  text-shadow: 
+    0 0 40px rgba(251, 191, 36, 0.9),
+    0 0 80px rgba(251, 191, 36, 0.7),
+    0 0 120px rgba(251, 146, 73, 0.6),
+    0 4px 30px rgba(0, 0, 0, 0.7);
+  animation: glowPulse 2s ease-in-out infinite;
+}
+
+@keyframes glowPulse {
+  0%, 100% {
+    text-shadow: 
+      0 0 40px rgba(251, 191, 36, 0.9),
+      0 0 80px rgba(251, 191, 36, 0.7),
+      0 0 120px rgba(251, 146, 73, 0.6),
+      0 4px 30px rgba(0, 0, 0, 0.7);
+  }
+  50% {
+    text-shadow: 
+      0 0 60px rgba(251, 191, 36, 1),
+      0 0 100px rgba(251, 191, 36, 0.8),
+      0 0 160px rgba(251, 146, 73, 0.7),
+      0 4px 40px rgba(0, 0, 0, 0.7);
+  }
 }
 
 @keyframes gradientShift {

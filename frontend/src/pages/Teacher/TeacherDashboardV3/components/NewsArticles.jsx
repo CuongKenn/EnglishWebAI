@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { newsAPI } from '../../../../services/api';
+import { Newspaper, Plus } from 'lucide-react';
 import './NewsArticles.css';
 
 const NewsArticles = () => {
@@ -135,13 +136,16 @@ const NewsArticles = () => {
 
   return (
     <div className="manage-news-page">
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">📰 Quản lý Tin tức</h1>
-          <p className="page-subtitle">Tạo và quản lý tin tức, thông báo cho hệ thống</p>
+      {/* Modern Header */}
+      <div className="modern-page-header">
+        <div className="flex items-center gap-3 mb-2">
+          <Newspaper className="w-8 h-8 text-purple-600" />
+          <h1 className="text-3xl font-bold text-gray-900">Quản lý Tin tức</h1>
         </div>
-        <button className="btn-primary" onClick={() => handleOpenModal()}>
-          <span>➕</span> Tạo tin tức mới
+        <p className="text-gray-600 mb-4">Tạo và quản lý tin tức, thông báo cho hệ thống</p>
+        <button className="modern-btn-primary" onClick={() => handleOpenModal()}>
+          <Plus className="w-5 h-5" />
+          <span>Tạo tin tức mới</span>
         </button>
       </div>
 

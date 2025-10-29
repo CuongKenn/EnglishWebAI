@@ -6,6 +6,7 @@ python-multipart==0.0.6
 # Database
 sqlalchemy==2.0.23
 alembic==1.12.1
+psycopg2-binary==2.9.9
 
 # Authentication & Security
 python-jose[cryptography]==3.3.0
@@ -33,6 +34,8 @@ packaging>=25.0
 
 # Export utilities
 openpyxl==3.1.2
+reportlab==4.0.7
+matplotlib==3.8.2
 
 # Azure Speech SDK for pronunciation assessment
 azure-cognitiveservices-speech==1.40.0
