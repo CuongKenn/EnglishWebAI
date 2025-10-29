@@ -21,13 +21,17 @@ export default function DoExercise() {
   
   // For Speaking
   const [isRecording, setIsRecording] = useState(false);
-  const [recordedAudio, setRecordedAudio] = useState(null);
+  const [recordedAudio, setRecordedAudio] = useState(null); // { url, blob, mimeType }
+  const [recordingError, setRecordingError] = useState(null);
   const [prepTime, setPrepTime] = useState(0);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
+  const objectUrlRef = useRef(new Set());
+  const generalFileInputRef = useRef(null);
+  const questionFileInputRefs = useRef({});
   // For comprehensive test speaking per-question
   const [activeSpeakingQ, setActiveSpeakingQ] = useState(null);
-  const [speakingAnswers, setSpeakingAnswers] = useState({}); // qId -> blobURL
+  const [speakingAnswers, setSpeakingAnswers] = useState({}); // qId -> { url, blob, mimeType }
   
   // For Writing
   const [wordCount, setWordCount] = useState(0);
@@ -50,6 +54,22 @@ export default function DoExercise() {
       handleSubmit();
     }
   }, [timeRemaining]);
+
+  useEffect(() => {
+    return () => {
+      objectUrlRef.current.forEach((url) => URL.revokeObjectURL(url));
+      objectUrlRef.current.clear();
+
+      try {
+        if (mediaRecorderRef.current?.state === 'recording') {
+          mediaRecorderRef.current.stop();
+        }
+        mediaRecorderRef.current?.stream?.getTracks().forEach((track) => track.stop());
+      } catch (error) {
+        console.warn('Error cleaning up media recorder:', error);
+      }
+    };
+  }, []);
 
   const fetchExercise = async () => {
     try {
@@ -118,13 +138,23 @@ export default function DoExercise() {
       await apiV1.post(`/exercises/${exerciseId}/save-draft`, {
         answers,
         content_text: exercise.skill_type === 'writing' ? content : null,
-        content_url: exercise.skill_type === 'speaking' ? recordedAudio : null
+        content_url: exercise.skill_type === 'speaking' ? recordedAudio?.url || null : null
       });
       alert('Đã lưu nháp!');
     } catch (error) {
       console.error('Error saving draft:', error);
       alert('Lỗi khi lưu nháp!');
     }
+  };
+
+  const getAudioExtension = (mimeType = '') => {
+    if (!mimeType) return 'webm';
+    if (mimeType.includes('webm')) return 'webm';
+    if (mimeType.includes('ogg')) return 'ogg';
+    if (mimeType.includes('mp4')) return 'mp4';
+    if (mimeType.includes('wav')) return 'wav';
+    if (mimeType.includes('mpeg')) return 'mp3';
+    return 'webm';
   };
 
   const handleSubmit = async () => {
@@ -146,11 +176,13 @@ export default function DoExercise() {
       }
       
       // Add speaking audio if exists
-      if (exercise.skill_type === 'speaking' && recordedAudio) {
-        // Convert blob URL to actual file
-        const response = await fetch(recordedAudio);
-        const blob = await response.blob();
-        const audioFile = new File([blob], `speaking_${Date.now()}.wav`, { type: 'audio/wav' });
+      if (exercise.skill_type === 'speaking' && recordedAudio?.blob) {
+        const extension = getAudioExtension(recordedAudio.mimeType);
+        const audioFile = new File(
+          [recordedAudio.blob],
+          `speaking_${Date.now()}.${extension}`,
+          { type: recordedAudio.mimeType || 'audio/webm' }
+        );
         formData.append('audio_file', audioFile);
       }
 
@@ -162,13 +194,17 @@ export default function DoExercise() {
           mergedAnswers[qid] = txt;
         });
         // Use first speaking answer as content_url (backend supports one file). Also store marker in answers map
-        const speakingQIds = Object.keys(speakingAnswers);
+        const speakingQIds = Object.keys(speakingAnswers).filter((id) => speakingAnswers[id]?.blob);
         if (speakingQIds.length > 0) {
           const firstQId = speakingQIds[0];
+          const audioData = speakingAnswers[firstQId];
           try {
-            const resp = await fetch(speakingAnswers[firstQId]);
-            const blob = await resp.blob();
-            const audioFile = new File([blob], `speaking_${firstQId}_${Date.now()}.wav`, { type: 'audio/wav' });
+            const extension = getAudioExtension(audioData.mimeType);
+            const audioFile = new File(
+              [audioData.blob],
+              `speaking_${firstQId}_${Date.now()}.${extension}`,
+              { type: audioData.mimeType || 'audio/webm' }
+            );
             formData.append('audio_file', audioFile);
             mergedAnswers[firstQId] = '[speaking-audio-attached]';
           } catch (e) {
@@ -200,48 +236,180 @@ export default function DoExercise() {
   // Speaking functions
   const startRecording = async (questionId = null) => {
     try {
+      setRecordingError(null);
+
+      if (!window.isSecureContext) {
+        const message = 'Trình duyệt yêu cầu kết nối an toàn (https hoặc localhost) để ghi âm.';
+        setRecordingError(message);
+        alert(message);
+        return;
+      }
+
+      if (!navigator.mediaDevices?.getUserMedia) {
+        const message = 'Trình duyệt của bạn không hỗ trợ ghi âm (getUserMedia).';
+        setRecordingError(message);
+        alert(message);
+        return;
+      }
+
+      if (typeof window.MediaRecorder === 'undefined') {
+        const message = 'Trình duyệt của bạn chưa hỗ trợ MediaRecorder. Vui lòng dùng Chrome, Edge hoặc Firefox phiên bản mới.';
+        setRecordingError(message);
+        alert(message);
+        return;
+      }
+
+      // Release any previous recording for this slot
+      if (questionId) {
+        const prev = speakingAnswers[questionId];
+        if (prev?.url) {
+          URL.revokeObjectURL(prev.url);
+          objectUrlRef.current.delete(prev.url);
+        }
+      } else if (recordedAudio?.url) {
+        URL.revokeObjectURL(recordedAudio.url);
+        objectUrlRef.current.delete(recordedAudio.url);
+        setRecordedAudio(null);
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorderRef.current = new MediaRecorder(stream);
+
+      const mimeCandidates = [
+        'audio/webm;codecs=opus',
+        'audio/ogg;codecs=opus',
+        'audio/mp4',
+        'audio/webm'
+      ];
+      let recorderOptions;
+      let selectedMime = '';
+      if (typeof MediaRecorder.isTypeSupported === 'function') {
+        for (const candidate of mimeCandidates) {
+          if (MediaRecorder.isTypeSupported(candidate)) {
+            recorderOptions = { mimeType: candidate };
+            selectedMime = candidate;
+            break;
+          }
+        }
+      }
+
+      const recorder = recorderOptions ? new MediaRecorder(stream, recorderOptions) : new MediaRecorder(stream);
+      mediaRecorderRef.current = recorder;
       audioChunksRef.current = [];
 
-      mediaRecorderRef.current.ondataavailable = (event) => {
-        audioChunksRef.current.push(event.data);
-      };
-
-      mediaRecorderRef.current.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
-        const audioUrl = URL.createObjectURL(audioBlob);
-        if (questionId) {
-          setSpeakingAnswers(prev => ({ ...prev, [questionId]: audioUrl }));
-          setActiveSpeakingQ(null);
-        } else {
-          setRecordedAudio(audioUrl);
+      recorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
         }
       };
 
-      mediaRecorderRef.current.start();
+      recorder.onstop = () => {
+        const mimeType = recorder.mimeType || selectedMime || 'audio/webm';
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        const audioUrl = URL.createObjectURL(audioBlob);
+        objectUrlRef.current.add(audioUrl);
+        const audioPayload = { url: audioUrl, blob: audioBlob, mimeType };
+
+        if (questionId) {
+          setSpeakingAnswers(prev => ({ ...prev, [questionId]: audioPayload }));
+          setActiveSpeakingQ(null);
+        } else {
+          setRecordedAudio(audioPayload);
+        }
+      };
+
+      recorder.start();
       setIsRecording(true);
       if (questionId) setActiveSpeakingQ(questionId);
     } catch (error) {
       console.error('Error accessing microphone:', error);
-      alert('Không thể truy cập microphone!');
+      const message = error?.name === 'NotAllowedError'
+        ? 'Bạn đã từ chối quyền truy cập micro. Hãy bật lại quyền trong cài đặt trình duyệt và thử lại.'
+        : 'Không thể truy cập microphone!';
+      setRecordingError(message);
+      alert(message);
+      try {
+        mediaRecorderRef.current?.stream?.getTracks().forEach(track => track.stop());
+      } catch (cleanupError) {
+        console.warn('Không thể dừng stream sau lỗi micro:', cleanupError);
+      }
     }
   };
 
   const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
+    const recorder = mediaRecorderRef.current;
+
+    if (!recorder || !isRecording) {
+      return;
+    }
+
+    try {
+      if (recorder.state !== 'inactive') {
+        recorder.stop();
+      }
+      recorder.stream?.getTracks().forEach(track => track.stop());
+    } catch (error) {
+      console.warn('Error while stopping recorder:', error);
+    } finally {
       setIsRecording(false);
-      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
     }
   };
 
   const reRecord = (questionId = null) => {
-    setRecordedAudio(null);
     audioChunksRef.current = [];
+
     if (questionId) {
-      setSpeakingAnswers(prev => ({ ...prev, [questionId]: null }));
+      const prev = speakingAnswers[questionId];
+      if (prev?.url) {
+        URL.revokeObjectURL(prev.url);
+        objectUrlRef.current.delete(prev.url);
+      }
+      setSpeakingAnswers(prevState => ({ ...prevState, [questionId]: null }));
+      if (questionFileInputRefs.current[questionId]) {
+        questionFileInputRefs.current[questionId].value = '';
+      }
+    } else {
+      if (recordedAudio?.url) {
+        URL.revokeObjectURL(recordedAudio.url);
+        objectUrlRef.current.delete(recordedAudio.url);
+      }
+      setRecordedAudio(null);
+      setRecordingError(null);
+      if (generalFileInputRef.current) {
+        generalFileInputRef.current.value = '';
+      }
     }
+  };
+
+  const handleAudioFileSelect = (event, questionId = null) => {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+
+    setRecordingError(null);
+
+    const mimeType = file.type || 'audio/webm';
+    const audioUrl = URL.createObjectURL(file);
+    objectUrlRef.current.add(audioUrl);
+
+    if (questionId) {
+      const prev = speakingAnswers[questionId];
+      if (prev?.url) {
+        URL.revokeObjectURL(prev.url);
+        objectUrlRef.current.delete(prev.url);
+      }
+      setSpeakingAnswers(prevState => ({
+        ...prevState,
+        [questionId]: { url: audioUrl, blob: file, mimeType }
+      }));
+    } else {
+      if (recordedAudio?.url) {
+        URL.revokeObjectURL(recordedAudio.url);
+        objectUrlRef.current.delete(recordedAudio.url);
+      }
+      setRecordedAudio({ url: audioUrl, blob: file, mimeType });
+    }
+
+    // Reset input to allow same file selection again if needed
+    event.target.value = '';
   };
 
   // Writing functions
@@ -409,9 +577,9 @@ export default function DoExercise() {
                     </div>
                   )}
 
-                  {speakingAnswers[q.id] && (
+                  {speakingAnswers[q.id]?.url && (
                     <div className="recorded-section">
-                      <audio controls src={speakingAnswers[q.id]} />
+                      <audio controls src={speakingAnswers[q.id].url} />
                       <div className="recorded-actions">
                         <button className="btn-re-record" onClick={() => reRecord(q.id)}>
                           <RotateCcw size={16} /> Ghi lại
@@ -419,6 +587,20 @@ export default function DoExercise() {
                       </div>
                     </div>
                   )}
+
+                  {recordingError && (
+                    <p className="recording-error-message">{recordingError}</p>
+                  )}
+
+                  <div className="upload-fallback">
+                    <span>Hoặc tải file âm thanh:</span>
+                    <input
+                      type="file"
+                      accept="audio/*"
+                      ref={(el) => { questionFileInputRefs.current[q.id] = el; }}
+                      onChange={(e) => handleAudioFileSelect(e, q.id)}
+                    />
+                  </div>
                 </div>
               )}
 
@@ -576,7 +758,7 @@ export default function DoExercise() {
 
             {recordedAudio && (
               <div className="recorded-section">
-                <audio controls src={recordedAudio} className="recorded-audio" />
+                <audio controls src={recordedAudio.url} className="recorded-audio" />
                 <div className="recorded-actions">
                   <button className="btn-re-record" onClick={reRecord}>
                     <RotateCcw size={18} />
@@ -585,6 +767,20 @@ export default function DoExercise() {
                 </div>
               </div>
             )}
+
+            {recordingError && (
+              <p className="recording-error-message">{recordingError}</p>
+            )}
+
+            <div className="upload-fallback">
+              <span>Không ghi âm được? Tải file âm thanh:</span>
+              <input
+                type="file"
+                accept="audio/*"
+                ref={generalFileInputRef}
+                onChange={(e) => handleAudioFileSelect(e)}
+              />
+            </div>
           </div>
 
           {exerciseContent.sample_answer && (

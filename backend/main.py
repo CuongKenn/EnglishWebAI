@@ -13,6 +13,7 @@ from app.routers import ai_usage, ai_analytics
 from app.routers import teacher_grading as teacher_router
 from app.routers import teacher_analytics
 from app.routers import exports
+from app.routers import lesson_plans, worksheets
 from app.models import User
 
 # Create database tables
@@ -66,6 +67,9 @@ app.include_router(question_bank_router.router, prefix=f"{settings.API_PREFIX}/q
 app.include_router(exports.router, tags=["Exports"])
 app.include_router(teacher_router.router, prefix=f"{settings.API_PREFIX}/teacher", tags=["Teacher"])
 app.include_router(teacher_analytics.router, prefix=f"{settings.API_PREFIX}/teacher", tags=["Teacher Analytics"]) 
+
+app.include_router(lesson_plans.router, tags=["Lesson Plans"])
+app.include_router(worksheets.router, tags=["Worksheets"]) 
 
 # Serve media files if available (e.g., uploaded materials)
 try:

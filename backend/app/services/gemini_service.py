@@ -1099,6 +1099,479 @@ Return your response in JSON format:
                 "error": str(e)
             }
 
+    async def generate_lesson_plan(
+        self,
+        grade: int,
+        unit: str,
+        lesson_number: str = "Lesson 1",
+        duration: int = 45,
+        focus_skills: List[str] = None,
+        language_functions: str = None,
+        vocabulary_topics: List[str] = None,
+        grammar_points: List[str] = None,
+        additional_notes: str = None
+    ) -> Dict:
+        """
+        Generate a complete lesson plan based on Vietnamese Ngoại ngữ 2018 curriculum
+        
+        Args:
+            grade: Khối lớp (1-12)
+            unit: Unit/Chủ đề (VD: Unit 7 - Technology)
+            lesson_number: Tiết học (VD: Lesson 1, 2...)
+            duration: Thời lượng (phút)
+            focus_skills: Kỹ năng tập trung
+            language_functions: Chức năng ngôn ngữ
+            vocabulary_topics: Chủ đề từ vựng
+            grammar_points: Điểm ngữ pháp
+            additional_notes: Ghi chú thêm
+            
+        Returns:
+            Dict với đầy đủ thông tin giáo án
+        """
+        try:
+            # Build comprehensive prompt
+            prompt = f"""Bạn là một giáo viên Tiếng Anh có kinh nghiệm, đang soạn giáo án theo Chương trình Giáo dục phổ thông môn Ngoại ngữ 2018 của Việt Nam.
+
+THÔNG TIN BÀI HỌC:
+- Khối lớp: {grade}
+- Unit/Chủ đề: {unit}
+- Tiết học: {lesson_number}
+- Thời lượng: {duration} phút
+"""
+            
+            if focus_skills:
+                prompt += f"- Kỹ năng tập trung: {', '.join(focus_skills)}\n"
+            if language_functions:
+                prompt += f"- Chức năng ngôn ngữ: {language_functions}\n"
+            if vocabulary_topics:
+                prompt += f"- Chủ đề từ vựng: {', '.join(vocabulary_topics)}\n"
+            if grammar_points:
+                prompt += f"- Điểm ngữ pháp: {', '.join(grammar_points)}\n"
+            if additional_notes:
+                prompt += f"- Ghi chú: {additional_notes}\n"
+            
+            prompt += """
+YÊU CẦU:
+1. BÁM SÁT Chương trình Giáo dục phổ thông môn Ngoại ngữ 2018
+2. Phát triển năng lực giao tiếp bằng Tiếng Anh
+3. Sử dụng phương pháp dạy học tích cực, lấy học sinh làm trung tâm
+
+Hãy tạo giáo án chi tiết theo cấu trúc JSON sau:
+
+{
+    "title": "Tên bài học cụ thể",
+    "objectives": {
+        "knowledge": [
+            "Kiến thức cần đạt 1",
+            "Kiến thức cần đạt 2"
+        ],
+        "skills": [
+            "Kỹ năng Listening",
+            "Kỹ năng Speaking", 
+            "Kỹ năng Reading",
+            "Kỹ năng Writing"
+        ],
+        "competencies": [
+            "Năng lực tự học và tự chủ",
+            "Năng lực giao tiếp và hợp tác",
+            "Năng lực giải quyết vấn đề và sáng tạo",
+            "Năng lực sử dụng ngôn ngữ"
+        ],
+        "qualities": [
+            "Yêu nước, tự hào dân tộc",
+            "Nhân ái, khoan dung",
+            "Chăm chỉ, trung thực",
+            "Trách nhiệm"
+        ]
+    },
+    "teaching_aids": [
+        "Projector/TV",
+        "Computer/Laptop",
+        "Textbook",
+        "Flashcards",
+        "Audio/Video materials",
+        "Handouts/Worksheets"
+    ],
+    "activities": {
+        "warm_up": {
+            "name": "Hoạt động khởi động",
+            "duration": 5,
+            "objectives": "Tạo hứng thú, kết nối với bài học",
+            "content": "Mô tả chi tiết hoạt động khởi động",
+            "methods": ["Brainstorming", "Game", "Discussion"],
+            "teacher_activities": "Hoạt động của giáo viên",
+            "student_activities": "Hoạt động của học sinh",
+            "resources": ["Flashcards", "Questions"]
+        },
+        "presentation": {
+            "name": "Hình thành kiến thức mới",
+            "duration": 15,
+            "objectives": "Giới thiệu từ vựng, ngữ pháp, chức năng ngôn ngữ",
+            "content": "Mô tả chi tiết cách giới thiệu kiến thức mới",
+            "methods": ["Presentation", "Demonstration", "Guided discovery"],
+            "teacher_activities": "Hướng dẫn, trình bày, demo",
+            "student_activities": "Quan sát, lắng nghe, ghi chép, đặt câu hỏi",
+            "resources": ["PPT", "Video", "Audio"]
+        },
+        "practice": {
+            "name": "Luyện tập",
+            "duration": 15,
+            "objectives": "Thực hành, củng cố kiến thức",
+            "content": "Các hoạt động luyện tập từ controlled đến freer practice",
+            "methods": ["Pair work", "Group work", "Role-play", "Drills"],
+            "teacher_activities": "Hướng dẫn, giám sát, hỗ trợ",
+            "student_activities": "Thực hành theo cặp/nhóm",
+            "resources": ["Worksheets", "Task cards"]
+        },
+        "production": {
+            "name": "Vận dụng",
+            "duration": 8,
+            "objectives": "Sử dụng ngôn ngữ trong tình huống thực tế",
+            "content": "Hoạt động giao tiếp thực tế, sáng tạo",
+            "methods": ["Project", "Presentation", "Discussion", "Creative task"],
+            "teacher_activities": "Đánh giá, góp ý",
+            "student_activities": "Thực hiện nhiệm vụ, trình bày",
+            "resources": ["Props", "Materials"]
+        }
+    },
+    "notes": "Lưu ý cho giáo viên khi dạy bài này",
+    "homework": "Bài tập về nhà cụ thể cho học sinh"
+}
+
+QUAN TRỌNG:
+- Nội dung phải PHÙ HỢP với lứa tuổi khối """ + str(grade) + """
+- Sử dụng phương pháp giao tiếp (Communicative Language Teaching)
+- Tích hợp 4 kỹ năng Nghe-Nói-Đọc-Viết
+- Hoạt động đa dạng: cá nhân, cặp đôi, nhóm
+- Thời gian mỗi hoạt động hợp lý (tổng = """ + str(duration) + """ phút)
+"""
+            
+            # Generate with Gemini
+            response = await asyncio.to_thread(self.model.generate_content, prompt)
+            result_text = response.text.strip()
+            
+            # Parse JSON
+            import json
+            if "```json" in result_text:
+                result_text = result_text.split("```json")[1].split("```")[0].strip()
+            elif "```" in result_text:
+                result_text = result_text.split("```")[1].split("```")[0].strip()
+            
+            lesson_plan_data = json.loads(result_text)
+            
+            return lesson_plan_data
+            
+        except Exception as e:
+            print(f"Error generating lesson plan: {str(e)}")
+            # Return fallback lesson plan structure
+            return {
+                "title": f"{unit} - {lesson_number}",
+                "objectives": {
+                    "knowledge": [
+                        "Học sinh nhận biết và hiểu các từ vựng chủ đề của bài học",
+                        "Học sinh nắm được cấu trúc ngữ pháp cơ bản"
+                    ],
+                    "skills": [
+                        "Nghe hiểu thông tin chính",
+                        "Nói về chủ đề bài học",
+                        "Đọc hiểu đoạn văn",
+                        "Viết câu đơn giản"
+                    ],
+                    "competencies": [
+                        "Năng lực tự học",
+                        "Năng lực giao tiếp",
+                        "Năng lực sáng tạo"
+                    ],
+                    "qualities": [
+                        "Chăm chỉ",
+                        "Tự tin",
+                        "Hợp tác"
+                    ]
+                },
+                "teaching_aids": ["Textbook", "Projector", "Flashcards"],
+                "activities": {
+                    "warm_up": {
+                        "name": "Khởi động",
+                        "duration": 5,
+                        "objectives": "Tạo hứng thú",
+                        "content": "Game/activity liên quan đến chủ đề",
+                        "methods": ["Game"],
+                        "teacher_activities": "Tổ chức game",
+                        "student_activities": "Tham gia game",
+                        "resources": []
+                    },
+                    "presentation": {
+                        "name": "Giới thiệu",
+                        "duration": 15,
+                        "objectives": "Giới thiệu kiến thức mới",
+                        "content": "Trình bày từ vựng và cấu trúc",
+                        "methods": ["Presentation"],
+                        "teacher_activities": "Giảng dạy",
+                        "student_activities": "Lắng nghe",
+                        "resources": ["PPT"]
+                    },
+                    "practice": {
+                        "name": "Thực hành",
+                        "duration": 15,
+                        "objectives": "Luyện tập",
+                        "content": "Bài tập áp dụng",
+                        "methods": ["Practice"],
+                        "teacher_activities": "Hướng dẫn",
+                        "student_activities": "Làm bài tập",
+                        "resources": ["Worksheets"]
+                    },
+                    "production": {
+                        "name": "Vận dụng",
+                        "duration": 8,
+                        "objectives": "Sử dụng ngôn ngữ",
+                        "content": "Hoạt động giao tiếp",
+                        "methods": ["Speaking"],
+                        "teacher_activities": "Đánh giá",
+                        "student_activities": "Trình bày",
+                        "resources": []
+                    }
+                },
+                "notes": "Lưu ý phù hợp với trình độ học sinh",
+                "homework": "Ôn tập từ vựng và làm bài tập"
+            }
+    
+    async def generate_worksheet(
+        self,
+        grade: int,
+        unit: str,
+        worksheet_type: str,
+        skill_focus: str = "reading",
+        difficulty_level: str = "medium",
+        num_questions: int = 10,
+        duration: int = 30,
+        vocabulary_topics: List[str] = None,
+        grammar_points: List[str] = None,
+        language_functions: str = None,
+        additional_notes: str = None
+    ) -> Dict:
+        """
+        Generate worksheet (phiếu học tập) for English learning
+        
+        Args:
+            grade: Khối lớp (1-12)
+            unit: Unit/Chủ đề
+            worksheet_type: Loại phiếu (multiple_choice, essay, fill_in_blank, etc.)
+            skill_focus: Kỹ năng tập trung
+            difficulty_level: Độ khó (easy, medium, hard)
+            num_questions: Số câu hỏi
+            duration: Thời gian làm bài (phút)
+            vocabulary_topics: Chủ đề từ vựng
+            grammar_points: Điểm ngữ pháp
+            language_functions: Chức năng ngôn ngữ
+            additional_notes: Ghi chú thêm
+            
+        Returns:
+            Dict với đầy đủ nội dung phiếu học tập
+        """
+        try:
+            # Define worksheet type descriptions
+            type_descriptions = {
+                "multiple_choice": "Bài tập trắc nghiệm với 4 lựa chọn A, B, C, D",
+                "essay": "Bài tập tự luận yêu cầu viết đoạn văn, bài văn",
+                "fill_in_blank": "Bài tập điền khuyết với từ/cụm từ thích hợp",
+                "topic_based": "Bài tập tổng hợp theo chủ đề cụ thể",
+                "self_study": "Phiếu hướng dẫn tự học với các nhiệm vụ và tài liệu",
+                "situational": "Bài tập tình huống thực tế cần vận dụng kiến thức",
+                "mixed": "Kết hợp nhiều dạng bài tập"
+            }
+            
+            # Difficulty descriptions
+            difficulty_desc = {
+                "easy": "dễ, phù hợp với học sinh cần củng cố cơ bản",
+                "medium": "trung bình, phù hợp với đa số học sinh",
+                "hard": "khó, phù hợp với học sinh khá giỏi"
+            }
+            
+            type_desc = type_descriptions.get(worksheet_type, worksheet_type)
+            diff_desc = difficulty_desc.get(difficulty_level, "trung bình")
+            
+            prompt = f"""Bạn là giáo viên Tiếng Anh, đang tạo phiếu học tập cho học sinh theo Chương trình 2018.
+
+THÔNG TIN PHIẾU HỌC TẬP:
+- Khối lớp: {grade}
+- Unit/Chủ đề: {unit}
+- Loại phiếu: {type_desc}
+- Kỹ năng: {skill_focus}
+- Độ khó: {diff_desc}
+- Số câu hỏi: {num_questions}
+- Thời gian: {duration} phút
+"""
+            
+            if vocabulary_topics:
+                prompt += f"- Chủ đề từ vựng: {', '.join(vocabulary_topics)}\n"
+            if grammar_points:
+                prompt += f"- Điểm ngữ pháp: {', '.join(grammar_points)}\n"
+            if language_functions:
+                prompt += f"- Chức năng ngôn ngữ: {language_functions}\n"
+            if additional_notes:
+                prompt += f"- Ghi chú: {additional_notes}\n"
+            
+            # Specific instructions based on worksheet type
+            if worksheet_type == "multiple_choice":
+                prompt += """
+Tạo phiếu học tập trắc nghiệm với format JSON:
+{
+    "title": "Tên phiếu học tập hấp dẫn",
+    "instructions": "Hướng dẫn làm bài cho học sinh",
+    "content": {
+        "questions": [
+            {
+                "question_number": 1,
+                "question_text": "Câu hỏi",
+                "options": ["A. ...", "B. ...", "C. ...", "D. ..."],
+                "correct_answer": 0,
+                "explanation": "Giải thích đáp án",
+                "points": 1
+            }
+        ]
+    },
+    "teacher_notes": "Ghi chú cho giáo viên",
+    "answer_key": {
+        "answers": [0, 1, 2, ...],
+        "total_points": 10
+    },
+    "total_points": 10
+}
+"""
+            
+            elif worksheet_type == "fill_in_blank":
+                prompt += """
+Tạo phiếu điền khuyết với format JSON:
+{
+    "title": "Tên phiếu học tập",
+    "instructions": "Hướng dẫn: Điền từ/cụm từ thích hợp vào chỗ trống",
+    "content": {
+        "questions": [
+            {
+                "question_number": 1,
+                "sentence": "Câu có chỗ trống được đánh dấu _____",
+                "correct_answer": "từ đúng",
+                "acceptable_answers": ["từ đúng", "từ tương đương"],
+                "hint": "Gợi ý (nếu có)",
+                "points": 1
+            }
+        ]
+    },
+    "teacher_notes": "Ghi chú cho giáo viên",
+    "answer_key": {
+        "answers": ["answer1", "answer2", ...],
+        "total_points": 10
+    },
+    "total_points": 10
+}
+"""
+            
+            elif worksheet_type == "essay":
+                prompt += """
+Tạo phiếu bài tập viết với format JSON:
+{
+    "title": "Tên phiếu học tập",
+    "instructions": "Hướng dẫn viết bài",
+    "content": {
+        "writing_prompts": [
+            {
+                "prompt": "Đề bài viết 1",
+                "word_count": "100-150 words",
+                "tips": ["Tip 1", "Tip 2"],
+                "criteria": {
+                    "content": "Đánh giá nội dung (30%)",
+                    "organization": "Tổ chức bài viết (20%)",
+                    "vocabulary": "Từ vựng (20%)",
+                    "grammar": "Ngữ pháp (20%)",
+                    "mechanics": "Chính tả (10%)"
+                }
+            }
+        ]
+    },
+    "teacher_notes": "Hướng dẫn chấm bài",
+    "answer_key": {
+        "sample_answer": "Bài mẫu tham khảo",
+        "rubric": "Tiêu chí chấm điểm chi tiết"
+    },
+    "total_points": 10
+}
+"""
+            
+            else:  # mixed or other types
+                prompt += """
+Tạo phiếu học tập đa dạng với format JSON:
+{
+    "title": "Tên phiếu học tập",
+    "instructions": "Hướng dẫn chung",
+    "content": {
+        "sections": [
+            {
+                "section_name": "Phần 1: Trắc nghiệm",
+                "questions": [...]
+            },
+            {
+                "section_name": "Phần 2: Tự luận",
+                "questions": [...]
+            }
+        ]
+    },
+    "teacher_notes": "Ghi chú cho giáo viên",
+    "answer_key": {},
+    "total_points": 10
+}
+"""
+            
+            prompt += f"""
+YÊU CẦU:
+- Nội dung phù hợp với khối {grade}, độ khó {difficulty_level}
+- Câu hỏi rõ ràng, không gây nhầm lẫn
+- Đáp án chính xác
+- Có giải thích/hướng dẫn
+- Thời gian làm bài hợp lý ({duration} phút)
+- Bám sát chương trình 2018
+"""
+            
+            # Generate with Gemini
+            response = await asyncio.to_thread(self.model.generate_content, prompt)
+            result_text = response.text.strip()
+            
+            # Parse JSON
+            import json
+            if "```json" in result_text:
+                result_text = result_text.split("```json")[1].split("```")[0].strip()
+            elif "```" in result_text:
+                result_text = result_text.split("```")[1].split("```")[0].strip()
+            
+            worksheet_data = json.loads(result_text)
+            
+            return worksheet_data
+            
+        except Exception as e:
+            print(f"Error generating worksheet: {str(e)}")
+            # Return fallback worksheet
+            return {
+                "title": f"{unit} - {worksheet_type.title()} Exercise",
+                "instructions": f"Complete the following {worksheet_type.replace('_', ' ')} questions.",
+                "content": {
+                    "questions": [
+                        {
+                            "question_number": i + 1,
+                            "question_text": f"Question {i + 1}",
+                            "options": ["A. Option 1", "B. Option 2", "C. Option 3", "D. Option 4"],
+                            "correct_answer": 0,
+                            "points": 1
+                        }
+                        for i in range(min(num_questions, 5))
+                    ]
+                },
+                "teacher_notes": "Review with students after completion",
+                "answer_key": {
+                    "answers": [0] * min(num_questions, 5),
+                    "total_points": min(num_questions, 5)
+                },
+                "total_points": min(num_questions, 5)
+            }
+
 
 # Create a singleton instance
 gemini_service = GeminiService()

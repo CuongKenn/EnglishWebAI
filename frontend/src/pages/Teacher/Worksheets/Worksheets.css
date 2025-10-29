@@ -1,0 +1,683 @@
+/* Worksheets Page - Similar to LessonPlans with worksheet-specific styling */
+.worksheets-page {
+  width: 100%;
+  max-width: 100%;
+  padding: 2rem 3rem;
+  background: #f8fafc;
+  min-height: 100vh;
+}
+
+/* Header */
+.ws-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.ws-header-left {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.ws-header-icon {
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow: 0 8px 16px rgba(6, 182, 212, 0.3);
+}
+
+.ws-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+.ws-subtitle {
+  font-size: 1rem;
+  color: #64748b;
+  margin: 0.25rem 0 0 0;
+}
+
+.ws-header-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+/* Buttons */
+.ws-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ws-btn-primary {
+  background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
+}
+
+.ws-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(6, 182, 212, 0.4);
+}
+
+.ws-btn-ai {
+  background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3);
+}
+
+.ws-btn-ai:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(236, 72, 153, 0.4);
+}
+
+.ws-btn-secondary {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.ws-btn-secondary:hover {
+  background: #e2e8f0;
+}
+
+.ws-btn-danger {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+}
+
+.ws-btn-danger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
+}
+
+.ws-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Filters */
+.ws-filters {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.ws-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.ws-filter-group label {
+  font-weight: 600;
+  color: #475569;
+}
+
+.ws-filter-group select {
+  padding: 0.5rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 1rem;
+  min-width: 150px;
+}
+
+/* Stats */
+.ws-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.ws-stat-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s;
+}
+
+.ws-stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+}
+
+.ws-stat-icon {
+  font-size: 2.5rem;
+}
+
+.ws-stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.ws-stat-label {
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
+/* Grid */
+.ws-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+.ws-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+
+.ws-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.ws-badge-ai {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+  color: white;
+  padding: 0.35rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  box-shadow: 0 2px 8px rgba(236, 72, 153, 0.3);
+}
+
+.ws-card-type-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+  color: white;
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.ws-card-header h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 0.5rem 0;
+  padding-right: 80px;
+}
+
+.ws-card-meta {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.ws-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.ws-difficulty-badge {
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.ws-card-body {
+  margin: 1rem 0;
+}
+
+.ws-card-unit {
+  font-size: 0.95rem;
+  color: #475569;
+  margin-bottom: 0.5rem;
+}
+
+.ws-card-info {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.ws-info-item {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.875rem;
+  color: #64748b;
+  background: #f8fafc;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+}
+
+.ws-card-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.ws-card-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.6rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ws-card-btn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  transform: translateY(-2px);
+}
+
+.ws-card-btn-delete {
+  color: #ef4444;
+}
+
+.ws-card-btn-delete:hover {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+/* Loading & Empty */
+.ws-loading {
+  text-align: center;
+  padding: 4rem;
+  font-size: 1.25rem;
+  color: #64748b;
+}
+
+.ws-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 4rem 2rem;
+}
+
+.ws-empty p {
+  font-size: 1.25rem;
+  color: #94a3b8;
+  margin: 1rem 0 2rem 0;
+}
+
+/* Modal */
+.ws-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 2rem;
+}
+
+.ws-modal {
+  background: white;
+  border-radius: 16px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+}
+
+.ws-modal-large {
+  max-width: 900px;
+}
+
+.ws-modal-small {
+  max-width: 450px;
+}
+
+.ws-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.ws-modal-header h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+.ws-modal-title-ai {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #ec4899;
+}
+
+.ws-modal-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  color: #94a3b8;
+  transition: all 0.2s;
+  border-radius: 8px;
+}
+
+.ws-modal-close:hover {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.ws-modal-body {
+  padding: 2rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.ws-modal-footer {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  padding: 1.5rem 2rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+
+/* Form */
+.ws-form-group {
+  margin-bottom: 1.5rem;
+}
+
+.ws-form-group label {
+  display: block;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.ws-form-group input,
+.ws-form-group select,
+.ws-form-group textarea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+.ws-form-group input:focus,
+.ws-form-group select:focus,
+.ws-form-group textarea:focus {
+  outline: none;
+  border-color: #06b6d4;
+  box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.1);
+}
+
+.ws-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+/* Detail Content */
+.ws-detail-content {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.ws-detail-meta {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.ws-detail-meta span {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.ws-detail-ai-badge {
+  background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+  color: white !important;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+}
+
+.ws-detail-section {
+  margin-bottom: 2rem;
+}
+
+.ws-detail-section h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 1rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #06b6d4;
+}
+
+.ws-content-preview,
+.ws-content-display {
+  background: #f1f5f9;
+  border-radius: 8px;
+  padding: 1rem;
+  font-size: 0.95rem;
+  color: #334155;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-x: auto;
+  max-height: 400px;
+}
+
+.ws-warning {
+  color: #ef4444;
+  font-weight: 600;
+  margin-top: 0.5rem;
+}
+
+/* Detail Actions */
+.ws-detail-actions {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.ws-modal-footer {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  padding: 1.5rem 2rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+
+.ws-btn-close {
+  background: #ef4444;
+  color: white;
+  min-width: 100px;
+}
+
+.ws-btn-close:hover {
+  background: #dc2626;
+}
+
+.ws-detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.ws-detail-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: white;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #475569;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.ws-detail-ai-badge {
+  background: linear-gradient(135deg, #ec4899 0%, #db2777 100%) !important;
+  color: white !important;
+}
+
+@media (max-width: 768px) {
+  .ws-modal-footer {
+    flex-direction: column;
+  }
+  
+  .ws-modal-footer .ws-btn {
+    width: 100%;
+  }
+}
+
+/* Spinner */
+.ws-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: ws-spin 0.8s linear infinite;
+}
+
+@keyframes ws-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .worksheets-page {
+    padding: 1.5rem 2rem;
+  }
+
+  .ws-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+
+  .ws-form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .worksheets-page {
+    padding: 1rem;
+  }
+
+  .ws-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .ws-header-actions {
+    width: 100%;
+  }
+
+  .ws-btn {
+    flex: 1;
+  }
+
+  .ws-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ws-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .ws-modal {
+    max-width: 100%;
+    margin: 1rem;
+  }
+
+  .ws-card-actions {
+    flex-direction: column;
+  }
+
+  .ws-filters {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .ws-filter-group {
+    width: 100%;
+  }
+
+  .ws-filter-group select {
+    flex: 1;
+  }
+}
+
