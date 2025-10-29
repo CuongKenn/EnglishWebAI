@@ -238,11 +238,16 @@ export default function DoExercise() {
     try {
       setRecordingError(null);
 
+      // Allow localhost/127.0.0.1 even if secureContext is false (older browsers)
       if (!window.isSecureContext) {
-        const message = 'Trình duyệt yêu cầu kết nối an toàn (https hoặc localhost) để ghi âm.';
-        setRecordingError(message);
-        alert(message);
-        return;
+        const host = window.location.hostname;
+        const isLocal = host === 'localhost' || host === '127.0.0.1';
+        if (!isLocal) {
+          const message = 'Trình duyệt yêu cầu kết nối an toàn (https hoặc localhost) để ghi âm.';
+          setRecordingError(message);
+          alert(message);
+          return;
+        }
       }
 
       if (!navigator.mediaDevices?.getUserMedia) {
@@ -272,7 +277,9 @@ export default function DoExercise() {
         setRecordedAudio(null);
       }
 
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true }
+      });
 
       const mimeCandidates = [
         'audio/webm;codecs=opus',
@@ -292,22 +299,44 @@ export default function DoExercise() {
         }
       }
 
-      const recorder = recorderOptions ? new MediaRecorder(stream, recorderOptions) : new MediaRecorder(stream);
+      let recorder;
+      try {
+        recorder = recorderOptions ? new MediaRecorder(stream, recorderOptions) : new MediaRecorder(stream);
+      } catch (e) {
+        console.warn('MediaRecorder init failed with options, retrying without options:', e);
+        recorder = new MediaRecorder(stream);
+      }
       mediaRecorderRef.current = recorder;
       audioChunksRef.current = [];
 
+      let hadData = false;
       recorder.ondataavailable = (event) => {
         if (event.data && event.data.size > 0) {
           audioChunksRef.current.push(event.data);
+          hadData = true;
         }
+      };
+
+      recorder.onerror = (e) => {
+        console.error('[Recorder] error:', e);
+        setRecordingError('Có lỗi khi ghi âm. Vui lòng kiểm tra quyền micro và thử lại.');
       };
 
       recorder.onstop = () => {
         const mimeType = recorder.mimeType || selectedMime || 'audio/webm';
         const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        if (!hadData || !audioBlob || audioBlob.size === 0) {
+          console.warn('[Recorder] no audio data received');
+          setRecordingError('Không nhận được dữ liệu âm thanh. Hãy đảm bảo đã cho phép micro và thử lại, hoặc tải file âm thanh ở dưới.');
+          try { recorder.stream?.getTracks().forEach(t => t.stop()); } catch {}
+          return;
+        }
         const audioUrl = URL.createObjectURL(audioBlob);
         objectUrlRef.current.add(audioUrl);
         const audioPayload = { url: audioUrl, blob: audioBlob, mimeType };
+
+        // Ensure stream is fully released after stopping
+        try { recorder.stream?.getTracks().forEach(t => t.stop()); } catch {}
 
         if (questionId) {
           setSpeakingAnswers(prev => ({ ...prev, [questionId]: audioPayload }));
@@ -317,7 +346,12 @@ export default function DoExercise() {
         }
       };
 
-      recorder.start();
+      // Use a small timeslice to ensure dataavailable fires consistently across browsers
+      try {
+        recorder.start(200);
+      } catch {
+        recorder.start();
+      }
       setIsRecording(true);
       if (questionId) setActiveSpeakingQ(questionId);
     } catch (error) {
@@ -343,10 +377,11 @@ export default function DoExercise() {
     }
 
     try {
-      if (recorder.state !== 'inactive') {
+      if (recorder.state === 'recording') {
+        // Flush remaining data chunk before stopping to avoid empty blob on some browsers
+        try { recorder.requestData?.(); } catch {}
         recorder.stop();
       }
-      recorder.stream?.getTracks().forEach(track => track.stop());
     } catch (error) {
       console.warn('Error while stopping recorder:', error);
     } finally {

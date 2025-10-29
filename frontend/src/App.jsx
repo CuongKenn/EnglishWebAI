@@ -47,6 +47,7 @@ import TeacherDashboardNew from './pages/Teacher/TeacherDashboard/TeacherDashboa
 import TeacherDashboardV2 from './pages/Teacher/TeacherDashboardV2/TeacherDashboardV2';
 import TeacherDashboardV3 from './pages/Teacher/TeacherDashboardV3/TeacherDashboardV3';
 import TeacherMaterials from './pages/Teacher/TeacherMaterials/TeacherMaterials';
+import SubmissionGradingPage from './pages/Teacher/Grading/SubmissionGradingPage';
 
 // Import Parent Pages
 import ParentDashboard from './pages/Parent/ParentDashboard/ParentDashboard';
@@ -361,6 +362,16 @@ function App() {
         element={
           <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="teacher">
             <TeacherDashboardV3 onLogout={handleLogout} />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Teacher: Single submission grading full page */}
+      <Route
+        path="/teacher-grading/submissions/:submissionId"
+        element={
+          <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="teacher">
+            <SubmissionGradingPage />
           </ProtectedRoute>
         }
       />

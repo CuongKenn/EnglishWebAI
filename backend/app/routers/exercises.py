@@ -159,24 +159,18 @@ def _auto_grade_submission(submission: Submission, exercise: Exercise, db: Sessi
         print(f"[AUTO-GRADE] Writing exercise detected for submission {submission.id}")
         # Import service
         from app.services.gemini_service import gemini_service
-        import asyncio
         
         # Get writing prompt
         content = exercise.content
         prompt = content.get('prompt', '') if content else ''
         
         try:
-            # Grade writing
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            grading_result = loop.run_until_complete(
-                gemini_service.grade_writing(
-                    submission.content_text,
-                    prompt=prompt,
-                    max_score=float(exercise.max_score or 10)
-                )
+            # Grade writing (synchronous to avoid event loop conflicts)
+            grading_result = gemini_service.grade_writing_sync(
+                submission.content_text,
+                prompt=prompt,
+                max_score=float(exercise.max_score or 10)
             )
-            loop.close()
             
             submission.ai_score = grading_result['score']
             submission.ai_feedback = grading_result['feedback']
@@ -364,19 +358,13 @@ async def auto_grade_submission(
         if (not ran_specialized) and submission.content_text and (exercise.skill_type == 'writing' or exercise.skill_type is None):
             # Writing auto-grade
             from app.services.gemini_service import gemini_service
-            import asyncio
             content = exercise.content or {}
             prompt = content.get('prompt', '')
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            grading_result = loop.run_until_complete(
-                gemini_service.grade_writing(
-                    submission.content_text,
-                    prompt=prompt,
-                    max_score=float(exercise.max_score or 10)
-                )
+            grading_result = gemini_service.grade_writing_sync(
+                submission.content_text,
+                prompt=prompt,
+                max_score=float(exercise.max_score or 10)
             )
-            loop.close()
             submission.ai_score = grading_result['score']
             submission.ai_feedback = grading_result['feedback']
             submission.rubrics_scores = {

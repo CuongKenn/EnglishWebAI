@@ -5,6 +5,7 @@ Handles interactions with Google Gemini API for AI conversation
 
 import google.generativeai as genai
 import asyncio
+import json
 from typing import List, Dict
 import os
 from app.core.config import settings
@@ -933,7 +934,7 @@ IMPORTANT:
                 "feedback": "Sorry, we couldn't check your answers. Please try again."
             }
     
-    async def grade_writing(
+    def grade_writing_sync(
         self,
         writing_text: str,
         prompt: str = None,
@@ -1017,6 +1018,9 @@ Return your response in JSON format:
 """
             
             # Get AI response
+            if not self.model:
+                raise ValueError("Gemini API is not configured. Please set GEMINI_API_KEY.")
+
             response = self.model.generate_content(grading_prompt)
             result_text = response.text.strip()
             
@@ -1030,7 +1034,6 @@ Return your response in JSON format:
             result_text = result_text.strip()
             
             # Parse JSON response
-            import json
             grading_result = json.loads(result_text)
             
             # Calculate final score based on max_score
@@ -1098,6 +1101,25 @@ Return your response in JSON format:
                 "suggestions": "Vui lòng thử lại hoặc liên hệ teacher.",
                 "error": str(e)
             }
+
+    async def grade_writing(
+        self,
+        writing_text: str,
+        prompt: str = None,
+        max_score: float = 10.0,
+        criteria: dict = None
+    ) -> dict:
+        """
+        Async wrapper that calls the synchronous implementation in a thread.
+        Keeps backward compatibility with existing await calls.
+        """
+        return await asyncio.to_thread(
+            self.grade_writing_sync,
+            writing_text,
+            prompt,
+            max_score,
+            criteria,
+        )
 
     async def generate_lesson_plan(
         self,
