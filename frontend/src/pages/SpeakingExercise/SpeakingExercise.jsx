@@ -39,6 +39,7 @@ const SpeakingExercise = () => {
   const [recordingTime, setRecordingTime] = useState(0);
   const [audioBlob, setAudioBlob] = useState(null);
   const [audioUrl, setAudioUrl] = useState(null);
+  const [recordingError, setRecordingError] = useState(null);
   const [showHint, setShowHint] = useState(false);
   const [showCompletionMessage, setShowCompletionMessage] = useState(false);
 
@@ -46,6 +47,8 @@ const SpeakingExercise = () => {
   const mediaRecorderRef = useRef(null);
   const audioRef = useRef(null);
   const timerRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const objectUrlSetRef = useRef(new Set());
 
   // Handle completion
   const handleComplete = () => {
@@ -170,6 +173,22 @@ const SpeakingExercise = () => {
     };
   }, [isRecording, currentQuestion]);
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      try {
+        if (mediaRecorderRef.current?.state === 'recording') {
+          mediaRecorderRef.current.stop();
+        }
+        mediaRecorderRef.current?.stream?.getTracks().forEach(t => t.stop());
+      } catch (e) {
+        // noop
+      }
+      objectUrlSetRef.current.forEach((url) => URL.revokeObjectURL(url));
+      objectUrlSetRef.current.clear();
+    };
+  }, []);
+
   // Format time
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -180,35 +199,106 @@ const SpeakingExercise = () => {
   // Start recording
   const startRecording = async () => {
     try {
+      setRecordingError(null);
+
+      if (!window.isSecureContext) {
+        const message = 'Trình duyệt yêu cầu kết nối an toàn (https hoặc localhost) để ghi âm.';
+        setRecordingError(message);
+        alert(message);
+        return;
+      }
+
+      if (!navigator.mediaDevices?.getUserMedia) {
+        const message = 'Trình duyệt của bạn không hỗ trợ ghi âm (getUserMedia).';
+        setRecordingError(message);
+        alert(message);
+        return;
+      }
+
+      if (typeof window.MediaRecorder === 'undefined') {
+        const message = 'Trình duyệt của bạn chưa hỗ trợ MediaRecorder. Vui lòng dùng Chrome, Edge hoặc Firefox phiên bản mới.';
+        setRecordingError(message);
+        alert(message);
+        return;
+      }
+
+      // Reset previous recording
+      audioChunksRef.current = [];
+      if (audioUrl) {
+        URL.revokeObjectURL(audioUrl);
+        objectUrlSetRef.current.delete(audioUrl);
+        setAudioUrl(null);
+      }
+      setAudioBlob(null);
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      const chunks = [];
 
-      mediaRecorder.ondataavailable = (event) => {
-        chunks.push(event.data);
+      const mimeCandidates = [
+        'audio/webm;codecs=opus',
+        'audio/ogg;codecs=opus',
+        'audio/mp4',
+        'audio/webm'
+      ];
+
+      let options;
+      let selectedMime = '';
+      if (typeof MediaRecorder.isTypeSupported === 'function') {
+        for (const c of mimeCandidates) {
+          if (MediaRecorder.isTypeSupported(c)) {
+            options = { mimeType: c };
+            selectedMime = c;
+            break;
+          }
+        }
+      }
+
+      const recorder = options ? new MediaRecorder(stream, options) : new MediaRecorder(stream);
+      mediaRecorderRef.current = recorder;
+
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) audioChunksRef.current.push(e.data);
       };
 
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'audio/wav' });
-        setAudioBlob(blob);
-        setAudioUrl(URL.createObjectURL(blob));
-        stream.getTracks().forEach(track => track.stop());
+      recorder.onstop = () => {
+        try {
+          const mimeType = recorder.mimeType || selectedMime || 'audio/webm';
+          const blob = new Blob(audioChunksRef.current, { type: mimeType });
+          const url = URL.createObjectURL(blob);
+          objectUrlSetRef.current.add(url);
+          setAudioBlob(blob);
+          setAudioUrl(url);
+        } finally {
+          try {
+            recorder.stream?.getTracks().forEach(t => t.stop());
+          } catch {}
+        }
       };
 
-      mediaRecorderRef.current = mediaRecorder;
-      mediaRecorder.start();
+      recorder.start();
       setIsRecording(true);
       setRecordingTime(0);
     } catch (error) {
       console.error('Error accessing microphone:', error);
-      alert('Không thể truy cập microphone. Vui lòng kiểm tra quyền truy cập.');
+      const message = error?.name === 'NotAllowedError'
+        ? 'Bạn đã từ chối quyền truy cập micro. Hãy bật lại quyền trong cài đặt trình duyệt và thử lại.'
+        : 'Không thể truy cập microphone!';
+      setRecordingError(message);
+      alert(message);
+      try {
+        mediaRecorderRef.current?.stream?.getTracks().forEach(track => track.stop());
+      } catch (cleanupError) {
+        // noop
+      }
     }
   };
 
   // Stop recording
   const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
+    const r = mediaRecorderRef.current;
+    if (!r || !isRecording) return;
+    try {
+      if (r.state !== 'inactive') r.stop();
+    } finally {
       setIsRecording(false);
     }
   };
@@ -239,6 +329,21 @@ const SpeakingExercise = () => {
     setTimeout(() => {
       setShowResults(true);
     }, 2000);
+  };
+
+  // Manual upload fallback
+  const onSelectAudioFile = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    setRecordingError(null);
+    try {
+      const url = URL.createObjectURL(file);
+      objectUrlSetRef.current.add(url);
+      setAudioBlob(file);
+      setAudioUrl(url);
+    } finally {
+      e.target.value = '';
+    }
   };
 
   // Calculate score from results
@@ -411,6 +516,15 @@ const SpeakingExercise = () => {
                 />
               </div>
             )}
+
+            {/* Error and fallback */}
+            {recordingError && (
+              <p className="recording-error-message" style={{ color: '#b91c1c', marginTop: 8 }}>{recordingError}</p>
+            )}
+            <div className="upload-fallback" style={{ marginTop: 12 }}>
+              <span>Không ghi âm được? Tải file âm thanh: </span>
+              <input type="file" accept="audio/*" onChange={onSelectAudioFile} />
+            </div>
           </div>
         )}
 

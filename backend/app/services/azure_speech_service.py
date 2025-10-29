@@ -5,6 +5,9 @@ Handles speech-to-text and pronunciation assessment using Azure Cognitive Servic
 import os
 import json
 import requests
+import tempfile
+import subprocess
+from pathlib import Path
 from app.core.config import settings
 
 class AzureSpeechService:
@@ -42,14 +45,45 @@ class AzureSpeechService:
             }
         
         try:
-            # Read audio file
-            with open(audio_file_path, 'rb') as audio_file:
-                audio_data = audio_file.read()
+            # Always convert to 16kHz mono PCM WAV for best Azure compatibility
+            src_path = Path(audio_file_path)
+            wav_tmp = None
+            content_type = 'audio/wav; codecs=audio/pcm; samplerate=16000'
+
+            try:
+                # Create temp WAV file
+                fd, tmp_path = tempfile.mkstemp(suffix='.wav')
+                os.close(fd)
+                # ffmpeg -y -i input -ac 1 -ar 16000 -f wav -acodec pcm_s16le output.wav
+                cmd = [
+                    'ffmpeg','-y',
+                    '-i', str(src_path),
+                    '-ac','1','-ar','16000','-f','wav','-acodec','pcm_s16le',
+                    tmp_path
+                ]
+                subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                wav_tmp = tmp_path
+                with open(wav_tmp, 'rb') as f:
+                    audio_data = f.read()
+            except Exception as conv_err:
+                # Fallback: send original file with a best-guess content type
+                print(f"[AzureSpeech] ffmpeg convert failed, sending original audio: {conv_err}")
+                guessed = src_path.suffix.lower()
+                if guessed == '.mp3':
+                    content_type = 'audio/mpeg'
+                elif guessed in ('.ogg', '.oga'):
+                    content_type = 'audio/ogg'
+                elif guessed in ('.webm',):
+                    content_type = 'audio/webm'
+                else:
+                    content_type = 'application/octet-stream'
+                with open(src_path, 'rb') as f:
+                    audio_data = f.read()
             
             # Prepare headers
             headers = {
                 'Ocp-Apim-Subscription-Key': self.speech_key,
-                'Content-Type': 'audio/wav; codecs=audio/pcm; samplerate=16000',
+                'Content-Type': content_type,
                 'Accept': 'application/json'
             }
             
@@ -130,6 +164,13 @@ class AzureSpeechService:
                 "completeness_score": 0,
                 "pronunciation_score": 0
             }
+        finally:
+            # Cleanup temp file
+            try:
+                if 'wav_tmp' in locals() and wav_tmp and os.path.exists(wav_tmp):
+                    os.remove(wav_tmp)
+            except Exception:
+                pass
     
     def calculate_speaking_score(self, assessment_result: dict, max_score: float = 10.0) -> dict:
         """
