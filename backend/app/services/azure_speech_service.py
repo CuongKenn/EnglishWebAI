@@ -1,41 +1,63 @@
-"""
+﻿"""
 Azure Speech Service
-Handles speech-to-text and pronunciation assessment using Azure Cognitive Services
+Handles speech-to-text and pronunciation assessment using Azure Cognitive Services Speech SDK
 """
 import os
 import json
-import requests
 import tempfile
 import subprocess
 from pathlib import Path
 from app.core.config import settings
+import azure.cognitiveservices.speech as speechsdk
+import google.generativeai as genai
 
 class AzureSpeechService:
-    """Service for Azure Speech API - Pronunciation Assessment"""
+    """Service for Azure Speech API - Pronunciation Assessment using Speech SDK"""
     
     def __init__(self):
         """Initialize Azure Speech Service"""
         self.speech_key = settings.AZURE_SPEECH_KEY if hasattr(settings, 'AZURE_SPEECH_KEY') else os.getenv('AZURE_SPEECH_KEY')
         self.speech_region = settings.AZURE_SPEECH_REGION if hasattr(settings, 'AZURE_SPEECH_REGION') else os.getenv('AZURE_SPEECH_REGION', 'eastus')
         
+        print(f"[AzureSpeechService.__init__] speech_key present: {bool(self.speech_key)}, region: {self.speech_region}")
         if not self.speech_key:
             print("WARNING: AZURE_SPEECH_KEY not found. Speech grading will not work.")
         
-        self.endpoint = f"https://{self.speech_region}.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1"
+        # Initialize Speech SDK config
+        if self.speech_key:
+            self.speech_config = speechsdk.SpeechConfig(
+                subscription=self.speech_key,
+                region=self.speech_region
+            )
+        else:
+            self.speech_config = None
+        
+        # Initialize Gemini for feedback generation
+        self.gemini_api_key = settings.GEMINI_API_KEY if hasattr(settings, 'GEMINI_API_KEY') else os.getenv('GEMINI_API_KEY')
+        if self.gemini_api_key:
+            genai.configure(api_key=self.gemini_api_key)
+            # Use Gemini 2.5 Flash
+            self.gemini_model = genai.GenerativeModel('gemini-2.5-flash')
+        else:
+            self.gemini_model = None
+            print("WARNING: GEMINI_API_KEY not found. Will use template feedback.")
     
     def assess_pronunciation(self, audio_file_path: str, reference_text: str, language: str = "en-US") -> dict:
         """
-        Assess pronunciation using Azure Speech API
+        Assess pronunciation using Azure Speech SDK
         
         Args:
-            audio_file_path: Path to audio file (wav, mp3)
+            audio_file_path: Path to audio file (wav, mp3, webm, etc.)
             reference_text: The text that should be spoken
             language: Language code (en-US, vi-VN, etc.)
         
         Returns:
             dict: Assessment results with scores
         """
-        if not self.speech_key:
+        print(f"[assess_pronunciation] START - audio: {audio_file_path}, ref: {reference_text[:50] if reference_text else None}")
+        
+        if not self.speech_config:
+            print("[assess_pronunciation] ERROR: No Azure key configured")
             return {
                 "error": "Azure Speech API key not configured",
                 "accuracy_score": 0,
@@ -44,119 +66,135 @@ class AzureSpeechService:
                 "pronunciation_score": 0
             }
         
+        wav_path = None
         try:
-            # Always convert to 16kHz mono PCM WAV for best Azure compatibility
+            # Convert audio to 16kHz mono PCM WAV for Azure Speech SDK
             src_path = Path(audio_file_path)
-            wav_tmp = None
-            content_type = 'audio/wav; codecs=audio/pcm; samplerate=16000'
-
+            fd, wav_path = tempfile.mkstemp(suffix='.wav')
+            os.close(fd)
+            
             try:
-                # Create temp WAV file
-                fd, tmp_path = tempfile.mkstemp(suffix='.wav')
-                os.close(fd)
-                # ffmpeg -y -i input -ac 1 -ar 16000 -f wav -acodec pcm_s16le output.wav
+                # ffmpeg conversion
                 cmd = [
-                    'ffmpeg','-y',
+                    'ffmpeg', '-y',
                     '-i', str(src_path),
-                    '-ac','1','-ar','16000','-f','wav','-acodec','pcm_s16le',
-                    tmp_path
+                    '-ac', '1',           # mono
+                    '-ar', '16000',       # 16kHz
+                    '-f', 'wav',
+                    '-acodec', 'pcm_s16le',
+                    wav_path
                 ]
                 subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                wav_tmp = tmp_path
-                with open(wav_tmp, 'rb') as f:
-                    audio_data = f.read()
+                print(f"[assess_pronunciation] Audio converted to WAV: {wav_path}")
             except Exception as conv_err:
-                # Fallback: send original file with a best-guess content type
-                print(f"[AzureSpeech] ffmpeg convert failed, sending original audio: {conv_err}")
-                guessed = src_path.suffix.lower()
-                if guessed == '.mp3':
-                    content_type = 'audio/mpeg'
-                elif guessed in ('.ogg', '.oga'):
-                    content_type = 'audio/ogg'
-                elif guessed in ('.webm',):
-                    content_type = 'audio/webm'
-                else:
-                    content_type = 'application/octet-stream'
-                with open(src_path, 'rb') as f:
-                    audio_data = f.read()
+                print(f"[assess_pronunciation] ffmpeg conversion failed: {conv_err}")
+                # Try using original file
+                if os.path.exists(wav_path):
+                    os.unlink(wav_path)
+                wav_path = str(src_path)
             
-            # Prepare headers
-            headers = {
-                'Ocp-Apim-Subscription-Key': self.speech_key,
-                'Content-Type': content_type,
-                'Accept': 'application/json'
-            }
+            # Configure audio input from file
+            audio_config = speechsdk.audio.AudioConfig(filename=wav_path)
             
-            # Pronunciation assessment parameters
-            pronunciation_params = {
-                "ReferenceText": reference_text,
-                "GradingSystem": "HundredMark",
-                "Granularity": "Phoneme",
-                "Dimension": "Comprehensive",
-                "EnableMiscue": True
-            }
-            
-            # URL parameters
-            params = {
-                'language': language,
-                'format': 'detailed',
-                'pronunciationAssessment': json.dumps(pronunciation_params)
-            }
-            
-            # Make API request
-            response = requests.post(
-                self.endpoint,
-                headers=headers,
-                params=params,
-                data=audio_data,
-                timeout=30
+            # Configure pronunciation assessment
+            pronunciation_config = speechsdk.PronunciationAssessmentConfig(
+                reference_text=reference_text or "",
+                grading_system=speechsdk.PronunciationAssessmentGradingSystem.HundredMark,
+                granularity=speechsdk.PronunciationAssessmentGranularity.Phoneme,
+                enable_miscue=True
             )
             
-            if response.status_code != 200:
-                print(f"Azure Speech API Error: {response.status_code} - {response.text}")
+            # Create speech recognizer
+            self.speech_config.speech_recognition_language = language
+            recognizer = speechsdk.SpeechRecognizer(
+                speech_config=self.speech_config,
+                audio_config=audio_config
+            )
+            
+            # Apply pronunciation config to recognizer
+            pronunciation_config.apply_to(recognizer)
+            
+            print(f"[assess_pronunciation] Calling Azure Speech SDK recognize_once()...")
+            
+            # Perform recognition
+            result = recognizer.recognize_once()
+            
+            print(f"[assess_pronunciation] Recognition result reason: {result.reason}")
+            
+            if result.reason == speechsdk.ResultReason.RecognizedSpeech:
+                print(f"[assess_pronunciation] Recognized text: {result.text}")
+                
+                # Get pronunciation assessment result
+                pronunciation_result = speechsdk.PronunciationAssessmentResult(result)
+                
+                print(f"[assess_pronunciation] Pronunciation scores - "
+                      f"Accuracy: {pronunciation_result.accuracy_score}, "
+                      f"Fluency: {pronunciation_result.fluency_score}, "
+                      f"Completeness: {pronunciation_result.completeness_score}, "
+                      f"Pronunciation: {pronunciation_result.pronunciation_score}")
+                
+                # Get detailed JSON result
+                json_result = json.loads(
+                    result.properties.get(speechsdk.PropertyId.SpeechServiceResponse_JsonResult)
+                )
+                
                 return {
-                    "error": f"API Error: {response.status_code}",
+                    "recognized_text": result.text,
+                    "reference_text": reference_text,  # Store reference for feedback
+                    "accuracy_score": pronunciation_result.accuracy_score,
+                    "fluency_score": pronunciation_result.fluency_score,
+                    "completeness_score": pronunciation_result.completeness_score,
+                    "pronunciation_score": pronunciation_result.pronunciation_score,
+                    "words": json_result.get('NBest', [{}])[0].get('Words', []),
+                    "fallback_freeform": False,
+                    "json_result": json_result
+                }
+            
+            elif result.reason == speechsdk.ResultReason.NoMatch:
+                print(f"[assess_pronunciation] No speech recognized. Details: {result.no_match_details}")
+                return {
+                    "error": "No speech could be recognized",
                     "accuracy_score": 0,
                     "fluency_score": 0,
                     "completeness_score": 0,
                     "pronunciation_score": 0
                 }
             
-            result = response.json()
+            elif result.reason == speechsdk.ResultReason.Canceled:
+                cancellation = result.cancellation_details
+                print(f"[assess_pronunciation] Recognition canceled: {cancellation.reason}")
+                if cancellation.reason == speechsdk.CancellationReason.Error:
+                    print(f"[assess_pronunciation] Error details: {cancellation.error_details}")
+                    return {
+                        "error": f"Recognition error: {cancellation.error_details}",
+                        "accuracy_score": 0,
+                        "fluency_score": 0,
+                        "completeness_score": 0,
+                        "pronunciation_score": 0
+                    }
+                else:
+                    return {
+                        "error": f"Recognition canceled: {cancellation.reason}",
+                        "accuracy_score": 0,
+                        "fluency_score": 0,
+                        "completeness_score": 0,
+                        "pronunciation_score": 0
+                    }
             
-            # Extract pronunciation assessment
-            if 'NBest' in result and len(result['NBest']) > 0:
-                best_result = result['NBest'][0]
-                assessment = best_result.get('PronunciationAssessment', {})
-                
-                return {
-                    "recognized_text": best_result.get('Display', ''),
-                    "accuracy_score": assessment.get('AccuracyScore', 0),
-                    "fluency_score": assessment.get('FluencyScore', 0),
-                    "completeness_score": assessment.get('CompletenessScore', 0),
-                    "pronunciation_score": assessment.get('PronScore', 0),
-                    "words": best_result.get('Words', []),
-                    "raw_result": result
-                }
             else:
+                print(f"[assess_pronunciation] Recognition failed with reason: {result.reason}")
                 return {
-                    "error": "No recognition result",
+                    "error": f"Recognition failed: {result.reason}",
                     "accuracy_score": 0,
                     "fluency_score": 0,
                     "completeness_score": 0,
                     "pronunciation_score": 0
                 }
-                
-        except FileNotFoundError:
-            return {
-                "error": f"Audio file not found: {audio_file_path}",
-                "accuracy_score": 0,
-                "fluency_score": 0,
-                "completeness_score": 0,
-                "pronunciation_score": 0
-            }
+        
         except Exception as e:
-            print(f"Azure Speech Assessment Error: {str(e)}")
+            print(f"[assess_pronunciation] Exception: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return {
                 "error": str(e),
                 "accuracy_score": 0,
@@ -167,9 +205,9 @@ class AzureSpeechService:
         finally:
             # Cleanup temp file
             try:
-                if 'wav_tmp' in locals() and wav_tmp and os.path.exists(wav_tmp):
-                    os.remove(wav_tmp)
-            except Exception:
+                if wav_path and wav_path != str(audio_file_path) and os.path.exists(wav_path):
+                    os.unlink(wav_path)
+            except:
                 pass
     
     def calculate_speaking_score(self, assessment_result: dict, max_score: float = 10.0) -> dict:
@@ -246,12 +284,73 @@ class AzureSpeechService:
                 "accuracy": round(accuracy, 1)
             },
             "recognized_text": assessment_result.get('recognized_text', ''),
+            "used_freeform": bool(assessment_result.get('fallback_freeform', False)),
             "feedback": " | ".join(feedback_parts),
-            "detailed_feedback": self._generate_detailed_feedback(pronunciation, fluency, completeness, accuracy)
+            "detailed_feedback": self._generate_detailed_feedback(
+                pronunciation, 
+                fluency, 
+                completeness, 
+                accuracy,
+                reference_text=assessment_result.get('reference_text', ''),
+                recognized_text=assessment_result.get('recognized_text', ''),
+                words_detail=assessment_result.get('words', [])
+            )
         }
     
-    def _generate_detailed_feedback(self, pronunciation: float, fluency: float, completeness: float, accuracy: float) -> str:
-        """Generate detailed feedback based on scores"""
+    def _generate_detailed_feedback(self, pronunciation: float, fluency: float, completeness: float, accuracy: float, reference_text: str = "", recognized_text: str = "", words_detail: list = None) -> str:
+        """Generate detailed feedback using Gemini AI based on Azure pronunciation scores"""
+        
+        # If Gemini not available, use template feedback
+        if not self.gemini_model:
+            return self._generate_template_feedback(pronunciation, fluency, completeness, accuracy)
+        
+        try:
+            # Prepare detailed context for Gemini
+            prompt = f"""Bạn là giáo viên tiếng Anh đang chấm bài nói của học sinh. Hãy đưa ra nhận xét chi tiết bằng tiếng Việt dựa trên kết quả đánh giá phát âm từ Azure Speech API.
+
+**Thông tin đánh giá:**
+- Điểm phát âm (Pronunciation): {pronunciation:.1f}/100
+- Điểm độ trôi chảy (Fluency): {fluency:.1f}/100
+- Điểm hoàn thiện (Completeness): {completeness:.1f}/100
+- Điểm chính xác (Accuracy): {accuracy:.1f}/100
+
+**Nội dung yêu cầu:** {reference_text if reference_text else "Không có"}
+**Nội dung học sinh nói:** {recognized_text if recognized_text else "Không nhận diện được"}
+
+Hãy đưa ra nhận xét chi tiết với cấu trúc sau:
+
+1. **Tổng quan**: Đánh giá chung về bài nói (2-3 câu)
+
+2. **Phát âm (Pronunciation {pronunciation:.1f}/100)**:
+   - Điểm mạnh
+   - Điểm cần cải thiện (nếu có)
+   - Lời khuyên cụ thể
+
+3. **Độ trôi chảy (Fluency {fluency:.1f}/100)**:
+   - Nhận xét về nhịp điệu, tốc độ nói
+   - Gợi ý cải thiện
+
+4. **Tính hoàn chỉnh (Completeness {completeness:.1f}/100)**:
+   - Đánh giá mức độ hoàn thành nội dung
+   - Những phần còn thiếu (nếu có)
+
+5. **Lời khuyên**: 2-3 lời khuyên thiết thực để cải thiện kỹ năng nói
+
+Viết theo phong cách động viên, khích lệ học sinh. Dùng emoji phù hợp. Giới hạn khoảng 200-300 từ."""
+
+            print("[_generate_detailed_feedback] Calling Gemini for feedback...")
+            response = self.gemini_model.generate_content(prompt)
+            feedback = response.text.strip()
+            print(f"[_generate_detailed_feedback] Gemini feedback generated: {len(feedback)} chars")
+            return feedback
+            
+        except Exception as e:
+            print(f"[_generate_detailed_feedback] Gemini error: {e}")
+            # Fallback to template
+            return self._generate_template_feedback(pronunciation, fluency, completeness, accuracy)
+    
+    def _generate_template_feedback(self, pronunciation: float, fluency: float, completeness: float, accuracy: float) -> str:
+        """Generate template feedback when Gemini is not available"""
         feedback = []
         
         feedback.append(f"**Phát âm (Pronunciation):** {pronunciation:.1f}/100")

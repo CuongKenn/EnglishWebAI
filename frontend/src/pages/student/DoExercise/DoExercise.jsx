@@ -234,52 +234,70 @@ export default function DoExercise() {
   };
 
   // Speaking functions
-  const startRecording = async (questionId = null) => {
+  const startRecording = async (questionIdOrEvent = null) => {
+    // Normalize param: if called as onClick handler without args, first arg is the event
+    const qid = (questionIdOrEvent && typeof questionIdOrEvent === 'object' && (questionIdOrEvent.nativeEvent || questionIdOrEvent.target))
+      ? null
+      : questionIdOrEvent;
+    console.log('[startRecording] START - questionId (normalized):', qid);
     try {
       setRecordingError(null);
+      console.log('[startRecording] Cleared error state');
 
       // Allow localhost/127.0.0.1 even if secureContext is false (older browsers)
       if (!window.isSecureContext) {
+        console.log('[startRecording] Not secure context, checking hostname...');
         const host = window.location.hostname;
+        console.log('[startRecording] hostname:', host);
         const isLocal = host === 'localhost' || host === '127.0.0.1';
         if (!isLocal) {
           const message = 'Trình duyệt yêu cầu kết nối an toàn (https hoặc localhost) để ghi âm.';
           setRecordingError(message);
           alert(message);
+          console.error('[startRecording] BLOCKED: not secure context and not local');
           return;
         }
+        console.log('[startRecording] localhost detected, proceeding...');
       }
 
       if (!navigator.mediaDevices?.getUserMedia) {
         const message = 'Trình duyệt của bạn không hỗ trợ ghi âm (getUserMedia).';
         setRecordingError(message);
         alert(message);
+        console.error('[startRecording] BLOCKED: getUserMedia not supported');
         return;
       }
+      console.log('[startRecording] getUserMedia available');
 
       if (typeof window.MediaRecorder === 'undefined') {
         const message = 'Trình duyệt của bạn chưa hỗ trợ MediaRecorder. Vui lòng dùng Chrome, Edge hoặc Firefox phiên bản mới.';
         setRecordingError(message);
         alert(message);
+        console.error('[startRecording] BLOCKED: MediaRecorder not defined');
         return;
       }
+      console.log('[startRecording] MediaRecorder available');
 
       // Release any previous recording for this slot
-      if (questionId) {
-        const prev = speakingAnswers[questionId];
+      if (qid) {
+        const prev = speakingAnswers[qid];
         if (prev?.url) {
           URL.revokeObjectURL(prev.url);
           objectUrlRef.current.delete(prev.url);
+          console.log('[startRecording] Released previous recording for question', qid);
         }
       } else if (recordedAudio?.url) {
         URL.revokeObjectURL(recordedAudio.url);
         objectUrlRef.current.delete(recordedAudio.url);
         setRecordedAudio(null);
+        console.log('[startRecording] Released previous general recording');
       }
 
+      console.log('[startRecording] Requesting microphone access...');
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: true, noiseSuppression: true }
       });
+      console.log('[startRecording] ✓ Got stream:', stream);
 
       const mimeCandidates = [
         'audio/webm;codecs=opus',
@@ -294,17 +312,22 @@ export default function DoExercise() {
           if (MediaRecorder.isTypeSupported(candidate)) {
             recorderOptions = { mimeType: candidate };
             selectedMime = candidate;
+            console.log('[startRecording] Selected MIME:', candidate);
             break;
           }
         }
+      } else {
+        console.warn('[startRecording] MediaRecorder.isTypeSupported not available, using default');
       }
 
       let recorder;
       try {
         recorder = recorderOptions ? new MediaRecorder(stream, recorderOptions) : new MediaRecorder(stream);
+        console.log('[startRecording] ✓ MediaRecorder created with options:', recorderOptions);
       } catch (e) {
         console.warn('MediaRecorder init failed with options, retrying without options:', e);
         recorder = new MediaRecorder(stream);
+        console.log('[startRecording] ✓ MediaRecorder created (default, no options)');
       }
       mediaRecorderRef.current = recorder;
       audioChunksRef.current = [];
@@ -314,6 +337,7 @@ export default function DoExercise() {
         if (event.data && event.data.size > 0) {
           audioChunksRef.current.push(event.data);
           hadData = true;
+          console.log('[recorder.ondataavailable] chunk size:', event.data.size, 'total chunks:', audioChunksRef.current.length);
         }
       };
 
@@ -325,6 +349,7 @@ export default function DoExercise() {
       recorder.onstop = () => {
         const mimeType = recorder.mimeType || selectedMime || 'audio/webm';
         const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        console.log('[recorder.onstop] hadData:', hadData, 'blob size:', audioBlob?.size, 'mime:', mimeType);
         if (!hadData || !audioBlob || audioBlob.size === 0) {
           console.warn('[Recorder] no audio data received');
           setRecordingError('Không nhận được dữ liệu âm thanh. Hãy đảm bảo đã cho phép micro và thử lại, hoặc tải file âm thanh ở dưới.');
@@ -338,24 +363,31 @@ export default function DoExercise() {
         // Ensure stream is fully released after stopping
         try { recorder.stream?.getTracks().forEach(t => t.stop()); } catch {}
 
-        if (questionId) {
-          setSpeakingAnswers(prev => ({ ...prev, [questionId]: audioPayload }));
+        if (qid) {
+          setSpeakingAnswers(prev => ({ ...prev, [qid]: audioPayload }));
           setActiveSpeakingQ(null);
+          console.log('[recorder.onstop] Saved per-question audio for qid:', qid);
         } else {
           setRecordedAudio(audioPayload);
+          console.log('[recorder.onstop] Saved general speaking audio');
         }
       };
 
       // Use a small timeslice to ensure dataavailable fires consistently across browsers
+      console.log('[startRecording] Starting recorder with 200ms timeslice...');
       try {
         recorder.start(200);
+        console.log('[startRecording] ✓ recorder.start(200) succeeded, state:', recorder.state);
       } catch {
         recorder.start();
+        console.log('[startRecording] ✓ recorder.start() succeeded (no timeslice), state:', recorder.state);
       }
       setIsRecording(true);
-      if (questionId) setActiveSpeakingQ(questionId);
+      if (qid) setActiveSpeakingQ(qid);
+      console.log('[startRecording] ✓✓✓ RECORDING ACTIVE ✓✓✓');
     } catch (error) {
       console.error('Error accessing microphone:', error);
+      console.error('[startRecording] Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
       const message = error?.name === 'NotAllowedError'
         ? 'Bạn đã từ chối quyền truy cập micro. Hãy bật lại quyền trong cài đặt trình duyệt và thử lại.'
         : 'Không thể truy cập microphone!';
@@ -389,7 +421,8 @@ export default function DoExercise() {
     }
   };
 
-  const reRecord = (questionId = null) => {
+  const reRecord = async (questionId = null) => {
+    console.log('[reRecord] invoked for qid:', questionId);
     audioChunksRef.current = [];
 
     if (questionId) {
@@ -402,6 +435,12 @@ export default function DoExercise() {
       if (questionFileInputRefs.current[questionId]) {
         questionFileInputRefs.current[questionId].value = '';
       }
+      // Start a fresh recording for this question
+      try {
+        await startRecording(questionId);
+      } catch (e) {
+        console.warn('[reRecord] failed to start new recording for qid:', questionId, e);
+      }
     } else {
       if (recordedAudio?.url) {
         URL.revokeObjectURL(recordedAudio.url);
@@ -411,6 +450,12 @@ export default function DoExercise() {
       setRecordingError(null);
       if (generalFileInputRef.current) {
         generalFileInputRef.current.value = '';
+      }
+      // Start a fresh general speaking recording
+      try {
+        await startRecording();
+      } catch (e) {
+        console.warn('[reRecord] failed to start new general recording:', e);
       }
     }
   };

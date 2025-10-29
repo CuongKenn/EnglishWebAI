@@ -83,6 +83,167 @@ class StudentAnalytics(BaseModel):
     recent_trend: str  # 'improving', 'declining', 'stable'
 
 
+@router.get("/statistics/export")
+async def export_statistics(
+    period: str = Query("month", regex="^(week|month|semester|year)$"),
+    class_id: Optional[int] = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Export teacher statistics to Excel file
+    
+    - **period**: Time period (week, month, semester, year)
+    - **class_id**: Optional filter by specific class
+    """
+    from fastapi.responses import StreamingResponse
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, Alignment, PatternFill
+    from io import BytesIO
+    from datetime import datetime
+    
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    # Get statistics data
+    stats = await get_teacher_statistics(period, class_id, current_user, db)
+    
+    # Create workbook
+    wb = Workbook()
+    
+    # Sheet 1: Tổng quan (Overview)
+    ws1 = wb.active
+    ws1.title = "Tổng quan"
+    
+    # Header styling
+    header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF", size=12)
+    
+    # Title
+    ws1['A1'] = 'BÁO CÁO THỐNG KÊ GIẢNG DẠY'
+    ws1['A1'].font = Font(bold=True, size=16)
+    ws1['A1'].alignment = Alignment(horizontal='center')
+    ws1.merge_cells('A1:D1')
+    
+    ws1['A2'] = f'Giáo viên: {current_user.full_name}'
+    ws1['A3'] = f'Thời gian: {datetime.now().strftime("%d/%m/%Y %H:%M")}'
+    ws1['A4'] = f'Kỳ báo cáo: {period}'
+    
+    # Overview stats
+    ws1['A6'] = 'CHỈ TIÊU'
+    ws1['A6'].font = header_font
+    ws1['A6'].fill = header_fill
+    ws1['B6'] = 'GIÁ TRỊ'
+    ws1['B6'].font = header_font
+    ws1['B6'].fill = header_fill
+    
+    ws1['A7'] = 'Tổng học sinh'
+    ws1['B7'] = stats.total_students
+    ws1['A8'] = 'Điểm trung bình'
+    ws1['B8'] = stats.avg_score
+    ws1['A9'] = 'Tỷ lệ hoàn thành'
+    ws1['B9'] = f"{stats.completion_rate}%"
+    ws1['A10'] = 'Số học sinh xuất sắc'
+    ws1['B10'] = stats.excellent_count
+    
+    # Adjust column widths
+    ws1.column_dimensions['A'].width = 30
+    ws1.column_dimensions['B'].width = 15
+    
+    # Sheet 2: Kết quả theo lớp
+    ws2 = wb.create_sheet("Kết quả theo lớp")
+    ws2['A1'] = 'TÊN LỚP'
+    ws2['B1'] = 'SỐ HỌC SINH'
+    ws2['C1'] = 'ĐIỂM TB'
+    ws2['D1'] = 'TỶ LỆ HOÀN THÀNH'
+    
+    for col in ['A1', 'B1', 'C1', 'D1']:
+        ws2[col].font = header_font
+        ws2[col].fill = header_fill
+    
+    for idx, cls in enumerate(stats.class_performance, start=2):
+        ws2[f'A{idx}'] = cls.class_name
+        ws2[f'B{idx}'] = cls.students
+        ws2[f'C{idx}'] = cls.avg_score
+        ws2[f'D{idx}'] = f"{cls.completion}%"
+    
+    ws2.column_dimensions['A'].width = 30
+    ws2.column_dimensions['B'].width = 15
+    ws2.column_dimensions['C'].width = 15
+    ws2.column_dimensions['D'].width = 20
+    
+    # Sheet 3: Phân bố điểm
+    ws3 = wb.create_sheet("Phân bố điểm")
+    ws3['A1'] = 'KHOẢNG ĐIỂM'
+    ws3['B1'] = 'SỐ LƯỢNG'
+    ws3['C1'] = 'TỶ LỆ'
+    
+    for col in ['A1', 'B1', 'C1']:
+        ws3[col].font = header_font
+        ws3[col].fill = header_fill
+    
+    for idx, dist in enumerate(stats.score_distribution, start=2):
+        ws3[f'A{idx}'] = f"Điểm {dist.range}"
+        ws3[f'B{idx}'] = dist.count
+        ws3[f'C{idx}'] = f"{dist.percentage}%"
+    
+    ws3.column_dimensions['A'].width = 20
+    ws3.column_dimensions['B'].width = 15
+    ws3.column_dimensions['C'].width = 15
+    
+    # Sheet 4: Kỹ năng
+    ws4 = wb.create_sheet("Phân tích kỹ năng")
+    ws4['A1'] = 'KỸ NĂNG'
+    ws4['B1'] = 'ĐIỂM TB'
+    ws4['C1'] = 'SỐ BÀI'
+    
+    for col in ['A1', 'B1', 'C1']:
+        ws4[col].font = header_font
+        ws4[col].fill = header_fill
+    
+    for idx, skill in enumerate(stats.skills_data, start=2):
+        ws4[f'A{idx}'] = skill.skill
+        ws4[f'B{idx}'] = skill.score
+        ws4[f'C{idx}'] = skill.count
+    
+    ws4.column_dimensions['A'].width = 20
+    ws4.column_dimensions['B'].width = 15
+    ws4.column_dimensions['C'].width = 15
+    
+    # Sheet 5: Tiến độ theo tháng
+    ws5 = wb.create_sheet("Tiến độ theo tháng")
+    ws5['A1'] = 'THÁNG'
+    ws5['B1'] = 'ĐIỂM TB'
+    ws5['C1'] = 'SỐ BÀI NỘP'
+    
+    for col in ['A1', 'B1', 'C1']:
+        ws5[col].font = header_font
+        ws5[col].fill = header_fill
+    
+    for idx, month in enumerate(stats.monthly_progress, start=2):
+        ws5[f'A{idx}'] = month.month
+        ws5[f'B{idx}'] = month.avg_score
+        ws5[f'C{idx}'] = month.submissions
+    
+    ws5.column_dimensions['A'].width = 15
+    ws5.column_dimensions['B'].width = 15
+    ws5.column_dimensions['C'].width = 15
+    
+    # Save to BytesIO
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
+    # Generate filename
+    filename = f"BaoCaoThongKe_{current_user.username}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
 # ===================== Helper Functions =====================
 
 def calculate_skill_scores(submissions: List[Submission]) -> Dict[str, float]:
@@ -516,16 +677,17 @@ async def get_teacher_statistics(
 @router.get("/classes/{class_id}/analytics/overview", response_model=ClassOverview)
 async def get_class_overview(
     class_id: int,
-    # current_user: User = Depends(get_current_user),  # TEMPORARILY DISABLED FOR DEMO
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Get overview analytics for a specific class"""
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
     # Get class
     class_obj = db.query(Classroom).filter(Classroom.id == class_id).first()
     if not class_obj:
         raise HTTPException(status_code=404, detail="Class not found")
-    
-    # For demo: skip access control
     
     # Get students count
     student_count = db.query(Enrollment).filter(Enrollment.class_id == class_id).count()
@@ -581,16 +743,17 @@ async def get_class_overview(
 @router.get("/classes/{class_id}/analytics/students", response_model=List[StudentAnalytics])
 async def get_student_analytics(
     class_id: int,
-    # current_user: User = Depends(get_current_user),  # TEMPORARILY DISABLED FOR DEMO
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Get detailed analytics for each student in a class"""
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
     # Get class
     class_obj = db.query(Classroom).filter(Classroom.id == class_id).first()
     if not class_obj:
         raise HTTPException(status_code=404, detail="Class not found")
-    
-    # For demo: skip access control
     
     # Get students
     enrollments = db.query(Enrollment).filter(Enrollment.class_id == class_id).all()
