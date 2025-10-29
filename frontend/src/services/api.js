@@ -25,7 +25,8 @@ const normalized = (() => {
 // In production (Docker), use relative path to go through nginx proxy
 // In development, use localhost:8000
 const isProduction = import.meta.env.PROD;
-const BASE_URL = isProduction ? '' : (normalized || 'http://localhost:8000');
+// Force localhost:8000 for development
+const BASE_URL = 'http://localhost:8000';
 const API_V1 = `${BASE_URL}/api/v1`;
 const API_USERS = `${BASE_URL}/api/users`;
 
