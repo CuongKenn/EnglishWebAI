@@ -11,6 +11,7 @@ from app.routers import ai_conversation, ai_writing, ai_reading, ai_listening, a
 from app.routers import question_bank as question_bank_router
 from app.routers import ai_usage, ai_analytics
 from app.routers import teacher_grading as teacher_router
+from app.routers import teacher_analytics
 from app.routers import exports
 from app.routers import lesson_plans, worksheets
 from app.models import User
@@ -65,6 +66,8 @@ app.include_router(ai_analytics.router, tags=["AI Analytics (Admin)"])
 app.include_router(question_bank_router.router, prefix=f"{settings.API_PREFIX}/question-bank", tags=["Question Bank"])
 app.include_router(exports.router, tags=["Exports"])
 app.include_router(teacher_router.router, prefix=f"{settings.API_PREFIX}/teacher", tags=["Teacher"])
+app.include_router(teacher_analytics.router, prefix=f"{settings.API_PREFIX}/teacher", tags=["Teacher Analytics"]) 
+
 app.include_router(lesson_plans.router, tags=["Lesson Plans"])
 app.include_router(worksheets.router, tags=["Worksheets"]) 
 
@@ -78,15 +81,15 @@ except Exception:
 @app.on_event("startup")
 async def startup_event():
     """Run on application startup"""
-    print("🚀 Starting EnglishWebAI Backend...")
+    print("[STARTUP] Starting EnglishWebAI Backend...")
     
     # Auto-migrate lightweight schema (SQLite add columns if missing)
     try:
         from app.utils.db_migrations import ensure_schema
         ensure_schema()
-        print("✅ Schema ensured (light migration)")
+        print("[SUCCESS] Schema ensured (light migration)")
     except Exception as e:
-        print(f"⚠️  Schema ensure failed: {e}")
+        print(f"[WARNING] Schema ensure failed: {e}")
 
     # Auto-seed database if empty
     from app.utils.seed import seed_users
@@ -96,16 +99,16 @@ async def startup_event():
     try:
         user_count = db.query(User).count()
         if user_count == 0:
-            print("📊 Database is empty. Running auto-seed...")
+            print("[INFO] Database is empty. Running auto-seed...")
             seed_users(db, force=False)
-            print("✅ Auto-seed completed!")
+            print("[SUCCESS] Auto-seed completed!")
         else:
-            print(f"📊 Database already has {user_count} users. Skipping auto-seed.")
+            print(f"[INFO] Database already has {user_count} users. Skipping auto-seed.")
 
         # Initialize default system configurations
         from app.services.system_config_service import SystemConfigService
         SystemConfigService.initialize_default_configs(db)
-        print("✅ System configurations initialized!")
+        print("[SUCCESS] System configurations initialized!")
 
         # Seed public courses if none exist
         try:
@@ -113,10 +116,10 @@ async def startup_event():
             seed_courses(db)
             seed_course_units_questions(db)
         except Exception as se:
-            print(f"⚠️  Course seeding skipped: {se}")
+            print(f"[WARNING] Course seeding skipped: {se}")
         
     except Exception as e:
-        print(f"⚠️  Startup error: {str(e)}")
+        print(f"[ERROR] Startup error: {str(e)}")
     finally:
         db.close()
 
