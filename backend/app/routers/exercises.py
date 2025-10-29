@@ -115,7 +115,7 @@ def _auto_grade_submission(submission: Submission, exercise: Exercise, db: Sessi
     if submission.content_url:
         print(f"[AUTO-GRADE] Speaking exercise detected for submission {submission.id}")
         # Import service
-    from app.services.azure_speech_service import azure_speech_service
+        from app.services.azure_speech_service import azure_speech_service
         
         # Get reference text from exercise content
         content = exercise.content
