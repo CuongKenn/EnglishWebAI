@@ -24,8 +24,6 @@ const normalized = (() => {
 
 // Prefer explicit backend base if provided; otherwise fall back to relative in prod or localhost in dev
 const isProduction = import.meta.env.PROD;
-// Force localhost:8000 for development
-const BASE_URL = 'http://localhost:8000';
 const BASE_URL = normalized || (isProduction ? '' : 'http://localhost:8000');
 const API_V1 = `${BASE_URL}/api/v1`;
 const API_USERS = `${BASE_URL}/api/users`;
