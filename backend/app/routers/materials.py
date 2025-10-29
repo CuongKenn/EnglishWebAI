@@ -631,7 +631,9 @@ async def upload_material_file(
     current_user: User = Depends(get_current_user),
 ):
     """Upload file học liệu, trả về đường dẫn lưu trữ.
-
+    
+    Hỗ trợ các định dạng: PDF, Word, PowerPoint, Excel, Images, Audio, Video, Text
+    
     Lưu ý: endpoint này chỉ upload file, chưa tạo bản ghi Material.
     Dùng đường dẫn trả về (file_path) khi gọi API tạo học liệu.
     """
@@ -649,6 +651,49 @@ async def upload_material_file(
     # Sanitize original filename
     original = os.path.basename(file.filename or "material")
     name, ext = os.path.splitext(original)
+    ext = ext.lower()
+    
+    # Validate file type
+    allowed_extensions = {
+        # Documents
+        '.pdf', '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx',
+        # Text
+        '.txt', '.md', '.csv',
+        # Images
+        '.jpg', '.jpeg', '.png', '.gif', '.svg', '.webp',
+        # Audio
+        '.mp3', '.wav', '.ogg', '.m4a',
+        # Video
+        '.mp4', '.avi', '.mov', '.webm',
+        # Archives
+        '.zip', '.rar'
+    }
+    
+    if ext and ext not in allowed_extensions:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Định dạng file không được hỗ trợ. Cho phép: {', '.join(allowed_extensions)}"
+        )
+    
+    # Determine file type
+    file_type = "file"  # default
+    if ext in ['.pdf']:
+        file_type = "pdf"
+    elif ext in ['.doc', '.docx']:
+        file_type = "document"
+    elif ext in ['.ppt', '.pptx']:
+        file_type = "presentation"  # PowerPoint
+    elif ext in ['.xls', '.xlsx']:
+        file_type = "spreadsheet"
+    elif ext in ['.jpg', '.jpeg', '.png', '.gif', '.svg', '.webp']:
+        file_type = "image"
+    elif ext in ['.mp3', '.wav', '.ogg', '.m4a']:
+        file_type = "audio"
+    elif ext in ['.mp4', '.avi', '.mov', '.webm']:
+        file_type = "video"
+    elif ext in ['.txt', '.md', '.csv']:
+        file_type = "text"
+    
     ts = datetime.utcnow().strftime("%H%M%S%f")
     filename = f"{name}_{ts}{ext}" if ext else f"{name}_{ts}"
     file_path = os.path.join(save_dir, filename)
@@ -688,6 +733,7 @@ async def upload_material_file(
     return {
         "file_path": file_path,
         "filename": original,
+        "file_type": file_type,
         "size": size,
         "public_url": public_url,
         "text_content": text_content,

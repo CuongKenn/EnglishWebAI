@@ -23,6 +23,8 @@ import ProgressAnalytics from './components/ProgressAnalytics';
 import ExportReports from './components/ExportReports';
 import LessonPlans from '../LessonPlans/LessonPlans';
 import Worksheets from '../Worksheets/Worksheets';
+import WeeklyAssessments from '../WeeklyAssessments/WeeklyAssessments';
+import ErrorAnalysisExport from '../ErrorAnalysis/ErrorAnalysisExport';
 import Navbar from '../../../components/Navbar/Navbar';
 import authService from '../../../services/authService';
 import './TeacherDashboardV3.css';
@@ -58,6 +60,10 @@ const TeacherDashboardV3 = ({ onLogout }) => {
         return <ExerciseManagement />;
       case 'grading-feedback':
         return <GradingFeedback />;
+      case 'weekly-assessments':
+        return <WeeklyAssessments />;
+      case 'error-analysis':
+        return <ErrorAnalysisExport />;
       case 'worksheet-generator':
         return <WorksheetGenerator />;
       case 'lesson-plans':
