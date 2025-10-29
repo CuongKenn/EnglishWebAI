@@ -52,8 +52,45 @@ const Statistics = () => {
     }
   };
 
-  const handleExportReport = () => {
-    alert('Chức năng xuất báo cáo sẽ được triển khai trong phần Export Reports');
+  const handleExportReport = async () => {
+    try {
+      const params = {
+        period: selectedPeriod
+      };
+      if (selectedClass !== 'all') {
+        params.class_id = parseInt(selectedClass);
+      }
+
+      // Call export endpoint
+      const response = await apiV1.get('/teacher/statistics/export', {
+        params,
+        responseType: 'blob' // Important for file download
+      });
+
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Extract filename from Content-Disposition header or use default
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = 'BaoCaoThongKe.xlsx';
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
+        if (filenameMatch) {
+          filename = filenameMatch[1];
+        }
+      }
+      
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Error exporting report:', err);
+      alert('Không thể xuất báo cáo. Vui lòng thử lại sau.');
+    }
   };
 
   const getSkillColor = (skill) => {
