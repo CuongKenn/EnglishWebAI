@@ -157,7 +157,7 @@ def calculate_trend(recent_submissions: List[Submission]) -> str:
 async def get_teacher_statistics(
     period: str = Query("month", regex="^(week|month|semester|year)$"),
     class_id: Optional[int] = None,
-    # current_user: User = Depends(get_current_user),  # TEMPORARILY DISABLED FOR DEMO
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -166,16 +166,8 @@ async def get_teacher_statistics(
     - **period**: Time period (week, month, semester, year)
     - **class_id**: Optional filter by specific class
     """
-    # For demo: get first teacher from database
-    current_user = db.query(User).filter(User.role == "teacher").first()
     if not current_user:
-        # If no teacher, use admin or first user
-        current_user = db.query(User).filter(User.role == "admin").first()
-        if not current_user:
-            current_user = db.query(User).first()
-    
-    if not current_user:
-        raise HTTPException(status_code=404, detail="No users found in database")
+        raise HTTPException(status_code=401, detail="Not authenticated")
     
     logger.info(f"[ANALYTICS] Getting statistics for user {current_user.id}, period: {period}, class_id: {class_id}")
     
@@ -227,7 +219,7 @@ async def get_teacher_statistics(
         
         # Get all students in these classes
         enrollments = db.query(Enrollment).filter(Enrollment.class_id.in_(class_ids)).all()
-        student_ids = list(set([e.student_id for e in enrollments]))
+        student_ids = list(set([e.user_id for e in enrollments]))
         total_students = len(student_ids)
         
         # Get all exercises in these classes
@@ -324,7 +316,7 @@ async def get_teacher_statistics(
             for cls in classes:
                 try:
                     cls_enrollments = [e for e in enrollments if e.class_id == cls.id]
-                    cls_student_ids = [e.student_id for e in cls_enrollments]
+                    cls_student_ids = [e.user_id for e in cls_enrollments]
                     cls_exercises = [ex for ex in exercises if ex.class_id == cls.id]
                     cls_exercise_ids = [ex.id for ex in cls_exercises]
                     cls_submissions = [s for s in submissions if s.exercise_id in cls_exercise_ids]
@@ -602,7 +594,7 @@ async def get_student_analytics(
     
     # Get students
     enrollments = db.query(Enrollment).filter(Enrollment.class_id == class_id).all()
-    student_ids = [e.student_id for e in enrollments]
+    student_ids = [e.user_id for e in enrollments]
     students = db.query(User).filter(User.id.in_(student_ids)).all()
     
     # Get exercises
