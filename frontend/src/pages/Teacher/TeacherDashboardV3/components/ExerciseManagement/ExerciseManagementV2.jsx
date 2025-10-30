@@ -99,6 +99,7 @@ export default function ExerciseManagementV2() {
     }
   };
 
+
   const handleViewDetail = (exercise) => {
     setSelectedExercise(exercise);
     setShowDetailModal(true);

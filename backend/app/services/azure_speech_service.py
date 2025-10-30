@@ -9,7 +9,7 @@ import subprocess
 from pathlib import Path
 from app.core.config import settings
 import azure.cognitiveservices.speech as speechsdk
-import google.generativeai as genai
+import openai
 
 class AzureSpeechService:
     """Service for Azure Speech API - Pronunciation Assessment using Speech SDK"""
@@ -32,15 +32,14 @@ class AzureSpeechService:
         else:
             self.speech_config = None
         
-        # Initialize Gemini for feedback generation
-        self.gemini_api_key = settings.GEMINI_API_KEY if hasattr(settings, 'GEMINI_API_KEY') else os.getenv('GEMINI_API_KEY')
-        if self.gemini_api_key:
-            genai.configure(api_key=self.gemini_api_key)
-            # Use Gemini 2.5 Flash
-            self.gemini_model = genai.GenerativeModel('gemini-2.5-flash')
+        # Initialize OpenAI for feedback generation
+        self.openai_api_key = settings.OPENAI_API_KEY if hasattr(settings, 'OPENAI_API_KEY') else os.getenv('OPENAI_API_KEY')
+        if self.openai_api_key:
+            openai.api_key = self.openai_api_key
+            self.openai_model = settings.OPENAI_MODEL if hasattr(settings, 'OPENAI_MODEL') else os.getenv('OPENAI_MODEL', 'gpt-4o-mini')
         else:
-            self.gemini_model = None
-            print("WARNING: GEMINI_API_KEY not found. Will use template feedback.")
+            self.openai_model = None
+            print("WARNING: OPENAI_API_KEY not found. Will use template feedback.")
     
     def assess_pronunciation(self, audio_file_path: str, reference_text: str, language: str = "en-US") -> dict:
         """
@@ -298,14 +297,14 @@ class AzureSpeechService:
         }
     
     def _generate_detailed_feedback(self, pronunciation: float, fluency: float, completeness: float, accuracy: float, reference_text: str = "", recognized_text: str = "", words_detail: list = None) -> str:
-        """Generate detailed feedback using Gemini AI based on Azure pronunciation scores"""
+        """Generate detailed feedback using OpenAI based on Azure pronunciation scores"""
         
-        # If Gemini not available, use template feedback
-        if not self.gemini_model:
+        # If OpenAI not available, use template feedback
+        if not self.openai_model:
             return self._generate_template_feedback(pronunciation, fluency, completeness, accuracy)
         
         try:
-            # Prepare detailed context for Gemini
+            # Prepare detailed context for OpenAI
             prompt = f"""Bạn là giáo viên tiếng Anh đang chấm bài nói của học sinh. Hãy đưa ra nhận xét chi tiết bằng tiếng Việt dựa trên kết quả đánh giá phát âm từ Azure Speech API.
 
 **Thông tin đánh giá:**
@@ -338,19 +337,23 @@ Hãy đưa ra nhận xét chi tiết với cấu trúc sau:
 
 Viết theo phong cách động viên, khích lệ học sinh. Dùng emoji phù hợp. Giới hạn khoảng 200-300 từ."""
 
-            print("[_generate_detailed_feedback] Calling Gemini for feedback...")
-            response = self.gemini_model.generate_content(prompt)
-            feedback = response.text.strip()
-            print(f"[_generate_detailed_feedback] Gemini feedback generated: {len(feedback)} chars")
+            print("[_generate_detailed_feedback] Calling OpenAI for feedback...")
+            response = openai.chat.completions.create(
+                model=self.openai_model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.7,
+            )
+            feedback = response.choices[0].message.content.strip()
+            print(f"[_generate_detailed_feedback] OpenAI feedback generated: {len(feedback)} chars")
             return feedback
             
         except Exception as e:
-            print(f"[_generate_detailed_feedback] Gemini error: {e}")
+            print(f"[_generate_detailed_feedback] OpenAI error: {e}")
             # Fallback to template
             return self._generate_template_feedback(pronunciation, fluency, completeness, accuracy)
     
     def _generate_template_feedback(self, pronunciation: float, fluency: float, completeness: float, accuracy: float) -> str:
-        """Generate template feedback when Gemini is not available"""
+        """Generate template feedback when OpenAI is not available"""
         feedback = []
         
         feedback.append(f"**Phát âm (Pronunciation):** {pronunciation:.1f}/100")

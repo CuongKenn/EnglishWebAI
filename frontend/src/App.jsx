@@ -21,6 +21,7 @@ import AIPractice from './pages/student/AIPractice';
 import MyClasses from './pages/student/MyClasses/MyClasses';
 import ExerciseHub from './pages/student/ExerciseHub/ExerciseHub';
 import DoExercise from './pages/student/DoExercise/DoExercise';
+import TakeExam from './pages/student/TakeExam/TakeExam';
 import { WritingAI } from './components/ai/WritingAI';
 import { ReadingAI } from './components/ai/ReadingAI';
 import CourseContentPage from './pages/CourseContentPage/CourseContentPage';
@@ -219,6 +220,14 @@ function App() {
         element={
           <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
             <DoExercise />
+          </Layout>
+        } 
+      />
+      <Route 
+        path="/exam/:examId" 
+        element={
+          <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+            <TakeExam />
           </Layout>
         } 
       />

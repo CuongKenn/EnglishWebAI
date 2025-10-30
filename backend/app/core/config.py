@@ -33,9 +33,9 @@ class Settings(BaseSettings):
     OTP_EXPIRE_MINUTES: int = int(os.getenv("OTP_EXPIRE_MINUTES", "5"))
     OTP_LENGTH: int = int(os.getenv("OTP_LENGTH", "6"))
     
-    # AI Configuration
-    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
-    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+    # AI Configuration - OpenAI (ChatGPT)
+    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
+    OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
     
     # Azure Speech Configuration
     AZURE_SPEECH_KEY: str = os.getenv("AZURE_SPEECH_KEY", "")

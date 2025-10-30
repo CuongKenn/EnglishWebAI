@@ -13,7 +13,7 @@ from app.schemas.ai_reading import (
     CheckAnswersResponse,
     Question
 )
-from app.services.gemini_service import gemini_service
+from app.services.openai_service import openai_service
 from app.core.dependencies import get_current_user
 from app.core.database import get_db
 from app.services.ai_analytics_service import AIAnalyticsService
@@ -39,8 +39,8 @@ async def generate_reading_passage(
     - **topic**: (optional) specific topic for the passage
     """
     try:
-        # Generate passage using Gemini AI
-        result = await gemini_service.generate_reading_passage(
+        # Generate passage using OpenAI
+        result = await openai_service.generate_reading_passage(
             reading_type=request.reading_type,
             level=request.level,
             topic=request.topic
@@ -116,8 +116,8 @@ async def check_reading_answers(
                 detail=f"Expected {len(questions)} answers, but got {len(request.answers)}"
             )
         
-        # Check answers using Gemini service
-        result = await gemini_service.check_reading_answers(
+        # Check answers using OpenAI service
+        result = await openai_service.check_reading_answers(
             passage_title=cached_passage.get('title', ''),
             questions=questions,
             user_answers=request.answers

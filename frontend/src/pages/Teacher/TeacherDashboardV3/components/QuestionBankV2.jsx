@@ -309,6 +309,7 @@ export default function QuestionBankV2() {
         });
         if (mismatches.length > 0) {
           console.warn('⚠️ SKILL MISMATCH:', mismatches.join(', '));
+
           showWarning('⚠️ Cảnh báo: Một số kỹ năng không tạo được câu hỏi:\n\n' + mismatches.join('\n') + '\n\nVui lòng:\n1. Bỏ tick "Tránh trùng với ngân hàng"\n2. Kiểm tra GEMINI_API_KEY\n3. Xem log backend để biết chi tiết');
         }
       }
@@ -1527,7 +1528,7 @@ export default function QuestionBankV2() {
                   </div>
                   <h4 className="text-lg font-semibold text-gray-900 mb-2">AI đang sinh đề...</h4>
                   <p className="text-sm text-gray-600 text-center max-w-md">
-                    Gemini Flash đang phân tích yêu cầu và tạo câu hỏi phù hợp. Quá trình này có thể mất 10-30 giây tùy số lượng câu.
+                    ChatGPT AI đang phân tích yêu cầu và tạo câu hỏi phù hợp. Quá trình này có thể mất 10-30 giây tùy số lượng câu.
                   </p>
                   <div className="mt-6 w-full max-w-md">
                     <div className="h-2 bg-gray-200 rounded-full overflow-hidden">

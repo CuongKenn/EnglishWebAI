@@ -77,7 +77,7 @@ export function FlashcardAI() {
         aiUsageAPI.logUsage('flashcard', { action: 'load', source: 'ai', count: allCards.length });
       } else {
         console.error("❌ AI failed to generate any flashcards. Please check backend logs.");
-        alert("Không thể tải flashcards từ AI. Vui lòng kiểm tra GEMINI_API_KEY trong backend .env file.");
+        alert("Không thể tải flashcards từ AI. Vui lòng kiểm tra OPENAI_API_KEY trong backend .env file.");
         aiUsageAPI.logUsage('flashcard', { action: 'load', status: 'error', source: 'none' });
       }
       
@@ -317,7 +317,7 @@ export function FlashcardAI() {
           <div>
             <p className="font-medium text-purple-900">🤖 Từ vựng được sinh bởi AI</p>
             <p className="text-sm text-purple-700">
-              Mỗi flashcard được Gemini AI tạo ra dựa trên chuẩn CEFR, phù hợp với từng cấp độ của bạn.
+              Mỗi flashcard được ChatGPT AI tạo ra dựa trên chuẩn CEFR, phù hợp với từng cấp độ của bạn.
               Từ vựng được chọn lọc và giải thích rõ ràng để tối ưu quá trình học tập.
             </p>
           </div>
