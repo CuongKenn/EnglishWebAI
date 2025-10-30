@@ -28,6 +28,7 @@ class Classroom(Base):
     materials = relationship("Material", back_populates="classroom", cascade="all, delete-orphan")
     exercises = relationship("Exercise", back_populates="classroom", cascade="all, delete-orphan")
     discussions = relationship("DiscussionThread", back_populates="classroom", cascade="all, delete-orphan")
+    exam_assessments = relationship("ExamAssessment", back_populates="classroom", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         return f"<Classroom(id={self.id}, name={self.name}, code={self.code})>"

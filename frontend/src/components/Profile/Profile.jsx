@@ -3,8 +3,11 @@ import { User, Camera, Mail, Phone, MapPin, Calendar, Edit2, Save, X, AlertCircl
 import authService from '../../services/authService';
 import { linkParent, unlinkParent, getMyParents, verifyParentLink } from '../../services/userService';
 import './Profile.css';
+import Toast from '../Toast/Toast';
+import useToast from '../../hooks/useToast';
 
 const Profile = () => {
+  const { toast, showSuccess, showError, showWarning, hideToast } = useToast();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('info'); // 'info' or 'settings'
@@ -127,7 +130,7 @@ const Profile = () => {
     setUser(editedUser);
     setIsEditing(false);
     // Show success message
-    alert('Cập nhật thông tin thành công!');
+    showSuccess('Cập nhật thông tin thành công!');
   };
 
   const handleInputChange = (field, value) => {
@@ -137,11 +140,11 @@ const Profile = () => {
   const handleSendVerification = async () => {
     try {
       // TODO: Call API to send verification email
-      alert('Email xác minh đã được gửi đến ' + user.email);
+      showSuccess('Email xác minh đã được gửi đến ' + user.email);
       setResendCooldown(60); // 60 seconds cooldown
     } catch (error) {
       console.error('Error sending verification email:', error);
-      alert('Có lỗi xảy ra, vui lòng thử lại!');
+      showError('Có lỗi xảy ra, vui lòng thử lại!');
     }
   };
 
@@ -153,7 +156,7 @@ const Profile = () => {
 
   const handleLinkParent = async () => {
     if (!parentEmail.trim()) {
-      alert('Vui lòng nhập email phụ huynh!');
+      showWarning('Vui lòng nhập email phụ huynh!');
       return;
     }
 
@@ -165,10 +168,10 @@ const Profile = () => {
         verified: link.is_verified
       });
       setParentEmail('');
-      alert('Đã gửi yêu cầu liên kết đến ' + parentEmail);
+      showSuccess('Đã gửi yêu cầu liên kết đến ' + parentEmail);
     } catch (error) {
       console.error('Error linking parent:', error);
-      alert(error.message || 'Có lỗi xảy ra, vui lòng thử lại!');
+      showError(error.message || 'Có lỗi xảy ra, vui lòng thử lại!');
     }
   };
 
@@ -177,10 +180,10 @@ const Profile = () => {
       try {
         await unlinkParent(linkedParent.id);
         setLinkedParent(null);
-        alert('Đã hủy liên kết với phụ huynh!');
+        showSuccess('Đã hủy liên kết với phụ huynh!');
       } catch (error) {
         console.error('Error unlinking parent:', error);
-        alert(error.message || 'Có lỗi xảy ra, vui lòng thử lại!');
+        showError(error.message || 'Có lỗi xảy ra, vui lòng thử lại!');
       }
     }
   };
@@ -193,10 +196,10 @@ const Profile = () => {
           ...linkedParent,
           verified: true
         });
-        alert('Đã xác nhận liên kết với phụ huynh!');
+        showSuccess('Đã xác nhận liên kết với phụ huynh!');
       } catch (error) {
         console.error('Error verifying parent:', error);
-        alert(error.message || 'Có lỗi xảy ra, vui lòng thử lại!');
+        showError(error.message || 'Có lỗi xảy ra, vui lòng thử lại!');
       }
     }
   };
@@ -587,6 +590,15 @@ const Profile = () => {
           </div>
         </div>
       </div>
+      
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={hideToast}
+          duration={toast.duration}
+        />
+      )}
     </div>
   );
 };

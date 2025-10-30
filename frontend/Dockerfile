@@ -25,8 +25,8 @@ RUN apk add --no-cache curl
 # Copy built files from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copy custom nginx config
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copy custom nginx config (use local config for development)
+COPY nginx.local.conf /etc/nginx/conf.d/default.conf
 
 # Create non-root user
 RUN addgroup -g 1000 appuser && \

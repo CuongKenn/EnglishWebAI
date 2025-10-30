@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.schemas.auth import LoginRequest, RegisterRequest, LoginResponse
 from app.services.auth_service import AuthService
+from app.core.role_utils import get_display_role
 
 router = APIRouter()
 
@@ -14,17 +15,22 @@ async def login(
     """Login user with username and password"""
     try:
         result = AuthService.login(db, login_data)
+        user = result["user"]
+        
+        # Get display role (user -> student)
+        display_role = get_display_role(user.role)
+        
         return {
-            "role": result["user"].role.value,
+            "role": display_role,  # Return 'student' instead of 'user' for frontend
             "access_token": result["access_token"],
             "token_type": result["token_type"],
             "user": {
-                "id": result["user"].id,
-                "username": result["user"].username,
-                "email": result["user"].email,
-                "full_name": result["user"].full_name,
-                "role": result["user"].role.value,
-                "phone": result["user"].phone
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "full_name": user.full_name,
+                "role": display_role,  # Display role
+                "phone": user.phone
             }
         }
     except HTTPException as e:

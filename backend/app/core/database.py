@@ -4,19 +4,20 @@ from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
 import os
 
-# Create database directory in a stable, absolute location (inside backend)
-_base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))  # .../backend
-db_dir = os.path.join(_base_dir, 'data')
-os.makedirs(db_dir, exist_ok=True)
+# PostgreSQL database configuration
+POSTGRES_USER = os.getenv("POSTGRES_USER", "englishwebai_user")
+POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "englishwebai_password")
+POSTGRES_HOST = os.getenv("POSTGRES_HOST", "db")
+POSTGRES_PORT = os.getenv("POSTGRES_PORT", "5432")
+POSTGRES_DB = os.getenv("POSTGRES_DB", "englishwebai_db")
 
-# Absolute SQLite database path to avoid CWD issues
-abs_db_path = os.path.join(db_dir, 'englishwebai.db')
-SQLALCHEMY_DATABASE_URL = f"sqlite:///{abs_db_path}"
+# PostgreSQL database URL
+SQLALCHEMY_DATABASE_URL = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
 
 # Create database engine
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
-    connect_args={"check_same_thread": False},  # Needed for SQLite
+    pool_pre_ping=True,  # Verify connections before using them
     echo=settings.DEBUG
 )
 

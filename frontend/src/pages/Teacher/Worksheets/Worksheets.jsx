@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { worksheetsAPI } from '../../../services/api';
 import { X, Plus, Sparkles, Eye, Edit, Trash2, FileText, Clock, Award, Download, FileDown } from 'lucide-react';
+import Toast from '../../../components/Toast/Toast';
+import useToast from '../../../hooks/useToast';
 import './Worksheets.css';
 
 const Worksheets = () => {
@@ -9,6 +11,7 @@ const Worksheets = () => {
   const [selectedGrade, setSelectedGrade] = useState('all');
   const [selectedType, setSelectedType] = useState('all');
   const [selectedSkill, setSelectedSkill] = useState('all');
+  const { toast, showSuccess, showError, showWarning, hideToast } = useToast();
   
   // Modals state
   const [showAIModal, setShowAIModal] = useState(false);
@@ -71,7 +74,7 @@ const Worksheets = () => {
       setWorksheets(data);
     } catch (error) {
       console.error('Failed to load worksheets:', error);
-      alert('Không thể tải danh sách phiếu học tập');
+      showError('Không thể tải danh sách phiếu học tập');
     } finally {
       setLoading(false);
     }
@@ -84,14 +87,14 @@ const Worksheets = () => {
   // Handle AI generation
   const handleAIGenerate = async () => {
     if (!aiFormData.unit.trim()) {
-      alert('Vui lòng nhập Unit/Chủ đề');
+      showWarning('Vui lòng nhập Unit/Chủ đề');
       return;
     }
     
     setGenerating(true);
     try {
       await worksheetsAPI.generateWithAI(aiFormData);
-      alert('Tạo phiếu học tập bằng AI thành công!');
+      showSuccess('Tạo phiếu học tập bằng AI thành công!');
       setShowAIModal(false);
       loadWorksheets();
       // Reset form
@@ -110,7 +113,7 @@ const Worksheets = () => {
       });
     } catch (error) {
       console.error('Failed to generate:', error);
-      alert('Tạo phiếu học tập bằng AI thất bại');
+      showError('Tạo phiếu học tập bằng AI thất bại');
     } finally {
       setGenerating(false);
     }
@@ -120,13 +123,13 @@ const Worksheets = () => {
   const handleDelete = async () => {
     try {
       await worksheetsAPI.delete(selectedWorksheet.id);
-      alert('Xóa phiếu học tập thành công!');
+      showSuccess('Xóa phiếu học tập thành công!');
       setShowDeleteModal(false);
       setSelectedWorksheet(null);
       loadWorksheets();
     } catch (error) {
       console.error('Failed to delete:', error);
-      alert('Xóa phiếu học tập thất bại');
+      showError('Xóa phiếu học tập thất bại');
     }
   };
 
@@ -150,11 +153,11 @@ const Worksheets = () => {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-      alert('Tải Word thành công!');
+      showSuccess('Tải Word thành công!');
     } catch (error) {
       console.error('Download Word failed:', error);
       const errorMessage = error.response?.data?.detail || error.message || 'Lỗi không xác định';
-      alert(`Tải Word thất bại: ${errorMessage}`);
+      showError(`Tải Word thất bại: ${errorMessage}`);
     }
   };
 
@@ -176,11 +179,11 @@ const Worksheets = () => {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-      alert('Tải PDF thành công!');
+      showSuccess('Tải PDF thành công!');
     } catch (error) {
       console.error('Download PDF failed:', error);
       const errorMessage = error.response?.data?.detail || error.message || 'Tính năng chưa được hỗ trợ';
-      alert(`Tải PDF thất bại: ${errorMessage}. Vui lòng sử dụng tải Word thay thế.`);
+      showError(`Tải PDF thất bại: ${errorMessage}. Vui lòng sử dụng tải Word thay thế.`);
     }
   };
 
@@ -613,6 +616,16 @@ const Worksheets = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          duration={toast.duration}
+          onClose={hideToast}
+        />
       )}
     </div>
   );

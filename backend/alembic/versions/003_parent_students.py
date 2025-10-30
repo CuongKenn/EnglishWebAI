@@ -1,7 +1,7 @@
 """Add parent_students table
 
-Revision ID: 003_parent_students
-Revises: 002_add_otp_table
+Revision ID: 003
+Revises: 002
 Create Date: 2025-10-24
 
 """
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '003_parent_students'
-down_revision = '002_add_otp_table'
+revision = '003'
+down_revision = '002'
 branch_labels = None
 depends_on = None
 

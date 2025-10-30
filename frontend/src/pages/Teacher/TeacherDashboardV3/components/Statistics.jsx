@@ -5,8 +5,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { TrendingUp, Users, FileCheck, Award, Download, Loader2 } from 'lucide-react';
 import { Progress } from '../../../../components/ui/progress';
 import { apiV1 } from '../../../../services/api';
+import Toast from '../../../../components/Toast/Toast';
+import useToast from '../../../../hooks/useToast';
 
 const Statistics = () => {
+  const { toast, showSuccess, showError, showWarning, hideToast } = useToast();
   const [selectedClass, setSelectedClass] = useState('all');
   const [selectedPeriod, setSelectedPeriod] = useState('month');
   const [loading, setLoading] = useState(true);
@@ -89,7 +92,7 @@ const Statistics = () => {
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error('Error exporting report:', err);
-      alert('Không thể xuất báo cáo. Vui lòng thử lại sau.');
+      showError('Không thể xuất báo cáo. Vui lòng thử lại sau.');
     }
   };
 
@@ -346,6 +349,14 @@ const Statistics = () => {
           ))}
         </div>
       </Card>
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={hideToast}
+          duration={toast.duration}
+        />
+      )}
       </>
       )}
     </div>

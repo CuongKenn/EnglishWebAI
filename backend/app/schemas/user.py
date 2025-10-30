@@ -1,14 +1,26 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, validator
 from typing import Optional
 from datetime import datetime
 from enum import Enum
 
 class UserRole(str, Enum):
-    USER = "user"
+    """
+    User roles for API schemas.
+    Note: 'user' role represents students (for database compatibility)
+    API accepts both 'student' and 'user' as valid values
+    """
+    USER = "user"  # Students (accepts 'student' or 'user' in API)
     PARENT = "parent"
     TEACHER = "teacher"
     ADMIN = "admin"
     SUPERADMIN = "superadmin"
+    
+    @classmethod
+    def normalize(cls, value: str) -> 'UserRole':
+        """Normalize role value, accepting 'student' as alias for 'user'"""
+        if value.lower() == "student":
+            return cls.USER
+        return cls(value.lower())
 
 # Base User Schema
 class UserBase(BaseModel):

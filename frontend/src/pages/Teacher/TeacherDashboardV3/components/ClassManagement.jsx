@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Users, UserPlus, Upload, Download, Search, Trash2, Mail, User, CheckCircle, XCircle, FileText, Presentation } from 'lucide-react';
 import { apiV1 } from '../../../../services/api';
+import Toast from '../../../../components/Toast/Toast';
+import useToast from '../../../../hooks/useToast';
 import './ClassManagement.css';
 
 export default function ClassManagement() {
@@ -19,6 +21,7 @@ export default function ClassManagement() {
     description: '',
     type: 'file'
   });
+  const { toast, showSuccess, showError, showWarning, showInfo, hideToast } = useToast();
   // Import students state
   const [importFile, setImportFile] = useState(null);
   const [importing, setImporting] = useState(false);
@@ -48,7 +51,7 @@ export default function ClassManagement() {
       setClasses(response.data);
     } catch (error) {
       console.error('Error fetching classes:', error);
-  alert('Lỗi khi tải danh sách lớp học!');
+      showError('Lỗi khi tải danh sách lớp học!');
     } finally {
       setLoading(false);
     }
@@ -61,7 +64,7 @@ export default function ClassManagement() {
       setStudents(response.data);
     } catch (error) {
       console.error('Error fetching students:', error);
-  alert('Lỗi khi tải danh sách học sinh!');
+      showError('Lỗi khi tải danh sách học sinh!');
     } finally {
       setLoading(false);
     }
@@ -75,7 +78,7 @@ export default function ClassManagement() {
   const handleAddStudent = async () => {
     if (!selectedClass) return;
     if (!newStudent.email) {
-      alert('Vui lòng nhập email học sinh!');
+      showWarning('Vui lòng nhập email học sinh!');
       return;
     }
 
@@ -87,13 +90,13 @@ export default function ClassManagement() {
         status: 'active'
       });
       
-  alert('Thêm học sinh thành công!');
+      showSuccess('Thêm học sinh thành công!');
       setShowAddModal(false);
       setNewStudent({ name: '', email: '', phone: '' });
       fetchStudents(selectedClass.id); // Refresh list
     } catch (error) {
       console.error('Error adding student:', error);
-      alert(error.response?.data?.detail || 'Lỗi khi thêm học sinh!  Kiểm tra email');
+      showError(error.response?.data?.detail || 'Lỗi khi thêm học sinh! Kiểm tra email');
     } finally {
       setLoading(false);
     }
@@ -106,11 +109,11 @@ export default function ClassManagement() {
     setLoading(true);
     try {
       await apiV1.delete(`/classes/${selectedClass.id}/students/${studentId}`);
-      alert('Đã xóa');
+      showSuccess('Đã xóa');
       fetchStudents(selectedClass.id); // Refresh list
     } catch (error) {
       console.error('Error removing student:', error);
-      alert('Lỗi khi xóa');
+      showError('Lỗi khi xóa');
     } finally {
       setLoading(false);
     }
@@ -123,7 +126,7 @@ export default function ClassManagement() {
       setMaterials(response.data || []);
     } catch (error) {
       console.error('Error fetching materials:', error);
-      alert('Lỗi khi tải danh sách tài liệu!');
+      showError('Lỗi khi tải danh sách tài liệu!');
     } finally {
       setLoading(false);
     }
@@ -132,7 +135,7 @@ export default function ClassManagement() {
   const handleFileUpload = async (e) => {
     e.preventDefault();
     if (!uploadFile || !selectedClass) {
-      alert('Vui lòng chọn file và nhập tiêu đề!');
+      showWarning('Vui lòng chọn file và nhập tiêu đề!');
       return;
     }
 
@@ -154,13 +157,13 @@ export default function ClassManagement() {
         class_id: selectedClass.id
       });
 
-      alert('✅ Tải lên thành công!');
+      showSuccess('Tải lên thành công!');
       setUploadFile(null);
       setMaterialForm({ title: '', description: '', type: 'file' });
       fetchMaterials(selectedClass.id);
     } catch (error) {
       console.error('Error uploading material:', error);
-      alert('❌ Lỗi khi tải lên: ' + (error.response?.data?.detail || error.message));
+      showError('Lỗi khi tải lên: ' + (error.response?.data?.detail || error.message));
     } finally {
       setLoading(false);
     }
@@ -183,13 +186,13 @@ export default function ClassManagement() {
       link.remove();
     } catch (error) {
       console.error('Error downloading template:', error);
-      alert('❌ Lỗi khi tải file mẫu');
+      showError('Lỗi khi tải file mẫu');
     }
   };
 
   const handleImportStudents = async () => {
     if (!importFile || !selectedClass) {
-      alert('Vui lòng chọn file CSV!');
+      showWarning('Vui lòng chọn file CSV!');
       return;
     }
 
@@ -211,7 +214,7 @@ export default function ClassManagement() {
       
       // Show success message
       if (response.data.imported > 0) {
-        alert(`✅ ${response.data.message}\n\nThành công: ${response.data.imported}\nThất bại: ${response.data.failed}`);
+        showSuccess(`${response.data.message}\n\nThành công: ${response.data.imported}\nThất bại: ${response.data.failed}`);
       }
       
       // Clear file input
@@ -219,7 +222,7 @@ export default function ClassManagement() {
       
     } catch (error) {
       console.error('Error importing students:', error);
-      alert('❌ Lỗi khi import: ' + (error.response?.data?.detail || error.message));
+      showError('Lỗi khi import: ' + (error.response?.data?.detail || error.message));
       setImportResults({
         imported: 0,
         failed: 0,
@@ -889,6 +892,16 @@ export default function ClassManagement() {
           </ul>
         </div>
       </div>
+
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          duration={toast.duration}
+          onClose={hideToast}
+        />
+      )}
     </div>
   );
 }

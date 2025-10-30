@@ -27,8 +27,11 @@ import {
 } from 'lucide-react';
 import { coursesAPI } from '../../services/api';
 import './ListeningExercise.css';
+import Toast from '../../components/Toast/Toast';
+import useToast from '../../hooks/useToast';
 
 const ListeningExercise = () => {
+  const { toast, showError, hideToast } = useToast();
   const { courseId, lessonId } = useParams();
   const navigate = useNavigate();
 
@@ -542,7 +545,7 @@ const ListeningExercise = () => {
       setShowCompletionMessage(true);
     } catch (error) {
       console.error('Error submitting exercise:', error);
-      alert('Có lỗi khi nộp bài. Vui lòng thử lại.');
+      showError('Có lỗi khi nộp bài. Vui lòng thử lại.');
     }
   };
 
@@ -1129,6 +1132,15 @@ const ListeningExercise = () => {
         src={listeningData.audioUrl}
         preload="metadata"
       />
+      
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={hideToast}
+          duration={toast.duration}
+        />
+      )}
     </div>
   );
 };

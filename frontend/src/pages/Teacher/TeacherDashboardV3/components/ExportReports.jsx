@@ -3,6 +3,8 @@ import { Download, FileSpreadsheet, Calendar, Users, Filter, CheckCircle, FileTe
 import exportService from '../../../../services/exportService';
 import { apiV1 } from '../../../../services/api';
 import { getClasses } from '../../../../services/classService';
+import Toast from '../../../../components/Toast/Toast';
+import useToast from '../../../../hooks/useToast';
 import './ExportReports.css';
 
 export default function ExportReports() {
@@ -14,6 +16,7 @@ export default function ExportReports() {
   const [loading, setLoading] = useState(false);
   const [exercises, setExercises] = useState([]);
   const [classes, setClasses] = useState([]);
+  const { toast, showSuccess, showError, showWarning, hideToast } = useToast();
 
   useEffect(() => {
     loadData();
@@ -61,7 +64,7 @@ export default function ExportReports() {
       setExercises(allExercises);
     } catch (error) {
       console.error('Error loading data:', error);
-      alert('Lỗi khi tải dữ liệu. Vui lòng thử lại!');
+      showError('Lỗi khi tải dữ liệu. Vui lòng thử lại!');
     } finally {
       setLoading(false);
     }
@@ -85,15 +88,15 @@ export default function ExportReports() {
 
   const handleExport = async () => {
     if (exportType === 'single' && selectedExercises.length === 0) {
-      alert('Vui lòng chọn ít nhất 1 bài tập');
+      showWarning('Vui lòng chọn ít nhất 1 bài tập');
       return;
     }
     if (exportType === 'multiple' && selectedExercises.length === 0) {
-      alert('Vui lòng chọn ít nhất 1 bài tập');
+      showWarning('Vui lòng chọn ít nhất 1 bài tập');
       return;
     }
     if (exportType === 'class' && selectedClasses.length === 0) {
-      alert('Vui lòng chọn ít nhất 1 lớp');
+      showWarning('Vui lòng chọn ít nhất 1 lớp');
       return;
     }
 
@@ -112,7 +115,7 @@ export default function ExportReports() {
             );
           }
         }
-        alert(`✅ Đã xuất ${selectedExercises.length} bài tập thành công!`);
+        showSuccess(`✅ Đã xuất ${selectedExercises.length} bài tập thành công!`);
       } else if (exportType === 'class') {
         // Export class grades
         for (const classId of selectedClasses) {
@@ -130,7 +133,7 @@ export default function ExportReports() {
             );
           }
         }
-        alert(`✅ Đã xuất ${selectedClasses.length} lớp thành công!`);
+        showSuccess(`✅ Đã xuất ${selectedClasses.length} lớp thành công!`);
       }
 
       // Reset selections
@@ -138,7 +141,7 @@ export default function ExportReports() {
       setSelectedClasses([]);
     } catch (error) {
       console.error('Error exporting:', error);
-      alert('❌ Lỗi khi xuất file. Vui lòng thử lại!');
+      showError('❌ Lỗi khi xuất file. Vui lòng thử lại!');
     } finally {
       setLoading(false);
     }
@@ -474,6 +477,14 @@ export default function ExportReports() {
           </ul>
         </div>
       </div>
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={hideToast}
+          duration={toast.duration}
+        />
+      )}
       </>
       )}
     </div>

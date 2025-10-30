@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
 import { lessonPlansAPI } from '../../../services/api';
 import { X, Plus, Sparkles, Eye, Edit, Trash2, BookOpen, Clock, GraduationCap, Download, FileText, FileDown } from 'lucide-react';
+import Toast from '../../../components/Toast/Toast';
+import useToast from '../../../hooks/useToast';
 import './LessonPlans.css';
 
 const LessonPlans = () => {
+  const { toast, showSuccess, showError, showWarning, hideToast } = useToast();
   const [lessonPlans, setLessonPlans] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedGrade, setSelectedGrade] = useState('all');
@@ -52,7 +55,7 @@ const LessonPlans = () => {
       setLessonPlans(data);
     } catch (error) {
       console.error('Failed to load lesson plans:', error);
-      alert('Không thể tải danh sách giáo án');
+      showError('Không thể tải danh sách giáo án');
     } finally {
       setLoading(false);
     }
@@ -66,26 +69,26 @@ const LessonPlans = () => {
   const handleCreate = async () => {
     try {
       await lessonPlansAPI.create(formData);
-      alert('Tạo giáo án thành công!');
+      showSuccess('Tạo giáo án thành công!');
       setShowCreateModal(false);
       loadLessonPlans();
     } catch (error) {
       console.error('Failed to create:', error);
-      alert('Tạo giáo án thất bại');
+      showError('Tạo giáo án thất bại');
     }
   };
 
   // Handle AI generation
   const handleAIGenerate = async () => {
     if (!aiFormData.unit.trim()) {
-      alert('Vui lòng nhập Unit/Chủ đề');
+      showWarning('Vui lòng nhập Unit/Chủ đề');
       return;
     }
     
     setGenerating(true);
     try {
       await lessonPlansAPI.generateWithAI(aiFormData);
-      alert('Tạo giáo án bằng AI thành công!');
+      showSuccess('Tạo giáo án bằng AI thành công!');
       setShowAIModal(false);
       loadLessonPlans();
       // Reset form
@@ -102,7 +105,7 @@ const LessonPlans = () => {
       });
     } catch (error) {
       console.error('Failed to generate:', error);
-      alert('Tạo giáo án bằng AI thất bại');
+      showError('Tạo giáo án bằng AI thất bại');
     } finally {
       setGenerating(false);
     }
@@ -112,12 +115,12 @@ const LessonPlans = () => {
   const handleUpdate = async () => {
     try {
       await lessonPlansAPI.update(selectedPlan.id, formData);
-      alert('Cập nhật giáo án thành công!');
+      showSuccess('Cập nhật giáo án thành công!');
       setShowEditModal(false);
       loadLessonPlans();
     } catch (error) {
       console.error('Failed to update:', error);
-      alert('Cập nhật giáo án thất bại');
+      showError('Cập nhật giáo án thất bại');
     }
   };
 
@@ -125,13 +128,13 @@ const LessonPlans = () => {
   const handleDelete = async () => {
     try {
       await lessonPlansAPI.delete(selectedPlan.id);
-      alert('Xóa giáo án thành công!');
+      showSuccess('Xóa giáo án thành công!');
       setShowDeleteModal(false);
       setSelectedPlan(null);
       loadLessonPlans();
     } catch (error) {
       console.error('Failed to delete:', error);
-      alert('Xóa giáo án thất bại');
+      showError('Xóa giáo án thất bại');
     }
   };
 
@@ -810,10 +813,10 @@ const LessonPlans = () => {
                   link.click();
                   link.remove();
                   window.URL.revokeObjectURL(url);
-                  alert('Tải Word thành công!');
+                  showSuccess('Tải Word thành công!');
                 } catch (error) {
                   console.error('Download failed:', error);
-                  alert('Tải Word thất bại. Vui lòng thử lại sau.');
+                  showError('Tải Word thất bại. Vui lòng thử lại sau.');
                 }
               }}>
                 <Download size={18} />
@@ -830,10 +833,10 @@ const LessonPlans = () => {
                   link.click();
                   link.remove();
                   window.URL.revokeObjectURL(url);
-                  alert('Tải PDF thành công!');
+                  showSuccess('Tải PDF thành công!');
                 } catch (error) {
                   console.error('Download failed:', error);
-                  alert('Tải PDF chưa được hỗ trợ. Vui lòng sử dụng tải Word thay thế.');
+                  showError('Tải PDF chưa được hỗ trợ. Vui lòng sử dụng tải Word thay thế.');
                 }
               }}>
                 <FileDown size={18} />
@@ -872,6 +875,15 @@ const LessonPlans = () => {
             </div>
           </div>
         </div>
+      )}
+      
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={hideToast}
+          duration={toast.duration}
+        />
       )}
     </div>
   );

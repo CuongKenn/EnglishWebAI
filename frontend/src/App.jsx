@@ -21,6 +21,7 @@ import AIPractice from './pages/student/AIPractice';
 import MyClasses from './pages/student/MyClasses/MyClasses';
 import ExerciseHub from './pages/student/ExerciseHub/ExerciseHub';
 import DoExercise from './pages/student/DoExercise/DoExercise';
+import TakeExam from './pages/student/TakeExam/TakeExam';
 import { WritingAI } from './components/ai/WritingAI';
 import { ReadingAI } from './components/ai/ReadingAI';
 import CourseContentPage from './pages/CourseContentPage/CourseContentPage';
@@ -38,19 +39,14 @@ import CourseLessons from './pages/CourseLessons/CourseLessons';
 
 // Import Admin Pages
 import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute';
-import AdminDashboard from './pages/Admin/AdminDashboard/AdminDashboard';
 import AdminDashboardV2 from './pages/Admin/AdminDashboardV2/AdminDashboardV2';
 
 // Import Teacher Pages
-import TeacherDashboard from './pages/Teacher/TeacherDashboard/TeacherDashboard';
-import TeacherDashboardNew from './pages/Teacher/TeacherDashboard/TeacherDashboardNew';
-import TeacherDashboardV2 from './pages/Teacher/TeacherDashboardV2/TeacherDashboardV2';
 import TeacherDashboardV3 from './pages/Teacher/TeacherDashboardV3/TeacherDashboardV3';
 import TeacherMaterials from './pages/Teacher/TeacherMaterials/TeacherMaterials';
 import SubmissionGradingPage from './pages/Teacher/Grading/SubmissionGradingPage';
 
 // Import Parent Pages
-import ParentDashboard from './pages/Parent/ParentDashboard/ParentDashboard';
 import ParentDashboardV2 from './pages/Parent/ParentDashboardV2/ParentDashboardV2';
 import TrackProgressPage from './pages/Parent/TrackProgress/TrackProgressPage';
 import NotificationsPage from './pages/Parent/Notifications/NotificationsPage';
@@ -222,6 +218,14 @@ function App() {
           </Layout>
         } 
       />
+      <Route 
+        path="/exam/:examId" 
+        element={
+          <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+            <TakeExam />
+          </Layout>
+        } 
+      />
       {/* Redirect old route to new design */}
       <Route path="/exercises" element={<Navigate to="/exercise-hub" replace />} />
       <Route
@@ -375,38 +379,7 @@ function App() {
           </ProtectedRoute>
         }
       />
-      
-      {/* Teacher Dashboard V2 - Backup */}
-      <Route
-        path="/teacher-dashboard-v2/*"
-        element={
-          <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="teacher">
-            <TeacherDashboardV2 />
-          </ProtectedRoute>
-        }
-      />
 
-      {/* Teacher Dashboard New - Backup (Old Beautiful) */}
-      <Route
-        path="/teacher-dashboard-old"
-        element={
-          <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="teacher">
-            <TeacherDashboardNew onLogout={handleLogout} />
-          </ProtectedRoute>
-        }
-      />
-
-      {/* Teacher Dashboard Legacy - Very Old */}
-      <Route
-        path="/teacher-dashboard-legacy"
-        element={
-          <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="teacher">
-            <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
-              <TeacherDashboard />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
       <Route
         path="/class/:classId/content"
         element={
@@ -466,18 +439,6 @@ function App() {
         element={
           <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="parent">
             <TeacherCommunication />
-          </ProtectedRoute>
-        }
-      />
-
-      {/* Parent Dashboard - Legacy */}
-      <Route
-        path="/parent-dashboard-legacy"
-        element={
-          <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="parent">
-            <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
-              <ParentDashboard />
-            </Layout>
           </ProtectedRoute>
         }
       />

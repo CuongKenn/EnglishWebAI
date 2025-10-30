@@ -12,8 +12,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Textarea } from '../../../../components/ui/textarea';
 import { Progress } from '../../../../components/ui/progress';
 import { apiV1 } from '../../../../services/api';
+import Toast from '../../../../components/Toast/Toast';
+import useToast from '../../../../hooks/useToast';
 
 const ExercisesTests = () => {
+  const { toast, showSuccess, showError, showWarning, hideToast } = useToast();
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isImportOpen, setIsImportOpen] = useState(false);
@@ -95,7 +98,7 @@ const ExercisesTests = () => {
   const handleCreateExercise = async () => {
     try {
       if (!newExercise.title || !newExercise.classId) {
-        alert('Vui lòng nhập tên bài kiểm tra và chọn lớp!');
+        showWarning('Vui lòng nhập tên bài kiểm tra và chọn lớp!');
         return;
       }
 
@@ -133,7 +136,7 @@ const ExercisesTests = () => {
       await fetchTests();
     } catch (error) {
       console.error('Error creating exercise:', error);
-      alert(`Không thể tạo bài tập: ${error.response?.data?.detail || error.message}`);
+      showError(`Không thể tạo bài tập: ${error.response?.data?.detail || error.message}`);
     }
   };
 
@@ -655,7 +658,7 @@ const ExercisesTests = () => {
                   onClick={() => {
                     const link = `${window.location.origin}/exercise/${selectedTest?.id}`;
                     navigator.clipboard.writeText(link);
-                    alert('✅ Đã copy link vào clipboard!');
+                    showSuccess('✅ Đã copy link vào clipboard!');
                   }}
                   className="gap-2"
                 >
@@ -797,7 +800,7 @@ const ExercisesTests = () => {
                   <Button
                     onClick={() => {
                       navigator.clipboard.writeText(createdExerciseLink.link);
-                      alert('✅ Đã copy link vào clipboard!');
+                      showSuccess('✅ Đã copy link vào clipboard!');
                     }}
                     className="gap-2"
                   >
@@ -834,6 +837,14 @@ const ExercisesTests = () => {
             </div>
           </DialogContent>
         </Dialog>
+      )}
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={hideToast}
+          duration={toast.duration}
+        />
       )}
     </div>
   );

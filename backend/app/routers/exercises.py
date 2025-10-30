@@ -109,7 +109,7 @@ def _auto_grade_submission(submission: Submission, exercise: Exercise, db: Sessi
     - Trắc nghiệm (multiple_choice, true_false, fill_blank): Chấm ngay
     - Tự luận (short_answer): Đợi teacher
     - Speaking: Azure Speech API (chấm tự động, teacher có thể confirm)
-    - Writing: Gemini AI (chấm tự động, teacher có thể confirm)
+    - Writing: ChatGPT AI (chấm tự động, teacher có thể confirm)
     """
     skill_type = exercise.skill_type
     
@@ -173,11 +173,11 @@ def _auto_grade_submission(submission: Submission, exercise: Exercise, db: Sessi
                 submission.status = "pending_review"
                 return
     
-    # Writing: Use Gemini AI
+    # Writing: Use ChatGPT AI
     if skill_type == 'writing' and submission.content_text:
         print(f"[AUTO-GRADE] Writing exercise detected for submission {submission.id}")
         # Import service
-        from app.services.gemini_service import gemini_service
+        from app.services.openai_service import openai_service
         
         # Get writing prompt
         content = exercise.content
@@ -185,7 +185,7 @@ def _auto_grade_submission(submission: Submission, exercise: Exercise, db: Sessi
         
         try:
             # Grade writing (synchronous to avoid event loop conflicts)
-            grading_result = gemini_service.grade_writing_sync(
+            grading_result = openai_service.grade_writing_sync(
                 submission.content_text,
                 prompt=prompt,
                 max_score=float(exercise.max_score or 10)
@@ -330,7 +330,7 @@ async def auto_grade_submission(
     """
     Chấm tự động server-side cho một submission:
     - Speaking: Azure Speech (nếu có content_url audio)
-    - Writing: Gemini (nếu có content_text)
+    - Writing: ChatGPT (nếu có content_text)
     - Trắc nghiệm: Dùng logic chấm tự động sẵn có
     Sau khi chấm, đặt status = pending_review để giáo viên xem và xác nhận.
     """
@@ -376,10 +376,10 @@ async def auto_grade_submission(
 
         if (not ran_specialized) and submission.content_text and (exercise.skill_type == 'writing' or exercise.skill_type is None):
             # Writing auto-grade
-            from app.services.gemini_service import gemini_service
+            from app.services.openai_service import openai_service
             content = exercise.content or {}
             prompt = content.get('prompt', '')
-            grading_result = gemini_service.grade_writing_sync(
+            grading_result = openai_service.grade_writing_sync(
                 submission.content_text,
                 prompt=prompt,
                 max_score=float(exercise.max_score or 10)

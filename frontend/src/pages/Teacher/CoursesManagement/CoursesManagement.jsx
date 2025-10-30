@@ -5,7 +5,11 @@ import {
   FileText, CheckCircle, AlertCircle, Loader
 } from 'lucide-react';
 import './CoursesManagement.css';
+
 import { coursesAPI, questionBankAPI } from '../../../services/api';
+import Toast from '../../../components/Toast/Toast';
+import useToast from '../../../hooks/useToast';
+
 
 const SKILLS = [
   { value: 'listening', label: 'Listening', emoji: '🎧', color: '#10b981' },
@@ -25,6 +29,7 @@ const LEVELS = [
 const GRADES = Array.from({ length: 12 }, (_, i) => i + 1);
 
 const CoursesManagement = () => {
+  const { toast, showWarning, hideToast } = useToast();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -835,12 +840,12 @@ const UnitQuestionsModal = ({ unit, course, onClose, onRefresh }) => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 50 * 1024 * 1024) {
-        alert('File audio không được vượt quá 50MB');
+        showWarning('File audio không được vượt quá 50MB');
         return;
       }
       const allowedTypes = ['audio/mpeg', 'audio/wav', 'audio/ogg'];
       if (!allowedTypes.includes(file.type)) {
-        alert('Chỉ chấp nhận file MP3, WAV, OGG');
+        showWarning('Chỉ chấp nhận file MP3, WAV, OGG');
         return;
       }
       setUploadedAudio(file);
@@ -852,7 +857,7 @@ const UnitQuestionsModal = ({ unit, course, onClose, onRefresh }) => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 10 * 1024 * 1024) {
-        alert('File không được vượt quá 10MB');
+        showWarning('File không được vượt quá 10MB');
         return;
       }
       const allowedTypes = [
@@ -862,7 +867,7 @@ const UnitQuestionsModal = ({ unit, course, onClose, onRefresh }) => {
         'text/plain'
       ];
       if (!allowedTypes.includes(file.type)) {
-        alert('Chỉ chấp nhận file PDF, Word, hoặc Text');
+        showWarning('Chỉ chấp nhận file PDF, Word, hoặc Text');
         return;
       }
       setUploadedDocument(file);
@@ -1455,6 +1460,15 @@ const CourseDetailModal = ({ course, onClose, onEdit }) => {
           course={course}
           onClose={() => setSelectedUnit(null)}
           onRefresh={loadUnits}
+        />
+      )}
+      
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={hideToast}
+          duration={toast.duration}
         />
       )}
     </div>

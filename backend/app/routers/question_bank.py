@@ -769,8 +769,8 @@ async def generate_test(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Generate a mixed-skill test using Gemini for reading/speaking/writing/listening."""
-    from app.services.gemini_service import gemini_service
+    """Generate a mixed-skill test using OpenAI for reading/speaking/writing/listening."""
+    from app.services.openai_service import openai_service
 
     total = max(1, min(50, config.totalQuestions))
     sd = config.skillDistribution or {"listening": 25, "speaking": 25, "reading": 25, "writing": 25}
@@ -937,7 +937,7 @@ async def generate_test(
             while len([x for x in out_questions if x.skill_type == "reading"]) < reading_target and attempts < max_attempts:
                 attempts += 1
                 print(f"[DEBUG] Reading attempt {attempts}/{max_attempts}")
-                reading = await asyncio.wait_for(gemini_service.generate_reading_passage(), timeout=timeout_seconds)
+                reading = await asyncio.wait_for(openai_service.generate_reading_passage(), timeout=timeout_seconds)
                 # Skip duplicate passages
                 if is_dup_passage(reading.get("passage")):
                     print(f"[DEBUG] Skipped duplicate passage")
@@ -1034,7 +1034,7 @@ async def generate_test(
                 # Ensure variety on fallback
                 _ensure_multiple_choice([x for x in out_questions if x.skill_type == "reading"]) 
 
-    # Listening: create transcript + MC/fill questions via Gemini
+    # Listening: create transcript + MC/fill questions via OpenAI
     listening_target = skill_targets.get("listening", 0)
     print(f"[DEBUG] Listening target: {listening_target} questions")
     if listening_target > 0:
@@ -1048,7 +1048,7 @@ async def generate_test(
             while len([x for x in out_questions if x.skill_type == "listening"]) < listening_target and attempts < max_attempts:
                 attempts += 1
                 print(f"[DEBUG] Listening attempt {attempts}/{max_attempts}")
-                data = await asyncio.wait_for(gemini_service.generate_listening_segment(num_questions=listening_target), timeout=timeout_seconds)
+                data = await asyncio.wait_for(openai_service.generate_listening_segment(num_questions=listening_target), timeout=timeout_seconds)
                 if is_dup_transcript(data.get("transcript")):
                     continue
                 lqs = data.get("questions", [])
@@ -1117,7 +1117,7 @@ async def generate_test(
         try:
             timeout_seconds = min(12 + (speaking_target // 3) * 3, 30)
             print(f"[DEBUG] Generating speaking tasks... Timeout: {timeout_seconds}s")
-            sp = await asyncio.wait_for(gemini_service.generate_speaking_tasks(count=speaking_target), timeout=timeout_seconds)
+            sp = await asyncio.wait_for(openai_service.generate_speaking_tasks(count=speaking_target), timeout=timeout_seconds)
             for t in sp.get("tasks", [])[:speaking_target]:
                 if is_dup_question(t.get("prompt", "")):
                     continue
@@ -1176,7 +1176,7 @@ async def generate_test(
             # Generate all requested writing questions (no limit)
             for i in range(writing_target):
                 print(f"[DEBUG] Writing prompt {i+1}/{writing_target}, Timeout: {timeout_seconds}s")
-                wt = await asyncio.wait_for(gemini_service.generate_writing_topic("essay", "intermediate"), timeout=timeout_seconds)
+                wt = await asyncio.wait_for(openai_service.generate_writing_topic("essay", "intermediate"), timeout=timeout_seconds)
                 if is_dup_question(wt.get("prompt", "")):
                     continue
                 out_questions.append(GeneratedTestQuestion(
@@ -1232,7 +1232,7 @@ async def generate_test(
                 attempts += 1
                 print(f"[DEBUG] Fill attempt {attempts}/{max_fill_attempts}")
                 # Prefer reading passages to create self-contained questions
-                reading = await asyncio.wait_for(gemini_service.generate_reading_passage(), timeout=20)
+                reading = await asyncio.wait_for(openai_service.generate_reading_passage(), timeout=20)
                 rq = reading.get("questions", [])
                 for q in rq:
                     if remaining <= 0:
@@ -1335,7 +1335,7 @@ async def generate_test(
         while need > 0 and tries < 3:
             tries += 1
             try:
-                reading = await asyncio.wait_for(gemini_service.generate_reading_passage(), timeout=15)
+                reading = await asyncio.wait_for(openai_service.generate_reading_passage(), timeout=15)
                 rq = reading.get("questions", [])
                 if not rq:
                     continue
@@ -1447,7 +1447,7 @@ async def generate_test(
     # question by asking AI once more and replacing the last non-reading item.
     try:
         if reading_target > 0 and not any(q.skill_type == 'reading' for q in out_questions):
-            reading = await asyncio.wait_for(gemini_service.generate_reading_passage(), timeout=15)
+            reading = await asyncio.wait_for(openai_service.generate_reading_passage(), timeout=15)
             rq = reading.get('questions', [])
             if rq:
                 q0 = rq[0]

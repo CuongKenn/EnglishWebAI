@@ -18,10 +18,13 @@ import {
 import './WritingExercise.css';
 import { coursesAPI } from '../../services/api';
 import { aiAPI } from '../../services/api';
+import Toast from '../../components/Toast/Toast';
+import useToast from '../../hooks/useToast';
 
 const WritingExercise = () => {
   const { courseId, lessonId } = useParams();
   const navigate = useNavigate();
+  const { toast, showError, showWarning, hideToast } = useToast();
 
   // State management
   const [userEssay, setUserEssay] = useState('');
@@ -174,7 +177,7 @@ const WritingExercise = () => {
   // Submit essay
   const submitEssay = async () => {
     if (wordCount < 50) {
-      alert('Bài viết phải có ít nhất 50 từ');
+      showWarning('Bài viết phải có ít nhất 50 từ');
       return;
     }
 
@@ -223,7 +226,7 @@ const WritingExercise = () => {
 
     } catch (error) {
       console.error('Error submitting essay:', error);
-      alert('Lỗi khi nộp bài: ' + (error?.detail || error?.message || 'Vui lòng thử lại'));
+      showError('Lỗi khi nộp bài: ' + (error?.detail || error?.message || 'Vui lòng thử lại'));
     } finally {
       setSubmitting(false);
     }
@@ -533,6 +536,16 @@ const WritingExercise = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          duration={toast.duration}
+          onClose={hideToast}
+        />
       )}
 
     </div>

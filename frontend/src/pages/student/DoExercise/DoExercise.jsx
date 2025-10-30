@@ -6,8 +6,11 @@ import {
 } from 'lucide-react';
 import './DoExercise.css';
 import { apiV1 } from '../../../services/api';
+import Toast from '../../../components/Toast/Toast';
+import useToast from '../../../hooks/useToast';
 
 export default function DoExercise() {
+  const { toast, showSuccess, showError, showWarning, hideToast } = useToast();
   const { exerciseId } = useParams();
   const navigate = useNavigate();
   
@@ -142,10 +145,10 @@ export default function DoExercise() {
         content_text: exercise.skill_type === 'writing' ? content : null,
         content_url: exercise.skill_type === 'speaking' ? recordedAudio?.url || null : null
       });
-      alert('Đã lưu nháp!');
+      showSuccess('Đã lưu nháp!');
     } catch (error) {
       console.error('Error saving draft:', error);
-      alert('Lỗi khi lưu nháp!');
+      showError('Lỗi khi lưu nháp!');
     }
   };
 
@@ -229,10 +232,10 @@ export default function DoExercise() {
         setSubmission(sub);
         setViewMode('result');
       }
-      alert('Nộp bài thành công! Hệ thống đã chấm tự động nếu có thể.');
+      showSuccess('Nộp bài thành công! Hệ thống đã chấm tự động nếu có thể.');
     } catch (error) {
       console.error('Error submitting:', error);
-      alert('Lỗi khi nộp bài: ' + (error.response?.data?.detail || error.message));
+      showError('Lỗi khi nộp bài: ' + (error.response?.data?.detail || error.message));
     } finally {
       setIsSubmitting(false);
     }
@@ -258,7 +261,7 @@ export default function DoExercise() {
         if (!isLocal) {
           const message = 'Trình duyệt yêu cầu kết nối an toàn (https hoặc localhost) để ghi âm.';
           setRecordingError(message);
-          alert(message);
+          showWarning(message);
           console.error('[startRecording] BLOCKED: not secure context and not local');
           return;
         }
@@ -268,7 +271,7 @@ export default function DoExercise() {
       if (!navigator.mediaDevices?.getUserMedia) {
         const message = 'Trình duyệt của bạn không hỗ trợ ghi âm (getUserMedia).';
         setRecordingError(message);
-        alert(message);
+        showWarning(message);
         console.error('[startRecording] BLOCKED: getUserMedia not supported');
         return;
       }
@@ -277,7 +280,7 @@ export default function DoExercise() {
       if (typeof window.MediaRecorder === 'undefined') {
         const message = 'Trình duyệt của bạn chưa hỗ trợ MediaRecorder. Vui lòng dùng Chrome, Edge hoặc Firefox phiên bản mới.';
         setRecordingError(message);
-        alert(message);
+        showWarning(message);
         console.error('[startRecording] BLOCKED: MediaRecorder not defined');
         return;
       }
@@ -397,7 +400,7 @@ export default function DoExercise() {
         ? 'Bạn đã từ chối quyền truy cập micro. Hãy bật lại quyền trong cài đặt trình duyệt và thử lại.'
         : 'Không thể truy cập microphone!';
       setRecordingError(message);
-      alert(message);
+      showError(message);
       try {
         mediaRecorderRef.current?.stream?.getTracks().forEach(track => track.stop());
       } catch (cleanupError) {
@@ -1270,6 +1273,15 @@ export default function DoExercise() {
         </button>
       </div>
         </>
+      )}
+      
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={hideToast}
+          duration={toast.duration}
+        />
       )}
     </div>
   );

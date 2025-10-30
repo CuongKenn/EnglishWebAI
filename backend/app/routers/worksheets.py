@@ -21,7 +21,7 @@ from app.schemas.worksheet import (
     WorksheetListResponse,
     WorksheetAIGenerate
 )
-from app.services.gemini_service import gemini_service
+from app.services.openai_service import openai_service
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -118,12 +118,12 @@ async def generate_worksheet_with_ai(
     current_user: User = Depends(get_current_active_user)
 ):
     """
-    Generate a worksheet using AI (Gemini)
+    Generate a worksheet using AI (OpenAI)
     Supports multiple types: multiple_choice, essay, fill_in_blank, etc.
     """
     try:
-        # Generate worksheet with Gemini AI
-        ai_result = await gemini_service.generate_worksheet(
+        # Generate worksheet with OpenAI
+        ai_result = await openai_service.generate_worksheet(
             grade=generate_data.grade,
             unit=generate_data.unit,
             worksheet_type=generate_data.worksheet_type,
