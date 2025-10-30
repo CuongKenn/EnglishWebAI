@@ -221,13 +221,10 @@ async def get_teacher_statistics(
         class_ids = [c.id for c in classes]
         
         # Step 2: Get all students (from pre-loaded enrollments)
-        # IMPORTANT: Only count enrollments with role='student' (not assistants or other roles)
         student_ids = set()
         for cls in classes:
             for enrollment in cls.enrollments:
-                # Filter only students, not assistants
-                if enrollment.role == "student" and enrollment.status == "active":
-                    student_ids.add(enrollment.user_id)
+                student_ids.add(enrollment.user_id)
         total_students = len(student_ids)
         
         # Step 3: Get exercises and submissions in ONE query with eager loading
@@ -381,11 +378,7 @@ def _calculate_class_performance(
     
     for cls in classes:
         # Get data for this class
-        # IMPORTANT: Only count students (role='student'), not assistants
-        cls_student_ids = [
-            e.user_id for e in cls.enrollments 
-            if e.role == "student" and e.status == "active"
-        ]
+        cls_student_ids = [e.user_id for e in cls.enrollments]
         cls_exercise_ids = [ex.id for ex in exercises if ex.class_id == cls.id]
         cls_submissions = [s for s in submissions if s.exercise_id in cls_exercise_ids]
         cls_graded = [s for s in graded_submissions if s.exercise_id in cls_exercise_ids]
@@ -668,7 +661,7 @@ async def export_statistics(
         output,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f"attachment; filename={filename}"}
-        )
+    )
 
 
 @router.get("/classes/{class_id}/analytics/overview", response_model=ClassOverview)
@@ -690,12 +683,8 @@ async def get_class_overview(
     if class_obj.teacher_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized")
     
-    # Count students (only role='student', not assistants)
-    student_count = db.query(Enrollment).filter(
-        Enrollment.class_id == class_id,
-        Enrollment.role == "student",
-        Enrollment.status == "active"
-    ).count()
+    # Count students
+    student_count = db.query(Enrollment).filter(Enrollment.class_id == class_id).count()
     
     # Get exercises and submissions in one query
     exercises = db.query(Exercise).filter(Exercise.class_id == class_id).all()
@@ -752,23 +741,13 @@ async def get_class_overview(
     )
 
 
-class PaginatedStudentAnalytics(BaseModel):
-    total: int
-    page: int
-    page_size: int
-    total_pages: int
-    students: List[StudentAnalytics]
-
-
-@router.get("/classes/{class_id}/analytics/students", response_model=PaginatedStudentAnalytics)
+@router.get("/classes/{class_id}/analytics/students", response_model=List[StudentAnalytics])
 async def get_student_analytics(
     class_id: int,
-    page: int = Query(1, ge=1, description="Page number"),
-    page_size: int = Query(50, ge=1, le=200, description="Items per page"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get detailed analytics for each student in a class - OPTIMIZED with PAGINATION"""
+    """Get detailed analytics for each student in a class - OPTIMIZED"""
     if not current_user:
         raise HTTPException(status_code=401, detail="Not authenticated")
     
@@ -781,12 +760,7 @@ async def get_student_analytics(
         raise HTTPException(status_code=403, detail="Not authorized")
     
     # Get students (with user data)
-    # IMPORTANT: Only get enrollments with role='student' (not assistants)
-    enrollments = db.query(Enrollment).filter(
-        Enrollment.class_id == class_id,
-        Enrollment.role == "student",
-        Enrollment.status == "active"
-    ).all()
+    enrollments = db.query(Enrollment).filter(Enrollment.class_id == class_id).all()
     student_ids = [e.user_id for e in enrollments]
     students = db.query(User).filter(User.id.in_(student_ids)).all()
     
@@ -795,24 +769,18 @@ async def get_student_analytics(
     exercise_ids = [ex.id for ex in exercises]
     
     if not exercise_ids:
-        return PaginatedStudentAnalytics(
-            total=0,
-            page=page,
-            page_size=page_size,
-            total_pages=0,
-            students=[]
-        )
+        return []
     
     # Get ALL submissions for this class at once (with eager loading)
     all_submissions = db.query(Submission).options(
-            joinedload(Submission.exercise)
-        ).filter(
-            and_(
+        joinedload(Submission.exercise)
+    ).filter(
+        and_(
             Submission.student_id.in_(student_ids),
-                Submission.exercise_id.in_(exercise_ids)
-            )
-        ).order_by(Submission.submitted_at.desc()).all()
-        
+            Submission.exercise_id.in_(exercise_ids)
+        )
+    ).order_by(Submission.submitted_at.desc()).all()
+    
     # Group submissions by student
     student_submissions_map = {sid: [] for sid in student_ids}
     for sub in all_submissions:
@@ -855,19 +823,5 @@ async def get_student_analytics(
     # Sort by average score descending
     analytics.sort(key=lambda x: x.average_score, reverse=True)
     
-    # Apply pagination
-    total_students = len(analytics)
-    total_pages = (total_students + page_size - 1) // page_size  # Ceiling division
-    
-    start_idx = (page - 1) * page_size
-    end_idx = start_idx + page_size
-    paginated_analytics = analytics[start_idx:end_idx]
-    
-    return PaginatedStudentAnalytics(
-        total=total_students,
-        page=page,
-        page_size=page_size,
-        total_pages=total_pages,
-        students=paginated_analytics
-    )
+    return analytics
 
