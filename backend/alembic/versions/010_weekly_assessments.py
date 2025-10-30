@@ -1,7 +1,7 @@
 """add weekly assessments table
 
-Revision ID: 010_weekly_assessments
-Revises: 009_ai_grading_features
+Revision ID: 010
+Revises: 009
 Create Date: 2024-10-29
 
 """
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import sqlite
 
 # revision identifiers
-revision = '010_weekly_assessments'
-down_revision = '009_ai_grading_features'
+revision = '010'
+down_revision = '009'
 branch_labels = None
 depends_on = None
 
