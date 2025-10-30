@@ -5,9 +5,11 @@ import {
   FileText, CheckCircle, AlertCircle, Loader
 } from 'lucide-react';
 import './CoursesManagement.css';
-import { coursesAPI } from '../../../services/api';
+
+import { coursesAPI, questionBankAPI } from '../../../services/api';
 import Toast from '../../../components/Toast/Toast';
 import useToast from '../../../hooks/useToast';
+
 
 const SKILLS = [
   { value: 'listening', label: 'Listening', emoji: '🎧', color: '#10b981' },
@@ -785,6 +787,7 @@ const UnitQuestionsModal = ({ unit, course, onClose, onRefresh }) => {
     points: 1,
   });
   const [uploadedAudio, setUploadedAudio] = useState(null);
+  const [audioUploading, setAudioUploading] = useState(false);
   const [uploadedDocument, setUploadedDocument] = useState(null);
   const [documentInputMode, setDocumentInputMode] = useState('text'); // 'text' or 'file'
 
@@ -846,9 +849,6 @@ const UnitQuestionsModal = ({ unit, course, onClose, onRefresh }) => {
         return;
       }
       setUploadedAudio(file);
-      // TODO: Upload to server and get URL
-      // const url = await uploadAudioFile(file);
-      // setQuestionForm({ ...questionForm, media_url: url });
     }
   };
 
@@ -892,8 +892,24 @@ const UnitQuestionsModal = ({ unit, course, onClose, onRefresh }) => {
       }
 
       // Add media URL for listening
-      if (questionForm.type === 'mcq-audio' && questionForm.media_url) {
-        payload.media_url = questionForm.media_url;
+      if (questionForm.type === 'mcq-audio') {
+        if (uploadedAudio && !payload.media_url) {
+          setAudioUploading(true);
+          try {
+            const uploadRes = await questionBankAPI.uploadAudio(uploadedAudio);
+            payload.media_url = uploadRes?.url;
+          } catch (uploadErr) {
+            console.error('Upload audio error:', uploadErr);
+            alert(uploadErr?.response?.data?.detail || 'Upload audio thất bại, vui lòng thử lại.');
+            setAudioUploading(false);
+            return;
+          }
+          setAudioUploading(false);
+        }
+        if (!payload.media_url) {
+          alert('Vui lòng chọn và tải lên file audio trước khi thêm câu hỏi.');
+          return;
+        }
       }
 
       await coursesAPI.createQuestion(unit.id, payload);

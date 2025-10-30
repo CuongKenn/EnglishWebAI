@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -16,12 +16,13 @@ import {
   VolumeX,
   Settings,
   AlertCircle,
-  ThumbsUp,
-  ThumbsDown,
   RefreshCw,
   SkipBack,
   SkipForward,
   Headphones,
+  Info,
+  ListChecks,
+  BarChart2,
   X
 } from 'lucide-react';
 import { coursesAPI } from '../../services/api';
@@ -59,12 +60,40 @@ const ListeningExercise = () => {
   const [unitData, setUnitData] = useState(null);
   const [questions, setQuestions] = useState([]);
 
+  const totalQuestions = listeningData?.totalQuestions || 0;
+  const answeredCount = Object.keys(selectedAnswers).length;
+  const progressPercent = totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0;
+  const speechRate = 1;
+
+  const lessonMeta = useMemo(() => {
+    if (!listeningData) return null;
+
+    return {
+      courseTitle: listeningData.courseTitle,
+      lessonTitle: listeningData.title,
+      difficulty: listeningData.difficulty,
+      questionCount: listeningData.totalQuestions,
+      estimatedTime: listeningData.estimatedTime,
+      hasAudio: Boolean(listeningData.audioUrl),
+      completed: isCompleted,
+      score: results?.score ?? null,
+    };
+  }, [listeningData, isCompleted, results]);
+
+  const progressLabel = useMemo(() => {
+    if (!totalQuestions) return '0 câu đã trả lời';
+    if (!answeredCount) return 'Chưa trả lời câu nào';
+    if (answeredCount === totalQuestions) return 'Hoàn thành tất cả câu hỏi';
+    return `${answeredCount}/${totalQuestions} câu đã trả lời`;
+  }, [answeredCount, totalQuestions]);
+
 
   // Refs
   const audioRef = useRef(null);
   const timerRef = useRef(null);
   const speechSynthRef = useRef(null);
   const utteranceRef = useRef(null);
+  const questionRefs = useRef({});
 
   // Load listening data from server (not AI)
   useEffect(() => {
@@ -88,46 +117,105 @@ const ListeningExercise = () => {
         const qs = await coursesAPI.getQuestions(parseInt(lessonId));
         setQuestions(qs || []);
 
-        // Find audio URL from first question with media_url
-        const audioQuestion = (qs || []).find(q => q.media_url);
-        const audioUrl = audioQuestion?.media_url || null;
+        // Determine audio/transcript from unit/question data
+        const getBackendBaseUrl = () => {
+          const envUrl = import.meta.env.VITE_MEDIA_BASE_URL || import.meta.env.VITE_API_BASE_URL;
+          if (envUrl) {
+            try {
+              const parsed = new URL(envUrl, window.location.origin);
+              const origin = parsed.origin;
+              const pathname = parsed.pathname.replace(/\/?api\/?v1\/?$/i, '').replace(/\/$/, '');
+              return `${origin}${pathname}`;
+            } catch (err) {
+              console.warn('Không thể phân tích VITE_API_BASE_URL:', err);
+            }
+          }
 
-        // Parse question data
+          if (typeof window !== 'undefined') {
+            const { protocol, hostname, port } = window.location;
+            if (port && port !== '3000') {
+              return `${protocol}//${hostname}${port ? `:${port}` : ''}`;
+            }
+            // Mặc định backend cổng 8000 khi chạy dev
+            return `${protocol}//${hostname}:8000`;
+          }
+
+          return 'http://localhost:8000';
+        };
+
+        const backendBase = getBackendBaseUrl().replace(/\/$/, '');
+        const audioQuestion = (qs || []).find(q => q.media_url);
+        const normalizeAudioUrl = (url) => {
+          if (!url) return null;
+          if (url.startsWith('http://') || url.startsWith('https://')) return url;
+          const path = url.startsWith('/') ? url : `/${url}`;
+          return `${backendBase}${path}`;
+        };
+
+        const audioUrl = normalizeAudioUrl(unit.audio_url) || normalizeAudioUrl(audioQuestion?.media_url) || null;
+
+        // Parse question data (backend may return JSON fields already parsed)
         const parsedQuestions = (qs || []).map((q, idx) => {
           let options = [];
-          let correctAnswer = 0;
-          try {
-            if (q.options_json) {
+          if (Array.isArray(q.options)) {
+            options = q.options;
+          } else if (q.options_json) {
+            try {
               options = JSON.parse(q.options_json);
+            } catch (parseError) {
+              console.error('Error parsing options_json:', parseError, q);
             }
-            if (q.answer_json) {
-              const answerData = JSON.parse(q.answer_json);
-              correctAnswer = answerData.correct || 0;
-            }
-          } catch (e) {
-            console.error('Error parsing question data:', e, q);
           }
+
+          let answerData = {};
+          if (q.answer && typeof q.answer === 'object') {
+            answerData = q.answer;
+          } else if (q.answer_json) {
+            try {
+              answerData = JSON.parse(q.answer_json);
+            } catch (parseError) {
+              console.error('Error parsing answer_json:', parseError, q);
+            }
+          }
+
+          const correctAnswer =
+            typeof answerData.correct === 'number' ? answerData.correct : 0;
 
           return {
             id: q.id,
+            number: idx + 1,
             question: q.prompt || `Câu ${idx + 1}`,
             options: options.length > 0 ? options : ['A', 'B', 'C', 'D'],
-            correctAnswer: correctAnswer,
-            explanation: `Đáp án đúng là ${String.fromCharCode(65 + correctAnswer)}.`
+            correctAnswer,
+            explanation:
+              answerData.explanation ||
+              `Đáp án đúng là ${String.fromCharCode(65 + correctAnswer)}.`,
+            mediaUrl: normalizeAudioUrl(q.media_url) || null,
+            points: q.points || null,
+            type: q.type || null
           };
         });
+
+        const estimatedMinutesRaw =
+          unit.estimated_time ||
+          unit.estimated_minutes ||
+          unit.duration_minutes ||
+          unit.duration ||
+          5;
+        const estimatedMinutes = Number(estimatedMinutesRaw);
+        const safeEstimatedMinutes = Number.isFinite(estimatedMinutes) && estimatedMinutes > 0 ? estimatedMinutes : 5;
 
         // Build listeningData structure
         setListeningData({
           id: lessonId,
           title: unit.title,
           courseTitle: course.title,
-          difficulty: course.level || 'Intermediate',
-          estimatedTime: 5,
+          difficulty: course.level || unit.level || 'Intermediate',
+          estimatedTime: safeEstimatedMinutes,
           totalQuestions: parsedQuestions.length,
-          audioUrl: audioUrl,
-          duration: 180, // default 3 minutes
-          transcript: '', // No transcript from server
+          audioUrl,
+          duration: audioQuestion?.duration || 0,
+          transcript: '',
           questions: parsedQuestions
         });
 
@@ -173,23 +261,64 @@ const ListeningExercise = () => {
     };
 
     const handleLoadedMetadata = () => {
-      setAudioDuration(audio.duration);
+      setAudioDuration(audio.duration || 0);
+    };
+
+    const handleCanPlay = () => {
+      setAudioDuration(audio.duration || 0);
     };
 
     const handleEnded = () => {
       setIsPlaying(false);
+      setAudioProgress(0);
     };
+
+    const handleError = (event) => {
+      console.error('Audio playback error:', event);
+      setIsPlaying(false);
+      setNotification({
+        type: 'error',
+        message: 'Không thể phát audio. Vui lòng kiểm tra lại file audio.'
+      });
+      setTimeout(() => setNotification(null), 3000);
+    };
+
+    // Metadata may be available before listeners attach (e.g., cached file)
+    if (audio.readyState >= 1) {
+      setAudioDuration(audio.duration || 0);
+    }
 
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+    audio.addEventListener('canplay', handleCanPlay);
     audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('error', handleError);
 
     return () => {
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      audio.removeEventListener('canplay', handleCanPlay);
       audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('error', handleError);
     };
   }, []);
+
+  // Reset audio state when URL changes
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    setAudioProgress(0);
+    setAudioDuration(0);
+    setIsPlaying(false);
+
+    if (listeningData?.audioUrl) {
+      audio.pause();
+      audio.currentTime = 0;
+      // Force reload metadata for new source
+      audio.load();
+    }
+  }, [listeningData?.audioUrl]);
 
   // Format time
   const formatTime = (seconds) => {
@@ -214,25 +343,44 @@ const ListeningExercise = () => {
   // Audio controls with Text-to-Speech fallback
   const togglePlayPause = () => {
     // Use audio element if audio URL exists
-    if (listeningData?.audioUrl && audioRef.current) {
+    const audio = audioRef.current;
+    if (listeningData?.audioUrl && audio) {
       if (isPlaying) {
-        audioRef.current.pause();
+        audio.pause();
+        setIsPlaying(false);
       } else {
-        audioRef.current.play();
+        const playPromise = audio.play();
+        if (playPromise && typeof playPromise.then === 'function') {
+          playPromise
+            .then(() => {
+              setIsPlaying(true);
+            })
+            .catch((err) => {
+              console.error('Audio play failed:', err);
+              setIsPlaying(false);
+              setNotification({
+                type: 'error',
+                message: 'Trình duyệt không thể phát file audio. Kiểm tra lại quyền truy cập hoặc định dạng.'
+              });
+              setTimeout(() => setNotification(null), 3000);
+            });
+        } else {
+          setIsPlaying(true);
+        }
       }
-      setIsPlaying(!isPlaying);
     } 
     // Use Web Speech API as fallback
-    else if (listeningData?.transcript && speechSynthRef.current) {
+    else if (!listeningData?.audioUrl && speechSynthRef.current) {
       if (isPlaying) {
         // Stop speaking
         speechSynthRef.current.cancel();
         setIsPlaying(false);
       } else {
         // Start speaking
-        const utterance = new SpeechSynthesisUtterance(listeningData.transcript);
+        const transcriptFallback = 'Please listen carefully to the audio provided for this exercise.';
+        const utterance = new SpeechSynthesisUtterance(transcriptFallback);
         utterance.lang = 'en-US';
-        utterance.rate = speed[0];
+        utterance.rate = speechRate;
         utterance.volume = isMuted ? 0 : volume;
         
         // Get English voice
@@ -243,13 +391,13 @@ const ListeningExercise = () => {
         }
         
         // Update progress during speech
-        let words = listeningData.transcript.split(' ');
+        let words = transcriptFallback.split(' ');
         let currentWord = 0;
         utterance.onboundary = (event) => {
           if (event.name === 'word') {
             currentWord++;
             const progressPercent = (currentWord / words.length) * 100;
-            setAudioProgress((progressPercent / 100) * listeningData.duration);
+            setAudioProgress((progressPercent / 100) * (listeningData.duration || 60));
           }
         };
         
@@ -288,6 +436,14 @@ const ListeningExercise = () => {
     // Skip forward not supported for speech synthesis
   };
 
+  const handleNavigateQuestion = (index) => {
+    setCurrentQuestion(index);
+    const question = listeningData?.questions?.[index];
+    if (question && questionRefs.current[question.id]) {
+      questionRefs.current[question.id].scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   const handleVolumeChange = (e) => {
     const newVolume = parseFloat(e.target.value);
     setVolume(newVolume);
@@ -319,11 +475,14 @@ const ListeningExercise = () => {
   };
 
   // Answer handling
-  const handleAnswerSelect = (questionId, answerIndex) => {
+  const handleAnswerSelect = (questionId, answerIndex, index) => {
     setSelectedAnswers(prev => ({
       ...prev,
       [questionId]: answerIndex
     }));
+    if (typeof index === 'number') {
+      setCurrentQuestion(index);
+    }
   };
 
   const handleNoteChange = (questionId, optionIndex, note) => {
@@ -336,10 +495,10 @@ const ListeningExercise = () => {
   // Submit exercise
   const submitExercise = async () => {
     const answeredQuestions = Object.keys(selectedAnswers).length;
-    if (answeredQuestions < listeningData.totalQuestions) {
+    if (answeredQuestions < totalQuestions) {
       setNotification({
         type: 'error',
-        message: `Vui lòng trả lời tất cả ${listeningData.totalQuestions} câu hỏi trước khi nộp bài`
+        message: `Vui lòng trả lời tất cả ${totalQuestions} câu hỏi trước khi nộp bài`
       });
       setTimeout(() => setNotification(null), 3000);
       return;
@@ -353,15 +512,17 @@ const ListeningExercise = () => {
         if (isCorrect) correctCount++;
         return {
           questionId: q.id,
+          questionNumber: q.number,
           question: q.question,
           userAnswer: selectedAnswers[q.id],
           correctAnswer: q.correctAnswer,
-          isCorrect: isCorrect,
-          explanation: q.explanation
+          isCorrect,
+          explanation: q.explanation,
+          options: q.options
         };
       });
 
-      const score = Math.round((correctCount / listeningData.totalQuestions) * 100);
+      const score = Math.round((correctCount / totalQuestions) * 100);
 
       // Submit answers as JSON to backend
       const answersJson = JSON.stringify(selectedAnswers);
@@ -372,9 +533,9 @@ const ListeningExercise = () => {
       
       setResults({
         score: score,
-        totalQuestions: listeningData.totalQuestions,
+        totalQuestions,
         correctAnswers: correctCount,
-        incorrectAnswers: listeningData.totalQuestions - correctCount,
+        incorrectAnswers: totalQuestions - correctCount,
         timeSpent: timeSpent,
         detailedResults: detailedResults
       });
@@ -462,6 +623,7 @@ const ListeningExercise = () => {
   }
 
   const currentQuestionData = listeningData.questions[currentQuestion];
+  const audioProgressWidth = audioDuration > 0 ? (audioProgress / audioDuration) * 100 : 0;
 
   return (
     <div className="listening-exercise-page">
@@ -493,21 +655,93 @@ const ListeningExercise = () => {
         </div>
       </div>
 
+      {/* Lesson Meta */}
+      {lessonMeta && (
+        <div className="lesson-meta-grid">
+          <div className="lesson-meta-card">
+            <div className="meta-icon" aria-hidden="true">
+              <ListChecks size={20} />
+            </div>
+            <div className="meta-content">
+              <span className="meta-label">Số câu hỏi</span>
+              <strong className="meta-value">{lessonMeta.questionCount}</strong>
+            </div>
+          </div>
+          <div className="lesson-meta-card">
+            <div className="meta-icon" aria-hidden="true">
+              <BarChart2 size={20} />
+            </div>
+            <div className="meta-content">
+              <span className="meta-label">Tiến độ</span>
+              <strong className="meta-value">{progressPercent}%</strong>
+              <span className="meta-description">{progressLabel}</span>
+            </div>
+            <div className="meta-progress">
+              <div className="meta-progress-fill" style={{ width: `${progressPercent}%` }} />
+            </div>
+          </div>
+          <div className="lesson-meta-card">
+            <div className="meta-icon" aria-hidden="true">
+              <Clock size={20} />
+            </div>
+            <div className="meta-content">
+              <span className="meta-label">Thời lượng ước tính</span>
+              <strong className="meta-value">~{lessonMeta.estimatedTime} phút</strong>
+              <span className="meta-description">Từ giáo trình</span>
+            </div>
+          </div>
+          <div className="lesson-meta-card">
+            <div className="meta-icon" aria-hidden="true">
+              <Headphones size={20} />
+            </div>
+            <div className="meta-content">
+              <span className="meta-label">Nguồn audio</span>
+              <strong className="meta-value">{lessonMeta.hasAudio ? 'File gốc' : 'Trình duyệt đọc'}</strong>
+              <span className="meta-description">{lessonMeta.hasAudio ? 'Đã có file audio chuẩn' : 'Chưa có file audio, dùng TTS'}</span>
+            </div>
+          </div>
+          <div className="lesson-meta-card">
+            <div className="meta-icon" aria-hidden="true">
+              <Info size={20} />
+            </div>
+            <div className="meta-content">
+              <span className="meta-label">Trạng thái bài</span>
+              <strong className="meta-value">{lessonMeta.completed ? 'Đã hoàn thành' : 'Đang luyện tập'}</strong>
+              <span className="meta-description">Ghi nhận tiến độ cá nhân</span>
+            </div>
+          </div>
+          {lessonMeta.score !== null && (
+            <div className="lesson-meta-card emphasis">
+              <div className="meta-icon" aria-hidden="true">
+                <Star size={20} />
+              </div>
+              <div className="meta-content">
+                <span className="meta-label">Điểm gần nhất</span>
+                <strong className="meta-value">{lessonMeta.score}/100</strong>
+                <span className="meta-description">Tiếp tục luyện nghe để cải thiện</span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Main Content */}
       <div className="listening-content">
         {/* Instructions */}
         <div className="instructions-section">
           <div className="instructions-header">
-            <h2 className="instructions-title">
-              Exercise {currentQuestion + 1}: Nghe và chọn đáp án đúng để trả lời cho các câu hỏi sau
-            </h2>
+            <div>
+              <span className="exercise-badge">Bài nghe</span>
+              <h2 className="instructions-title">Exercise {currentQuestion + 1}/{totalQuestions}</h2>
+              <p className="instructions-subtitle">Nghe kỹ đoạn audio và chọn đáp án chính xác nhất cho từng câu hỏi.</p>
+            </div>
             <div className="instructions-controls">
               <button
                 className="hint-btn"
                 onClick={() => setShowHint(!showHint)}
               >
                 <HelpCircle size={16} />
-                Hint
+                {showHint ? 'Ẩn gợi ý' : 'Hint'}
               </button>
             </div>
           </div>
@@ -516,8 +750,7 @@ const ListeningExercise = () => {
             <div className="instruction-text">
               <AlertCircle size={16} />
               <p>
-                Lưu ý: Các bạn chú ý gạch chân keywords trong câu hỏi trước khi nghe,
-                và take note vào ô trống bên cạnh từng đáp án trong quá trình nghe để làm bài một cách chính xác nhất nhé!
+                Đọc câu hỏi trước khi nghe, gạch chân từ khóa và ghi chú nhanh khi nghe để bắt trọn thông tin quan trọng.
               </p>
             </div>
 
@@ -532,9 +765,9 @@ const ListeningExercise = () => {
                   <ul>
                     <li>Đọc kỹ câu hỏi trước khi nghe</li>
                     <li>Gạch chân các từ khóa quan trọng</li>
-                    <li>Ghi chú nhanh khi nghe</li>
-                    <li>Chú ý đến các từ đồng nghĩa và paraphrase</li>
-                    <li>Kiểm tra lại đáp án sau khi nghe xong</li>
+                    <li>Ghi chú nhanh khi nghe để không bỏ lỡ chi tiết</li>
+                    <li>Chú ý từ đồng nghĩa/paraphrase</li>
+                    <li>Kiểm tra lại đáp án trước khi nộp</li>
                   </ul>
                 </div>
               </div>
@@ -545,22 +778,28 @@ const ListeningExercise = () => {
         {/* Audio Player */}
         <div className="audio-player-section">
           {!listeningData.audioUrl && (
-            <div style={{
-              backgroundColor: '#fef3c7',
-              padding: '0.75rem',
-              borderRadius: '0.5rem',
-              marginBottom: '1rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem'
-            }}>
-              <Volume2 size={20} style={{ color: '#d97706' }} />
-              <span style={{ fontSize: '0.875rem', color: '#92400e' }}>
-                Đang sử dụng giọng đọc tự động của trình duyệt (Text-to-Speech)
+            <div className="audio-alert">
+              <Volume2 size={20} aria-hidden="true" />
+              <span>
+                Đang sử dụng giọng đọc tự động (Text-to-Speech). Giáo viên hãy tải file audio lên trong ngân hàng câu hỏi để đạt chuẩn IELTS.
               </span>
             </div>
           )}
           <div className="audio-player">
+            <div className="audio-summary">
+              <div className="summary-icon" aria-hidden="true">
+                <Headphones size={22} />
+              </div>
+              <div>
+                <p className="summary-title">{listeningData.audioUrl ? 'Nghe file audio chuẩn' : 'Text-to-Speech đang hoạt động'}</p>
+                <p className="summary-description">
+                  {listeningData.audioUrl
+                    ? 'Nhấn phát để luyện nghe. Có thể lùi/tiến 10 giây và điều chỉnh âm lượng.'
+                    : 'Hệ thống sử dụng giọng đọc tự động mặc định. Hãy đảm bảo thiết bị đã bật âm thanh.'}
+                </p>
+              </div>
+            </div>
+
             <div className="audio-controls">
               <button
                 className="skip-btn"
@@ -574,6 +813,7 @@ const ListeningExercise = () => {
               <button
                 className="play-pause-btn"
                 onClick={togglePlayPause}
+                aria-label={isPlaying ? 'Tạm dừng audio' : 'Phát audio'}
               >
                 {isPlaying ? <Pause size={32} /> : <Play size={32} />}
               </button>
@@ -598,7 +838,7 @@ const ListeningExercise = () => {
               >
                 <div
                   className="progress-fill"
-                  style={{ width: `${(audioProgress / audioDuration) * 100}%` }}
+                  style={{ width: `${audioProgressWidth}%` }}
                 ></div>
               </div>
               <div className="time-display">
@@ -610,6 +850,7 @@ const ListeningExercise = () => {
               <button
                 className="volume-btn"
                 onClick={toggleMute}
+                aria-label={isMuted ? 'Bật tiếng' : 'Tắt tiếng'}
               >
                 {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
               </button>
@@ -621,62 +862,128 @@ const ListeningExercise = () => {
                 value={isMuted ? 0 : volume}
                 onChange={handleVolumeChange}
                 className="volume-slider"
+                aria-label="Điều chỉnh âm lượng"
               />
-              <button className="settings-btn">
+              <button className="settings-btn" title="Thiết lập" aria-label="Thiết lập audio">
                 <Settings size={20} />
               </button>
             </div>
+
           </div>
         </div>
 
         {/* Questions Section */}
         <div className="questions-section">
           {(!listeningData.questions || listeningData.questions.length === 0) && (
-            <div style={{ padding: '20px', textAlign: 'center', color: '#6b7280' }}>
-              <p>Không có câu hỏi nào.</p>
+            <div className="empty-state">
+              <AlertCircle size={20} aria-hidden="true" />
+              <p>Không có câu hỏi nào cho bài nghe này. Vui lòng thêm câu hỏi trong trang quản trị.</p>
             </div>
           )}
-          {listeningData.questions && listeningData.questions.map((question, index) => (
-            <div key={question.id} className="question-card">
-              <div className="question-header">
-                <h3 className="question-text">{question.id}. {question.question}</h3>
-              </div>
 
-              <div className="options-container">
-                {question.options && question.options.map((option, optionIndex) => (
-                  <div key={optionIndex} className="option-item">
-                    <div className="option-content">
-                      <div className="option-letter">
-                        <span>{String.fromCharCode(65 + optionIndex)}</span>
+          {listeningData.questions && listeningData.questions.length > 0 && (
+            <div className="question-layout">
+              <aside className="question-nav" aria-label="Danh sách câu hỏi">
+                <h3>Danh sách câu hỏi</h3>
+                <div className="question-nav-grid">
+                  {listeningData.questions.map((question, index) => {
+                    const answered = typeof selectedAnswers[question.id] === 'number';
+                    const isActive = currentQuestion === index;
+                    return (
+                      <button
+                        key={question.id}
+                        type="button"
+                        className={`question-nav-item ${isActive ? 'active' : ''} ${answered ? 'answered' : ''}`}
+                        onClick={() => handleNavigateQuestion(index)}
+                      >
+                        <span className="question-nav-number">{index + 1}</span>
+                        <span className="question-nav-status">{answered ? 'Đã trả lời' : 'Chưa trả lời'}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </aside>
+
+              <div className="question-list">
+                {listeningData.questions.map((question, index) => {
+                  const isSelectedAnswer = typeof selectedAnswers[question.id] === 'number';
+                  return (
+                    <div
+                      key={question.id}
+                      className={`question-card ${currentQuestion === index ? 'highlight' : ''}`}
+                      ref={el => {
+                        questionRefs.current[question.id] = el;
+                      }}
+                    >
+                      <div className="question-header">
+                        <div className="question-index">Câu {index + 1}</div>
+                        {question.points && (
+                          <span className="question-points">{question.points} điểm</span>
+                        )}
                       </div>
-                      <div className="option-text">
-                        <span>{option}</span>
-                      </div>
-                      <div className="option-radio">
-                        <input
-                          type="radio"
-                          name={`question_${question.id}`}
-                          id={`q${question.id}_${optionIndex}`}
-                          checked={selectedAnswers[question.id] === optionIndex}
-                          onChange={() => handleAnswerSelect(question.id, optionIndex)}
-                        />
-                        <label htmlFor={`q${question.id}_${optionIndex}`}></label>
+                      <h3 className="question-text">{question.question}</h3>
+
+                      {question.mediaUrl && (
+                        <div className="question-media">
+                          {(!listeningData?.audioUrl || listeningData.audioUrl !== question.mediaUrl) ? (
+                            <audio controls src={question.mediaUrl} preload="metadata">
+                              Trình duyệt không hỗ trợ audio.
+                            </audio>
+                          ) : (
+                            <div className="question-media-info">
+                              Audio đang được phát ở trình phát chính phía trên.
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="options-container">
+                        {question.options && question.options.map((option, optionIndex) => {
+                          const isSelected = selectedAnswers[question.id] === optionIndex;
+                          return (
+                            <div
+                              key={optionIndex}
+                              className={`option-item ${isSelected ? 'selected' : ''}`}
+                            >
+                              <div className="option-content">
+                                <div className="option-letter">
+                                  <span>{String.fromCharCode(65 + optionIndex)}</span>
+                                </div>
+                                <div className="option-text">
+                                  <span>{option}</span>
+                                </div>
+                                <div className="option-radio">
+                                  <input
+                                    type="radio"
+                                    name={`question_${question.id}`}
+                                    id={`q${question.id}_${optionIndex}`}
+                                    checked={isSelected}
+                                    onChange={() => handleAnswerSelect(question.id, optionIndex, index)}
+                                  />
+                                  <label htmlFor={`q${question.id}_${optionIndex}`}>
+                                    Chọn đáp án {String.fromCharCode(65 + optionIndex)}
+                                  </label>
+                                </div>
+                              </div>
+                              <div className="note-section">
+                                <textarea
+                                  placeholder="Ghi chú từ khóa, thông tin quan trọng..."
+                                  value={notes[`${question.id}_${optionIndex}`] || ''}
+                                  onChange={(e) => handleNoteChange(question.id, optionIndex, e.target.value)}
+                                  className="note-textarea"
+                                  rows="2"
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
-                    <div className="note-section">
-                      <textarea
-                        placeholder="Ghi chú..."
-                        value={notes[`${question.id}_${optionIndex}`] || ''}
-                        onChange={(e) => handleNoteChange(question.id, optionIndex, e.target.value)}
-                        className="note-textarea"
-                        rows="2"
-                      />
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
-          ))}
+          )}
         </div>
 
         {/* Results Section */}
