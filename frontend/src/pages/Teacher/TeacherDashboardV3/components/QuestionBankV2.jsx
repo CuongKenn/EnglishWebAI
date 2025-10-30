@@ -10,8 +10,11 @@ import { Card } from '../../../../components/ui/card';
 import AddQuestionModal from './AddQuestionModal';
 import { questionBankAPI } from '../../../../services/api';
 import './QuestionBankV2.css';
+import Toast from '../../../../components/Toast/Toast';
+import useToast from '../../../../hooks/useToast';
 
 export default function QuestionBankV2() {
+  const { toast, showSuccess, showError, showWarning, hideToast } = useToast();
   const [questions, setQuestions] = useState([]);
   const [testSets, setTestSets] = useState([]);
   const [selectedTestSet, setSelectedTestSet] = useState(null);
@@ -82,7 +85,7 @@ export default function QuestionBankV2() {
       })));
     } catch (e) {
       console.error('Failed to load questions', e);
-      alert('❌ Không thể tải danh sách câu hỏi');
+      showError('❌ Không thể tải danh sách câu hỏi');
     } finally {
       setIsLoadingQuestions(false);
     }
@@ -175,10 +178,10 @@ export default function QuestionBankV2() {
     try {
       await questionBankAPI.remove(id);
       await loadQuestions();
-      alert('✅ Đã xóa câu hỏi');
+      showSuccess('✅ Đã xóa câu hỏi');
     } catch (e) {
       console.error('Delete failed:', e);
-      alert('❌ Xóa thất bại');
+      showError('❌ Xóa thất bại');
     } finally {
       setIsDeleting(false);
     }
@@ -187,7 +190,7 @@ export default function QuestionBankV2() {
   // Bulk delete selected questions
   const handleBulkDelete = async () => {
     if (selectedQuestions.size === 0) {
-      alert('⚠️ Vui lòng chọn ít nhất 1 câu hỏi');
+      showWarning('⚠️ Vui lòng chọn ít nhất 1 câu hỏi');
       return;
     }
     
@@ -200,10 +203,10 @@ export default function QuestionBankV2() {
       setSelectedQuestions(new Set());
       setBulkActionMode(false);
       await loadQuestions();
-      alert(`✅ Đã xóa ${ids.length} câu hỏi`);
+      showSuccess(`✅ Đã xóa ${ids.length} câu hỏi`);
     } catch (e) {
       console.error('Bulk delete failed:', e);
-      alert('❌ Xóa hàng loạt thất bại');
+      showError('❌ Xóa hàng loạt thất bại');
     } finally {
       setIsDeleting(false);
     }
@@ -235,10 +238,10 @@ export default function QuestionBankV2() {
     try {
       await questionBankAPI.duplicate(question.id);
       await loadQuestions();
-      alert('✅ Đã nhân bản câu hỏi');
+      showSuccess('✅ Đã nhân bản câu hỏi');
     } catch (e) {
       console.error('Duplicate failed:', e);
-      alert('❌ Nhân bản thất bại');
+      showError('❌ Nhân bản thất bại');
     }
   }, []);
 
@@ -293,7 +296,7 @@ export default function QuestionBankV2() {
       console.log('Skill Counts:', skillCounts);
       console.log('Expected Distribution:', aiGenerationConfig.skillDistribution);
       
-      // Show alert if mismatch
+      // Show warning if mismatch
       const totalPct = Object.values(aiGenerationConfig.skillDistribution).reduce((s, v) => s + v, 0);
       if (totalPct === 100) {
         const mismatches = [];
@@ -306,11 +309,11 @@ export default function QuestionBankV2() {
         });
         if (mismatches.length > 0) {
           console.warn('⚠️ SKILL MISMATCH:', mismatches.join(', '));
-          alert('⚠️ Cảnh báo: Một số kỹ năng không tạo được câu hỏi:\n\n' + mismatches.join('\n') + '\n\nVui lòng:\n1. Bỏ tick "Tránh trùng với ngân hàng"\n2. Kiểm tra GEMINI_API_KEY\n3. Xem log backend để biết chi tiết');
+          showWarning('⚠️ Cảnh báo: Một số kỹ năng không tạo được câu hỏi:\n\n' + mismatches.join('\n') + '\n\nVui lòng:\n1. Bỏ tick "Tránh trùng với ngân hàng"\n2. Kiểm tra GEMINI_API_KEY\n3. Xem log backend để biết chi tiết');
         }
       }
     } catch (e) {
-      alert('Tạo đề thi bằng AI thất bại');
+      showError('Tạo đề thi bằng AI thất bại');
     } finally {
       setIsGenerating(false);
     }
@@ -357,10 +360,10 @@ export default function QuestionBankV2() {
       a.remove();
       window.URL.revokeObjectURL(url);
       
-      alert('✅ Đã xuất file DOCX thành công');
+      showSuccess('✅ Đã xuất file DOCX thành công');
     } catch (error) {
       console.error('[EXPORT] Error:', error);
-      alert(`❌ Xuất DOCX thất bại: ${error.response?.data?.detail || error.message || 'Unknown error'}`);
+      showError(`❌ Xuất DOCX thất bại: ${error.response?.data?.detail || error.message || 'Unknown error'}`);
     }
   };
 
@@ -387,9 +390,9 @@ export default function QuestionBankV2() {
       const classIdStr = window.prompt('Nhập class_id để gắn bài tập (bỏ trống nếu không):', '');
       const classId = classIdStr && !isNaN(parseInt(classIdStr)) ? parseInt(classIdStr) : null;
       const res = await questionBankAPI.createExerciseFromTest(payload, classId);
-      alert(`Đã tạo bài tập #${res.id}${res.class_id ? ' cho lớp ' + res.class_id : ''}`);
+      showSuccess(`Đã tạo bài tập #${res.id}${res.class_id ? ' cho lớp ' + res.class_id : ''}`);
     } catch (e) {
-      alert('Tạo bài tập thất bại');
+      showError('Tạo bài tập thất bại');
     }
   };
 
@@ -417,12 +420,12 @@ export default function QuestionBankV2() {
       };
       // Chỉ lưu bộ đề, không lưu từng câu riêng lẻ
       const setRes = await questionBankAPI.saveTestSet(payload);
-      alert(`✅ Đã lưu bộ đề #${setRes.id} vào ngân hàng (${generatedTest.questions.length} câu hỏi)`);
+      showSuccess(`✅ Đã lưu bộ đề #${setRes.id} vào ngân hàng (${generatedTest.questions.length} câu hỏi)`);
       // Refresh danh sách bộ đề
       await loadTestSets();
     } catch (e) {
       console.error('Lỗi lưu bộ đề:', e);
-      alert('❌ Lưu vào ngân hàng thất bại');
+      showError('❌ Lưu vào ngân hàng thất bại');
     }
   };
 
@@ -532,7 +535,7 @@ export default function QuestionBankV2() {
     // Check file type
     const fileName = file.name.toLowerCase();
     if (!fileName.endsWith('.csv') && !fileName.endsWith('.docx')) {
-      alert('⚠️ Vui lòng chọn file CSV hoặc DOCX');
+      showWarning('⚠️ Vui lòng chọn file CSV hoặc DOCX');
       e.target.value = '';
       return;
     }
@@ -541,14 +544,14 @@ export default function QuestionBankV2() {
       const res = await questionBankAPI.importCSV(file);
       if (res.errors && res.errors.length > 0) {
         const errorMsg = res.errors.slice(0, 5).join('\n');
-        alert(`Import: ${res.imported} thành công, ${res.failed} lỗi\n\nLỗi:\n${errorMsg}${res.errors.length > 5 ? '\n...' : ''}`);
+        showWarning(`Import: ${res.imported} thành công, ${res.failed} lỗi\n\nLỗi:\n${errorMsg}${res.errors.length > 5 ? '\n...' : ''}`);
       } else {
-        alert(`✅ Import thành công: ${res.imported} câu hỏi`);
+        showSuccess(`✅ Import thành công: ${res.imported} câu hỏi`);
       }
       await loadQuestions();
     } catch (err) {
       console.error('Import error:', err);
-      alert(`❌ Import thất bại: ${err.response?.data?.detail || err.message || 'Unknown error'}`);
+      showError(`❌ Import thất bại: ${err.response?.data?.detail || err.message || 'Unknown error'}`);
     } finally {
       e.target.value = '';
     }
@@ -557,15 +560,15 @@ export default function QuestionBankV2() {
   const validateConfig = () => {
     const totalSkillPercentage = Object.values(aiGenerationConfig.skillDistribution).reduce((sum, val) => sum + val, 0);
     if (totalSkillPercentage !== 100) {
-      alert('Tổng phần trăm phân bố kỹ năng phải bằng 100%');
+      showWarning('Tổng phần trăm phân bố kỹ năng phải bằng 100%');
       return false;
     }
     if (aiGenerationConfig.totalQuestions < 1 || aiGenerationConfig.totalQuestions > 50) {
-      alert('Số câu hỏi phải từ 1 đến 50');
+      showWarning('Số câu hỏi phải từ 1 đến 50');
       return false;
     }
     if (aiGenerationConfig.timeLimit < 15 || aiGenerationConfig.timeLimit > 180) {
-      alert('Thời gian làm bài phải từ 15 đến 180 phút');
+      showWarning('Thời gian làm bài phải từ 15 đến 180 phút');
       return false;
     }
     return true;
@@ -608,7 +611,7 @@ export default function QuestionBankV2() {
       setExpandedQuestionId(null); // Reset expanded question
     } catch (e) {
       console.error('Failed to load test set detail', e);
-      alert('❌ Không thể tải bộ đề');
+      showError('❌ Không thể tải bộ đề');
     }
   };
   
@@ -659,10 +662,10 @@ export default function QuestionBankV2() {
       a.remove();
       window.URL.revokeObjectURL(url);
       
-      alert('✅ Đã xuất file DOCX thành công');
+      showSuccess('✅ Đã xuất file DOCX thành công');
     } catch (error) {
       console.error('[EXPORT TEST SET] Error:', error);
-      alert(`❌ Xuất DOCX thất bại: ${error.response?.data?.detail || error.message || 'Unknown error'}`);
+      showError(`❌ Xuất DOCX thất bại: ${error.response?.data?.detail || error.message || 'Unknown error'}`);
     }
   };
   
@@ -706,7 +709,7 @@ export default function QuestionBankV2() {
     if (!confirm('Bạn có chắc muốn xóa bộ đề này?')) return;
     try {
       await questionBankAPI.deleteTestSet(testSetId);
-      alert('✅ Đã xóa bộ đề');
+      showSuccess('✅ Đã xóa bộ đề');
       await loadTestSets();
       if (selectedTestSet && selectedTestSet.id === testSetId) {
         setSelectedTestSet(null);
@@ -714,7 +717,7 @@ export default function QuestionBankV2() {
       }
     } catch (e) {
       console.error('Failed to delete test set', e);
-      alert('❌ Xóa bộ đề thất bại');
+      showError('❌ Xóa bộ đề thất bại');
     }
   };
 
@@ -1590,7 +1593,7 @@ export default function QuestionBankV2() {
                             window.speechSynthesis.cancel();
                             window.speechSynthesis.speak(utter);
                           } catch (e) {
-                            alert('Trình duyệt không hỗ trợ phát giọng nói.');
+                            showError('Trình duyệt không hỗ trợ phát giọng nói.');
                           }
                         }}
                       >
@@ -1740,7 +1743,7 @@ export default function QuestionBankV2() {
                   } catch (err) {
                     console.error('[LISTENING] Audio upload failed:', err);
                     console.error('[LISTENING] Error response:', err.response?.data);
-                    alert(`⚠️ Upload audio thất bại:\n\n${err.response?.data?.detail || err.message}\n\nVui lòng kiểm tra định dạng file và thử lại.`);
+                    showError(`⚠️ Upload audio thất bại:\n\n${err.response?.data?.detail || err.message}\n\nVui lòng kiểm tra định dạng file và thử lại.`);
                     // Don't continue if audio upload fails for listening questions
                     return;
                   }
@@ -1796,7 +1799,7 @@ export default function QuestionBankV2() {
                     console.log('[READING] Passage uploaded:', passage_url);
                   } catch (err) {
                     console.error('[READING] Passage upload failed:', err);
-                    alert('⚠️ Upload passage thất bại, sử dụng text passage thay thế...');
+                    showWarning('⚠️ Upload passage thất bại, sử dụng text passage thay thế...');
                   }
                 }
                 
@@ -1845,14 +1848,14 @@ export default function QuestionBankV2() {
               await questionBankAPI.create(payload);
               console.log('[ADD QUESTION] Success!');
               
-              alert('✅ Đã thêm câu hỏi thành công');
+              showSuccess('✅ Đã thêm câu hỏi thành công');
               await loadQuestions();
               setShowAddModal(false);
               
             } catch (e) {
               console.error('[ADD QUESTION] Error:', e);
               const errorMsg = e.response?.data?.detail || e.message || 'Unknown error';
-              alert(`❌ Thêm câu hỏi thất bại:\n\n${errorMsg}`);
+              showError(`❌ Thêm câu hỏi thất bại:\n\n${errorMsg}`);
             }
           }}
         />
@@ -2114,7 +2117,7 @@ export default function QuestionBankV2() {
                     console.log('[LISTENING] New audio uploaded:', media_url);
                   } catch (err) {
                     console.error('[LISTENING] Audio upload failed:', err);
-                    alert(`⚠️ Upload audio thất bại:\n\n${err.response?.data?.detail || err.message}`);
+                    showError(`⚠️ Upload audio thất bại:\n\n${err.response?.data?.detail || err.message}`);
                     return;
                   }
                 }
@@ -2162,7 +2165,7 @@ export default function QuestionBankV2() {
                     passage_text = null; // Use file instead
                   } catch (err) {
                     console.error('[READING] Passage upload failed:', err);
-                    alert('⚠️ Upload passage thất bại, sử dụng text thay thế...');
+                    showWarning('⚠️ Upload passage thất bại, sử dụng text thay thế...');
                   }
                 }
                 
@@ -2203,16 +2206,24 @@ export default function QuestionBankV2() {
               await questionBankAPI.update(editingQuestion.id, payload);
               console.log('[EDIT QUESTION] Success!');
               
-              alert('✅ Đã cập nhật câu hỏi thành công');
+              showSuccess('✅ Đã cập nhật câu hỏi thành công');
               await loadQuestions();
               setEditingQuestion(null);
               
             } catch (e) {
               console.error('[EDIT QUESTION] Error:', e);
               const errorMsg = e.response?.data?.detail || e.message || 'Unknown error';
-              alert(`❌ Cập nhật câu hỏi thất bại:\n\n${errorMsg}`);
+              showError(`❌ Cập nhật câu hỏi thất bại:\n\n${errorMsg}`);
             }
           }}
+        />
+      )}
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={hideToast}
+          duration={toast.duration}
         />
       )}
     </div>

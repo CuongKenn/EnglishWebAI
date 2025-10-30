@@ -5,8 +5,11 @@ import { apiV1 } from '../../../../../services/api';
 import CreateExerciseModalComplete from './CreateExerciseModalComplete';
 import ExerciseDetailModal from './ExerciseDetailModal';
 import ExerciseListTable from './ExerciseListTable';
+import Toast from '../../../../../components/Toast/Toast';
+import useToast from '../../../../../hooks/useToast';
 
 export default function ExerciseManagementV2() {
+  const { toast, showSuccess, showError, showWarning, hideToast } = useToast();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState(null);
@@ -92,7 +95,7 @@ export default function ExerciseManagementV2() {
       setShowCreateModal(false);
     } catch (error) {
       console.error('Error creating exercise:', error);
-      alert(`Không thể tạo bài tập: ${error.response?.data?.detail || error.message}`);
+      showError(`Không thể tạo bài tập: ${error.response?.data?.detail || error.message}`);
     }
   };
 
@@ -119,11 +122,11 @@ export default function ExerciseManagementV2() {
         ex.id === updatedExercise.id ? updatedExercise : ex
       ));
       
-      alert('✅ Cập nhật bài tập thành công!');
+      showSuccess('✅ Cập nhật bài tập thành công!');
       setShowDetailModal(false);
     } catch (error) {
       console.error('Error updating exercise:', error);
-      alert(`❌ Không thể cập nhật: ${error.response?.data?.detail || error.message}`);
+      showError(`❌ Không thể cập nhật: ${error.response?.data?.detail || error.message}`);
     }
   };
 
@@ -136,11 +139,11 @@ export default function ExerciseManagementV2() {
         // Update local state
         setExercises(exercises.filter(ex => ex.id !== exerciseId));
         
-        alert('✅ Đã xóa bài tập thành công!');
+        showSuccess('✅ Đã xóa bài tập thành công!');
         setShowDetailModal(false);
       } catch (error) {
         console.error('Error deleting exercise:', error);
-        alert(`❌ Không thể xóa: ${error.response?.data?.detail || error.message}`);
+        showError(`❌ Không thể xóa: ${error.response?.data?.detail || error.message}`);
       }
     }
   };
@@ -468,6 +471,14 @@ export default function ExerciseManagementV2() {
           onClose={() => setShowDetailModal(false)}
           onUpdate={handleUpdateExercise}
           onDelete={() => handleDeleteExercise(selectedExercise.id)}
+        />
+      )}
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={hideToast}
+          duration={toast.duration}
         />
       )}
     </div>

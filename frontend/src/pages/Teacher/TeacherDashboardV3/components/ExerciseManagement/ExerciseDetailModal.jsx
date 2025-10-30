@@ -4,8 +4,11 @@ import {
   Eye, Clock, Award, Sparkles, Users, Copy, Check 
 } from 'lucide-react';
 import './ExerciseManagement.css';
+import Toast from '../../../../../components/Toast/Toast';
+import useToast from '../../../../../hooks/useToast';
 
 const ExerciseDetailModal = memo(function ExerciseDetailModal({ exercise, onClose, onUpdate, onDelete }) {
+  const { toast, showSuccess, showError, showWarning, hideToast } = useToast();
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedExercise, setEditedExercise] = useState(exercise);
   const [copied, setCopied] = useState(false);
@@ -84,25 +87,25 @@ const ExerciseDetailModal = memo(function ExerciseDetailModal({ exercise, onClos
   
   const handleDownload = useCallback(async () => {
     console.log('Downloading exercise:', exercise.id);
-    alert('Đang tải xuống file PDF...');
-  }, [exercise.id]);
+    showSuccess('Đang tải xuống file PDF...');
+  }, [exercise.id, showSuccess]);
   
   const handleSaveEdit = useCallback(() => {
     // Validate before saving
     if (!editedExercise.title || !editedExercise.title.trim()) {
-      alert('⚠️ Vui lòng nhập tiêu đề bài tập!');
+      showWarning('⚠️ Vui lòng nhập tiêu đề bài tập!');
       return;
     }
     
     if (!editedExercise.maxScore || editedExercise.maxScore < 1) {
-      alert('⚠️ Điểm tối đa phải lớn hơn 0!');
+      showWarning('⚠️ Điểm tối đa phải lớn hơn 0!');
       return;
     }
     
     // Call parent's update handler
     onUpdate(editedExercise);
     setIsEditMode(false);
-  }, [editedExercise, onUpdate]);
+  }, [editedExercise, onUpdate, showWarning]);
   
   const handleCancelEdit = useCallback(() => {
     // Reset to original values
@@ -132,8 +135,8 @@ const ExerciseDetailModal = memo(function ExerciseDetailModal({ exercise, onClos
       }
     }));
     
-    alert(`✅ Đã xóa câu hỏi ${questionIndex + 1}`);
-  }, [editedExercise.content.questions]);
+    showSuccess(`✅ Đã xóa câu hỏi ${questionIndex + 1}`);
+  }, [editedExercise.content.questions, showSuccess]);
 
   const handleEditQuestion = useCallback((questionIndex, field, value) => {
     setEditedExercise(prev => {
@@ -362,6 +365,14 @@ const ExerciseDetailModal = memo(function ExerciseDetailModal({ exercise, onClos
           </div>
         </div>
       </div>
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={hideToast}
+          duration={toast.duration}
+        />
+      )}
     </div>
   );
 
