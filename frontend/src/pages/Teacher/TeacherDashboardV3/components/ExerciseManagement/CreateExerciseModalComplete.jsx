@@ -7,8 +7,11 @@ import './ExerciseManagement.css';
 import QuestionBankSelectorModal from './QuestionBankSelectorModal';
 import { apiV1 } from '../../../../../services/api';
 import examService from '../../../../../services/examService';
+import Toast from '../../../../../components/Toast/Toast';
+import useToast from '../../../../../hooks/useToast';
 
 export default function CreateExerciseModalComplete({ onClose, onCreate }) {
+  const { toast, showSuccess, showWarning, hideToast } = useToast();
   const [testType, setTestType] = useState('skill_exercise');
   const [selectedSkill, setSelectedSkill] = useState('listening');
   const [creationMethod, setCreationMethod] = useState('manual');
@@ -148,7 +151,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
       const response = await examService.uploadExamFromWord(formData);
       
       if (response.success) {
-        alert('✅ ' + response.message);
+        showSuccess(response.message || 'Upload bài kiểm tra thành công!');
         onClose();
         // Refresh parent component
         if (onCreate) {
@@ -248,7 +251,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   
   const handleSubmit = () => {
     if (!title) {
-      alert('Vui lòng nhập tiêu đề!');
+      showWarning('Vui lòng nhập tiêu đề!');
       return;
     }
     
@@ -534,6 +537,15 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
           skillType={selectedSkill}
           onClose={() => setShowQuestionBankModal(false)}
           onSelect={handleQuestionsFromBank}
+        />
+      )}
+      
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={hideToast}
+          duration={toast.duration}
         />
       )}
     </div>
