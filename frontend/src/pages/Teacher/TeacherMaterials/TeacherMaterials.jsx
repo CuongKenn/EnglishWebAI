@@ -1,8 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import './TeacherMaterials.css';
 import { classesAPI, materialsAPI } from '../../../services/api';
+import Toast from '../../../components/Toast/Toast';
+import useToast from '../../../hooks/useToast';
 
 const TeacherMaterials = () => {
+  const { toast, showSuccess, showError, showWarning, hideToast } = useToast();
   const [classes, setClasses] = useState([]);
   const [selectedClassId, setSelectedClassId] = useState('');
   const [materials, setMaterials] = useState([]);
@@ -81,7 +84,7 @@ const TeacherMaterials = () => {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    if (!selectedClassId) { alert('Vui lòng chọn lớp'); return; }
+    if (!selectedClassId) { showWarning('Vui lòng chọn lớp'); return; }
     try {
       setLoading(true);
       setError('');
@@ -324,6 +327,14 @@ const TeacherMaterials = () => {
             </form>
           </div>
         </div>
+      )}
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={hideToast}
+          duration={toast.duration}
+        />
       )}
     </div>
   );

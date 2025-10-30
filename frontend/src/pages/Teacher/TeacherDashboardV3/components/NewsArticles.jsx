@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { newsAPI } from '../../../../services/api';
+import Toast from '../../../../components/Toast/Toast';
+import useToast from '../../../../hooks/useToast';
 import './NewsArticles.css';
 
 const NewsArticles = () => {
@@ -7,6 +9,7 @@ const NewsArticles = () => {
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editingNews, setEditingNews] = useState(null);
+  const { toast, showSuccess, showError, hideToast } = useToast();
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -41,7 +44,7 @@ const NewsArticles = () => {
       setNewsList(data || []);
     } catch (error) {
       console.error('Error loading news:', error);
-      alert('Không thể tải danh sách tin tức');
+      showError('Không thể tải danh sách tin tức');
     } finally {
       setLoading(false);
     }
@@ -86,16 +89,16 @@ const NewsArticles = () => {
     try {
       if (editingNews) {
         await newsAPI.updateNews(editingNews.id, formData);
-        alert('Cập nhật tin tức thành công!');
+        showSuccess('Cập nhật tin tức thành công!');
       } else {
         await newsAPI.createNews(formData);
-        alert('Tạo tin tức thành công!');
+        showSuccess('Tạo tin tức thành công!');
       }
       handleCloseModal();
       loadNews();
     } catch (error) {
       console.error('Error saving news:', error);
-      alert('Lỗi: ' + (error?.detail || 'Không thể lưu tin tức'));
+      showError('Lỗi: ' + (error?.detail || 'Không thể lưu tin tức'));
     }
   };
 
@@ -104,11 +107,11 @@ const NewsArticles = () => {
     
     try {
       await newsAPI.deleteNews(id);
-      alert('Đã xóa tin tức');
+      showSuccess('Đã xóa tin tức');
       loadNews();
     } catch (error) {
       console.error('Error deleting news:', error);
-      alert('Không thể xóa tin tức');
+      showError('Không thể xóa tin tức');
     }
   };
 
@@ -354,6 +357,16 @@ const NewsArticles = () => {
             </form>
               </div>
             </div>
+      )}
+
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          duration={toast.duration}
+          onClose={hideToast}
+        />
       )}
     </div>
   );

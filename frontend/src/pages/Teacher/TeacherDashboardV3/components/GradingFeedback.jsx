@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import './GradingFeedback.css';
 import { apiV1 } from '../../../../services/api';
+import Toast from '../../../../components/Toast/Toast';
+import useToast from '../../../../hooks/useToast';
 
 export default function GradingFeedback() {
   const [exercises, setExercises] = useState([]);
@@ -21,6 +23,7 @@ export default function GradingFeedback() {
   const [aiLoading, setAiLoading] = useState(false);
   const [classes, setClasses] = useState([]);
   const [selectedClass, setSelectedClass] = useState(null);
+  const { toast, showSuccess, showError, hideToast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -88,7 +91,7 @@ export default function GradingFeedback() {
       setFeedbackInput(updated.ai_feedback ?? updated.feedback ?? '');
     } catch (error) {
       console.error('Auto-grade error:', error);
-      alert('Lỗi khi chấm tự động!');
+      showError('Lỗi khi chấm tự động!');
     } finally {
       setLoading(false);
       setAiLoading(false);
@@ -116,12 +119,12 @@ export default function GradingFeedback() {
         rubrics_scores: selectedSubmission.rubrics_scores || null
       });
       
-      alert('Lưu điểm thành công!');
+      showSuccess('Lưu điểm thành công!');
       setShowGradingModal(false);
       fetchSubmissions(); // Refresh
     } catch (error) {
       console.error('Error saving grade:', error);
-      alert('Lỗi khi lưu điểm!');
+      showError('Lỗi khi lưu điểm!');
     } finally {
       setLoading(false);
     }
@@ -732,6 +735,16 @@ export default function GradingFeedback() {
           </ul>
         </div>
       </div>
+
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          duration={toast.duration}
+          onClose={hideToast}
+        />
+      )}
     </div>
   );
 }

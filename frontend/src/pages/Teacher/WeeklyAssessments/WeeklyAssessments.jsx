@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { ClipboardList, Sparkles, Calendar, BookOpen, Headphones, PenTool, MessageSquare, Plus, Trash2, Eye, Download } from 'lucide-react';
 import { Card } from '../../../components/ui/card';
 import { apiV1 } from '../../../services/api';
+import Toast from '../../../components/Toast/Toast';
+import useToast from '../../../hooks/useToast';
 import './WeeklyAssessments.css';
 
 export default function WeeklyAssessments() {
@@ -14,6 +16,7 @@ export default function WeeklyAssessments() {
   const [assessments, setAssessments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const { toast, showSuccess, showError, showWarning, hideToast } = useToast();
 
   useEffect(() => {
     const loadClasses = async () => {
@@ -54,7 +57,7 @@ export default function WeeklyAssessments() {
 
   const handleGenerateAssessment = async () => {
     if (!selectedClass) {
-      alert('Vui lòng chọn lớp học!');
+      showWarning('Vui lòng chọn lớp học!');
       return;
     }
 
@@ -74,7 +77,7 @@ export default function WeeklyAssessments() {
 
       setGeneratedAssessment(response.data);
       await loadAssessments(); // Reload list
-      alert('✅ Tạo phiếu đánh giá thành công!');
+      showSuccess('Tạo phiếu đánh giá thành công!');
     } catch (err) {
       setError(err.response?.data?.detail || 'Lỗi khi tạo phiếu đánh giá');
       console.error('Failed to generate assessment:', err);
@@ -87,10 +90,10 @@ export default function WeeklyAssessments() {
     if (!confirm('Bạn có chắc muốn xóa phiếu đánh giá này?')) return;
     try {
       await apiV1.delete(`/weekly-assessments/${id}`);
-      alert('✅ Đã xóa phiếu đánh giá');
+      showSuccess('Đã xóa phiếu đánh giá');
       await loadAssessments();
     } catch (err) {
-      alert('❌ Lỗi khi xóa phiếu đánh giá');
+      showError('Lỗi khi xóa phiếu đánh giá');
       console.error(err);
     }
   };
@@ -357,6 +360,16 @@ export default function WeeklyAssessments() {
           </div>
         )}
       </div>
+
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          duration={toast.duration}
+          onClose={hideToast}
+        />
+      )}
     </div>
   );
 }
