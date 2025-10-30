@@ -1,6 +1,0 @@
-email,username,name,role,status,password
-alice.teacher@example.com,alice.teacher,Alice Giáo Viên,teacher,active,Temp123!
-bob.student@example.com,bob.student,Bảo Học Sinh,user,active,Temp123!
-chris.parent@example.com,chris.parent,Chris Phụ Huynh,parent,active,Temp123!
-diana.admin@example.com,diana.admin,Diana Admin,admin,inactive,Temp123!
-eric.teacher2@example.com,eric.tran,Eric Trần,teacher,active,Temp123!

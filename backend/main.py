@@ -16,9 +16,12 @@ from app.routers import teacher_analytics
 from app.routers import exports
 from app.routers import lesson_plans, worksheets, weekly_assessments
 from app.models import User
+import os
 
-# Create database tables
-Base.metadata.create_all(bind=engine)
+# Only create tables if not using migrations (for development without Alembic)
+# In production, use Alembic migrations instead
+if os.getenv("SKIP_CREATE_TABLES", "true").lower() != "true":
+    Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title=settings.APP_NAME,
