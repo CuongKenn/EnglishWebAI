@@ -6,6 +6,7 @@ python-multipart==0.0.6
 # Database
 sqlalchemy==2.0.23
 alembic==1.12.1
+psycopg2-binary==2.9.9
 
 # Authentication & Security
 python-jose[cryptography]==3.3.0
@@ -26,22 +27,17 @@ httpx==0.25.2
 # Utils
 python-dotenv==1.0.0
 
-# AI / Gemini
-google-generativeai==0.8.5
+# AI / OpenAI (ChatGPT)
+openai==1.54.0
 python-docx==1.1.2
 packaging>=25.0
+Pillow==10.1.0
+
+# Support for old .doc files (Word 97-2003) - text extraction only
+pypandoc==1.13  # Convert doc to text via pandoc
 
 # Export utilities
 openpyxl==3.1.2
 
 # Azure Speech SDK for pronunciation assessment
 azure-cognitiveservices-speech==1.40.0
-
-# Additional dependencies for google-generativeai
-google-ai-generativelanguage>=0.6.15
-google-api-core>=2.28.0
-google-api-python-client>=2.185.0
-googleapis-common-protos>=1.71.0
-grpcio>=1.76.0
-proto-plus>=1.26.1
-protobuf>=5.29.5

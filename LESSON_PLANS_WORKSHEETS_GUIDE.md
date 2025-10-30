@@ -63,9 +63,9 @@ class Worksheet(Base):
     ai_generated: int (0/1)
 ```
 
-### 2. AI Service (`app/services/gemini_service.py`)
+### 2. AI Service (`app/services/openai_service.py`)
 
-#### Gemini AI Methods
+#### OpenAI Methods
 ```python
 async def generate_lesson_plan(
     grade, unit, lesson_number, duration,
@@ -307,7 +307,7 @@ worksheetsAPI.delete(id)
 ### Backend
 - **Framework**: FastAPI (Python)
 - **Database**: SQLAlchemy ORM (SQLite/PostgreSQL)
-- **AI**: Google Gemini 1.5 Flash
+- **AI**: OpenAI ChatGPT (GPT-4o-mini)
 - **Authentication**: JWT Bearer Token
 
 ### Frontend
@@ -378,7 +378,7 @@ CREATE TABLE worksheets (
 ### Backend ✅
 - [x] Models (LessonPlan, Worksheet)
 - [x] Schemas (Pydantic validation)
-- [x] AI Service (Gemini integration)
+- [x] AI Service (OpenAI integration)
 - [x] Routers (CRUD + AI endpoints)
 - [x] Database migration
 
@@ -391,7 +391,7 @@ CREATE TABLE worksheets (
 - [x] Modal workflows (Create, Edit, Delete, View)
 
 ### Features ✅
-- [x] AI Generation với Gemini
+- [x] AI Generation với OpenAI ChatGPT
 - [x] CRUD đầy đủ
 - [x] Filter và search
 - [x] Stats và analytics
@@ -436,7 +436,7 @@ npm start
 
 - Chương trình Giáo dục phổ thông môn Ngoại ngữ 2018
 - Phương pháp dạy học Communicative Language Teaching (CLT)
-- Google Gemini API Documentation
+- OpenAI API Documentation
 
 ---
 

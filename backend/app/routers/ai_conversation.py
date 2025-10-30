@@ -14,7 +14,7 @@ from app.schemas.ai_conversation import (
     ConversationSuggestionsRequest,
     ConversationSuggestionsResponse
 )
-from app.services.gemini_service import gemini_service
+from app.services.openai_service import openai_service
 from app.services.azure_speech_service import azure_speech_service
 from app.models.user import User
 from app.core.dependencies import get_current_user
@@ -31,7 +31,7 @@ async def chat_with_ai(
     db: Session = Depends(get_db),
 ):
     """
-    Chat with AI using Gemini
+    Chat with AI using OpenAI (ChatGPT)
     
     - Requires authentication
     - Returns AI's response to user's message
@@ -43,7 +43,7 @@ async def chat_with_ai(
             chat_history = [msg.dict() for msg in request.chat_history]
         
         # Get AI response
-        ai_response = await gemini_service.chat_conversation(
+        ai_response = await openai_service.chat_conversation(
             message=request.message,
             chat_history=chat_history,
             system_prompt=request.system_prompt
@@ -80,7 +80,7 @@ async def get_conversation_suggestions(
     - Returns list of conversation starters
     """
     try:
-        suggestions = await gemini_service.get_conversation_suggestions(
+        suggestions = await openai_service.get_conversation_suggestions(
             topic=request.topic
         )
         
@@ -103,12 +103,12 @@ async def assess_speaking_practice(
     db: Session = Depends(get_db)
 ):
     """
-    Assess speaking practice audio using Azure Speech + Gemini
+    Assess speaking practice audio using Azure Speech + OpenAI
     
     - Receives audio recording and reference text
     - Returns pronunciation scores, transcription, and detailed AI feedback
     - Uses Azure for pronunciation assessment
-    - Uses Gemini for grammar/vocabulary analysis and feedback generation
+    - Uses OpenAI for grammar/vocabulary analysis and feedback generation
     """
     temp_file = None
     try:
@@ -138,8 +138,8 @@ async def assess_speaking_practice(
         
         print(f"[assess_speaking_practice] Azure scores - Pronunciation: {pronunciation_score}, Fluency: {fluency_score}")
         
-        # Use Gemini to analyze grammar, vocabulary, and generate detailed feedback
-        gemini_prompt = f"""Phân tích chi tiết bài nói tiếng Anh của học sinh:
+        # Use OpenAI to analyze grammar, vocabulary, and generate detailed feedback
+        openai_prompt = f"""Phân tích chi tiết bài nói tiếng Anh của học sinh:
 
 **Nội dung yêu cầu:** {reference_text}
 **Nội dung học sinh nói:** {recognized_text}
@@ -168,22 +168,22 @@ Hãy phân tích và trả về kết quả theo định dạng JSON sau:
 Chỉ trả về JSON, không có text khác."""
 
         try:
-            gemini_response = await gemini_service.generate_text(gemini_prompt)
-            # Parse JSON from Gemini response
+            openai_response = await openai_service.generate_text(openai_prompt)
+            # Parse JSON from OpenAI response
             import json
             import re
             # Extract JSON from markdown code block if present
-            json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', gemini_response, re.DOTALL)
+            json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', openai_response, re.DOTALL)
             if json_match:
-                gemini_data = json.loads(json_match.group(1))
+                openai_data = json.loads(json_match.group(1))
             else:
-                gemini_data = json.loads(gemini_response)
+                openai_data = json.loads(openai_response)
             
-            print(f"[assess_speaking_practice] Gemini analysis complete")
+            print(f"[assess_speaking_practice] OpenAI analysis complete")
         except Exception as e:
-            print(f"[assess_speaking_practice] Gemini analysis failed: {e}")
+            print(f"[assess_speaking_practice] OpenAI analysis failed: {e}")
             # Fallback values
-            gemini_data = {
+            openai_data = {
                 "grammar_score": round(accuracy_score / 10, 1),
                 "vocabulary_score": round(completeness_score / 10, 1),
                 "grammar_errors": [],
@@ -197,11 +197,11 @@ Chỉ trả về JSON, không có text khác."""
         
         # Aggregate all errors and good expressions
         detailed_feedback = []
-        error_count = len(gemini_data.get('grammar_errors', []))
-        good_count = len([v for v in gemini_data.get('vocabulary_comments', []) if v.get('type') == 'good'])
+        error_count = len(openai_data.get('grammar_errors', []))
+        good_count = len([v for v in openai_data.get('vocabulary_comments', []) if v.get('type') == 'good'])
         
         # Add grammar errors
-        for idx, error in enumerate(gemini_data.get('grammar_errors', [])[:5]):  # Limit to 5
+        for idx, error in enumerate(openai_data.get('grammar_errors', [])[:5]):  # Limit to 5
             detailed_feedback.append({
                 "type": "error",
                 "text": error.get('text', ''),
@@ -211,7 +211,7 @@ Chỉ trả về JSON, không có text khác."""
             })
         
         # Add vocabulary comments
-        for idx, vocab in enumerate(gemini_data.get('vocabulary_comments', [])[:5]):  # Limit to 5
+        for idx, vocab in enumerate(openai_data.get('vocabulary_comments', [])[:5]):  # Limit to 5
             detailed_feedback.append({
                 "type": vocab.get('type', 'good'),
                 "text": vocab.get('text', ''),
@@ -234,19 +234,19 @@ Chỉ trả về JSON, không có text khác."""
         return {
             "success": True,
             "transcription": recognized_text,
-            "score": round((pronunciation_score + fluency_score + gemini_data['grammar_score'] * 10 + gemini_data['vocabulary_score'] * 10) / 4, 1),
+            "score": round((pronunciation_score + fluency_score + openai_data['grammar_score'] * 10 + openai_data['vocabulary_score'] * 10) / 4, 1),
             "feedback": {
-                "generalComments": len(gemini_data.get('improvement_tips', [])),
+                "generalComments": len(openai_data.get('improvement_tips', [])),
                 "goodExpressions": good_count,
                 "errors": error_count
             },
             "detailedFeedback": detailed_feedback,
             "pronunciation": round(pronunciation_score / 10, 1),
             "fluency": round(fluency_score / 10, 1),
-            "grammar": gemini_data['grammar_score'],
-            "vocabulary": gemini_data['vocabulary_score'],
+            "grammar": openai_data['grammar_score'],
+            "vocabulary": openai_data['vocabulary_score'],
             "aiGeneratedFeedback": score_result.get('detailed_feedback', ''),
-            "improvementTips": gemini_data.get('improvement_tips', [])
+            "improvementTips": openai_data.get('improvement_tips', [])
         }
         
     except HTTPException:

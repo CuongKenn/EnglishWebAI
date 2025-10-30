@@ -28,7 +28,7 @@
 - ✅ **Component**: `WeeklyAssessments.jsx` và `WeeklyAssessments.css`
 - ✅ **Tính năng**:
   - Hiển thị ma trận 4 kỹ năng (Reading, Writing, Listening, Speaking) theo từng tuần
-  - Tạo phiếu đánh giá tự động bằng AI Gemini
+  - Tạo phiếu đánh giá tự động bằng AI ChatGPT
   - Quản lý và xóa phiếu đánh giá
   - Thống kê tổng quan
 
@@ -232,7 +232,7 @@ alembic upgrade head
 
 ---
 
-## 💡 Tính năng AI Gemini
+## 💡 Tính năng AI ChatGPT
 
 ### Weekly Assessment Generation:
 - Tự động tạo phiếu đánh giá phù hợp với khối lớp
@@ -414,7 +414,7 @@ curl -X POST http://localhost:8000/api/v1/materials/upload \
 - ✅ Backend API hoàn chỉnh và robust
 - ✅ Frontend UI đẹp mắt và responsive  
 - ✅ Database được thiết kế tối ưu
-- ✅ Tích hợp AI Gemini thông minh
+- ✅ Tích hợp AI ChatGPT thông minh
 - ✅ Phân quyền rõ ràng giữa các role
 - ✅ Error handling toàn diện
 - ✅ Documentation chi tiết

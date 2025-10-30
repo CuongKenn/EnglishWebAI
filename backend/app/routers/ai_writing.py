@@ -11,7 +11,7 @@ from app.schemas.ai_writing import (
     WritingTopicRequest,
     WritingTopicResponse
 )
-from app.services.gemini_service import gemini_service
+from app.services.openai_service import openai_service
 from app.core.dependencies import get_current_user
 from app.core.database import get_db
 from app.services.ai_analytics_service import AIAnalyticsService
@@ -38,8 +38,8 @@ async def check_writing(
     Returns:
         Detailed feedback including scores, errors, and suggestions
     """
-    # Get feedback from Gemini
-    feedback = await gemini_service.check_writing(
+    # Get feedback from OpenAI
+    feedback = await openai_service.check_writing(
         text=request.text,
         writing_type=request.writing_type,
         level=request.level
@@ -71,8 +71,8 @@ async def generate_topic(
     Returns:
         Generated topic with title, prompt, word count, and tips
     """
-    # Generate topic from Gemini
-    topic_data = await gemini_service.generate_writing_topic(
+    # Generate topic from OpenAI
+    topic_data = await openai_service.generate_writing_topic(
         writing_type=request.writing_type,
         level=request.level
     )

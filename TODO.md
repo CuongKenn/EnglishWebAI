@@ -5,7 +5,7 @@
 ### 🎉 Mô-đun 2: Auto AI Grading - DONE!
 **Backend**: `_auto_grade_submission()` trong `exercises.py`
 - ✅ Auto-trigger khi student submit Writing/Speaking
-- ✅ Gemini AI grading cho Writing: rubrics (content, organization, vocab, grammar, mechanics)
+- ✅ ChatGPT AI grading cho Writing: rubrics (content, organization, vocab, grammar, mechanics)
 - ✅ Azure Speech API cho Speaking: pronunciation, fluency, completeness, accuracy
 - ✅ Lưu `rubrics_scores`, `ai_feedback`, `ai_score` vào submission
 - ✅ Status "pending_review" - Teacher có thể review/confirm
@@ -252,7 +252,7 @@ def aggregate_weekly_progress():
 - [ ] Progress indicator
 
 ### 7. 🧪 TESTING
-- [ ] Unit tests: `gemini_service.grade_writing()`
+- [ ] Unit tests: `openai_service.grade_writing()`
 - [ ] Unit tests: `azure_speech_service.assess_pronunciation()`
 - [ ] Integration: Submit → Auto grade → Teacher review workflow
 - [ ] Load tests: 100 submissions đồng thời

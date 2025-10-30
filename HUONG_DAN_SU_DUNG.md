@@ -196,7 +196,7 @@ Dropdown: [Lớp 10A1 ▼]
 ```
 
 #### Bước 5: AI tự động tạo
-- AI Gemini sẽ sinh phiếu đánh giá phù hợp
+- AI ChatGPT sẽ sinh phiếu đánh giá phù hợp
 - Có câu hỏi, đáp án, rubrics đầy đủ
 - Lưu tự động vào database
 

@@ -1,0 +1,13 @@
+.take-exam-page {
+  min-height: 100vh;
+  background: #f5f7fa;
+  padding: 0;
+}
+
+/* Exam viewer sẽ chiếm toàn bộ không gian */
+.take-exam-page > div {
+  max-width: none;
+  margin: 0;
+  border-radius: 0;
+}
+

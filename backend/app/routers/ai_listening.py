@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.models.user import User
-from app.services.gemini_service import GeminiService
+from app.services.openai_service import OpenAIService
 from pydantic import BaseModel
 from typing import List, Optional
 import logging
@@ -56,12 +56,12 @@ async def generate_listening_lesson(
             )
         
         try:
-            gemini = GeminiService()
+            openai_svc = OpenAIService()
         except Exception as e:
-            logger.error(f"[AI-LISTENING] Failed to initialize Gemini: {e}")
+            logger.error(f"[AI-LISTENING] Failed to initialize OpenAI: {e}")
             raise HTTPException(
                 status_code=503,
-                detail="AI service is not available. Please contact administrator to configure GEMINI_API_KEY."
+                detail="AI service is not available. Please contact administrator to configure OPENAI_API_KEY."
             )
         
         # Level-specific prompts
@@ -127,17 +127,17 @@ Important:
         
         logger.info(f"[AI-LISTENING] Generating lesson for level: {level}")
         
-        # Call Gemini
+        # Call OpenAI
         try:
-            response_text = gemini.generate_content(prompt)
+            response_text = openai_svc.generate_content(prompt)
         except ValueError as ve:
-            logger.error(f"[AI-LISTENING] Gemini not configured: {ve}")
+            logger.error(f"[AI-LISTENING] OpenAI not configured: {ve}")
             raise HTTPException(
                 status_code=503,
-                detail="AI service is not configured. Please add GEMINI_API_KEY to .env file. Get your free API key at: https://aistudio.google.com/app/apikey"
+                detail="AI service is not configured. Please add OPENAI_API_KEY to .env file. Get your API key at: https://platform.openai.com/api-keys"
             )
         except Exception as ge:
-            logger.error(f"[AI-LISTENING] Gemini API error: {ge}")
+            logger.error(f"[AI-LISTENING] OpenAI API error: {ge}")
             raise HTTPException(
                 status_code=503,
                 detail=f"Failed to generate lesson with AI: {str(ge)}"

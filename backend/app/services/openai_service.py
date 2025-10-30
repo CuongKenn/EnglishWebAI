@@ -1,9 +1,9 @@
 """
-Gemini AI Service
-Handles interactions with Google Gemini API for AI conversation
+OpenAI AI Service
+Handles interactions with OpenAI API (ChatGPT) for AI conversation
 """
 
-import google.generativeai as genai
+import openai
 import asyncio
 import json
 from typing import List, Dict
@@ -11,45 +11,64 @@ import os
 from app.core.config import settings
 
 
-class GeminiService:
-    """Service for handling Gemini AI conversations"""
+class OpenAIService:
+    """Service for handling OpenAI (ChatGPT) conversations"""
     
     def __init__(self):
-        """Initialize Gemini with API key"""
-        api_key = settings.GEMINI_API_KEY if hasattr(settings, 'GEMINI_API_KEY') else os.getenv('GEMINI_API_KEY')
+        """Initialize OpenAI with API key"""
+        api_key = settings.OPENAI_API_KEY if hasattr(settings, 'OPENAI_API_KEY') else os.getenv('OPENAI_API_KEY')
         self.api_key = api_key
-        self.model = None
+        self.client = None
         
         if api_key and api_key.strip():
             try:
-                model_name = settings.GEMINI_MODEL if hasattr(settings, 'GEMINI_MODEL') else os.getenv('GEMINI_MODEL', 'gemini-1.5-flash')
-                genai.configure(api_key=api_key)
-                self.model = genai.GenerativeModel(model_name)
+                model_name = settings.OPENAI_MODEL if hasattr(settings, 'OPENAI_MODEL') else os.getenv('OPENAI_MODEL', 'gpt-4o-mini')
+                openai.api_key = api_key
+                self.client = openai
+                self.model = model_name
             except Exception as e:
-                print(f"Warning: Failed to initialize Gemini: {str(e)}")
-                self.model = None
+                print(f"Warning: Failed to initialize OpenAI: {str(e)}")
+                self.client = None
         else:
-            print("Warning: GEMINI_API_KEY not configured")
+            print("Warning: OPENAI_API_KEY not configured")
     
     def generate_content(self, prompt: str) -> str:
         """
-        Generate content from a prompt using Gemini
+        Generate content from a prompt using OpenAI
         
         Args:
-            prompt: The prompt to send to Gemini
+            prompt: The prompt to send to OpenAI
             
         Returns:
             Generated text content
         """
-        if not self.model:
-            raise ValueError("Gemini API is not configured. Please add GEMINI_API_KEY to your .env file. Get your free API key at: https://aistudio.google.com/app/apikey")
+        if not self.client:
+            raise ValueError("OpenAI API is not configured. Please add OPENAI_API_KEY to your .env file. Get your API key at: https://platform.openai.com/api-keys")
         
         try:
-            response = self.model.generate_content(prompt)
-            return response.text
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.7,
+            )
+            return response.choices[0].message.content
         except Exception as e:
             print(f"Error generating content: {str(e)}")
             raise
+    
+    async def generate_text(self, prompt: str) -> str:
+        """
+        Async wrapper for generate_content
+        
+        Args:
+            prompt: The prompt to send to OpenAI
+            
+        Returns:
+            Generated text content
+        """
+        return await asyncio.to_thread(self.generate_content, prompt)
     
     async def chat_conversation(
         self, 
@@ -58,18 +77,17 @@ class GeminiService:
         system_prompt: str = None
     ) -> str:
         """
-        Send a message to Gemini and get a response
+        Send a message to OpenAI and get a response
         
         Args:
             message: User's message
-            chat_history: List of previous messages [{"role": "user/ai", "content": "..."}]
+            chat_history: List of previous messages [{"role": "user/assistant", "content": "..."}]
             system_prompt: Optional system instructions for the AI
             
         Returns:
             AI's response text
         """
         try:
-            # Build conversation history for Gemini
             if system_prompt is None:
                 system_prompt = """You are a friendly English conversation partner. 
                 Your role is to help users practice English conversation naturally.
@@ -79,12 +97,8 @@ class GeminiService:
                 - Ask follow-up questions to keep the conversation going
                 - Be encouraging and supportive"""
             
-            # Start a chat session
-            chat = self.model.start_chat(history=[])
-            
-            # Add system context as first message if provided
-            if system_prompt:
-                chat.send_message(f"[SYSTEM INSTRUCTION]: {system_prompt}")
+            # Build messages array
+            messages = [{"role": "system", "content": system_prompt}]
             
             # Add chat history if exists
             if chat_history:
@@ -92,18 +106,28 @@ class GeminiService:
                     role = msg.get("role", "user")
                     content = msg.get("content", "")
                     
-                    if role == "user":
-                        chat.send_message(content)
-                    # AI messages are already in history, no need to re-send
+                    # Convert 'ai' role to 'assistant' for OpenAI
+                    if role == "ai":
+                        role = "assistant"
+                    
+                    messages.append({"role": role, "content": content})
             
-            # Send the current message
-            response = chat.send_message(message)
+            # Add current message
+            messages.append({"role": "user", "content": message})
             
-            return response.text
+            # Get response from OpenAI
+            response = await asyncio.to_thread(
+                self.client.chat.completions.create,
+                model=self.model,
+                messages=messages,
+                temperature=0.7,
+            )
+            
+            return response.choices[0].message.content
             
         except Exception as e:
             # Log error and return a friendly message
-            print(f"Gemini API Error: {str(e)}")
+            print(f"OpenAI API Error: {str(e)}")
             return "I'm sorry, I'm having trouble responding right now. Please try again in a moment."
     
     async def get_conversation_suggestions(self, topic: str = None) -> List[str]:
@@ -122,8 +146,14 @@ class GeminiService:
                 prompt += f""" about {topic}"""
             prompt += """. Return only the questions, one per line, without numbering."""
             
-            response = await asyncio.to_thread(self.model.generate_content, prompt)
-            suggestions = response.text.strip().split('\n')
+            response = await asyncio.to_thread(
+                self.client.chat.completions.create,
+                model=self.model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.8,
+            )
+            
+            suggestions = response.choices[0].message.content.strip().split('\n')
             
             # Clean up suggestions
             suggestions = [s.strip() for s in suggestions if s.strip()]
@@ -184,8 +214,15 @@ class GeminiService:
             
             prompt = f"{system_prompt}\n\nStudent's writing:\n{text}"
             
-            response = await asyncio.to_thread(self.model.generate_content, prompt)
-            result_text = response.text.strip()
+            response = await asyncio.to_thread(
+                self.client.chat.completions.create,
+                model=self.model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.5,
+                response_format={"type": "json_object"}
+            )
+            
+            result_text = response.choices[0].message.content.strip()
             
             # Try to parse JSON from response
             import json
@@ -268,8 +305,15 @@ The topic should:
 Type: {writing_type}
 Level: {level}"""
             
-            response = await asyncio.to_thread(self.model.generate_content, prompt)
-            result_text = response.text.strip()
+            response = await asyncio.to_thread(
+                self.client.chat.completions.create,
+                model=self.model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.8,
+                response_format={"type": "json_object"}
+            )
+            
+            result_text = response.choices[0].message.content.strip()
             
             # Try to parse JSON from response
             import json
@@ -360,8 +404,15 @@ Rules:
 - Make transcript self-contained and coherent.
 - Keep answers consistent with options order.
 """
-            response = await asyncio.to_thread(self.model.generate_content, prompt)
-            text = response.text.strip()
+            response = await asyncio.to_thread(
+                self.client.chat.completions.create,
+                model=self.model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.7,
+                response_format={"type": "json_object"}
+            )
+            
+            text = response.choices[0].message.content.strip()
             import json
             if "```json" in text:
                 text = text.split("```json")[1].split("```")[0].strip()
@@ -407,8 +458,15 @@ Create {count} English speaking tasks. Return ONLY JSON:
 }}
 Keep prompts realistic for intermediate learners.
 """
-            response = await asyncio.to_thread(self.model.generate_content, prompt)
-            text = response.text.strip()
+            response = await asyncio.to_thread(
+                self.client.chat.completions.create,
+                model=self.model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.7,
+                response_format={"type": "json_object"}
+            )
+            
+            text = response.choices[0].message.content.strip()
             import json
             if "```json" in text:
                 text = text.split("```json")[1].split("```")[0].strip()
@@ -533,10 +591,17 @@ IMPORTANT:
 - For fill_blank, choose words that appear in the passage
 - Ensure correct answers are definitively right"""
 
-            response = await asyncio.to_thread(self.model.generate_content, prompt)
-            result_text = response.text.strip()
+            response = await asyncio.to_thread(
+                self.client.chat.completions.create,
+                model=self.model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.7,
+                response_format={"type": "json_object"}
+            )
             
-            print(f"[AI Reading] Raw response from Gemini (first 500 chars): {result_text[:500]}")
+            result_text = response.choices[0].message.content.strip()
+            
+            print(f"[AI Reading] Raw response from OpenAI (first 500 chars): {result_text[:500]}")
             
             # Parse JSON from response
             import json
@@ -942,7 +1007,7 @@ IMPORTANT:
         criteria: dict = None
     ) -> dict:
         """
-        Grade writing assignment using Gemini AI
+        Grade writing assignment using OpenAI
         
         Args:
             writing_text: Student's writing content
@@ -1018,11 +1083,17 @@ Return your response in JSON format:
 """
             
             # Get AI response
-            if not self.model:
-                raise ValueError("Gemini API is not configured. Please set GEMINI_API_KEY.")
+            if not self.client:
+                raise ValueError("OpenAI API is not configured. Please set OPENAI_API_KEY.")
 
-            response = self.model.generate_content(grading_prompt)
-            result_text = response.text.strip()
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[{"role": "user", "content": grading_prompt}],
+                temperature=0.5,
+                response_format={"type": "json_object"}
+            )
+            
+            result_text = response.choices[0].message.content.strip()
             
             # Clean up JSON (remove markdown code blocks if present)
             if result_text.startswith("```json"):
@@ -1066,7 +1137,7 @@ Return your response in JSON format:
             }
             
         except json.JSONDecodeError as e:
-            print(f"Error parsing Gemini JSON response: {str(e)}")
+            print(f"Error parsing OpenAI JSON response: {str(e)}")
             print(f"Raw response: {result_text[:500]}")
             # Fallback: basic scoring
             word_count = len(writing_text.split())
@@ -1268,9 +1339,16 @@ QUAN TRỌNG:
 - Thời gian mỗi hoạt động hợp lý (tổng = """ + str(duration) + """ phút)
 """
             
-            # Generate with Gemini
-            response = await asyncio.to_thread(self.model.generate_content, prompt)
-            result_text = response.text.strip()
+            # Generate with OpenAI
+            response = await asyncio.to_thread(
+                self.client.chat.completions.create,
+                model=self.model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.7,
+                response_format={"type": "json_object"}
+            )
+            
+            result_text = response.choices[0].message.content.strip()
             
             # Parse JSON
             import json
@@ -1553,9 +1631,16 @@ YÊU CẦU:
 - Bám sát chương trình 2018
 """
             
-            # Generate with Gemini
-            response = await asyncio.to_thread(self.model.generate_content, prompt)
-            result_text = response.text.strip()
+            # Generate with OpenAI
+            response = await asyncio.to_thread(
+                self.client.chat.completions.create,
+                model=self.model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.7,
+                response_format={"type": "json_object"}
+            )
+            
+            result_text = response.choices[0].message.content.strip()
             
             # Parse JSON
             import json
@@ -1596,4 +1681,5 @@ YÊU CẦU:
 
 
 # Create a singleton instance
-gemini_service = GeminiService()
+openai_service = OpenAIService()
+
