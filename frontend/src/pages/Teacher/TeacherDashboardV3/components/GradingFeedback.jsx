@@ -344,12 +344,12 @@ export default function GradingFeedback() {
                 </div>
               )}
             
-              {/* Writing Assessment (Gemini) */}
+              {/* Writing Assessment (ChatGPT) */}
               {selectedSubmission.rubrics_scores?.writing_assessment && (
                 <div className="writing-assessment-section card">
                 <div className="assessment-header">
                   <Edit size={18} style={{ color: '#f59e0b' }} />
-                  <span>Đánh giá Writing (Gemini AI)</span>
+                  <span>Đánh giá Writing (ChatGPT AI)</span>
                 </div>
                 
                 <div className="writing-scores-grid">

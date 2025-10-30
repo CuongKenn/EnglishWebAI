@@ -6,6 +6,7 @@ import {
 import './ExerciseManagement.css';
 import QuestionBankSelectorModal from './QuestionBankSelectorModal';
 import { apiV1 } from '../../../../../services/api';
+import examService from '../../../../../services/examService';
 
 export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   const [testType, setTestType] = useState('skill_exercise');
@@ -26,6 +27,12 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   // Import file
   const [importFile, setImportFile] = useState('');
   const importFileInputRef = useRef(null);
+  
+  // Word import (for midterm/final)
+  const [wordFile, setWordFile] = useState(null);
+  const [isUploadingWord, setIsUploadingWord] = useState(false);
+  const [wordUploadError, setWordUploadError] = useState(null);
+  const wordFileInputRef = useRef(null);
   
   // Listening fields
   const [audioFile, setAudioFile] = useState(null);
@@ -93,6 +100,69 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   const handleImportFileUpload = (e) => {
     const file = e.target.files[0];
     if (file) setImportFile(file);
+  };
+  
+  const handleWordFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.name.endsWith('.docx') || file.name.endsWith('.doc')) {
+        setWordFile(file);
+        setWordUploadError(null);
+      } else {
+        setWordUploadError('❌ Chỉ chấp nhận file Word (.docx hoặc .doc)');
+        setWordFile(null);
+      }
+    }
+  };
+  
+  const handleWordImportSubmit = async () => {
+    if (!wordFile) {
+      setWordUploadError('Vui lòng chọn file Word');
+      return;
+    }
+
+    if (!title.trim()) {
+      setWordUploadError('Vui lòng nhập tiêu đề bài tập');
+      return;
+    }
+    
+    if (!classId) {
+      setWordUploadError('Vui lòng chọn lớp học');
+      return;
+    }
+    
+    try {
+      setIsUploadingWord(true);
+      setWordUploadError(null);
+      
+      // Show user-friendly message for long processing time
+      console.log('⏳ Đang upload và xử lý file Word bằng AI - có thể mất 2-3 phút...');
+      
+      const formData = new FormData();
+      formData.append('file', wordFile);
+      formData.append('exam_title', title.trim());
+      formData.append('class_id', classId);
+      formData.append('exam_type', testType); // midterm or final
+      formData.append('is_published', true); // Auto-publish
+      
+      const response = await examService.uploadExamFromWord(formData);
+      
+      if (response.success) {
+        alert('✅ ' + response.message);
+        onClose();
+        // Refresh parent component
+        if (onCreate) {
+          onCreate({ success: true, exam: response.exam });
+        }
+      } else {
+        setWordUploadError(response.message || 'Có lỗi xảy ra');
+      }
+    } catch (error) {
+      console.error('Word upload error:', error);
+      setWordUploadError(error.response?.data?.detail || 'Lỗi khi upload file Word');
+    } finally {
+      setIsUploadingWord(false);
+    }
   };
   
   const handleAudioUpload = (e) => {
@@ -805,6 +875,143 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   
   // Import Form
   function renderImportForm() {
+    // Special UI for Midterm/Final - Word Import
+    if (isMidtermOrFinal) {
+      return (
+        <div className="import-form-content word-import-special">
+          <div className="word-import-header">
+            <div className="import-icon-wrapper">
+              <FileText size={32} className="gradient-icon" />
+            </div>
+            <div>
+              <h3 className="import-title">📄 Import Đề Thi Từ File Word</h3>
+              <p className="import-subtitle">AI sẽ tự động phân tích và tạo đề thi tương tác</p>
+            </div>
+          </div>
+          
+          <div className="form-section-ex">
+            <label className="form-label-ex">Tiêu đề bài tập <span className="required">*</span></label>
+            <input
+              type="text"
+              className="form-input-ex"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="VD: Kiểm tra Giữa kỳ 1 - Tiếng Anh 5"
+              required
+            />
+          </div>
+
+          <div className="form-section-ex">
+            <label className="form-label-ex">Lớp học <span className="required">*</span></label>
+            <select className="form-select-ex" value={classId} onChange={(e) => setClassId(e.target.value)}>
+              <option value="">-- Chọn lớp học --</option>
+              {classes.map(cls => (
+                <option key={cls.id} value={cls.id}>
+                  {cls.name} {cls.grade && `(Khối ${cls.grade})`}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          <div className="form-section-ex">
+            <label className="form-label-ex">Upload file Word <span className="required">*</span></label>
+            <div 
+              className={`file-upload-zone-word ${wordFile ? 'has-file' : ''}`}
+              onClick={() => wordFileInputRef.current?.click()}
+            >
+              <input 
+                ref={wordFileInputRef}
+                type="file"
+                accept=".doc,.docx"
+                onChange={handleWordFileUpload}
+                style={{ display: 'none' }}
+              />
+              {!wordFile ? (
+                <div className="word-upload-placeholder">
+                  <FileUp size={56} className="upload-icon-word" />
+                  <h4>Kéo thả file Word vào đây</h4>
+                  <p>hoặc click để chọn file</p>
+                  <span className="upload-hint-word">Hỗ trợ: .docx và .doc (Word 97-2003)</span>
+                  <span className="upload-hint-word" style={{ color: '#10b981', fontSize: '11px' }}>✅ Cả 2 định dạng đều được hỗ trợ</span>
+                </div>
+              ) : (
+                <div className="word-file-preview">
+                  <FileText size={40} className="file-icon-word" />
+                  <div className="word-file-info">
+                    <span className="word-file-name">{wordFile.name}</span>
+                    <span className="word-file-size">
+                      {(wordFile.size / 1024 / 1024).toFixed(2)} MB
+                    </span>
+                  </div>
+                  <button 
+                    onClick={(e) => { 
+                      e.stopPropagation(); 
+                      setWordFile(null); 
+                      setWordUploadError(null);
+                    }}
+                    className="btn-remove-word-file"
+                    type="button"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+              )}
+            </div>
+            {wordUploadError && (
+              <div className="word-error-message">
+                <span className="error-icon">⚠️</span>
+                {wordUploadError}
+              </div>
+            )}
+          </div>
+          
+          <div className="info-box-word">
+            <span className="info-icon-word">💡</span>
+            <div className="info-content-word">
+              <p><strong>Hướng dẫn:</strong></p>
+              <ul>
+                <li>File Word cần có cấu trúc rõ ràng với các phần: Listening, Reading, Writing, Speaking</li>
+                <li>AI sẽ tự động trích xuất hình ảnh và phân tích câu hỏi</li>
+                <li>Đề thi sẽ được tạo thành dạng tương tác cho học sinh làm trên web</li>
+                <li>Bạn có thể chỉnh sửa sau khi import</li>
+                <li><strong>⏱️ Lưu ý:</strong> Quá trình xử lý bằng AI mất 3-5 phút (file lớn có thể lâu hơn), vui lòng chờ đợi</li>
+              </ul>
+            </div>
+          </div>
+          
+          <div className="word-import-actions">
+            <button 
+              className="btn-cancel-word" 
+              onClick={onClose}
+              type="button"
+              disabled={isUploadingWord}
+            >
+              Hủy
+            </button>
+            <button 
+              className="btn-import-word" 
+              onClick={handleWordImportSubmit}
+              type="button"
+              disabled={!wordFile || !classId || isUploadingWord}
+            >
+              {isUploadingWord ? (
+                <>
+                  <div className="spinner-small" />
+                  Đang xử lý bằng AI (3-5 phút)...
+                </>
+              ) : (
+                <>
+                  <FileUp size={18} />
+                  Import & Tạo Đề Thi
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      );
+    }
+    
+    // Normal Import for other types
     return (
       <div className="import-form-content">
         
@@ -1213,7 +1420,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
                 <div className="form-section-ex">
                   <div className="info-box" style={{ background: '#fef3c7', padding: '12px', borderRadius: '8px', marginBottom: '12px' }}>
                     <p style={{ margin: 0, fontSize: '13px', color: '#92400e' }}>
-                      ℹ️ <strong>Chấm tự động bằng Gemini AI:</strong> Nội dung, tổ chức, từ vựng, ngữ pháp, kỹ thuật
+                      ℹ️ <strong>Chấm tự động bằng ChatGPT AI:</strong> Nội dung, tổ chức, từ vựng, ngữ pháp, kỹ thuật
                     </p>
                   </div>
                   <label>Yêu cầu độ dài (optional)</label>

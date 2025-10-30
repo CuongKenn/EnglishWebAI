@@ -19,7 +19,7 @@ from app.schemas.lesson_plan import (
     LessonPlanListResponse,
     LessonPlanAIGenerate
 )
-from app.services.gemini_service import gemini_service
+from app.services.openai_service import openai_service
 
 try:
     from docx import Document
@@ -105,12 +105,12 @@ async def generate_lesson_plan_with_ai(
     current_user: User = Depends(get_current_active_user)
 ):
     """
-    Generate a lesson plan using AI (Gemini)
+    Generate a lesson plan using AI (OpenAI)
     Based on Vietnamese Ngoại ngữ 2018 curriculum
     """
     try:
-        # Generate lesson plan with Gemini AI
-        ai_result = await gemini_service.generate_lesson_plan(
+        # Generate lesson plan with OpenAI
+        ai_result = await openai_service.generate_lesson_plan(
             grade=generate_data.grade,
             unit=generate_data.unit,
             lesson_number=generate_data.lesson_number,

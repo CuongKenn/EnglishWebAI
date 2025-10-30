@@ -15,6 +15,10 @@ from app.routers import teacher_grading as teacher_router
 from app.routers import teacher_analytics
 from app.routers import exports
 from app.routers import lesson_plans, worksheets, weekly_assessments
+
+from app.routers import exam_assessments
+from app.models import User
+
 # Import all models to ensure they're registered with SQLAlchemy metadata
 from app.models import *
 import os
@@ -34,6 +38,11 @@ app = FastAPI(
     redoc_url=f"{settings.API_PREFIX}/redoc",
     openapi_url=f"{settings.API_PREFIX}/openapi.json"
 )
+
+# Increase file upload size limit to 50MB
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+import sys
+sys.setrecursionlimit(5000)  # Increase recursion limit for large files
 
 # CORS Middleware
 app.add_middleware(
@@ -79,7 +88,8 @@ app.include_router(teacher_analytics.router, prefix=f"{settings.API_PREFIX}/teac
 
 app.include_router(lesson_plans.router, tags=["Lesson Plans"])
 app.include_router(worksheets.router, tags=["Worksheets"])
-app.include_router(weekly_assessments.router, tags=["Weekly Assessments"]) 
+app.include_router(weekly_assessments.router, tags=["Weekly Assessments"])
+app.include_router(exam_assessments.router, tags=["Exam Assessments"])
 
 # Serve media files if available (e.g., uploaded materials)
 try:
@@ -147,9 +157,18 @@ async def health_check():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(
+    
+    # Configure for large file uploads (50MB)
+    config = uvicorn.Config(
         "main:app",
         host="0.0.0.0",
         port=8000,
-        reload=True
+        reload=True,
+        timeout_keep_alive=120,
+        limit_concurrency=100,
+        limit_max_requests=1000,
+        # Allow large file uploads (50MB)
+        h11_max_incomplete_event_size=50 * 1024 * 1024
     )
+    server = uvicorn.Server(config)
+    server.run()

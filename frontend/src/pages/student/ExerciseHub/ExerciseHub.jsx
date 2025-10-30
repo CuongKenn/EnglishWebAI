@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FileText, Trophy, BarChart3, CheckCircle, Clock, AlertCircle, Award, Star, Calendar, Eye, Edit3, Headphones, MessageSquare, BookOpen, PenTool, Target } from 'lucide-react';
 import './ExerciseHub.css';
 import studentService from '../../../services/studentService';
+import examService from '../../../services/examService';
 
 // Sidebar Component (giống AI Practice)
 function ExerciseSidebar({ activeTab, onTabChange }) {
@@ -116,6 +117,7 @@ export default function ExerciseHub() {
   const [activeTab, setActiveTab] = useState('all');
   const [exercises, setExercises] = useState([]);
   const [tests, setTests] = useState([]);
+  const [exams, setExams] = useState([]); // Exams từ Word import
   const [submissions, setSubmissions] = useState([]);
   const [statistics, setStatistics] = useState(null);
   const [skillStats, setSkillStats] = useState(null);
@@ -143,17 +145,46 @@ export default function ExerciseHub() {
       setTests(allExercises.filter(e => testTypes.includes(e.type)));
       setExercises(allExercises.filter(e => !testTypes.includes(e.type)));
       
-  setStatistics(statsRes);
+      setStatistics(statsRes);
       
-  const submissionsRes = await studentService.getMySubmissions();
-  setSubmissions(submissionsRes);
+      const submissionsRes = await studentService.getMySubmissions();
+      setSubmissions(submissionsRes);
+      
+      // Fetch exams (giữa kỳ/cuối kỳ từ Word import)
+      await fetchExams();
       
       // Calculate skill-based statistics
-  calculateSkillStats(submissionsRes);
+      calculateSkillStats(submissionsRes);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchExams = async () => {
+    try {
+      // Get all student's classes
+      const classes = await studentService.getMyClasses();
+      let allExams = [];
+      
+      // Fetch exams for each class
+      for (const cls of classes) {
+        try {
+          const classExams = await examService.getClassExams(cls.id);
+          allExams = [...allExams, ...classExams.map(exam => ({
+            ...exam,
+            className: cls.name
+          }))];
+        } catch (err) {
+          console.log(`No exams for class ${cls.id}`);
+        }
+      }
+      
+      setExams(allExams);
+      console.log('Fetched exams:', allExams);
+    } catch (error) {
+      console.error('Error fetching exams:', error);
     }
   };
 
@@ -186,10 +217,11 @@ export default function ExerciseHub() {
 
   const getFilteredExercises = () => {
     if (activeTab === 'all') {
-      // Show both exercises and tests
-      return [...exercises, ...tests];
+      // Show both exercises, tests and exams
+      return [...exercises, ...tests, ...exams];
     } else if (activeTab === 'tests') {
-      return tests;
+      // Show tests and exams
+      return [...tests, ...exams];
     } else if (activeTab === 'grades') {
       return null; // Will render grades view
     } else {
@@ -269,7 +301,14 @@ export default function ExerciseHub() {
           {!hasSubmission ? (
             <button 
               className="btn-primary-new"
-              onClick={() => navigate(`/exercise/${exercise.id}`)}
+              onClick={() => {
+                // Check if it's an exam (imported from Word) or regular exercise
+                if (exercise.exam_type) {
+                  navigate(`/exam/${exercise.id}`);
+                } else {
+                  navigate(`/exercise/${exercise.id}`);
+                }
+              }}
             >
               <FileText size={16} />
               <span>Bắt đầu làm</span>
@@ -277,7 +316,13 @@ export default function ExerciseHub() {
           ) : score !== null ? (
             <button 
               className="btn-success-new"
-              onClick={() => navigate(`/exercise/${exercise.id}`)}
+              onClick={() => {
+                if (exercise.exam_type) {
+                  navigate(`/exam/${exercise.id}`);
+                } else {
+                  navigate(`/exercise/${exercise.id}`);
+                }
+              }}
             >
               <Trophy size={16} />
               <span>Xem kết quả</span>
@@ -290,7 +335,13 @@ export default function ExerciseHub() {
               </button>
               <button 
                 className="btn-secondary-new"
-                onClick={() => navigate(`/exercise/${exercise.id}`)}
+                onClick={() => {
+                  if (exercise.exam_type) {
+                    navigate(`/exam/${exercise.id}`);
+                  } else {
+                    navigate(`/exercise/${exercise.id}`);
+                  }
+                }}
               >
                 <Edit3 size={16} />
                 <span>Sửa bài</span>

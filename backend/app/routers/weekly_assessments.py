@@ -19,7 +19,7 @@ from app.models.weekly_assessment import WeeklyAssessment
 from app.models.classroom import Classroom
 from app.models.submission import Submission
 from app.models.exercise import Exercise
-from app.services.gemini_service import gemini_service
+from app.services.openai_service import openai_service
 
 router = APIRouter(prefix="/api/v1/weekly-assessments", tags=["Weekly Assessments"])
 
@@ -199,7 +199,7 @@ async def generate_weekly_assessment(
     try:
         unit_name = generate_data.unit or f"Tuần {generate_data.week_number}"
         
-        ai_result = await gemini_service.generate_worksheet(
+        ai_result = await openai_service.generate_worksheet(
             grade=generate_data.grade_level,
             unit=unit_name,
             worksheet_type="mixed",

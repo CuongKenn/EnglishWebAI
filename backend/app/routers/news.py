@@ -21,7 +21,7 @@ from app.schemas.student import (
     NewsManageItem,
     NewsManageListResponse,
 )
-from app.services.gemini_service import GeminiService
+from app.services.openai_service import OpenAIService
 from pydantic import BaseModel
 
 router = APIRouter()
@@ -505,7 +505,7 @@ async def generate_news_article(
     db: Session = Depends(get_db),
 ):
     """
-    Generate news article using Gemini AI
+    Generate news article using ChatGPT AI
     Only for teachers and admins
     """
     if current_user.role not in [UserRole.TEACHER, UserRole.ADMIN, UserRole.SUPERADMIN]:
@@ -515,7 +515,7 @@ async def generate_news_article(
         )
     
     try:
-        gemini = GeminiService()
+        openai_svc = OpenAIService()
         
         # Build prompt based on level
         level_map = {
@@ -554,8 +554,8 @@ Do not include any markdown, code blocks, or extra formatting. Just the pure JSO
         
         logger.info(f"[AI-NEWS] Generating article for topic: {payload.topic}")
         
-        # Call Gemini
-        response_text = gemini.generate_content(prompt)
+        # Call OpenAI
+        response_text = openai_svc.generate_content(prompt)
         
         # Clean and parse response
         response_text = response_text.strip()
