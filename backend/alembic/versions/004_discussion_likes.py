@@ -1,7 +1,7 @@
 """Add discussion_likes table
 
-Revision ID: 004_discussion_likes
-Revises: 003_parent_students
+Revision ID: 004
+Revises: 003
 Create Date: 2025-10-24
 
 """
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '004_discussion_likes'
-down_revision = '003_parent_students'
+revision = '004'
+down_revision = '003'
 branch_labels = None
 depends_on = None
 

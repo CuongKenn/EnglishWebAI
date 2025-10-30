@@ -113,12 +113,16 @@ class AdminService:
         # Username from payload if provided, otherwise email local-part
         username = (payload.username or payload.email.split("@")[0]).strip()
         # Create user
+        # Normalize role (student -> user)
+        from app.core.role_utils import normalize_role, get_display_role
+        normalized_role = normalize_role(payload.role)
+        
         user = User(
             email=payload.email,
             username=username,
             full_name=payload.name,
             hashed_password=get_password_hash(payload.password),
-            role=UserRole(payload.role),
+            role=normalized_role,
             is_active=(payload.status == "active"),
             is_verified=False,
         )
@@ -129,7 +133,7 @@ class AdminService:
             "id": user.id,
             "name": user.full_name or user.username,
             "email": user.email,
-            "role": user.role.value,
+            "role": get_display_role(user.role),  # Display as 'student' not 'user'
             "status": "active" if user.is_active else "inactive",
             "classes": 0,
             "students": 0,
@@ -138,6 +142,8 @@ class AdminService:
 
     @staticmethod
     def update_user(db: Session, user_id: int, payload: AdminUserUpdate) -> Dict[str, Any]:
+        from app.core.role_utils import normalize_role, get_display_role
+        
         user = db.get(User, user_id)
         if not user:
             raise ValueError("User not found")
@@ -146,7 +152,8 @@ class AdminService:
         if payload.email is not None:
             user.email = payload.email
         if payload.role is not None:
-            user.role = UserRole(payload.role)
+            # Normalize role (student -> user)
+            user.role = normalize_role(payload.role)
         if payload.status is not None:
             user.is_active = (payload.status == "active")
         if payload.password:
@@ -157,7 +164,7 @@ class AdminService:
             "id": user.id,
             "name": user.full_name or user.username,
             "email": user.email,
-            "role": user.role.value,
+            "role": get_display_role(user.role),  # Display as 'student' not 'user'
             "status": "active" if user.is_active else "inactive",
             "classes": 0,
             "students": 0,

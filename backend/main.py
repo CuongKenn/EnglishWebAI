@@ -15,11 +15,21 @@ from app.routers import teacher_grading as teacher_router
 from app.routers import teacher_analytics
 from app.routers import exports
 from app.routers import lesson_plans, worksheets, weekly_assessments
+
 from app.routers import exam_assessments
 from app.models import User
 
-# Create database tables
-Base.metadata.create_all(bind=engine)
+# Import all models to ensure they're registered with SQLAlchemy metadata
+from app.models import *
+import os
+
+# Create all tables from models (PostgreSQL handles IF NOT EXISTS internally)
+# This ensures all tables exist regardless of migration state
+try:
+    Base.metadata.create_all(bind=engine, checkfirst=True)
+    print("[SUCCESS] All database tables created/verified")
+except Exception as e:
+    print(f"[WARNING] Could not create all tables: {e}")
 
 app = FastAPI(
     title=settings.APP_NAME,
