@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import authService from '../../services/authService';
 import otpService from '../../services/otpService';
 import OTPModal from '../OTPModal/OTPModal';
+import Toast from '../Toast/Toast';
 import './Register.css';
 
 const Register = () => {
@@ -21,6 +22,8 @@ const Register = () => {
   const [showOTPModal, setShowOTPModal] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const [pendingUserData, setPendingUserData] = useState(null);
+  const [error, setError] = useState('');
+  const [toast, setToast] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -60,20 +63,25 @@ const Register = () => {
       ...formData,
       [e.target.name]: e.target.value
     });
+    // Xóa lỗi khi người dùng bắt đầu nhập lại
+    if (error) {
+      setError('');
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
 
    // Kiểm tra mật khẩu và mật khẩu xác nhận có khớp hay không
     if (formData.password !== formData.confirmPassword) {
-      alert('Mật khẩu không khớp!');
+      setError('Mật khẩu không khớp!');
       return;
     }
 
     // Kiểm tra các trường đã được điền đầy đủ chưa
     if (!formData.name || !formData.phone || !formData.email || !formData.password || !formData.confirmPassword) {
-      alert('Vui lòng điền đầy đủ thông tin!');
+      setError('Vui lòng điền đầy đủ thông tin!');
       return;
     }
 
@@ -99,11 +107,11 @@ const Register = () => {
       await otpService.sendOTP(formData.email, 'verification');
       
       setShowOTPModal(true);
-      alert('Mã OTP đã được gửi đến email của bạn. Vui lòng kiểm tra và xác thực!');
+      setToast({ message: 'Mã OTP đã được gửi đến email của bạn. Vui lòng kiểm tra và xác thực!', type: 'success' });
       
     } catch (error) {
       console.error('Send OTP failed:', error);
-      alert(error.message || 'Không thể gửi mã OTP, vui lòng thử lại.');
+      setError(error.message || 'Không thể gửi mã OTP, vui lòng thử lại.');
     } finally {
       setIsRegistering(false);
     }
@@ -118,8 +126,12 @@ const Register = () => {
       await authService.register(pendingUserData);
       
       setShowOTPModal(false);
-      alert('Đăng ký thành công!');
-      navigate('/login');
+      setToast({ message: 'Đăng ký thành công!', type: 'success' });
+      
+      // Đợi 1.5 giây để hiện toast rồi mới chuyển trang
+      setTimeout(() => {
+        navigate('/login');
+      }, 1500);
       
     } catch (error) {
       console.error('Verification or Registration failed:', error);
@@ -243,6 +255,18 @@ const Register = () => {
           <div className="form-content">
             <h2 className="form-title">SIGN UP</h2>
             <p className="form-subtitle">Create your account to get started</p>
+
+            {/* Error Message */}
+            {error && (
+              <div className="error-message">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <span>{error}</span>
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-form">
               {/* Full Name */}
@@ -423,6 +447,15 @@ const Register = () => {
         purpose="verification"
         onResend={handleResendOTP}
       />
+
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 };
