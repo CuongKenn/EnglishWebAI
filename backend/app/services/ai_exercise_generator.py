@@ -131,34 +131,66 @@ class AIExerciseGenerator:
             print(f"Error generating audio: {e}")
             return ""
     
-    async def generate_full_exam(self, test_type: str, grade: str, semester: str) -> Dict:
+    async def generate_full_exam(
+        self, 
+        test_type: str, 
+        grade: str, 
+        semester: str,
+        difficulty: str = 'mixed',
+        questions_per_skill: int = 10,
+        additional_notes: str = None
+    ) -> Dict:
         """
         Generate full exam with all 4 skills (Listening, Speaking, Reading, Writing)
         Following Vietnam's 2018 Curriculum
+        
+        Args:
+            test_type: 'midterm' or 'final'
+            grade: Student grade (1-12)
+            semester: Semester (1 or 2)
+            difficulty: 'easy', 'medium', 'hard', or 'mixed'
+            questions_per_skill: Number of questions per skill (default 10 for longer exams)
+            additional_notes: Extra instructions from teacher
         """
         topics = self._get_topics(grade, semester)
         topics_str = ", ".join(topics)
         
         exam_name = "Kiểm tra Giữa kỳ" if test_type == "midterm" else "Kiểm tra Cuối kỳ"
         
+        # Map difficulty to Vietnamese
+        difficulty_map = {
+            'easy': 'Dễ - phù hợp với học sinh trung bình yếu',
+            'medium': 'Trung bình - phù hợp với đa số học sinh',
+            'hard': 'Khó - thách thức cho học sinh giỏi',
+            'mixed': 'Trộn lẫn các mức độ từ dễ đến khó'
+        }
+        difficulty_desc = difficulty_map.get(difficulty, difficulty_map['mixed'])
+        
+        # Calculate points per question
+        points_per_question = round(2.5 / questions_per_skill, 2)
+        
+        additional_instructions = f"\n\nYÊU CẦU BỔ SUNG TỪ GIÁO VIÊN:\n{additional_notes}" if additional_notes else ""
+        
         prompt = f"""Bạn là một giáo viên tiếng Anh chuyên nghiệp tại Việt Nam.
 Hãy tạo một đề {exam_name} học kỳ {semester} cho học sinh lớp {grade} theo Chương trình Giáo dục phổ thông môn Ngoại ngữ 2018 của Việt Nam.
 
 Các chủ đề chính học kỳ này: {topics_str}
 
+ĐỘ KHÓ: {difficulty_desc}
+
 YÊU CẦU QUAN TRỌNG:
 1. Đề thi có 4 phần: LISTENING, READING, WRITING, SPEAKING
 2. MỖI PHẦN 2.5 ĐIỂM (Tổng 10 điểm)
-3. Listening (2.5đ): Script 150-200 từ + 5 câu hỏi ĐA DẠNG (mỗi câu 0.5đ)
-   - 3 câu trắc nghiệm (multiple_choice)
-   - 1 câu điền từ (fill_blank)
-   - 1 câu đúng/sai (true_false)
-4. Reading (2.5đ): Đoạn văn 200-250 từ + 5 câu hỏi ĐA DẠNG (mỗi câu 0.5đ)
-   - 2 câu trắc nghiệm (multiple_choice)
-   - 2 câu điền từ (fill_blank)
-   - 1 câu matching (ghép cặp)
-5. Writing (2.5đ): Đề bài viết essay 150-200 từ
-6. Speaking (2.5đ): 3 câu hỏi để học sinh trả lời miệng
+3. Listening (2.5đ): Script 200-300 từ + {questions_per_skill} câu hỏi ĐA DẠNG (mỗi câu {points_per_question}đ)
+   - Bao gồm: multiple_choice, fill_blank, true_false
+   - Script phải có độ dài phù hợp với số câu hỏi
+4. Reading (2.5đ): Đoạn văn 300-400 từ + {questions_per_skill} câu hỏi ĐA DẠNG (mỗi câu {points_per_question}đ)
+   - Bao gồm: multiple_choice, fill_blank, matching
+   - Đoạn văn phải phong phú và liên quan đến chủ đề
+5. Writing (2.5đ): Đề bài viết essay 200-250 từ
+   - Cho hướng dẫn cụ thể về cấu trúc và nội dung
+6. Speaking (2.5đ): 5 câu hỏi để học sinh trả lời miệng
+   - Câu hỏi ngắn và dài, từ cá nhân đến trừu tượng{additional_instructions}
 
 Trả về JSON format sau:
 {{

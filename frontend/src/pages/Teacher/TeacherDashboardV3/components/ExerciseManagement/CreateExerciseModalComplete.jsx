@@ -69,6 +69,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   const [qbNumQuestions, setQbNumQuestions] = useState(20);
   const [qbDifficulty, setQbDifficulty] = useState('mixed');
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [aiFormData, setAiFormData] = useState({ semester: '1' });
   const aiFilesInputRef = useRef(null);
   
   // Logic helpers
@@ -248,15 +249,28 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
     try {
       // Get class info to determine grade and semester
       const classInfo = classes.find(c => c.id === parseInt(classId));
-      const grade = classInfo?.name?.match(/\d+/)?.[0] || '10';
-      const semester = '1'; // Can be extracted from class or current date
+      const grade = classInfo?.grade || classInfo?.name?.match(/\d+/)?.[0] || '10';
+      const semester = aiFormData.semester || '1';
       
-      // Call AI generate API
-      const response = await examService.generateFullExam({
+      // Prepare API payload with new parameters
+      const questionsCount = aiFormData.questionsPerSkill && aiFormData.questionsPerSkill !== '' 
+        ? parseInt(aiFormData.questionsPerSkill) 
+        : 10;
+      
+      const payload = {
         exam_type: testType === 'midterm' ? 'midterm' : 'final',
         grade: grade,
-        semester: semester
-      });
+        semester: semester,
+        // New parameters
+        difficulty: aiFormData.difficulty || 'mixed',
+        questions_per_skill: isNaN(questionsCount) ? 10 : questionsCount,
+        additional_notes: aiFormData.additionalNotes || ''
+      };
+      
+      console.log('[AI Generate] Payload:', payload);
+      
+      // Call AI generate API
+      const response = await examService.generateFullExam(payload);
       
       console.log('[AI Generate] Full Response:', JSON.stringify(response, null, 2));
       console.log('[AI Generate] Listening:', response?.listening);
@@ -265,33 +279,54 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
       console.log('[AI Generate] Speaking:', response?.speaking);
       
       // Populate form with AI generated data
+      // LISTENING Section
       if (response && response.listening) {
-        setTranscript(response.listening.script || '');
-        setAudioUrl(response.listening.audio_url || '');
-        setShowTranscript(response.listening.show_transcript || false);
+        const listeningData = response.listening;
+        console.log('[AI Generate] Setting Listening data:', listeningData);
+        
+        // Set script/transcript
+        setTranscript(listeningData.script || listeningData.transcript || '');
+        
+        // Set audio URL if available
+        if (listeningData.audio_url) {
+          setAudioUrl(listeningData.audio_url);
+          console.log('[AI Generate] Audio URL set:', listeningData.audio_url);
+        }
+        
+        // Show transcript by default for teacher preview
+        setShowTranscript(true);
       }
       
+      // READING Section
       if (response && response.reading) {
         setPassageText(response.reading.passage || '');
+        console.log('[AI Generate] Setting Reading passage');
       }
       
+      // WRITING Section
       if (response && response.writing) {
         setWritingPrompt(response.writing.prompt || '');
-        if (response.writing.instructions) {
+        if (response.writing.instructions && Array.isArray(response.writing.instructions)) {
           setWritingInstructions(response.writing.instructions);
         }
         if (response.writing.min_words) setMinWords(response.writing.min_words);
         if (response.writing.max_words) setMaxWords(response.writing.max_words);
+        console.log('[AI Generate] Setting Writing data');
       }
       
+      // SPEAKING Section
       if (response && response.speaking) {
-        setSpeakingPrompt(response.speaking.prompt || '');
+        // Try to get prompt from various possible fields
+        const speakingPrompt = response.speaking.prompt || response.speaking.topic || '';
+        setSpeakingPrompt(speakingPrompt);
+        
         if (response.speaking.questions && response.speaking.questions.length > 0) {
-          const speakingQ = response.speaking.questions.map(q => q.question || '').filter(q => q);
+          const speakingQ = response.speaking.questions.map(q => q.question || q.text || '').filter(q => q);
           if (speakingQ.length > 0) {
             setSpeakingInstructions(speakingQ);
           }
         }
+        console.log('[AI Generate] Setting Speaking data');
       }
       
       // Collect all questions from sections
@@ -305,6 +340,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
           skill: 'listening'
         }));
         allQuestions.push(...listeningQuestions);
+        console.log(`[AI Generate] Added ${listeningQuestions.length} listening questions`);
       }
       
       if (response.reading && response.reading.questions) {
@@ -315,12 +351,15 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
           skill: 'reading'
         }));
         allQuestions.push(...readingQuestions);
+        console.log(`[AI Generate] Added ${readingQuestions.length} reading questions`);
       }
       
       setQuestions(allQuestions);
+      console.log(`[AI Generate] Total questions set: ${allQuestions.length}`);
       
       // Switch to manual mode to show preview
       setInputMethod('manual');
+      console.log('[AI Generate] Switched to manual mode for preview');
       
       showSuccess('✨ AI đã sinh đề thành công! Vui lòng kiểm tra và chỉnh sửa nếu cần.');
       
@@ -710,40 +749,81 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
       <div className="listening-form-content">
         <h4 className="section-title">🎧 Nội dung bài Nghe</h4>
         
-        {/* Audio Upload */}
+        {/* Audio Upload or AI Generated Audio */}
         <div className="form-section-ex">
           <label className="form-label-ex">File Audio * (.mp3, .wav, .ogg)</label>
-          <div className="file-upload-zone" onClick={() => audioInputRef.current?.click()}>
-            <input 
-              ref={audioInputRef}
-              type="file" 
-              accept="audio/*"
-              onChange={handleAudioUpload}
-              style={{ display: 'none' }}
-            />
-            {!audioFile ? (
-              <>
-                <FileAudio size={40} className="upload-icon" />
-                <p>Click để chọn file audio</p>
-                <span className="upload-hint">Tối đa 50MB</span>
-              </>
-            ) : (
-              <div className="file-preview-box">
-                <FileAudio size={28} />
-                <div className="file-info">
-                  <span className="file-name">{audioFile.name}</span>
-                  <span className="file-size">{(audioFile.size / 1024 / 1024).toFixed(2)} MB</span>
+          
+          {/* Show AI generated audio - ONLY show green box when AI audio exists */}
+          {audioUrl ? (
+            <div className="audio-preview-container">
+              <div className="audio-info-box">
+                <FileAudio size={28} className="audio-icon-success" />
+                <div className="audio-info-text">
+                  <span className="audio-label">🤖 Audio được tạo bởi AI</span>
+                  <span className="audio-url">{audioUrl}</span>
                 </div>
-                <audio controls src={URL.createObjectURL(audioFile)} className="audio-preview" />
                 <button 
-                  onClick={(e) => { e.stopPropagation(); setAudioFile(null); }}
+                  onClick={() => { 
+                    setAudioUrl(''); 
+                    setAudioFile(null);
+                    // Clear the file input
+                    if (audioInputRef.current) {
+                      audioInputRef.current.value = '';
+                    }
+                  }}
                   className="btn-remove-file"
+                  type="button"
+                  title="Xóa audio AI"
                 >
                   <Trash2 size={16} />
                 </button>
               </div>
-            )}
-          </div>
+              <audio controls src={audioUrl} className="audio-player-full" style={{ width: '100%', marginTop: '12px' }} />
+            </div>
+          ) : (
+            /* Upload zone - only show when NO AI audio */
+            <div 
+              className="file-upload-zone" 
+              onClick={() => audioInputRef.current?.click()}
+            >
+              <input 
+                ref={audioInputRef}
+                type="file" 
+                accept="audio/*"
+                onChange={handleAudioUpload}
+                style={{ display: 'none' }}
+              />
+              {!audioFile ? (
+                <>
+                  <FileAudio size={40} className="upload-icon" />
+                  <p>Click để chọn file audio</p>
+                  <span className="upload-hint">Tối đa 50MB</span>
+                </>
+              ) : (
+                <div className="file-preview-box">
+                  <FileAudio size={28} />
+                  <div className="file-info">
+                    <span className="file-name">{audioFile.name}</span>
+                    <span className="file-size">{(audioFile.size / 1024 / 1024).toFixed(2)} MB</span>
+                  </div>
+                  <audio controls src={URL.createObjectURL(audioFile)} className="audio-preview" />
+                  <button 
+                    onClick={(e) => { 
+                      e.stopPropagation(); 
+                      setAudioFile(null); 
+                      setAudioUrl('');
+                      if (audioInputRef.current) {
+                        audioInputRef.current.value = '';
+                      }
+                    }}
+                    className="btn-remove-file"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
         
         {/* Transcript */}
@@ -1246,31 +1326,76 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   
   // AI Form
   function renderAIForm() {
+    // Get grade and semester from selected class
+    const selectedClass = classes.find(c => c.id === parseInt(classId));
+    const grade = selectedClass?.grade || selectedClass?.name?.match(/\d+/)?.[0] || '10';
+    
     return (
       <div className="ai-form-content">
-        <h4 className="section-title">🤖 AI Sinh đề</h4>
+        <div className="ai-form-header">
+          <div className="ai-header-icon">
+            <Bot size={32} />
+          </div>
+          <div className="ai-header-text">
+            <h4>Tạo đề thi bằng AI thông minh</h4>
+            <p>AI sẽ tự động tạo đề thi toàn diện với 4 kỹ năng theo chương trình học</p>
+          </div>
+        </div>
         
+        {/* Basic Information */}
         <div className="form-section-ex">
-          <label className="form-label-ex">Tiêu đề *</label>
+          <label className="form-label-ex">Tiêu đề đề thi *</label>
           <input 
             type="text" 
             className="form-input-ex" 
-            placeholder="Nhập tiêu đề bài tập"
+            placeholder="Ví dụ: Đề kiểm tra giữa kỳ I - Khối 10"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
         </div>
         
+        {/* Class, Grade, Semester Row */}
         <div className="form-row-ex">
           <div className="form-section-ex">
-            <label className="form-label-ex">Lớp học</label>
-            <select className="form-select-ex" value={classId} onChange={(e) => setClassId(e.target.value)}>
-              <option value="">Chọn lớp</option>
+            <label className="form-label-ex">Lớp học <span className="required">*</span></label>
+            <select 
+              className="form-select-ex" 
+              value={classId} 
+              onChange={(e) => setClassId(e.target.value)}
+            >
+              <option value="">-- Chọn lớp --</option>
               {classes.map(cls => (
-                <option key={cls.id} value={cls.id}>{cls.name}</option>
+                <option key={cls.id} value={cls.id}>
+                  {cls.name} {cls.grade && `(Khối ${cls.grade})`}
+                </option>
               ))}
             </select>
           </div>
+          <div className="form-section-ex">
+            <label className="form-label-ex">Khối lớp</label>
+            <input 
+              type="text" 
+              className="form-input-ex"
+              value={grade}
+              disabled
+              style={{ background: '#f3f4f6', cursor: 'not-allowed' }}
+            />
+          </div>
+          <div className="form-section-ex">
+            <label className="form-label-ex">Học kỳ</label>
+            <select 
+              className="form-select-ex"
+              value={aiFormData.semester || '1'}
+              onChange={(e) => setAiFormData({ ...aiFormData, semester: e.target.value })}
+            >
+              <option value="1">Học kỳ I</option>
+              <option value="2">Học kỳ II</option>
+            </select>
+          </div>
+        </div>
+        
+        {/* Due Date and Score */}
+        <div className="form-row-ex">
           <div className="form-section-ex">
             <label className="form-label-ex">Hạn nộp</label>
             <input 
@@ -1280,70 +1405,163 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
               onChange={(e) => setDueDate(e.target.value)}
             />
           </div>
+          <div className="form-section-ex">
+            <label className="form-label-ex">Điểm tối đa</label>
+            <input 
+              type="number" 
+              className="form-input-ex"
+              value={maxScore}
+              onChange={(e) => setMaxScore(Number(e.target.value))}
+              min="1"
+              max="10"
+            />
+          </div>
         </div>
         
         {/* AI Source Selection */}
-        <div className="ai-source-selection">
-          <label className="ai-source-card">
-            <input 
-              type="radio"
-              name="ai-source"
-              value="curriculum"
-              checked={aiSource === 'curriculum'}
-              onChange={(e) => setAiSource(e.target.value)}
-            />
-            <div className="source-content">
-              <Sparkles size={32} />
-              <h4>Sinh từ Chương trình</h4>
-              <p>AI tạo đề theo chương trình tiếng Anh 2018</p>
-            </div>
-          </label>
-          
-          <label className="ai-source-card">
-            <input 
-              type="radio"
-              name="ai-source"
-              value="files"
-              checked={aiSource === 'files'}
-              onChange={(e) => setAiSource(e.target.value)}
-            />
-            <div className="source-content">
-              <FileUp size={32} />
-              <h4>Sinh từ Files</h4>
-              <p>AI phân tích files bạn upload và tạo đề mới</p>
-            </div>
-          </label>
-          
-          <label className="ai-source-card">
-            <input 
-              type="radio"
-              name="ai-source"
-              value="question_bank"
-              checked={aiSource === 'question_bank'}
-              onChange={(e) => setAiSource(e.target.value)}
-            />
-            <div className="source-content">
-              <Database size={32} />
-              <h4>Lấy từ Ngân hàng Câu hỏi</h4>
-              <p>AI chọn câu hỏi phù hợp từ ngân hàng của bạn</p>
-            </div>
-          </label>
+        <div className="form-section-ex">
+          <label className="form-label-ex">Nguồn tạo đề</label>
+          <div className="ai-source-selection">
+            <label className={`ai-source-card ${aiSource === 'curriculum' ? 'active' : ''}`}>
+              <input 
+                type="radio"
+                name="ai-source"
+                value="curriculum"
+                checked={aiSource === 'curriculum'}
+                onChange={(e) => setAiSource(e.target.value)}
+              />
+              <div className="source-icon">
+                <Sparkles size={28} />
+              </div>
+              <div className="source-content">
+                <h4>Chương trình học</h4>
+                <p>Theo SGK Tiếng Anh 2018</p>
+              </div>
+            </label>
+            
+            <label className={`ai-source-card ${aiSource === 'files' ? 'active' : ''}`}>
+              <input 
+                type="radio"
+                name="ai-source"
+                value="files"
+                checked={aiSource === 'files'}
+                onChange={(e) => setAiSource(e.target.value)}
+              />
+              <div className="source-icon">
+                <FileUp size={28} />
+              </div>
+              <div className="source-content">
+                <h4>Upload Files</h4>
+                <p>AI phân tích từ file của bạn</p>
+              </div>
+            </label>
+            
+            <label className={`ai-source-card ${aiSource === 'question_bank' ? 'active' : ''}`}>
+              <input 
+                type="radio"
+                name="ai-source"
+                value="question_bank"
+                checked={aiSource === 'question_bank'}
+                onChange={(e) => setAiSource(e.target.value)}
+              />
+              <div className="source-icon">
+                <Database size={28} />
+              </div>
+              <div className="source-content">
+                <h4>Ngân hàng câu hỏi</h4>
+                <p>Từ câu hỏi có sẵn</p>
+              </div>
+            </label>
+          </div>
         </div>
         
         {/* AI from Curriculum */}
         {aiSource === 'curriculum' && (
           <div className="ai-curriculum-section">
             <div className="info-box-highlight">
-              <Sparkles size={24} />
-              <div>
+              <div className="highlight-icon">
+                <Sparkles size={24} />
+              </div>
+              <div className="highlight-content">
                 <h5>Tự động sinh đề theo chương trình</h5>
-                <p>AI sẽ tạo đề thi toàn diện với 4 kỹ năng (Nghe, Đọc, Viết, Nói) dựa trên chương trình tiếng Anh 2018.</p>
-                <ul>
-                  <li>✓ Phần Nghe: Audio + câu hỏi trắc nghiệm</li>
-                  <li>✓ Phần Đọc: Bài đọc + câu hỏi</li>
-                  <li>✓ Phần Viết: Đề bài viết luận</li>
-                  <li>✓ Phần Nói: Câu hỏi trả lời</li>
-                </ul>
+                <p>AI sẽ tạo đề thi toàn diện với 4 kỹ năng dựa trên chương trình Tiếng Anh 2018 cho khối {selectedClass?.grade || selectedClass?.name?.match(/\d+/)?.[0] || '10'}, học kỳ {aiFormData.semester || '1'}:</p>
+                <div className="skill-checklist">
+                  <div className="skill-item">
+                    <div className="skill-icon">🎧</div>
+                    <div>
+                      <strong>Nghe (Listening)</strong>
+                      <p>Audio tự động + câu hỏi trắc nghiệm</p>
+                    </div>
+                  </div>
+                  <div className="skill-item">
+                    <div className="skill-icon">📖</div>
+                    <div>
+                      <strong>Đọc (Reading)</strong>
+                      <p>Bài đọc phù hợp trình độ + câu hỏi</p>
+                    </div>
+                  </div>
+                  <div className="skill-item">
+                    <div className="skill-icon">✍️</div>
+                    <div>
+                      <strong>Viết (Writing)</strong>
+                      <p>Đề bài viết luận theo chủ đề</p>
+                    </div>
+                  </div>
+                  <div className="skill-item">
+                    <div className="skill-icon">🗣️</div>
+                    <div>
+                      <strong>Nói (Speaking)</strong>
+                      <p>Câu hỏi trả lời và thảo luận</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="estimate-time">
+                  <Clock size={16} />
+                  <span>Thời gian tạo đề: Khoảng 3-5 phút</span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Advanced Options */}
+            <div className="advanced-options">
+              <h5 className="options-title">Tùy chỉnh nâng cao (không bắt buộc)</h5>
+              <div className="form-row-ex">
+                <div className="form-section-ex">
+                  <label className="form-label-ex">Độ khó</label>
+                  <select 
+                    className="form-select-ex"
+                    value={aiFormData.difficulty || 'mixed'}
+                    onChange={(e) => setAiFormData({ ...aiFormData, difficulty: e.target.value })}
+                  >
+                    <option value="easy">Dễ</option>
+                    <option value="medium">Trung bình</option>
+                    <option value="hard">Khó</option>
+                    <option value="mixed">Trộn lẫn</option>
+                  </select>
+                </div>
+                <div className="form-section-ex">
+                  <label className="form-label-ex">Số câu hỏi mỗi kỹ năng</label>
+                  <input 
+                    type="number" 
+                    className="form-input-ex"
+                    placeholder="Mặc định: 5-7 câu"
+                    value={aiFormData.questionsPerSkill || ''}
+                    onChange={(e) => setAiFormData({ ...aiFormData, questionsPerSkill: e.target.value })}
+                    min="3"
+                    max="15"
+                  />
+                </div>
+              </div>
+              
+              <div className="form-section-ex">
+                <label className="form-label-ex">Chú thích thêm cho AI (không bắt buộc)</label>
+                <textarea 
+                  className="form-textarea-ex"
+                  rows="3"
+                  placeholder="Ví dụ: Tập trung vào chủ đề môi trường và công nghệ, sử dụng từ vựng học kỳ 1..."
+                  value={aiFormData.additionalNotes || ''}
+                  onChange={(e) => setAiFormData({ ...aiFormData, additionalNotes: e.target.value })}
+                />
               </div>
             </div>
           </div>
@@ -1431,28 +1649,55 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
           </div>
         )}
         
-        {/* Generate Button */}
+        {/* Generate Summary & Button */}
         <div className="ai-generate-section">
+          <div className="generate-summary">
+            <h5>📋 Tóm tắt cấu hình</h5>
+            <div className="summary-items">
+              <div className="summary-item">
+                <span className="label">Lớp:</span>
+                <span className="value">{selectedClass?.name || 'Chưa chọn'}</span>
+              </div>
+              <div className="summary-item">
+                <span className="label">Khối:</span>
+                <span className="value">{grade}</span>
+              </div>
+              <div className="summary-item">
+                <span className="label">Học kỳ:</span>
+                <span className="value">Học kỳ {aiFormData.semester || '1'}</span>
+              </div>
+              <div className="summary-item">
+                <span className="label">Độ khó:</span>
+                <span className="value">
+                  {aiFormData.difficulty === 'easy' ? 'Dễ' : 
+                   aiFormData.difficulty === 'medium' ? 'Trung bình' : 
+                   aiFormData.difficulty === 'hard' ? 'Khó' : 'Trộn lẫn'}
+                </span>
+              </div>
+            </div>
+          </div>
+          
           <button 
             className="btn-generate-ai" 
             onClick={handleGenerateWithAI}
-            disabled={isGeneratingAI}
+            disabled={isGeneratingAI || !classId}
           >
             {isGeneratingAI ? (
               <>
                 <div className="spinner-small"></div>
-                Đang sinh đề với AI...
+                Đang sinh đề với AI (3-5 phút)...
               </>
             ) : (
               <>
-                <Sparkles size={20} />
-                ✨ Sinh đề với AI
+                <Bot size={20} />
+                Tạo đề thi bằng AI ngay
               </>
             )}
           </button>
-          <p className="ai-note">
-            AI sẽ tạo đề thi theo chương trình 2018 với 4 kỹ năng: Nghe, Đọc, Viết, Nói
-          </p>
+          
+          {!classId && (
+            <p className="ai-warning">⚠️ Vui lòng chọn lớp học trước khi tạo đề</p>
+          )}
         </div>
       </div>
     );
