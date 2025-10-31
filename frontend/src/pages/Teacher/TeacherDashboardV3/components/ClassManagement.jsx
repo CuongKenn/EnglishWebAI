@@ -135,7 +135,19 @@ export default function ClassManagement() {
   const handleFileUpload = async (e) => {
     e.preventDefault();
     if (!uploadFile || !selectedClass) {
-      showWarning('Vui lòng chọn file và nhập tiêu đề!');
+      showWarning('Vui lòng chọn file!');
+      return;
+    }
+
+    if (!materialForm.title.trim()) {
+      showWarning('Vui lòng nhập tiêu đề tài liệu!');
+      return;
+    }
+
+    // Validate file size (max 50MB)
+    const maxSize = 50 * 1024 * 1024; // 50MB
+    if (uploadFile.size > maxSize) {
+      showError('File quá lớn! Vui lòng chọn file nhỏ hơn 50MB.');
       return;
     }
 
@@ -150,20 +162,28 @@ export default function ClassManagement() {
 
       // Step 2: Create material record
       await apiV1.post('/materials', {
-        title: materialForm.title || uploadFile.name,
-        description: materialForm.description,
+        title: materialForm.title.trim(),
+        description: materialForm.description.trim(),
         type: uploadRes.data.file_type || 'file',
         url: uploadRes.data.file_path,
         class_id: selectedClass.id
       });
 
-      showSuccess('Tải lên thành công!');
+      showSuccess('✅ Tải lên tài liệu thành công!');
+      
+      // Reset form
       setUploadFile(null);
       setMaterialForm({ title: '', description: '', type: 'file' });
+      
+      // Reset file input
+      const fileInput = document.querySelector('input[type="file"]');
+      if (fileInput) fileInput.value = '';
+      
+      // Refresh materials list
       fetchMaterials(selectedClass.id);
     } catch (error) {
       console.error('Error uploading material:', error);
-      showError('Lỗi khi tải lên: ' + (error.response?.data?.detail || error.message));
+      showError('❌ Lỗi khi tải lên: ' + (error.response?.data?.detail || error.message));
     } finally {
       setLoading(false);
     }
@@ -597,55 +617,171 @@ export default function ClassManagement() {
 
         <div className="class-modal-body">
           {/* Upload Form */}
-          <form onSubmit={handleFileUpload} className="material-upload-form" style={{marginBottom: '30px', padding: '20px', background: '#f8f9fa', borderRadius: '8px'}}>
-            <h3 style={{marginBottom: '15px', fontSize: '16px', fontWeight: '600'}}>📤 Tải lên tài liệu mới</h3>
-            <div style={{display: 'grid', gap: '15px'}}>
+          <form onSubmit={handleFileUpload} className="material-upload-form" style={{marginBottom: '30px', padding: '24px', background: 'linear-gradient(135deg, #667eea15 0%, #764ba215 100%)', borderRadius: '12px', border: '2px dashed #667eea50'}}>
+            <h3 style={{marginBottom: '20px', fontSize: '18px', fontWeight: '700', color: '#667eea', display: 'flex', alignItems: 'center', gap: '8px'}}>
+              <Upload size={22} />
+              Tải lên tài liệu mới
+            </h3>
+            <div style={{display: 'grid', gap: '18px'}}>
               <div className="form-group-class">
-                <label>Tiêu đề:</label>
+                <label style={{fontWeight: '600', marginBottom: '8px', display: 'block', color: '#374151'}}>
+                  Tiêu đề: <span style={{color: '#ef4444'}}>*</span>
+                </label>
                 <input 
                   type="text"
                   className="form-input-class"
-                  placeholder="Tên tài liệu..."
+                  placeholder="VD: Powerpoint Unit 1 - Greetings"
                   value={materialForm.title}
                   onChange={(e) => setMaterialForm({...materialForm, title: e.target.value})}
+                  required
+                  style={{fontSize: '14px'}}
                 />
               </div>
               <div className="form-group-class">
-                <label>Mô tả (tùy chọn):</label>
+                <label style={{fontWeight: '600', marginBottom: '8px', display: 'block', color: '#374151'}}>Mô tả (tùy chọn):</label>
                 <textarea 
                   className="form-input-class"
-                  placeholder="Mô tả nội dung..."
+                  placeholder="Mô tả ngắn gọn về nội dung tài liệu..."
                   value={materialForm.description}
                   onChange={(e) => setMaterialForm({...materialForm, description: e.target.value})}
-                  rows="2"
-                  style={{resize: 'vertical'}}
+                  rows="3"
+                  style={{resize: 'vertical', fontSize: '14px'}}
                 />
               </div>
               <div className="form-group-class">
-                <label>Chọn file (PDF, Word, PowerPoint, Image, Audio, Video):</label>
-                <input 
-                  type="file"
-                  className="form-input-class"
-                  accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.jpg,.jpeg,.png,.mp3,.mp4"
-                  onChange={(e) => setUploadFile(e.target.files[0])}
-                  required
-                  style={{padding: '8px'}}
-                />
-                {uploadFile && (
-                  <div style={{marginTop: '8px', fontSize: '13px', color: '#666'}}>
-                    📎 {uploadFile.name} ({(uploadFile.size / 1024).toFixed(1)} KB)
-                  </div>
-                )}
+                <label style={{fontWeight: '600', marginBottom: '8px', display: 'block', color: '#374151'}}>
+                  Chọn file: <span style={{color: '#ef4444'}}>*</span>
+                </label>
+                <div style={{
+                  border: '2px dashed #d1d5db',
+                  borderRadius: '8px',
+                  padding: '20px',
+                  textAlign: 'center',
+                  background: '#fff',
+                  transition: 'all 0.3s',
+                  cursor: 'pointer'
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.currentTarget.style.borderColor = '#667eea';
+                  e.currentTarget.style.background = '#f0f4ff';
+                }}
+                onDragLeave={(e) => {
+                  e.currentTarget.style.borderColor = '#d1d5db';
+                  e.currentTarget.style.background = '#fff';
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.currentTarget.style.borderColor = '#d1d5db';
+                  e.currentTarget.style.background = '#fff';
+                  const files = e.dataTransfer.files;
+                  if (files.length > 0) {
+                    setUploadFile(files[0]);
+                  }
+                }}
+                >
+                  <input 
+                    type="file"
+                    id="file-upload-input"
+                    className="form-input-class"
+                    accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.jpg,.jpeg,.png,.gif,.mp3,.mp4,.wav"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        // Auto-fill title if empty
+                        if (!materialForm.title) {
+                          const fileName = file.name.replace(/\.[^/.]+$/, ''); // Remove extension
+                          setMaterialForm({...materialForm, title: fileName});
+                        }
+                        setUploadFile(file);
+                      }
+                    }}
+                    required
+                    style={{display: 'none'}}
+                  />
+                  <label htmlFor="file-upload-input" style={{cursor: 'pointer', display: 'block'}}>
+                    {uploadFile ? (
+                      <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px'}}>
+                        <FileText size={32} color="#667eea" />
+                        <div style={{textAlign: 'left'}}>
+                          <div style={{fontWeight: '600', color: '#1f2937', marginBottom: '4px'}}>
+                            {uploadFile.name}
+                          </div>
+                          <div style={{fontSize: '13px', color: '#6b7280'}}>
+                            {(uploadFile.size / 1024 / 1024).toFixed(2)} MB
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setUploadFile(null);
+                            document.getElementById('file-upload-input').value = '';
+                          }}
+                          style={{
+                            padding: '6px 12px',
+                            background: '#fee2e2',
+                            color: '#dc2626',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                            fontWeight: '600'
+                          }}
+                        >
+                          Xóa
+                        </button>
+                      </div>
+                    ) : (
+                      <div>
+                        <Upload size={40} color="#9ca3af" style={{marginBottom: '12px'}} />
+                        <div style={{fontSize: '14px', color: '#374151', fontWeight: '600', marginBottom: '4px'}}>
+                          Kéo thả file vào đây hoặc click để chọn
+                        </div>
+                        <div style={{fontSize: '12px', color: '#9ca3af'}}>
+                          Hỗ trợ: PDF, Word, PowerPoint, Excel, Image, Audio, Video (Tối đa 50MB)
+                        </div>
+                      </div>
+                    )}
+                  </label>
+                </div>
               </div>
             </div>
             <button 
               type="submit" 
               className="btn-add-class" 
-              disabled={!uploadFile || loading}
-              style={{marginTop: '15px'}}
+              disabled={!uploadFile || !materialForm.title.trim() || loading}
+              style={{
+                marginTop: '20px',
+                width: '100%',
+                padding: '14px',
+                fontSize: '15px',
+                fontWeight: '700',
+                background: loading ? '#9ca3af' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                opacity: (!uploadFile || !materialForm.title.trim() || loading) ? 0.6 : 1,
+                cursor: (!uploadFile || !materialForm.title.trim() || loading) ? 'not-allowed' : 'pointer'
+              }}
             >
-              <Upload size={18} />
-              {loading ? 'Đang tải lên...' : '📤 Tải lên tài liệu'}
+              {loading ? (
+                <>
+                  <span className="spinner" style={{
+                    display: 'inline-block',
+                    width: '16px',
+                    height: '16px',
+                    border: '2px solid #ffffff',
+                    borderTopColor: 'transparent',
+                    borderRadius: '50%',
+                    animation: 'spin 0.6s linear infinite',
+                    marginRight: '8px'
+                  }}></span>
+                  Đang tải lên...
+                </>
+              ) : (
+                <>
+                  <Upload size={18} style={{marginRight: '8px'}} />
+                  Tải lên tài liệu
+                </>
+              )}
             </button>
           </form>
 

@@ -4,9 +4,12 @@ import {
   Plus, Trash2, Sparkles, Bot, Database, FileUp 
 } from 'lucide-react';
 import { apiV1 } from '../../../../../services/api';
+import Toast from '../../../../../components/Toast/Toast';
+import useToast from '../../../../../hooks/useToast';
 import './ExerciseManagement.css';
 
 export default function CreateExerciseModal({ onClose, onCreate }) {
+  const { toast, showWarning, hideToast } = useToast();
   const [testType, setTestType] = useState('skill_exercise');
   const [selectedSkill, setSelectedSkill] = useState('listening');
   const [creationMethod, setCreationMethod] = useState('manual');
@@ -178,7 +181,7 @@ export default function CreateExerciseModal({ onClose, onCreate }) {
   const handleSubmit = () => {
     // Validate
     if (!title) {
-      alert('Vui lòng nhập tiêu đề!');
+      showWarning('Vui lòng nhập tiêu đề!');
       return;
     }
     
@@ -429,6 +432,14 @@ export default function CreateExerciseModal({ onClose, onCreate }) {
           </button>
         </div>
       </div>
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={hideToast}
+          duration={toast.duration}
+        />
+      )}
     </div>
   );
   

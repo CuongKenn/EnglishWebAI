@@ -1,8 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
 import { X, Plus, Trash2, FileAudio, Upload, Check, FileText } from 'lucide-react';
 import './AddQuestionModal.css';
+import Toast from '../../../../components/Toast/Toast';
+import useToast from '../../../../hooks/useToast';
 
 export default function AddQuestionModal({ onClose, onAdd, mode = 'add', initialData = null }) {
+  const { toast, showSuccess, showError, showWarning, hideToast } = useToast();
+  
   // Basic fields
   const [questionText, setQuestionText] = useState('');
   const [questionType, setQuestionType] = useState('multiple_choice');
@@ -128,10 +132,10 @@ export default function AddQuestionModal({ onClose, onAdd, mode = 'add', initial
         setPassageFile(null);
         setUseFile(false);
         
-        alert(`✅ Đã parse file thành công!\n\n${result.paragraphs} đoạn văn, ${result.characters} ký tự\n\nBạn có thể chỉnh sửa text trong ô bên dưới.`);
+        showSuccess(`✅ Đã parse file thành công!\n\n${result.paragraphs} đoạn văn, ${result.characters} ký tự\n\nBạn có thể chỉnh sửa text trong ô bên dưới.`);
       } catch (err) {
         console.error('[READING] Parse DOCX failed:', err);
-        alert(`⚠️ Không thể parse file DOCX:\n\n${err.response?.data?.detail || err.message}\n\nVui lòng copy text thủ công hoặc chọn file khác.`);
+        showError(`⚠️ Không thể parse file DOCX:\n\n${err.response?.data?.detail || err.message}\n\nVui lòng copy text thủ công hoặc chọn file khác.`);
       }
     }
   };
@@ -251,7 +255,7 @@ export default function AddQuestionModal({ onClose, onAdd, mode = 'add', initial
     }
     
     if (errors.length > 0) {
-      alert('⚠️ Vui lòng kiểm tra lại:\n\n' + errors.join('\n'));
+      showWarning('⚠️ Vui lòng kiểm tra lại:\n\n' + errors.join('\n'));
       return;
     }
     
@@ -437,6 +441,14 @@ export default function AddQuestionModal({ onClose, onAdd, mode = 'add', initial
           </button>
         </div>
       </div>
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={hideToast}
+          duration={toast.duration}
+        />
+      )}
     </div>
   );
   

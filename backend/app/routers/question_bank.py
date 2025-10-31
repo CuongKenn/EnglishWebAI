@@ -443,7 +443,8 @@ async def upload_audio(file: UploadFile = File(...), current_user: User = Depend
             print(f"[UPLOAD AUDIO] Failed to save file: {e}")
             raise HTTPException(status_code=500, detail=f"Failed to save audio file: {str(e)}")
         
-        url = f"/media/question_bank/audio/{filename}"
+        sanitized_filename = filename.rstrip("'\"")
+        url = f"/media/question_bank/audio/{sanitized_filename}"
         print(f"[UPLOAD AUDIO] Success: {url}")
         return {"url": url}
     except HTTPException:

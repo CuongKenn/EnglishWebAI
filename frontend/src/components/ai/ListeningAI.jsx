@@ -17,6 +17,7 @@ export function ListeningAI() {
   const [speed, setSpeed] = useState([1]);
   const [selectedAnswers, setSelectedAnswers] = useState({});
   const [showAnswers, setShowAnswers] = useState(false);
+  const [showOptionsForm, setShowOptionsForm] = useState(true);
   
   // Refs for text-to-speech
   const speechSynthRef = useRef(null);
@@ -60,11 +61,6 @@ export function ListeningAI() {
     };
   }, [lesson]);
 
-  // Load lesson khi component mount hoặc level thay đổi
-  useEffect(() => {
-    loadLesson(selectedLevel);
-  }, [selectedLevel]);
-
   const loadLesson = async (level) => {
     // Stop any ongoing speech before loading new lesson
     if (speechSynthRef.current) {
@@ -80,6 +76,7 @@ export function ListeningAI() {
       setLesson(data);
       setSelectedAnswers({});
       setShowAnswers(false);
+      setShowOptionsForm(false);
       aiUsageAPI.logUsage('listening', { action: 'generate', level });
     } catch (error) {
       console.error("Error loading lesson:", error);
@@ -88,13 +85,11 @@ export function ListeningAI() {
     }
   };
 
+  const handleGenerateLesson = () => {
+    loadLesson(selectedLevel);
+  };
+
   const handleLevelChange = (level) => {
-    // Stop speech when changing level
-    if (speechSynthRef.current) {
-      speechSynthRef.current.cancel();
-    }
-    setIsPlaying(false);
-    setProgress(0);
     setSelectedLevel(level);
   };
 
@@ -127,9 +122,8 @@ export function ListeningAI() {
     setProgress(0);
     setSelectedAnswers({});
     setShowAnswers(false);
-    
-    // Load new lesson
-    loadLesson(selectedLevel);
+    setShowOptionsForm(true);
+    setLesson(null);
   };
 
   // Toggle play/pause with text-to-speech
@@ -310,6 +304,108 @@ export function ListeningAI() {
     );
   }
 
+  // Show options form before generating lesson
+  if (showOptionsForm) {
+    return (
+      <div className="space-y-6">
+        {/* Header */}
+        <div>
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 px-4 py-2 text-white shadow-lg">
+            <Headphones className="h-5 w-5" />
+            <span className="font-medium">Luyện nghe AI thông minh</span>
+          </div>
+          <h1 className="mb-2">Luyện nghe AI 🎧</h1>
+          <p className="text-gray-600">
+            Cải thiện kỹ năng nghe hiểu với âm thanh tự nhiên từ AI
+          </p>
+        </div>
+
+        {/* Options Form */}
+        <Card className="p-6">
+          <h2 className="mb-6 text-xl font-bold text-gray-900">🎯 Thiết lập bài nghe của bạn</h2>
+          
+          {/* Level Selection */}
+          <div className="space-y-4">
+            <div>
+              <p className="mb-4 font-semibold text-gray-900">Chọn cấp độ của bạn:</p>
+              <div className="grid gap-4 sm:grid-cols-3">
+                <button
+                  onClick={() => handleLevelChange("beginner")}
+                  className={`rounded-xl border-2 p-4 transition-all ${
+                    selectedLevel === "beginner"
+                      ? "border-green-500 bg-green-50 shadow-md"
+                      : "border-gray-200 bg-white hover:border-green-300 hover:bg-green-50"
+                  }`}
+                >
+                  <div className="flex flex-col items-center gap-2 text-center">
+                    <span className="text-3xl">🌱</span>
+                    <span className="font-semibold text-gray-900">Beginner</span>
+                    <span className="text-xs text-gray-600">Người mới bắt đầu</span>
+                  </div>
+                </button>
+                <button
+                  onClick={() => handleLevelChange("intermediate")}
+                  className={`rounded-xl border-2 p-4 transition-all ${
+                    selectedLevel === "intermediate"
+                      ? "border-green-500 bg-green-50 shadow-md"
+                      : "border-gray-200 bg-white hover:border-green-300 hover:bg-green-50"
+                  }`}
+                >
+                  <div className="flex flex-col items-center gap-2 text-center">
+                    <span className="text-3xl">🌿</span>
+                    <span className="font-semibold text-gray-900">Intermediate</span>
+                    <span className="text-xs text-gray-600">Trung cấp</span>
+                  </div>
+                </button>
+                <button
+                  onClick={() => handleLevelChange("advanced")}
+                  className={`rounded-xl border-2 p-4 transition-all ${
+                    selectedLevel === "advanced"
+                      ? "border-green-500 bg-green-50 shadow-md"
+                      : "border-gray-200 bg-white hover:border-green-300 hover:bg-green-50"
+                  }`}
+                >
+                  <div className="flex flex-col items-center gap-2 text-center">
+                    <span className="text-3xl">🌳</span>
+                    <span className="font-semibold text-gray-900">Advanced</span>
+                    <span className="text-xs text-gray-600">Nâng cao</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Info Box */}
+            <div className="rounded-lg border-2 border-blue-400 bg-blue-50 p-4">
+              <div className="flex items-start gap-3">
+                <Headphones className="h-5 w-5 text-blue-700 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-medium text-blue-900">💡 Gợi ý chọn cấp độ:</p>
+                  <ul className="mt-2 space-y-1 text-sm text-blue-700">
+                    <li><strong>Beginner:</strong> Câu đơn giản, tốc độ chậm, chủ đề hàng ngày</li>
+                    <li><strong>Intermediate:</strong> Hội thoại phức tạp hơn, tốc độ trung bình</li>
+                    <li><strong>Advanced:</strong> Nội dung chuyên sâu, tốc độ nhanh, từ vựng học thuật</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Generate Button */}
+            <div className="flex justify-center pt-4">
+              <Button
+                onClick={handleGenerateLesson}
+                size="lg"
+                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-lg hover:shadow-xl transition-all px-8 py-6 text-lg"
+              >
+                <RefreshCw className="mr-2 h-5 w-5" />
+                Sinh đề bài nghe
+              </Button>
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   if (!lesson) {
     return (
       <div className="flex h-96 items-center justify-center">
@@ -331,58 +427,6 @@ export function ListeningAI() {
           Cải thiện kỹ năng nghe hiểu với âm thanh tự nhiên từ AI
         </p>
       </div>
-
-      {/* Difficulty Selection */}
-      <Card className="p-6">
-        <p className="mb-4 font-semibold text-gray-900">Chọn cấp độ của bạn:</p>
-        <div className="grid gap-4 sm:grid-cols-3">
-          <button
-            onClick={() => handleLevelChange("beginner")}
-            disabled={loading}
-            className={`rounded-xl border-2 p-4 transition-all ${
-              selectedLevel === "beginner"
-                ? "border-green-500 bg-green-50 shadow-md"
-                : "border-gray-200 bg-white hover:border-green-300 hover:bg-green-50"
-            }`}
-          >
-            <div className="flex flex-col items-center gap-2 text-center">
-              <span className="text-3xl">🌱</span>
-              <span className="font-semibold text-gray-900">Beginner</span>
-              <span className="text-xs text-gray-600">Người mới bắt đầu</span>
-            </div>
-          </button>
-          <button
-            onClick={() => handleLevelChange("intermediate")}
-            disabled={loading}
-            className={`rounded-xl border-2 p-4 transition-all ${
-              selectedLevel === "intermediate"
-                ? "border-green-500 bg-green-50 shadow-md"
-                : "border-gray-200 bg-white hover:border-green-300 hover:bg-green-50"
-            }`}
-          >
-            <div className="flex flex-col items-center gap-2 text-center">
-              <span className="text-3xl">🌿</span>
-              <span className="font-semibold text-gray-900">Intermediate</span>
-              <span className="text-xs text-gray-600">Trung cấp</span>
-            </div>
-          </button>
-          <button
-            onClick={() => handleLevelChange("advanced")}
-            disabled={loading}
-            className={`rounded-xl border-2 p-4 transition-all ${
-              selectedLevel === "advanced"
-                ? "border-green-500 bg-green-50 shadow-md"
-                : "border-gray-200 bg-white hover:border-green-300 hover:bg-green-50"
-            }`}
-          >
-            <div className="flex flex-col items-center gap-2 text-center">
-              <span className="text-3xl">🌳</span>
-              <span className="font-semibold text-gray-900">Advanced</span>
-              <span className="text-xs text-gray-600">Nâng cao</span>
-            </div>
-          </button>
-        </div>
-      </Card>
 
       {/* Text-to-Speech Notice */}
       <div className="rounded-lg border-2 border-blue-400 bg-blue-50 p-4">
