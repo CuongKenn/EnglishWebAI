@@ -532,6 +532,17 @@
   transform: translateY(-1px);
 }
 
+/* Loading state */
+.sign-up-btn.loading {
+  opacity: 0.9;
+  cursor: default;
+  transform: none !important;
+}
+
+.sign-up-btn:disabled {
+  filter: grayscale(10%);
+}
+
 .btn-glow {
   position: absolute;
   top: 0;
@@ -544,6 +555,23 @@
 
 .sign-up-btn:hover .btn-glow {
   left: 100%;
+}
+
+/* Small spinner inside button */
+.btn-spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  margin-right: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  vertical-align: middle;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .ripple-effect {

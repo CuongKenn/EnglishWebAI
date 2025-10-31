@@ -400,9 +400,22 @@ const Register = () => {
   </div>
 
               {/* Create Account Button */}
-              <button type="submit" className="sign-up-btn">
-                <span>Create Account</span>
-                <div className="btn-glow"></div>
+              <button
+                type="submit"
+                className={`sign-up-btn ${isRegistering ? 'loading' : ''}`}
+                disabled={isRegistering}
+              >
+                {isRegistering ? (
+                  <>
+                    <span className="btn-spinner" aria-hidden="true"></span>
+                    <span>Processing...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Create Account</span>
+                    <div className="btn-glow"></div>
+                  </>
+                )}
               </button>
             </form>
 
