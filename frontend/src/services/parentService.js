@@ -13,6 +13,12 @@ export const parentAPI = {
     return res.data;
   },
 
+  // Get teachers related to a specific child (classes taught)
+  getTeachersForChild: async (childId) => {
+    const res = await apiV1.get(`/parent/children/${childId}/teachers`);
+    return res.data;
+  },
+
   // Parent sends request to link with student
   linkStudent: async (studentEmail) => {
     const res = await apiV1.post('/parent/link-student', {
