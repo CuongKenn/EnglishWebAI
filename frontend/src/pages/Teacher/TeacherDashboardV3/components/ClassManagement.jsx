@@ -1030,7 +1030,7 @@ export default function ClassManagement() {
       </div>
 
       {/* Toast Notification */}
-      {toast && (
+      {toast.show && (
         <Toast
           message={toast.message}
           type={toast.type}
