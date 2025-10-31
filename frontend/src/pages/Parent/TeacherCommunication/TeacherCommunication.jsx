@@ -2,13 +2,22 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import messageService from '../../../services/messageService';
 import { getCurrentUser } from '../../../services/userService';
+import { apiV1 } from '../../../services/api';
+import Navbar from '../../../components/Navbar/Navbar';
+import authService from '../../../services/authService';
 import { parentAPI } from '../../../services/parentService';
+
 import { 
   FaComments, 
   FaPaperPlane, 
   FaSearch,
   FaUserCircle,
-  FaCircle
+  FaCircle,
+  FaArrowLeft,
+  FaChevronRight,
+  FaFilter,
+  FaTimes,
+  FaInfoCircle
 } from 'react-icons/fa';
 import './TeacherCommunication.css';
 
@@ -200,23 +209,63 @@ const TeacherCommunication = () => {
     teacher.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const handleLogout = () => {
+    authService.logout();
+    navigate('/login');
+  };
+
   if (loading) {
     return (
-      <div className="teacher-communication-page">
-        <div className="loading-spinner">
-          <div className="spinner"></div>
-          <p>Đang tải...</p>
+      <>
+        <Navbar userRole="parent" isLoggedIn={true} onLogout={handleLogout} />
+        <div className="teacher-communication-page">
+          <div className="loading-spinner">
+            <div className="spinner"></div>
+            <p>Đang tải...</p>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="teacher-communication-page">
-      <div className="page-header">
-        <FaComments className="page-icon" />
-        <h1>Liên Hệ Giáo Viên</h1>
-      </div>
+    <>
+      <Navbar userRole="parent" isLoggedIn={true} onLogout={handleLogout} />
+      <div className="teacher-communication-page">
+        {/* Breadcrumb Navigation */}
+        <div className="breadcrumb-nav">
+          <button className="back-btn" onClick={() => navigate('/')}>
+            <FaArrowLeft className="back-icon" />
+            <span>Trang chủ</span>
+          </button>
+          <FaChevronRight className="breadcrumb-separator" />
+          <span className="breadcrumb-current">Trao đổi với giáo viên</span>
+        </div>
+
+        {/* Page Header */}
+        <div className="page-header-modern">
+          <div className="page-header-content">
+            <div className="page-icon-wrapper">
+              <FaComments className="page-icon" />
+            </div>
+            <div className="page-title-section">
+              <h1>Trao đổi với giáo viên</h1>
+              <p className="page-subtitle">
+                Liên hệ và trao đổi trực tiếp với giáo viên của con bạn
+              </p>
+            </div>
+          </div>
+          
+          {/* Info card */}
+          {children.length > 0 && (
+            <div className="info-card">
+              <FaInfoCircle className="info-icon" />
+              <span>
+                Bạn đang xem giáo viên của <strong>{selectedChild?.name}</strong>
+              </span>
+            </div>
+          )}
+        </div>
 
       <div className="communication-container">
         {/* Sidebar: Conversations & Teachers */}
@@ -399,7 +448,8 @@ const TeacherCommunication = () => {
           )}
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 

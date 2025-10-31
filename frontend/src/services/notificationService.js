@@ -43,6 +43,22 @@ const notificationService = {
   deleteAllNotifications: async () => {
     const response = await apiV1.delete('/notifications');
     return response.data;
+  },
+
+  // Export notifications to PDF
+  exportToPDF: async (exportOptions) => {
+    const response = await apiV1.post('/notifications/export/pdf', exportOptions, {
+      responseType: 'blob'
+    });
+    return response.data;
+  },
+
+  // Export notifications to Excel
+  exportToExcel: async (exportOptions) => {
+    const response = await apiV1.post('/notifications/export/excel', exportOptions, {
+      responseType: 'blob'
+    });
+    return response.data;
   }
 };
 

@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -7,8 +8,20 @@ from app.core.dependencies import get_current_user
 from app.models.user import User
 from app.models.notification import Notification
 from app.schemas.notification import NotificationCreate, NotificationUpdate, NotificationResponse
+from app.services.export_service import ExportService
+from pydantic import BaseModel
 
 router = APIRouter()
+
+
+# Schema for export options
+class ExportOptions(BaseModel):
+    title: bool = True
+    content: bool = True
+    marks: bool = True
+    attendance: bool = True
+    sender: bool = True
+    time: bool = True
 
 
 @router.get("/", response_model=List[NotificationResponse])
@@ -130,3 +143,79 @@ def delete_all_notifications(
     db.query(Notification).filter(Notification.user_id == current_user.id).delete()
     db.commit()
     return {"message": "All notifications deleted"}
+
+
+@router.post("/export/pdf")
+def export_notifications_pdf(
+    export_options: ExportOptions,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Export notifications to PDF"""
+    # Get all notifications for current user
+    notifications = db.query(Notification).filter(
+        Notification.user_id == current_user.id
+    ).order_by(Notification.created_at.desc()).all()
+    
+    if not notifications:
+        raise HTTPException(status_code=404, detail="No notifications found")
+    
+    # Convert export options to dict
+    options_dict = export_options.dict()
+    
+    # Generate PDF
+    pdf_buffer = ExportService.export_notifications_to_pdf(
+        notifications=notifications,
+        parent_name=current_user.full_name or current_user.username,
+        export_options=options_dict
+    )
+    
+    # Generate filename
+    filename = ExportService.get_filename(
+        parent_name=current_user.full_name or current_user.username,
+        file_type='pdf'
+    )
+    
+    return StreamingResponse(
+        pdf_buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
+@router.post("/export/excel")
+def export_notifications_excel(
+    export_options: ExportOptions,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Export notifications to Excel"""
+    # Get all notifications for current user
+    notifications = db.query(Notification).filter(
+        Notification.user_id == current_user.id
+    ).order_by(Notification.created_at.desc()).all()
+    
+    if not notifications:
+        raise HTTPException(status_code=404, detail="No notifications found")
+    
+    # Convert export options to dict
+    options_dict = export_options.dict()
+    
+    # Generate Excel
+    excel_buffer = ExportService.export_notifications_to_excel(
+        notifications=notifications,
+        parent_name=current_user.full_name or current_user.username,
+        export_options=options_dict
+    )
+    
+    # Generate filename
+    filename = ExportService.get_filename(
+        parent_name=current_user.full_name or current_user.username,
+        file_type='excel'
+    )
+    
+    return StreamingResponse(
+        excel_buffer,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )

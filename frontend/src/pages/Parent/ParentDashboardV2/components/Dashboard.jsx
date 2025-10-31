@@ -26,7 +26,10 @@ const Dashboard = ({ onNavigate }) => {
   const [showPendingExercisesModal, setShowPendingExercisesModal] = useState(false);
   const [showReportDetailModal, setShowReportDetailModal] = useState(false);
   const [selectedTimeRange, setSelectedTimeRange] = useState('month');
-  const [selectedMonth, setSelectedMonth] = useState('10');
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [pendingExercises, setPendingExercises] = useState([]);
+  const [monthlyReport, setMonthlyReport] = useState(null);
+  const [reportLoading, setReportLoading] = useState(false);
   const [exportOptions, setExportOptions] = useState({
     title: true,
     content: true,
@@ -47,7 +50,12 @@ const Dashboard = ({ onNavigate }) => {
   const loadDashboardSummary = async () => {
     try {
       setLoading(true);
-      const childrenData = await parentAPI.getChildren();
+      
+      // Load children and summary data in parallel
+      const [childrenData, summaryData] = await Promise.all([
+        parentAPI.getChildren(),
+        parentAPI.getDashboardSummary()
+      ]);
       
       const transformedChildren = childrenData.map(child => ({
         id: child.id,
@@ -62,27 +70,37 @@ const Dashboard = ({ onNavigate }) => {
       
       setChildren(transformedChildren);
       
-      // Summary statistics cho dự án English AI
+      // Use real data from API
       const summary = {
-        totalChildren: transformedChildren.length,
-        totalClasses: transformedChildren.reduce((sum, child) => sum + child.totalClasses, 0),
-        avgScore: transformedChildren.length > 0 
-          ? (transformedChildren.reduce((sum, child) => sum + (parseFloat(child.averageScore) || 0), 0) / transformedChildren.length).toFixed(1)
-          : 'N/A',
-        notifications: 5,
-        messages: 3,
-        // Dữ liệu cho English AI
-        completedExercises: 45,
-        totalExercises: 60,
-        pendingExercises: 5,
-        reportsAvailable: 2,
-        avgProgress: 75 // phần trăm tiến độ trung bình
+        totalChildren: summaryData.total_children || 0,
+        totalClasses: summaryData.total_classes || 0,
+        avgScore: summaryData.avg_score || 0,
+        notifications: summaryData.notifications_count || 0,
+        messages: summaryData.messages_count || 0,
+        completedExercises: summaryData.completed_exercises || 0,
+        totalExercises: summaryData.total_exercises || 0,
+        pendingExercises: summaryData.pending_exercises || 0,
+        reportsAvailable: 1, // Can be updated if needed
+        avgProgress: summaryData.avg_progress || 0
       };
       
       setSummaryData(summary);
     } catch (error) {
       console.error('Error loading dashboard:', error);
       setChildren([]);
+      // Set default values on error
+      setSummaryData({
+        totalChildren: 0,
+        totalClasses: 0,
+        avgScore: 0,
+        notifications: 0,
+        messages: 0,
+        completedExercises: 0,
+        totalExercises: 0,
+        pendingExercises: 0,
+        reportsAvailable: 0,
+        avgProgress: 0
+      });
     } finally {
       setLoading(false);
     }
@@ -113,20 +131,82 @@ const Dashboard = ({ onNavigate }) => {
     }));
   };
 
-  const handleExportConfirm = () => {
-    // Logic xuất file theo type và options
-    console.log('Xuất file:', selectedExportType, exportOptions);
-    setShowExportModal(false);
-    setSelectedExportType(null);
-    // Reset về mặc định
-    setExportOptions({
-      title: true,
-      content: true,
-      marks: true,
-      attendance: true,
-      sender: true,
-      time: true
-    });
+  const loadPendingExercises = async () => {
+    try {
+      const exercises = await parentAPI.getPendingExercises();
+      setPendingExercises(exercises || []);
+    } catch (error) {
+      console.error('Error loading pending exercises:', error);
+      setPendingExercises([]);
+    }
+  };
+
+  const loadMonthlyReport = async (month, timeRange) => {
+    try {
+      setReportLoading(true);
+      const year = new Date().getFullYear();
+      const report = await parentAPI.getMonthlyReport(month, year, timeRange);
+      setMonthlyReport(report);
+    } catch (error) {
+      console.error('Error loading monthly report:', error);
+      setMonthlyReport(null);
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
+  const handleExportConfirm = async () => {
+    if (!selectedExportType) {
+      alert('Vui lòng chọn định dạng xuất báo cáo');
+      return;
+    }
+
+    try {
+      const year = new Date().getFullYear();
+      const month = parseInt(selectedMonth) || new Date().getMonth() + 1;
+      
+      let blob;
+      let filename;
+      
+      if (selectedExportType === 'pdf') {
+        blob = await parentAPI.exportMonthlyReportPDF(month, year, selectedTimeRange, exportOptions);
+        filename = `bao_cao_${selectedTimeRange}_${month}_${year}_${new Date().toISOString().slice(0, 10).replace(/-/g, '')}.pdf`;
+      } else if (selectedExportType === 'excel') {
+        blob = await parentAPI.exportMonthlyReportExcel(month, year, selectedTimeRange, exportOptions);
+        filename = `bao_cao_${selectedTimeRange}_${month}_${year}_${new Date().toISOString().slice(0, 10).replace(/-/g, '')}.xlsx`;
+      }
+      
+      if (blob) {
+        // Create download link and trigger download
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        setTimeout(() => {
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+        }, 100);
+        
+        alert('Xuất báo cáo thành công!');
+      }
+      
+      setShowExportModal(false);
+      setSelectedExportType(null);
+      // Reset về mặc định
+      setExportOptions({
+        title: true,
+        content: true,
+        marks: true,
+        attendance: true,
+        sender: true,
+        time: true
+      });
+    } catch (error) {
+      console.error('Error exporting report:', error);
+      alert('Có lỗi xảy ra khi xuất báo cáo. Vui lòng thử lại.');
+    }
   };
   
   // Handle add child submission
@@ -223,8 +303,9 @@ const Dashboard = ({ onNavigate }) => {
               <span className="footer-text">Nhắc nhở con em hoàn thành</span>
             </div>
           </div>
-          <button className="info-action-btn" onClick={() => {
+          <button className="info-action-btn" onClick={async () => {
             closeAllModals();
+            await loadPendingExercises();
             setShowPendingExercisesModal(true);
           }}>
             <Eye className="btn-icon-left" />
@@ -248,8 +329,9 @@ const Dashboard = ({ onNavigate }) => {
               <span className="footer-text">Kết quả xuất sắc</span>
             </div>
           </div>
-          <button className="info-action-btn" onClick={() => {
+          <button className="info-action-btn" onClick={async () => {
             closeAllModals();
+            await loadMonthlyReport(parseInt(selectedMonth), selectedTimeRange);
             setShowReportDetailModal(true);
           }}>
             <FileText className="btn-icon-left" />
@@ -653,66 +735,39 @@ const Dashboard = ({ onNavigate }) => {
           </p>
           
           <div className="pending-exercises-list">
-            {/* Sample data - Backend sẽ cung cấp data này */}
-            <div className="pending-exercise-item">
-              <div className="pending-exercise-header">
-                <div className="pending-exercise-info">
-                  <BookOpen className="pending-exercise-icon" />
-                  <div>
-                    <h4 className="pending-exercise-title">Bài tập Reading - Unit 5</h4>
-                    <p className="pending-exercise-meta">Lớp: English A1 • Môn: Reading</p>
+            {pendingExercises.length > 0 ? (
+              pendingExercises.map((exercise, index) => (
+                <div key={exercise.exercise_id || index} className="pending-exercise-item">
+                  <div className="pending-exercise-header">
+                    <div className="pending-exercise-info">
+                      <BookOpen className="pending-exercise-icon" />
+                      <div>
+                        <h4 className="pending-exercise-title">{exercise.title}</h4>
+                        <p className="pending-exercise-meta">
+                          {exercise.class_name ? `Lớp: ${exercise.class_name} • ` : ''}
+                          Môn: {exercise.skill_type ? exercise.skill_type.charAt(0).toUpperCase() + exercise.skill_type.slice(1) : 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+                    <span className={`pending-exercise-badge ${exercise.priority}`}>
+                      {exercise.due_date ? `Hạn nộp: ${new Date(exercise.due_date).toLocaleDateString('vi-VN')}` : 'Chưa có hạn'}
+                      {exercise.days_until_due !== null && exercise.days_until_due >= 0 && (
+                        <span> ({exercise.days_until_due} ngày)</span>
+                      )}
+                    </span>
+                  </div>
+                  <div className="pending-exercise-body">
+                    <p className="pending-exercise-desc">{exercise.title}</p>
                   </div>
                 </div>
-                <span className="pending-exercise-badge urgent">Hạn nộp: 30/10</span>
+              ))
+            ) : (
+              <div className="empty-pending-exercises">
+                <BookOpen className="empty-icon" />
+                <p>Không có bài tập chưa hoàn thành</p>
+                <span>Tất cả bài tập đã được hoàn thành!</span>
               </div>
-              <div className="pending-exercise-body">
-                <p className="pending-exercise-desc">Hoàn thành bài đọc hiểu và trả lời câu hỏi</p>
-                <div className="pending-exercise-student">
-                  <Users className="student-icon" />
-                  <span>Học sinh: {children[0]?.name || 'Chưa có'}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="pending-exercise-item">
-              <div className="pending-exercise-header">
-                <div className="pending-exercise-info">
-                  <BookOpen className="pending-exercise-icon" />
-                  <div>
-                    <h4 className="pending-exercise-title">Bài tập Listening - Unit 4</h4>
-                    <p className="pending-exercise-meta">Lớp: English A1 • Môn: Listening</p>
-                  </div>
-                </div>
-                <span className="pending-exercise-badge warning">Hạn nộp: 01/11</span>
-              </div>
-              <div className="pending-exercise-body">
-                <p className="pending-exercise-desc">Nghe và điền từ còn thiếu</p>
-                <div className="pending-exercise-student">
-                  <Users className="student-icon" />
-                  <span>Học sinh: {children[0]?.name || 'Chưa có'}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="pending-exercise-item">
-              <div className="pending-exercise-header">
-                <div className="pending-exercise-info">
-                  <BookOpen className="pending-exercise-icon" />
-                  <div>
-                    <h4 className="pending-exercise-title">Writing Essay - My Family</h4>
-                    <p className="pending-exercise-meta">Lớp: English A1 • Môn: Writing</p>
-                  </div>
-                </div>
-                <span className="pending-exercise-badge normal">Hạn nộp: 05/11</span>
-              </div>
-              <div className="pending-exercise-body">
-                <p className="pending-exercise-desc">Viết đoạn văn về gia đình (150 từ)</p>
-                <div className="pending-exercise-student">
-                  <Users className="student-icon" />
-                  <span>Học sinh: {children[0]?.name || 'Chưa có'}</span>
-                </div>
-              </div>
-            </div>
+            )}
           </div>
 
           <div className="export-info-box">
@@ -764,7 +819,10 @@ const Dashboard = ({ onNavigate }) => {
                     name="timeRange" 
                     value="month" 
                     checked={selectedTimeRange === 'month'}
-                    onChange={(e) => setSelectedTimeRange(e.target.value)}
+                    onChange={async (e) => {
+                      setSelectedTimeRange(e.target.value);
+                      await loadMonthlyReport(parseInt(selectedMonth), e.target.value);
+                    }}
                   />
                   <span className="radio-custom"></span>
                   Theo tháng
@@ -773,7 +831,10 @@ const Dashboard = ({ onNavigate }) => {
                   <select 
                     className="month-selector"
                     value={selectedMonth}
-                    onChange={(e) => setSelectedMonth(e.target.value)}
+                    onChange={async (e) => {
+                      setSelectedMonth(e.target.value);
+                      await loadMonthlyReport(parseInt(e.target.value), selectedTimeRange);
+                    }}
                   >
                     <option value="9">Tháng 9</option>
                     <option value="10">Tháng 10</option>
@@ -796,7 +857,10 @@ const Dashboard = ({ onNavigate }) => {
                     name="timeRange" 
                     value="quarter" 
                     checked={selectedTimeRange === 'quarter'}
-                    onChange={(e) => setSelectedTimeRange(e.target.value)}
+                    onChange={async (e) => {
+                      setSelectedTimeRange(e.target.value);
+                      await loadMonthlyReport(parseInt(selectedMonth), e.target.value);
+                    }}
                   />
                   <span className="radio-custom"></span>
                   Học kỳ I
@@ -810,7 +874,10 @@ const Dashboard = ({ onNavigate }) => {
                     name="timeRange" 
                     value="year" 
                     checked={selectedTimeRange === 'year'}
-                    onChange={(e) => setSelectedTimeRange(e.target.value)}
+                    onChange={async (e) => {
+                      setSelectedTimeRange(e.target.value);
+                      await loadMonthlyReport(parseInt(selectedMonth), e.target.value);
+                    }}
                   />
                   <span className="radio-custom"></span>
                   Cả năm học
@@ -819,111 +886,107 @@ const Dashboard = ({ onNavigate }) => {
             </div>
           </div>
           
-          <div className="report-summary-stats">
-            <div className="report-stat-card excellent">
-              <Award className="report-stat-icon" />
-              <div className="report-stat-info">
-                <h4 className="report-stat-value">8.5/10</h4>
-                <p className="report-stat-label">Điểm trung bình</p>
-              </div>
+          {reportLoading ? (
+            <div style={{ textAlign: 'center', padding: '2rem' }}>
+              <div className="spinner"></div>
+              <p>Đang tải báo cáo...</p>
             </div>
-
-            <div className="report-stat-card good">
-              <CheckCircle className="report-stat-icon" />
-              <div className="report-stat-info">
-                <h4 className="report-stat-value">45/60</h4>
-                <p className="report-stat-label">Bài tập hoàn thành</p>
-              </div>
-            </div>
-
-            <div className="report-stat-card normal">
-              <TrendingUp className="report-stat-icon" />
-              <div className="report-stat-info">
-                <h4 className="report-stat-value">95%</h4>
-                <p className="report-stat-label">Chuyên cần</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="report-subjects-list">
-            <h3 className="report-section-title">Điểm theo môn học</h3>
-            
-            <div className="report-subject-item">
-              <div className="report-subject-header">
-                <div className="report-subject-info">
-                  <div className="report-subject-icon-wrapper reading">
-                    <BookOpen className="report-subject-icon" />
-                  </div>
-                  <div>
-                    <h4 className="report-subject-name">Reading</h4>
-                    <p className="report-subject-meta">15 bài tập • 12 hoàn thành</p>
+          ) : monthlyReport ? (
+            <>
+              <div className="report-summary-stats">
+                <div className="report-stat-card excellent">
+                  <Award className="report-stat-icon" />
+                  <div className="report-stat-info">
+                    <h4 className="report-stat-value">{monthlyReport.overall_average}/10</h4>
+                    <p className="report-stat-label">Điểm trung bình</p>
                   </div>
                 </div>
-                <span className="report-subject-score excellent">9.0</span>
-              </div>
-              <p className="report-teacher-comment">
-                <MessageCircle className="comment-icon" />
-                Em đọc hiểu rất tốt, tiếp tục phát huy!
-              </p>
-            </div>
 
-            <div className="report-subject-item">
-              <div className="report-subject-header">
-                <div className="report-subject-info">
-                  <div className="report-subject-icon-wrapper listening">
-                    <Activity className="report-subject-icon" />
-                  </div>
-                  <div>
-                    <h4 className="report-subject-name">Listening</h4>
-                    <p className="report-subject-meta">20 bài tập • 18 hoàn thành</p>
+                <div className="report-stat-card good">
+                  <CheckCircle className="report-stat-icon" />
+                  <div className="report-stat-info">
+                    <h4 className="report-stat-value">{monthlyReport.total_completed}/{monthlyReport.total_exercises}</h4>
+                    <p className="report-stat-label">Bài tập hoàn thành</p>
                   </div>
                 </div>
-                <span className="report-subject-score good">8.5</span>
-              </div>
-              <p className="report-teacher-comment">
-                <MessageCircle className="comment-icon" />
-                Khả năng nghe tốt, cần luyện tập thêm phát âm.
-              </p>
-            </div>
 
-            <div className="report-subject-item">
-              <div className="report-subject-header">
-                <div className="report-subject-info">
-                  <div className="report-subject-icon-wrapper writing">
-                    <FileText className="report-subject-icon" />
-                  </div>
-                  <div>
-                    <h4 className="report-subject-name">Writing</h4>
-                    <p className="report-subject-meta">12 bài tập • 10 hoàn thành</p>
+                <div className="report-stat-card normal">
+                  <TrendingUp className="report-stat-icon" />
+                  <div className="report-stat-info">
+                    <h4 className="report-stat-value">{monthlyReport.attendance_rate}%</h4>
+                    <p className="report-stat-label">Chuyên cần</p>
                   </div>
                 </div>
-                <span className="report-subject-score normal">7.8</span>
               </div>
-              <p className="report-teacher-comment">
-                <MessageCircle className="comment-icon" />
-                Cần cải thiện ngữ pháp và từ vựng.
-              </p>
+            </>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '2rem' }}>
+              <p>Không có dữ liệu báo cáo</p>
             </div>
-          </div>
+          )}
 
-          <div className="export-info-box">
-            <Info className="export-info-icon" />
-            <div className="export-info-content">
-              <h4 className="export-info-title">Nhận xét chung của giáo viên:</h4>
-              <p style={{ fontSize: '0.875rem', color: '#1e40af', margin: '0.5rem 0 0 0', lineHeight: '1.6' }}>
-                Em có tiến bộ rõ rệt trong tháng này. Thái độ học tập nghiêm túc, 
-                tích cực tham gia các hoạt động trên lớp. Cần tập trung hơn vào 
-                phần Writing và Grammar để cải thiện điểm số.
-              </p>
+          {monthlyReport && monthlyReport.subjects && monthlyReport.subjects.length > 0 ? (
+            <div className="report-subjects-list">
+              <h3 className="report-section-title">Điểm theo môn học</h3>
+              
+              {monthlyReport.subjects.map((subject, index) => {
+                const scoreClass = subject.average_score >= 8.5 ? 'excellent' : 
+                                   subject.average_score >= 7.0 ? 'good' : 
+                                   subject.average_score >= 5.0 ? 'normal' : 'poor';
+                const iconClass = subject.subject.toLowerCase();
+                
+                return (
+                  <div key={index} className="report-subject-item">
+                    <div className="report-subject-header">
+                      <div className="report-subject-info">
+                        <div className={`report-subject-icon-wrapper ${iconClass}`}>
+                          <BookOpen className="report-subject-icon" />
+                        </div>
+                        <div>
+                          <h4 className="report-subject-name">{subject.subject}</h4>
+                          <p className="report-subject-meta">
+                            {subject.total_exercises} bài tập • {subject.completed_exercises} hoàn thành
+                          </p>
+                        </div>
+                      </div>
+                      <span className={`report-subject-score ${scoreClass}`}>
+                        {subject.average_score > 0 ? subject.average_score.toFixed(1) : 'N/A'}
+                      </span>
+                    </div>
+                    {subject.teacher_comment && (
+                      <p className="report-teacher-comment">
+                        <MessageCircle className="comment-icon" />
+                        {subject.teacher_comment}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-          </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '2rem' }}>
+              <p>Chưa có dữ liệu môn học</p>
+            </div>
+          )}
+
+          {monthlyReport && monthlyReport.general_comment && (
+            <div className="export-info-box">
+              <Info className="export-info-icon" />
+              <div className="export-info-content">
+                <h4 className="export-info-title">Nhận xét chung của giáo viên:</h4>
+                <p style={{ fontSize: '0.875rem', color: '#1e40af', margin: '0.5rem 0 0 0', lineHeight: '1.6' }}>
+                  {monthlyReport.general_comment}
+                </p>
+              </div>
+            </div>
+          )}
 
           <div className="modal-footer">
             <button className="modal-btn-secondary" onClick={() => closeAllModals()}>
               <X className="btn-icon-modal" />
               Đóng
             </button>
-            <button className="modal-btn-primary" onClick={() => {
+            <button className="modal-btn-primary" onClick={async () => {
               closeAllModals();
               setShowReportModal(true);
             }}>
