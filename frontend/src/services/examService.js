@@ -176,6 +176,30 @@ const examService = {
       throw error;
     }
   },
+
+  /**
+   * Generate full comprehensive exam with AI
+   * @param {Object} params - Generation parameters
+   * @param {string} params.exam_type - 'midterm' or 'final'
+   * @param {string} params.grade - Grade level (e.g., '10', '11', '12')
+   * @param {string} params.semester - Semester ('1' or '2')
+   * @returns {Promise<Object>} Generated exam content with 4 skills
+   */
+  generateFullExam: async (params) => {
+    try {
+      const response = await api.post('/api/v1/exercises/generate-ai', {
+        test_type: params.exam_type,
+        grade: params.grade,
+        semester: params.semester,
+      });
+      
+      // Return the exercise data from response
+      return response.data.exercise || response.data;
+    } catch (error) {
+      console.error('Generate full exam error:', error);
+      throw error;
+    }
+  },
 };
 
 export default examService;
