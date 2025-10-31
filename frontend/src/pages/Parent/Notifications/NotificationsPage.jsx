@@ -8,6 +8,7 @@ import {
 import Navbar from '../../../components/Navbar/Navbar';
 import Modal from '../ParentDashboardV2/components/Modal';
 import authService from '../../../services/authService';
+import notificationService from '../../../services/notificationService';
 import './NotificationsPage.css';
 
 const NotificationsPage = () => {
@@ -45,105 +46,140 @@ const NotificationsPage = () => {
     }));
   };
 
-  const handleExportConfirm = () => {
-    console.log('Xuất file thông báo:', selectedExportType, exportOptions);
-    setShowExportDetailModal(false);
-    setSelectedExportType(null);
-    setExportOptions({
-      title: true,
-      content: true,
-      marks: true,
-      attendance: true,
-      sender: true,
-      time: true
-    });
+  const handleExportConfirm = async () => {
+    try {
+      let blob;
+      
+      if (selectedExportType === 'pdf') {
+        blob = await notificationService.exportToPDF(exportOptions);
+      } else if (selectedExportType === 'excel') {
+        blob = await notificationService.exportToExcel(exportOptions);
+      }
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Set filename
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+      const extension = selectedExportType === 'pdf' ? 'pdf' : 'xlsx';
+      link.download = `ThongBao_${timestamp}.${extension}`;
+      
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      // Show success message (optional - có thể thêm toast notification)
+      console.log('Xuất file thành công!');
+      
+    } catch (error) {
+      console.error('Lỗi khi xuất file:', error);
+      alert('Không thể xuất file. Vui lòng thử lại!');
+    } finally {
+      setShowExportDetailModal(false);
+      setSelectedExportType(null);
+      setExportOptions({
+        title: true,
+        content: true,
+        marks: true,
+        attendance: true,
+        sender: true,
+        time: true
+      });
+    }
   };
 
   const loadNotifications = async () => {
-    // Mock data - replace with actual API call
-    const mockNotifications = [
-      {
-        id: 1,
-        type: 'grade',
-        icon: Award,
-        color: '#f59e0b',
-        title: 'Điểm bài kiểm tra mới',
-        message: 'Con bạn đã nhận điểm 9/10 cho bài kiểm tra "Unit 5: Present Perfect" trong lớp Tiếng Anh 10A1',
-        from: 'Cô Nguyễn Thu Hà',
-        time: '10 phút trước',
-        isRead: false,
-        student: 'Nguyễn Văn A',
-        priority: 'high'
-      },
-      {
-        id: 2,
-        type: 'info',
-        icon: Info,
-        color: '#3b82f6',
-        title: 'Thông báo từ giáo viên',
-        message: 'Lớp học ngày mai sẽ bắt đầu lúc 8:00 AM thay vì 7:30 AM như thường lệ',
-        from: 'Thầy Trần Văn B',
-        time: '2 giờ trước',
-        isRead: false,
-        student: 'Nguyễn Văn A',
-        priority: 'medium'
-      },
-      {
-        id: 3,
-        type: 'success',
-        icon: CheckCircle,
-        color: '#10b981',
-        title: 'Hoàn thành bài học',
-        message: 'Con bạn đã hoàn thành bài học "Vocabulary: Family Members" với kết quả xuất sắc',
-        from: 'Hệ thống',
-        time: '5 giờ trước',
-        isRead: true,
-        student: 'Nguyễn Văn A',
-        priority: 'low'
-      },
-      {
-        id: 4,
-        type: 'alert',
-        icon: AlertCircle,
-        color: '#ef4444',
-        title: 'Bài tập sắp hết hạn',
-        message: 'Bài tập "Writing: Describe your family" sẽ hết hạn vào ngày mai. Nhắc nhở con hoàn thành bài tập',
-        from: 'Hệ thống',
-        time: '1 ngày trước',
-        isRead: true,
-        student: 'Nguyễn Văn A',
-        priority: 'high'
-      },
-      {
-        id: 5,
-        type: 'info',
-        icon: Calendar,
-        color: '#8b5cf6',
-        title: 'Lịch học mới',
-        message: 'Lịch học tuần tới đã được cập nhật. Vui lòng kiểm tra để chuẩn bị',
-        from: 'Cô Nguyễn Thu Hà',
-        time: '2 ngày trước',
-        isRead: true,
-        student: 'Nguyễn Văn A',
-        priority: 'medium'
-      },
-      {
-        id: 6,
-        type: 'grade',
-        icon: Award,
-        color: '#f59e0b',
-        title: 'Kết quả bài tập về nhà',
-        message: 'Bài tập "Grammar: Past Simple" đã được chấm điểm: 8.5/10. Giáo viên có nhận xét: "Làm tốt lắm!"',
-        from: 'Thầy Trần Văn B',
-        time: '3 ngày trước',
-        isRead: true,
-        student: 'Nguyễn Văn A',
-        priority: 'medium'
-      }
-    ];
-
-    setNotifications(mockNotifications);
-    setLoading(false);
+    try {
+      setLoading(true);
+      // Gọi API để lấy notifications
+      const data = await notificationService.getNotifications({
+        skip: 0,
+        limit: 100
+      });
+      
+      // Map data từ API sang format của UI
+      const mappedNotifications = data.map(notif => {
+        // Xác định icon và color dựa vào type
+        let icon, color, priority;
+        
+        switch(notif.type) {
+          case 'grade':
+            icon = Award;
+            color = '#f59e0b';
+            priority = 'high';
+            break;
+          case 'warning':
+            icon = AlertCircle;
+            color = '#f59e0b';
+            priority = 'high';
+            break;
+          case 'alert':
+            icon = AlertCircle;
+            color = '#ef4444';
+            priority = 'high';
+            break;
+          case 'success':
+            icon = CheckCircle;
+            color = '#10b981';
+            priority = 'low';
+            break;
+          case 'info':
+            icon = Info;
+            color = '#3b82f6';
+            priority = 'medium';
+            break;
+          default:
+            icon = Bell;
+            color = '#6b7280';
+            priority = 'medium';
+        }
+        
+        // Format thời gian
+        const createdAt = new Date(notif.created_at);
+        const now = new Date();
+        const diffMs = now - createdAt;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+        
+        let timeText;
+        if (diffMins < 1) timeText = 'Vừa xong';
+        else if (diffMins < 60) timeText = `${diffMins} phút trước`;
+        else if (diffHours < 24) timeText = `${diffHours} giờ trước`;
+        else if (diffDays < 7) timeText = `${diffDays} ngày trước`;
+        else timeText = createdAt.toLocaleDateString('vi-VN');
+        
+        return {
+          id: notif.id,
+          type: notif.type,
+          icon: icon,
+          color: color,
+          title: notif.title,
+          message: notif.message,
+          from: 'Hệ thống', // Có thể enhance thêm từ backend
+          time: timeText,
+          isRead: notif.is_read,
+          priority: priority,
+          student: '', // Có thể enhance thêm từ backend
+          related_id: notif.related_id,
+          related_type: notif.related_type
+        };
+      });
+      
+      setNotifications(mappedNotifications);
+    } catch (error) {
+      console.error('Error loading notifications:', error);
+      // Show empty state nếu có lỗi
+      setNotifications([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleLogout = () => {
@@ -151,18 +187,36 @@ const NotificationsPage = () => {
     navigate('/login');
   };
 
-  const markAsRead = (id) => {
-    setNotifications(notifications.map(notif => 
-      notif.id === id ? { ...notif, isRead: true } : notif
-    ));
+  const markAsRead = async (id) => {
+    try {
+      await notificationService.markAsRead(id);
+      // Update local state
+      setNotifications(notifications.map(notif => 
+        notif.id === id ? { ...notif, isRead: true } : notif
+      ));
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(notif => ({ ...notif, isRead: true })));
+  const markAllAsRead = async () => {
+    try {
+      await notificationService.markAllAsRead();
+      // Update local state
+      setNotifications(notifications.map(notif => ({ ...notif, isRead: true })));
+    } catch (error) {
+      console.error('Error marking all as read:', error);
+    }
   };
 
-  const deleteNotification = (id) => {
-    setNotifications(notifications.filter(notif => notif.id !== id));
+  const deleteNotification = async (id) => {
+    try {
+      await notificationService.deleteNotification(id);
+      // Update local state
+      setNotifications(notifications.filter(notif => notif.id !== id));
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+    }
   };
 
   const filteredNotifications = notifications.filter(notif => {

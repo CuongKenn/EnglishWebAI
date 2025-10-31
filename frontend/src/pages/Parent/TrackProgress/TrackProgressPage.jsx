@@ -47,9 +47,12 @@ const TrackProgressPage = () => {
   }, []);
 
   const handleExportTypeSelect = (type) => {
+    console.log('[Export] handleExportTypeSelect called with type:', type);
     setSelectedExportType(type);
     setShowExportModal(false);
     setShowExportDetailModal(true);
+    console.log('[Export] selectedExportType set to:', type);
+    console.log('[Export] showExportDetailModal set to true');
   };
 
   const handleExportOptionToggle = (option) => {
@@ -59,19 +62,137 @@ const TrackProgressPage = () => {
     }));
   };
 
-  const handleExportConfirm = () => {
-    console.log('Xuất báo cáo:', selectedExportType, exportOptions);
-    setShowExportDetailModal(false);
-    setSelectedExportType(null);
-    // Reset về mặc định
-    setExportOptions({
-      studentInfo: true,
-      grades: true,
-      teacherComments: true,
-      progressChart: true,
-      attendance: true,
-      overallEvaluation: true
-    });
+  const handleExportConfirm = async () => {
+    console.log('[Export] handleExportConfirm called');
+    console.log('[Export] selectedChild:', selectedChild);
+    console.log('[Export] selectedExportType:', selectedExportType);
+    console.log('[Export] exportOptions:', exportOptions);
+    
+    if (!selectedChild) {
+      console.error('[Export] Error: No child selected!');
+      alert('Vui lòng chọn con em trước khi xuất báo cáo.');
+      return;
+    }
+    
+    if (!selectedExportType) {
+      console.error('[Export] Error: No export type selected!');
+      alert('Vui lòng chọn định dạng xuất báo cáo (PDF hoặc Excel).');
+      return;
+    }
+    
+    try {
+      console.log('[Export] Starting export process...');
+      console.log('[Export] Selected child:', selectedChild);
+      console.log('[Export] Export type:', selectedExportType);
+      console.log('[Export] Export options:', exportOptions);
+      console.log('[Export] Filter options:', filterOptions);
+      
+      // Sanitize filename - remove special characters
+      const safeName = selectedChild.name.replace(/[^a-zA-Z0-9]/g, '_');
+      const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      
+      let blob;
+      let filename;
+      
+      if (selectedExportType === 'pdf') {
+        console.log('Calling exportProgressPDF...');
+        blob = await parentAPI.exportProgressPDF(
+          selectedChild.id,
+          exportOptions,
+          {
+            subject: filterOptions.subject,
+            timeRange: filterOptions.timeRange,
+            evaluationType: filterOptions.evaluationType
+          }
+        );
+        filename = `bao_cao_tien_do_${safeName}_${dateStr}.pdf`;
+      } else if (selectedExportType === 'excel') {
+        console.log('[Export] Calling exportProgressExcel API...');
+        console.log('[Export] Child ID:', selectedChild.id);
+        console.log('[Export] Export options:', exportOptions);
+        console.log('[Export] Filters:', {
+          subject: filterOptions.subject,
+          timeRange: filterOptions.timeRange,
+          evaluationType: filterOptions.evaluationType
+        });
+        
+        blob = await parentAPI.exportProgressExcel(
+          selectedChild.id,
+          exportOptions,
+          {
+            subject: filterOptions.subject,
+            timeRange: filterOptions.timeRange,
+            evaluationType: filterOptions.evaluationType
+          }
+        );
+        
+        console.log('[Export] Excel blob received!', blob);
+        filename = `bao_cao_tien_do_${safeName}_${dateStr}.xlsx`;
+      } else {
+        console.error('[Export] Unknown export type:', selectedExportType);
+        alert('Định dạng xuất báo cáo không hợp lệ.');
+        return;
+      }
+      
+      console.log('[Export] Blob received:', blob);
+      console.log('[Export] Blob size:', blob?.size || 'N/A');
+      console.log('[Export] Blob type:', blob?.type || 'N/A');
+      console.log('[Export] Filename:', filename);
+      
+      if (!blob) {
+        throw new Error('Không nhận được dữ liệu từ server');
+      }
+      
+      // Create download link and trigger download
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Clean up after a short delay
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }, 100);
+      
+      // Close modal and reset
+      setShowExportDetailModal(false);
+      setSelectedExportType(null);
+      
+      // Reset export options to default
+      setExportOptions({
+        studentInfo: true,
+        grades: true,
+        teacherComments: true,
+        progressChart: true,
+        attendance: true,
+        overallEvaluation: true
+      });
+      
+      console.log('[Export] Export completed successfully!');
+      alert('Xuất báo cáo thành công!');
+    } catch (error) {
+      console.error('[Export] Error during export:', error);
+      console.error('[Export] Error details:', error.response?.data);
+      console.error('[Export] Error status:', error.response?.status);
+      console.error('[Export] Error message:', error.message);
+      console.error('[Export] Full error object:', error);
+      
+      let errorMessage = 'Có lỗi xảy ra khi xuất báo cáo. ';
+      if (error.response?.status === 404) {
+        errorMessage += 'Không tìm thấy dữ liệu học sinh.';
+      } else if (error.response?.status === 403) {
+        errorMessage += 'Bạn không có quyền truy cập.';
+      } else if (error.message) {
+        errorMessage += error.message;
+      } else {
+        errorMessage += 'Vui lòng thử lại.';
+      }
+      
+      alert(errorMessage);
+    }
   };
 
   const handleFilterChange = (filterType, value) => {
@@ -81,10 +202,58 @@ const TrackProgressPage = () => {
     }));
   };
 
-  const handleApplyFilter = () => {
+  const handleApplyFilter = async () => {
     console.log('Áp dụng bộ lọc:', filterOptions);
     setShowFilterModal(false);
-    // TODO: Apply filter to data
+    
+    // Reload progress with new filters
+    if (selectedChild) {
+      try {
+        const progressData = await parentAPI.getChildProgress(selectedChild.id, {
+          subject: filterOptions.subject,
+          timeRange: filterOptions.timeRange,
+          evaluationType: filterOptions.evaluationType
+        });
+        
+        const transformedProgress = {
+          subjectProgress: progressData.subject_progress?.map(subject => ({
+            subject: subject.subject,
+            progress: subject.progress,
+            color: subject.color,
+            completed: subject.completed_exercises,
+            total: subject.total_exercises,
+            averageScore: subject.average_score
+          })) || [],
+          attendance: {
+            present: progressData.attendance?.present || 0,
+            absent: progressData.attendance?.absent || 0,
+            late: progressData.attendance?.late || 0,
+            total: progressData.attendance?.total || 0,
+          },
+          recentActivities: progressData.recent_activities?.map(activity => ({
+            id: activity.title,
+            type: activity.type,
+            title: activity.title,
+            subject: activity.subject,
+            score: activity.score,
+            date: activity.time,
+            status: activity.status,
+            feedback: activity.feedback
+          })) || [],
+          upcomingTasks: progressData.upcoming_tasks?.map(task => ({
+            id: task.title,
+            title: task.title,
+            dueDate: task.dueDate,
+            subject: task.subject,
+            priority: task.priority,
+          })) || [],
+        };
+        
+        setChildProgress(transformedProgress);
+      } catch (error) {
+        console.error('Error applying filter:', error);
+      }
+    }
   };
 
   const handleResetFilter = () => {
@@ -122,15 +291,20 @@ const TrackProgressPage = () => {
 
   const loadChildProgress = async (childId) => {
     try {
-      const progressData = await parentAPI.getChildProgress(childId);
+      const progressData = await parentAPI.getChildProgress(childId, {
+        subject: filterOptions.subject,
+        timeRange: filterOptions.timeRange,
+        evaluationType: filterOptions.evaluationType
+      });
       
       const transformedProgress = {
         subjectProgress: progressData.subject_progress?.map(subject => ({
           subject: subject.subject,
           progress: subject.progress,
           color: subject.color,
-          completed: Math.floor((subject.progress / 100) * 50),
-          total: 50,
+          completed: subject.completed_exercises || 0,
+          total: subject.total_exercises || 0,
+          averageScore: subject.average_score
         })) || [],
         attendance: {
           present: progressData.attendance?.present || 0,
@@ -144,8 +318,11 @@ const TrackProgressPage = () => {
           title: activity.title,
           subject: activity.subject,
           score: activity.score,
+          maxScore: activity.max_score,
           date: activity.time,
           status: activity.status,
+          feedback: activity.feedback,
+          className: activity.class_name
         })) || [],
         upcomingTasks: progressData.upcoming_tasks?.map(task => ({
           id: task.title,
@@ -153,7 +330,10 @@ const TrackProgressPage = () => {
           dueDate: task.dueDate,
           subject: task.subject,
           priority: task.priority,
+          className: task.class_name
         })) || [],
+        overallAverage: progressData.overall_average || 0,
+        totalSubmissions: progressData.total_submissions || 0
       };
       
       setChildProgress(transformedProgress);
@@ -417,6 +597,12 @@ const TrackProgressPage = () => {
                         <span className="stat-label">Đã học:</span>
                         <span className="stat-value">{subject.completed}/{subject.total} bài</span>
                       </div>
+                      {subject.averageScore !== null && subject.averageScore !== undefined && (
+                        <div className="stat-row">
+                          <span className="stat-label">Điểm TB:</span>
+                          <span className="stat-value">{subject.averageScore}/10</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -449,20 +635,29 @@ const TrackProgressPage = () => {
                           <h4 className="timeline-title-modern">{activity.title}</h4>
                           <span className="timeline-date-modern">{activity.date}</span>
                         </div>
-                        <p className="timeline-subject-modern">{activity.subject}</p>
+                        <p className="timeline-subject-modern">
+                          {activity.subject}
+                          {activity.className && ` - ${activity.className}`}
+                        </p>
                         <div className="timeline-bottom">
-                          {activity.score && (
+                          {activity.score !== null && activity.score !== undefined && (
                             <span className="timeline-score-modern">
                               <Award className="score-icon-small" />
-                              {activity.score}/10
+                              {activity.score}/{activity.maxScore || 10}
                             </span>
                           )}
                           <span className={`timeline-status-modern status-${activity.status}`}>
                             {activity.status === 'completed' && 'Hoàn thành'}
                             {activity.status === 'graded' && 'Đã chấm'}
                             {activity.status === 'participated' && 'Đã tham gia'}
+                            {activity.status === 'submitted' && 'Đã nộp'}
                           </span>
                         </div>
+                        {activity.feedback && (
+                          <div className="timeline-feedback">
+                            <em>"{activity.feedback}"</em>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -535,16 +730,16 @@ const TrackProgressPage = () => {
           <p className="filter-modal-desc">Chọn tiêu chí để xem báo cáo chi tiết</p>
           
           <div className="filter-simple-container">
-            {/* Filter by Subject */}
+            {/* Filter by Subject/Skill */}
             <div className="filter-simple-section">
-              <label className="filter-simple-label">Môn học</label>
+              <label className="filter-simple-label">Kỹ năng</label>
               <div className="filter-simple-options">
                 {[
-                  { value: 'all', label: 'Tất cả môn học' },
-                  { value: 'english', label: 'Tiếng Anh' },
-                  { value: 'math', label: 'Toán học' },
-                  { value: 'literature', label: 'Ngữ văn' },
-                  { value: 'science', label: 'Khoa học' }
+                  { value: 'all', label: 'Tất cả kỹ năng' },
+                  { value: 'listening', label: 'Listening' },
+                  { value: 'speaking', label: 'Speaking' },
+                  { value: 'reading', label: 'Reading' },
+                  { value: 'writing', label: 'Writing' }
                 ].map(subject => (
                   <button 
                     key={subject.value}

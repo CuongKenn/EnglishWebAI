@@ -17,6 +17,7 @@ from app.schemas.student import (
     ExerciseCreate,
     ExerciseUpdate,
 )
+from app.services.notification_service import NotificationService
 from pydantic import BaseModel
 
 router = APIRouter()
@@ -766,6 +767,14 @@ async def submit_exercise(
         
         db.commit()
         db.refresh(existing_submission)
+        
+        # Tự động tạo thông báo cho phụ huynh khi học sinh nộp lại bài
+        try:
+            NotificationService.notify_parents_on_submission(db, existing_submission)
+        except Exception as e:
+            # Log error nhưng không làm fail request
+            print(f"Error creating notification on submission: {e}")
+        
         return existing_submission
     
     # Check if late
@@ -791,6 +800,13 @@ async def submit_exercise(
     _auto_grade_submission(submission, exercise, db)
     db.commit()
     db.refresh(submission)
+    
+    # Tự động tạo thông báo cho phụ huynh khi học sinh nộp bài
+    try:
+        NotificationService.notify_parents_on_submission(db, submission)
+    except Exception as e:
+        # Log error nhưng không làm fail request
+        print(f"Error creating notification on submission: {e}")
     
     return submission
 
@@ -1243,6 +1259,18 @@ async def grade_submission(
     
     db.commit()
     db.refresh(submission)
+    
+    # Tự động tạo thông báo cho phụ huynh
+    try:
+        teacher_name = current_user.full_name or current_user.username
+        NotificationService.notify_parents_on_grading(db, submission, teacher_name)
+        
+        # Nếu điểm thấp, gửi thêm cảnh báo
+        if submission.score and submission.score < 5.0:
+            NotificationService.notify_parents_on_low_score(db, submission)
+    except Exception as e:
+        # Log error nhưng không làm fail request
+        print(f"Error creating notification: {e}")
     
     return JSONResponse(content={
         "message": "Đã chấm điểm thành công",

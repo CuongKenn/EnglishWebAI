@@ -236,6 +236,18 @@ async def update_teacher_feedback(
     db.commit()
     db.refresh(submission)
     
+    # Tự động tạo thông báo cho phụ huynh
+    try:
+        teacher_name = current_user.full_name or current_user.username
+        NotificationService.notify_parents_on_grading(db, submission, teacher_name)
+        
+        # Nếu điểm thấp, gửi thêm cảnh báo
+        if submission.score and submission.score < 5.0:
+            NotificationService.notify_parents_on_low_score(db, submission)
+    except Exception as e:
+        # Log error nhưng không làm fail request
+        print(f"Error creating notification: {e}")
+    
     return {"message": "Feedback updated successfully", "submission": submission}
 
 
