@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import ProfileDropdown from '../ProfileDropdown/ProfileDropdown';
+import NotificationDropdown from '../NotificationDropdown/NotificationDropdown';
 import AuthModal from './AuthModal';
 import authService from '../../services/authService';
 import './Navbar.css';
@@ -142,7 +143,10 @@ const Navbar = ({ userRole = 'student', isLoggedIn: isLoggedInProp = false, onLo
         {/* User Menu */}
         <div className="navbar-user">
           {isLoggedIn ? (
-            <ProfileDropdown onLogout={onLogout} />
+            <>
+              <NotificationDropdown />
+              <ProfileDropdown onLogout={onLogout} />
+            </>
           ) : (
             <div className="auth-buttons">
               <Link to="/login" className="login-btn" title="Đăng nhập vào hệ thống">

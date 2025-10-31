@@ -5,14 +5,17 @@ import Toast from '../Toast/Toast';
  * Sử dụng với useToast hook
  */
 const ToastContainer = ({ toast, onClose }) => {
-  if (!toast) return null;
+  // Không hiển thị nếu không có toast hoặc không có message
+  if (!toast || !toast.show || !toast.message || toast.message.trim() === '') {
+    return null;
+  }
 
   return (
     <Toast
       message={toast.message}
       type={toast.type}
       duration={toast.duration}
-      onClose={onClose}
+      onClose={onClose || (() => {})}
     />
   );
 };

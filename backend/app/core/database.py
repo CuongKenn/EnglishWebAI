@@ -7,7 +7,7 @@ import os
 # PostgreSQL database configuration
 POSTGRES_USER = os.getenv("POSTGRES_USER", "englishwebai_user")
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "englishwebai_password")
-POSTGRES_HOST = os.getenv("POSTGRES_HOST", "db")
+POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")  # Changed from "db" to "localhost" for local dev
 POSTGRES_PORT = os.getenv("POSTGRES_PORT", "5432")
 POSTGRES_DB = os.getenv("POSTGRES_DB", "englishwebai_db")
 

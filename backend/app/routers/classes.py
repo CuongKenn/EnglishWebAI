@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -23,9 +23,11 @@ from app.schemas.student import (
 )
 from app.schemas.student import MaterialResponse, ExerciseResponse
 from app.schemas.student import LessonResponse, LessonCreate, LessonUpdate
+from app.schemas.excel_import import AddStudentsToClassRequest, AddStudentsToClassResponse
 from app.models.material import Material
 from app.models.exercise import Exercise
 from app.models.lesson import Lesson
+from app.services.excel_import_service import ClassStudentService, ExcelImportService, TeacherImportToClassResponse
 
 router = APIRouter()
 
@@ -853,7 +855,7 @@ async def import_students_from_csv(
                 # Check if already enrolled
                 existing = db.query(Enrollment).filter(
                     Enrollment.class_id == class_id,
-                    Enrollment.student_id == user.id
+                    Enrollment.user_id == user.id
                 ).first()
                 
                 if existing:
@@ -905,3 +907,239 @@ async def import_students_from_csv(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Lỗi import: {str(e)}")
+
+
+# -------- New Excel Import Features --------
+@router.post("/{class_id}/students/add-by-email", response_model=AddStudentsToClassResponse)
+async def add_students_to_class_by_email(
+    class_id: int,
+    request: AddStudentsToClassRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Thêm học sinh vào lớp bằng danh sách email
+    
+    Chỉ teacher của lớp hoặc admin mới có thể thực hiện
+    """
+    return ClassStudentService.add_students_to_class(db, class_id, request, current_user)
+
+
+@router.get("/{class_id}/students/available-emails")
+async def get_available_student_emails(
+    class_id: int,
+    search: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Lấy danh sách email của các học sinh chưa tham gia lớp
+    
+    Dùng để hiển thị suggestions khi teacher thêm học sinh
+    """
+    # Kiểm tra quyền
+    classroom = db.query(Classroom).filter(Classroom.id == class_id).first()
+    if not classroom:
+        raise HTTPException(status_code=404, detail="Không tìm thấy lớp học")
+    
+    if (current_user.role not in [UserRole.ADMIN, UserRole.SUPERADMIN] and 
+        classroom.teacher_id != current_user.id):
+        raise HTTPException(
+            status_code=403, 
+            detail="Chỉ giáo viên của lớp hoặc admin mới có thể xem danh sách này"
+        )
+    
+    # Lấy danh sách học sinh chưa tham gia lớp
+    enrolled_user_ids = db.query(Enrollment.user_id).filter(
+        Enrollment.class_id == class_id,
+        Enrollment.status == "active"
+    ).subquery()
+    
+    query = db.query(User).filter(
+        User.role == UserRole.USER,
+        User.is_active == True,
+        ~User.id.in_(enrolled_user_ids)
+    )
+    
+    if search:
+        query = query.filter(
+            (User.email.ilike(f"%{search}%")) |
+            (User.full_name.ilike(f"%{search}%")) |
+            (User.username.ilike(f"%{search}%"))
+        )
+    
+    students = query.offset(skip).limit(limit).all()
+    
+    return {
+        "available_students": [
+            {
+                "id": student.id,
+                "email": student.email,
+                "username": student.username,
+                "full_name": student.full_name
+            }
+            for student in students
+        ],
+        "total": query.count()
+    }
+
+
+@router.post("/{class_id}/students/import-excel")
+async def import_excel_to_class(
+    class_id: int,
+    file: UploadFile = File(...),
+    default_password: str = Form("123456"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Teacher import học sinh từ Excel trực tiếp vào lớp
+    
+    - Tự động tạo tài khoản nếu học sinh chưa tồn tại
+    - Thêm vào lớp ngay lập tức
+    - Chỉ teacher của lớp hoặc admin mới có thể thực hiện
+    
+    File Excel phải có các cột:
+    - STT: Số thứ tự
+    - Mã học sinh: Mã học sinh (username)  
+    - Họ và tên: Họ và tên học sinh
+    - Ngày sinh: Ngày sinh (tùy chọn)
+    """
+    try:
+        print(f"🔍 DEBUG: Received file: {file.filename}")
+        print(f"🔍 DEBUG: Default password: {default_password}")
+        print(f"🔍 DEBUG: Class ID: {class_id}")
+        print(f"🔍 DEBUG: User: {current_user.username}")
+        
+        # Validate file type - accept .xls, .xlsx, .csv
+        if not file.filename.lower().endswith(('.xlsx', '.xls', '.csv')):
+            raise HTTPException(
+                status_code=400,
+                detail=f"File phải có định dạng Excel (.xlsx, .xls) hoặc CSV (.csv). File nhận được: {file.filename}"
+            )
+        
+        print(f"✅ File type OK: {file.filename}")
+        
+        # Parse Excel file
+        print(f"📄 Parsing Excel file...")
+        students = ExcelImportService.parse_excel_file(file)
+        print(f"✅ Parsed {len(students)} students")
+        
+        # Import students to class
+        print(f"➕ Importing students to class {class_id}...")
+        result = ExcelImportService.import_students_to_class(
+            db=db,
+            class_id=class_id,
+            students=students,
+            current_user=current_user,
+            default_password=default_password
+        )
+        print(f"✅ Import complete: {result.success_count} success, {result.failed_count} failed")
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ ERROR in import_excel_to_class: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Lỗi khi import Excel: {str(e)}"
+        )
+    
+    return {
+        "success_count": result.success_count,
+        "failed_count": result.failed_count,
+        "created_accounts": result.created_accounts,
+        "added_to_class": result.added_to_class,
+        "already_in_class": result.already_in_class,
+        "failed_students": result.failed_students,
+        "summary": {
+            "total_processed": len(students),
+            "new_accounts_created": len(result.created_accounts),
+            "successfully_added": len(result.added_to_class),
+            "already_enrolled": len(result.already_in_class),
+            "failures": len(result.failed_students)
+        }
+    }
+
+
+@router.post("/{class_id}/students/import-excel/preview")
+async def preview_excel_import_to_class(
+    class_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Preview file Excel trước khi import vào lớp
+    """
+    # Kiểm tra quyền truy cập lớp
+    classroom = db.query(Classroom).filter(Classroom.id == class_id).first()
+    if not classroom:
+        raise HTTPException(status_code=404, detail="Không tìm thấy lớp học")
+    
+    if (current_user.role not in [UserRole.ADMIN, UserRole.SUPERADMIN] and 
+        classroom.teacher_id != current_user.id):
+        raise HTTPException(
+            status_code=403, 
+            detail="Chỉ giáo viên của lớp hoặc admin mới có thể preview"
+        )
+    
+    # Validate file type
+    if not file.filename.endswith(('.xlsx', '.xls')):
+        raise HTTPException(
+            status_code=400,
+            detail="File phải có định dạng Excel (.xlsx hoặc .xls)"
+        )
+    
+    # Parse Excel file
+    students = ExcelImportService.parse_excel_file(file)
+    
+    # Phân tích trạng thái của từng học sinh
+    analysis = {
+        "total_students": len(students),
+        "existing_accounts": [],
+        "new_accounts": [],
+        "already_in_class": [],
+        "preview": students[:10]  # 10 dòng đầu
+    }
+    
+    for student in students:
+        # Kiểm tra tài khoản đã tồn tại
+        email = f"{student.ma_hoc_sinh}@gmail.com"
+        existing_user = db.query(User).filter(
+            (User.username == student.ma_hoc_sinh) | 
+            (User.email == email)
+        ).first()
+        
+        if existing_user:
+            # Kiểm tra đã tham gia lớp chưa
+            enrollment = db.query(Enrollment).filter(
+                Enrollment.class_id == class_id,
+                Enrollment.user_id == existing_user.id,
+                Enrollment.status == "active"
+            ).first()
+            
+            if enrollment:
+                analysis["already_in_class"].append({
+                    "ma_hoc_sinh": student.ma_hoc_sinh,
+                    "ho_va_ten": student.ho_va_ten,
+                    "email": existing_user.email
+                })
+            else:
+                analysis["existing_accounts"].append({
+                    "ma_hoc_sinh": student.ma_hoc_sinh,
+                    "ho_va_ten": student.ho_va_ten,
+                    "email": existing_user.email
+                })
+        else:
+            analysis["new_accounts"].append({
+                "ma_hoc_sinh": student.ma_hoc_sinh,
+                "ho_va_ten": student.ho_va_ten,
+                "email": email
+            })
+    
+    return analysis

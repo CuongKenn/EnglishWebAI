@@ -349,7 +349,7 @@ const Statistics = () => {
           ))}
         </div>
       </Card>
-      {toast.show && (
+      {toast.show && toast.message && (
         <Toast
           message={toast.message}
           type={toast.type}

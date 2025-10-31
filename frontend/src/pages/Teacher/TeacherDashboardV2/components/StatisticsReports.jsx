@@ -122,7 +122,7 @@ const StatisticsReports = () => {
             <div className="pie-visual">
               <svg viewBox="0 0 100 100" className="pie-svg">
                 <circle cx="50" cy="50" r="40" fill="#10b981" />
-                <circle cx="50" cy="50" r="40" fill="#3b82f6" 
+                <circle cx="50" cy="50" r="40"
                   strokeDasharray="75 25" 
                   strokeDashoffset="0"
                   stroke="#3b82f6"
@@ -130,7 +130,7 @@ const StatisticsReports = () => {
                   fill="none"
                   transform="rotate(-90 50 50)"
                 />
-                <circle cx="50" cy="50" r="40" fill="#f59e0b" 
+                <circle cx="50" cy="50" r="40"
                   strokeDasharray="24 76" 
                   strokeDashoffset="-75"
                   stroke="#f59e0b"
@@ -138,7 +138,7 @@ const StatisticsReports = () => {
                   fill="none"
                   transform="rotate(-90 50 50)"
                 />
-                <circle cx="50" cy="50" r="40" fill="#ef4444" 
+                <circle cx="50" cy="50" r="40"
                   strokeDasharray="11 89" 
                   strokeDashoffset="-99"
                   stroke="#ef4444"

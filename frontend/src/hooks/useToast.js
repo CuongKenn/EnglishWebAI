@@ -13,19 +13,25 @@ const useToast = () => {
   });
 
   const showToast = (message, type = 'info', duration = 5000) => {
+    // Không hiển thị nếu message rỗng hoặc không có
+    if (!message || message.trim() === '') {
+      return;
+    }
     setToast({ 
       show: true, 
-      message, 
+      message: message.trim(), 
       type, 
       duration 
     });
   };
 
   const hideToast = () => {
-    setToast(prev => ({ 
-      ...prev, 
-      show: false 
-    }));
+    setToast({
+      show: false,
+      message: '',
+      type: 'info',
+      duration: 5000
+    });
   };
 
   const showSuccess = (message, duration = 5000) => showToast(message, 'success', duration);

@@ -365,7 +365,7 @@ const ExerciseDetailModal = memo(function ExerciseDetailModal({ exercise, onClos
           </div>
         </div>
       </div>
-      {toast.show && (
+      {toast.show && toast.message && (
         <Toast
           message={toast.message}
           type={toast.type}

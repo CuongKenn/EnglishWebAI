@@ -477,7 +477,7 @@ export default function ExportReports() {
           </ul>
         </div>
       </div>
-      {toast.show && (
+      {toast.show && toast.message && (
         <Toast
           message={toast.message}
           type={toast.type}

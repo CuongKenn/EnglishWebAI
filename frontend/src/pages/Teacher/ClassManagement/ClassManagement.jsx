@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './ClassManagement.css';
 import apiClient from '../../../services/api';
+import AddStudentsModal from '../../../components/AddStudentsModal';
 
 const ClassManagement = () => {
   const [classes, setClasses] = useState([]);
@@ -13,6 +14,7 @@ const ClassManagement = () => {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterSubject, setFilterSubject] = useState('all');
+  const [showAddStudents, setShowAddStudents] = useState(false);
   
   // Materials state
   const [materials, setMaterials] = useState([]);
@@ -278,7 +280,19 @@ const ClassManagement = () => {
             <div className="modal-body">
               {modalType === 'students' && (
                 <div className="students-list">
-                  <table className="data-table">
+                  <div className="section-header">
+                    <h3>Danh sách học sinh ({students.length})</h3>
+                    <button 
+                      className="btn-primary"
+                      onClick={() => {
+                        setShowModal(false);
+                        setShowAddStudents(true);
+                      }}
+                    >
+                      ➕ Thêm học sinh
+                    </button>
+                  </div>
+                  <table className="data-table"> 
                     <thead>
                       <tr>
                         <th>STT</th>
@@ -502,6 +516,19 @@ const ClassManagement = () => {
           </div>
         </div>
       )}
+
+      {/* Add Students Modal */}
+      <AddStudentsModal
+        isOpen={showAddStudents}
+        onClose={() => setShowAddStudents(false)}
+        classId={selectedClass?.id}
+        className={selectedClass?.name}
+        onSuccess={() => {
+          if (selectedClass) {
+            loadStudents(selectedClass.id);
+          }
+        }}
+      />
     </div>
   );
 };

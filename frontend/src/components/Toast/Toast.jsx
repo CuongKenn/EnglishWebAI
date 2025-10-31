@@ -1,16 +1,28 @@
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import './Toast.css';
 
 const Toast = ({ message, type = 'info', duration = 5000, onClose }) => {
+  // Không hiển thị nếu không có message
+  if (!message || message.trim() === '') {
+    return null;
+  }
+
+  // Đảm bảo onClose luôn là function
+  const handleClose = React.useCallback(() => {
+    if (onClose && typeof onClose === 'function') {
+      onClose();
+    }
+  }, [onClose]);
+
   useEffect(() => {
     if (duration > 0) {
       const timer = setTimeout(() => {
-        onClose();
+        handleClose();
       }, duration);
 
       return () => clearTimeout(timer);
     }
-  }, [duration, onClose]);
+  }, [duration, handleClose]);
 
   const getIcon = () => {
     switch (type) {
@@ -54,7 +66,12 @@ const Toast = ({ message, type = 'info', duration = 5000, onClose }) => {
       <div className="toast-content">
         <p className="toast-message">{message}</p>
       </div>
-      <button className="toast-close" onClick={onClose} aria-label="Close notification">
+      <button 
+        className="toast-close" 
+        onClick={handleClose} 
+        aria-label="Close notification"
+        type="button"
+      >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <line x1="18" y1="6" x2="6" y2="18"></line>
           <line x1="6" y1="6" x2="18" y2="18"></line>
