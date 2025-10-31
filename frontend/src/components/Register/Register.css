@@ -508,7 +508,8 @@
 /* Sign Up Button */
 .sign-up-btn {
   width: 100%;
-  padding: 1rem;
+  padding: 0;
+  height: 54px;
   background: linear-gradient(90deg, #8b5cf6 0%, #3b82f6 100%);
   border: none;
   border-radius: 12px;
@@ -521,26 +522,33 @@
   transition: all 0.3s ease;
   box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
   margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.sign-up-btn:hover {
+.btn-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 100%;
+}
+
+.sign-up-btn:hover:not(:disabled) {
   transform: translateY(-3px);
   box-shadow: 0 12px 35px rgba(139, 92, 246, 0.5);
 }
 
-.sign-up-btn:active {
+.sign-up-btn:active:not(:disabled) {
   transform: translateY(-1px);
 }
 
 /* Loading state */
 .sign-up-btn.loading {
-  opacity: 0.9;
   cursor: default;
-  transform: none !important;
-}
-
-.sign-up-btn:disabled {
-  filter: grayscale(10%);
+  pointer-events: none;
+  opacity: 0.95;
 }
 
 .btn-glow {
@@ -557,17 +565,15 @@
   left: 100%;
 }
 
-/* Small spinner inside button */
-.btn-spinner {
-  display: inline-block;
-  width: 18px;
-  height: 18px;
-  margin-right: 8px;
-  border: 2px solid rgba(255, 255, 255, 0.5);
+/* Loader spinner */
+.btn-loader {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
   border-top-color: #ffffff;
   border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  vertical-align: middle;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
 }
 
 @keyframes spin {

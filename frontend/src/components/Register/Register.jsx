@@ -404,18 +404,20 @@ const Register = () => {
                 type="submit"
                 className={`sign-up-btn ${isRegistering ? 'loading' : ''}`}
                 disabled={isRegistering}
+                aria-busy={isRegistering}
+                aria-live="polite"
               >
-                {isRegistering ? (
-                  <>
-                    <span className="btn-spinner" aria-hidden="true"></span>
-                    <span>Processing...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Create Account</span>
-                    <div className="btn-glow"></div>
-                  </>
-                )}
+                <span className="btn-content">
+                  {isRegistering ? (
+                    <>
+                      <span className="btn-loader"></span>
+                      <span>Đang xử lý...</span>
+                    </>
+                  ) : (
+                    'Create Account'
+                  )}
+                </span>
+                {!isRegistering && <div className="btn-glow"></div>}
               </button>
             </form>
 
