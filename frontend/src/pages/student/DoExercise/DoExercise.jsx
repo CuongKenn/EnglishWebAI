@@ -195,11 +195,40 @@ export default function DoExercise() {
       if (!exercise.skill_type && exercise.content?.type === 'comprehensive_test') {
         // Map writing answers
         const mergedAnswers = { ...(answers || {}) };
+        
+        // Add writing_main answer
+        if (writingAnswers['writing_main']) {
+          mergedAnswers['writing_main'] = writingAnswers['writing_main'];
+        }
+        
+        // Add other writing answers
         Object.entries(writingAnswers).forEach(([qid, txt]) => {
-          mergedAnswers[qid] = txt;
+          if (qid !== 'writing_main') {
+            mergedAnswers[qid] = txt;
+          }
         });
-        // Use first speaking answer as content_url (backend supports one file). Also store marker in answers map
-        const speakingQIds = Object.keys(speakingAnswers).filter((id) => speakingAnswers[id]?.blob);
+        
+        // Handle speaking_main audio
+        if (speakingAnswers['speaking_main']?.blob) {
+          try {
+            const audioData = speakingAnswers['speaking_main'];
+            const extension = getAudioExtension(audioData.mimeType);
+            const audioFile = new File(
+              [audioData.blob],
+              `speaking_main_${Date.now()}.${extension}`,
+              { type: audioData.mimeType || 'audio/webm' }
+            );
+            formData.append('audio_file', audioFile);
+            mergedAnswers['speaking_main'] = '[speaking-audio-attached]';
+          } catch (e) {
+            console.warn('Failed to attach speaking_main audio:', e);
+          }
+        }
+        
+        // Handle other speaking answers
+        const speakingQIds = Object.keys(speakingAnswers).filter(
+          (id) => id !== 'speaking_main' && speakingAnswers[id]?.blob
+        );
         if (speakingQIds.length > 0) {
           const firstQId = speakingQIds[0];
           const audioData = speakingAnswers[firstQId];
@@ -216,6 +245,7 @@ export default function DoExercise() {
             console.warn('Failed to attach speaking audio:', e);
           }
         }
+        
         if (Object.keys(mergedAnswers).length > 0) {
           // Replace answers payload
           formData.set('answers', JSON.stringify(mergedAnswers));
@@ -566,152 +596,403 @@ export default function DoExercise() {
     // COMPREHENSIVE TEST (Mid-term/Final)
   if (!skill_type && exerciseContent.type === 'comprehensive_test') {
       console.log('[COMPREHENSIVE TEST] exerciseContent:', exerciseContent);
-      const questions = exerciseContent.questions || [];
-      console.log('[COMPREHENSIVE TEST] questions:', questions);
+      
+      const listening = exerciseContent.listening || {};
+      const reading = exerciseContent.reading || {};
+      const writing = exerciseContent.writing || {};
+      const speaking = exerciseContent.speaking || {};
+      
+      console.log('[COMPREHENSIVE TEST] sections:', { listening, reading, writing, speaking });
+      
+      // Get questions from each section
+      const listeningQuestions = listening.questions || [];
+      const readingQuestions = reading.questions || [];
       
       return (
         <div className="comprehensive-test-exercise">
-          <div className="test-instructions">
-            <h3>📝 Đề thi</h3>
-            <p>Trả lời tất cả {questions.length} câu hỏi dưới đây</p>
+          <div className="test-header">
+            <h3>📝 Đề thi {exercise.type === 'midterm' ? 'Giữa kỳ' : 'Cuối kỳ'}</h3>
+            <p className="test-subtitle">Tổng điểm: 10 điểm (4 phần x 2.5 điểm)</p>
           </div>
           
-          {questions.map((q, idx) => (
-            <div key={q.id} className="question-card">
-              <div className="question-header">
-                <span className="question-number">Câu {idx + 1}</span>
-                <span className="question-points">{q.points || 1} điểm</span>
+          {/* PART 1: LISTENING (2.5 điểm) */}
+          <div className="test-section">
+            <div className="section-header">
+              <h4>🎧 PHẦN 1: NGHE HIỂU (2.5 điểm)</h4>
+            </div>
+            
+            {/* Audio Player */}
+            {listening.audio_url && (
+              <div className="audio-section">
+                <div className="audio-player-custom">
+                  <Volume2 size={32} />
+                  <audio controls src={listening.audio_url} className="audio-element">
+                    Your browser does not support audio.
+                  </audio>
+                </div>
+                {listening.show_transcript && listening.transcript && (
+                  <details className="transcript-section">
+                    <summary>📄 Transcript</summary>
+                    <p style={{ whiteSpace: 'pre-wrap' }}>{listening.transcript}</p>
+                  </details>
+                )}
               </div>
-              <div className="question-text">{q.question}</div>
-              
-              {q.type === 'multiple_choice' && (
-                <div className="options-list">
-                  {q.options && q.options.map((opt, optIdx) => (
-                    <label key={optIdx} className="option-item">
-                      <input
-                        type="radio"
-                        name={`question-${q.id}`}
-                        value={String.fromCharCode(65 + optIdx)}
-                        checked={answers[q.id] === String.fromCharCode(65 + optIdx)}
-                        onChange={(e) => handleAnswerChange(q.id, e.target.value)}
-                      />
-                      <span>{String.fromCharCode(65 + optIdx)}. {opt}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-              
-              {q.type === 'fill_blank' && (
-                <input
-                  type="text"
-                  className="answer-input"
-                  placeholder="Nhập câu trả lời..."
-                  value={answers[q.id] || ''}
-                  onChange={(e) => handleAnswerChange(q.id, e.target.value)}
-                />
-              )}
-              
-              {q.type === 'true_false' && (
-                <div className="true-false-options">
-                  <label className="option-item">
-                    <input
-                      type="radio"
-                      name={`question-${q.id}`}
-                      value="True"
-                      checked={answers[q.id] === 'True'}
-                      onChange={(e) => handleAnswerChange(q.id, e.target.value)}
-                    />
-                    <span>✓ Đúng</span>
-                  </label>
-                  <label className="option-item">
-                    <input
-                      type="radio"
-                      name={`question-${q.id}`}
-                      value="False"
-                      checked={answers[q.id] === 'False'}
-                      onChange={(e) => handleAnswerChange(q.id, e.target.value)}
-                    />
-                    <span>✗ Sai</span>
-                  </label>
-                </div>
-              )}
-              
-              {q.type === 'short_answer' && (
-                <textarea
-                  className="answer-textarea"
-                  placeholder="Nhập câu trả lời của bạn..."
-                  rows="4"
-                  value={answers[q.id] || ''}
-                  onChange={(e) => handleAnswerChange(q.id, e.target.value)}
-                />
-              )}
+            )}
+            
+            {/* Listening Questions */}
+            {listeningQuestions.length > 0 && (
+              <div className="questions-container">
+                <p className="section-instruction">Nghe đoạn audio và trả lời các câu hỏi sau:</p>
+                {listeningQuestions.map((q, idx) => (
+                  <div key={q.id} className="question-card">
+                    <div className="question-header">
+                      <span className="question-number">Câu {idx + 1}</span>
+                      <span className="question-points">{q.points || 0.5} điểm</span>
+                    </div>
+                    <p className="question-text">{q.question}</p>
 
-              {/* Speaking question in comprehensive test */}
-              {q.type === 'speaking' && (
-                <div className="ct-speaking">
-                  {!isRecording && !speakingAnswers[q.id] && (
-                    <button className="btn-start-recording" onClick={() => startRecording(q.id)}>
-                      <Mic size={18} /> Bắt đầu ghi âm
+                    {q.type === 'multiple_choice' && (
+                      <div className="options-list">
+                        {q.options && q.options.map((opt, optIdx) => {
+                          const optionLetter = opt.match(/^[A-D]\./)?.[0] || `${String.fromCharCode(65 + optIdx)}.`;
+                          const optionText = opt.replace(/^[A-D]\.\s*/, '');
+                          return (
+                            <label key={optIdx} className="option-label">
+                              <input
+                                type="radio"
+                                name={`q${q.id}`}
+                                value={optionLetter[0]}
+                                checked={answers[q.id] === optionLetter[0]}
+                                onChange={(e) => handleAnswerChange(q.id, e.target.value)}
+                              />
+                              <span>{optionLetter} {optionText}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
+                    
+                    {q.type === 'fill_blank' && (
+                      <div className="fill-blank-input">
+                        <input
+                          type="text"
+                          placeholder="Nhập câu trả lời..."
+                          value={answers[q.id] || ''}
+                          onChange={(e) => handleAnswerChange(q.id, e.target.value)}
+                          className="text-input"
+                        />
+                      </div>
+                    )}
+                    
+                    {q.type === 'true_false' && (
+                      <div className="options-list">
+                        <label className="option-label">
+                          <input
+                            type="radio"
+                            name={`q${q.id}`}
+                            value="True"
+                            checked={answers[q.id] === 'True'}
+                            onChange={(e) => handleAnswerChange(q.id, e.target.value)}
+                          />
+                          <span>✓ True (Đúng)</span>
+                        </label>
+                        <label className="option-label">
+                          <input
+                            type="radio"
+                            name={`q${q.id}`}
+                            value="False"
+                            checked={answers[q.id] === 'False'}
+                            onChange={(e) => handleAnswerChange(q.id, e.target.value)}
+                          />
+                          <span>✗ False (Sai)</span>
+                        </label>
+                      </div>
+                    )}
+                    
+                    {q.type === 'matching' && q.pairs && (
+                      <div className="matching-container">
+                        <p className="matching-instruction">Ghép các cặp sau cho đúng:</p>
+                        {q.pairs.map((pair, pairIdx) => (
+                          <div key={pairIdx} className="matching-pair">
+                            <div className="match-left">{pair.left}</div>
+                            <div className="match-arrow">→</div>
+                            <select
+                              className="match-select"
+                              value={answers[q.id]?.[pairIdx] || ''}
+                              onChange={(e) => {
+                                const newMatching = answers[q.id] || {};
+                                newMatching[pairIdx] = e.target.value;
+                                handleAnswerChange(q.id, { ...newMatching });
+                              }}
+                            >
+                              <option value="">-- Chọn --</option>
+                              {q.pairs.map((p, i) => (
+                                <option key={i} value={p.right}>{p.right}</option>
+                              ))}
+                            </select>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          
+          {/* PART 2: READING (2.5 điểm) */}
+          <div className="test-section">
+            <div className="section-header">
+              <h4>📖 PHẦN 2: ĐỌC HIỂU (2.5 điểm)</h4>
+            </div>
+            
+            {/* Reading Passage */}
+            {reading.passage && (
+              <div className="reading-passage">
+                <div className="passage-content">
+                  <p style={{ whiteSpace: 'pre-wrap' }}>{reading.passage}</p>
+                </div>
+              </div>
+            )}
+            
+            {/* Reading Questions */}
+            {readingQuestions.length > 0 && (
+              <div className="questions-container">
+                <p className="section-instruction">Đọc đoạn văn trên và trả lời các câu hỏi sau:</p>
+                {readingQuestions.map((q, idx) => (
+                  <div key={q.id} className="question-card">
+                    <div className="question-header">
+                      <span className="question-number">Câu {idx + 1}</span>
+                      <span className="question-points">{q.points || 0.5} điểm</span>
+                    </div>
+                    <p className="question-text">{q.question}</p>
+
+                    {q.type === 'multiple_choice' && (
+                      <div className="options-list">
+                        {q.options && q.options.map((opt, optIdx) => {
+                          const optionLetter = opt.match(/^[A-D]\./)?.[0] || `${String.fromCharCode(65 + optIdx)}.`;
+                          const optionText = opt.replace(/^[A-D]\.\s*/, '');
+                          return (
+                            <label key={optIdx} className="option-label">
+                              <input
+                                type="radio"
+                                name={`q${q.id}`}
+                                value={optionLetter[0]}
+                                checked={answers[q.id] === optionLetter[0]}
+                                onChange={(e) => handleAnswerChange(q.id, e.target.value)}
+                              />
+                              <span>{optionLetter} {optionText}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
+                    
+                    {q.type === 'fill_blank' && (
+                      <div className="fill-blank-input">
+                        <input
+                          type="text"
+                          placeholder="Nhập câu trả lời..."
+                          value={answers[q.id] || ''}
+                          onChange={(e) => handleAnswerChange(q.id, e.target.value)}
+                          className="text-input"
+                        />
+                      </div>
+                    )}
+                    
+                    {q.type === 'true_false' && (
+                      <div className="options-list">
+                        <label className="option-label">
+                          <input
+                            type="radio"
+                            name={`q${q.id}`}
+                            value="True"
+                            checked={answers[q.id] === 'True'}
+                            onChange={(e) => handleAnswerChange(q.id, e.target.value)}
+                          />
+                          <span>✓ True (Đúng)</span>
+                        </label>
+                        <label className="option-label">
+                          <input
+                            type="radio"
+                            name={`q${q.id}`}
+                            value="False"
+                            checked={answers[q.id] === 'False'}
+                            onChange={(e) => handleAnswerChange(q.id, e.target.value)}
+                          />
+                          <span>✗ False (Sai)</span>
+                        </label>
+                      </div>
+                    )}
+                    
+                    {q.type === 'matching' && q.pairs && (
+                      <div className="matching-container">
+                        <p className="matching-instruction">Ghép các cặp sau cho đúng:</p>
+                        {q.pairs.map((pair, pairIdx) => (
+                          <div key={pairIdx} className="matching-pair">
+                            <div className="match-left">{pair.left}</div>
+                            <div className="match-arrow">→</div>
+                            <select
+                              className="match-select"
+                              value={answers[q.id]?.[pairIdx] || ''}
+                              onChange={(e) => {
+                                const newMatching = answers[q.id] || {};
+                                newMatching[pairIdx] = e.target.value;
+                                handleAnswerChange(q.id, { ...newMatching });
+                              }}
+                            >
+                              <option value="">-- Chọn --</option>
+                              {q.pairs.map((p, i) => (
+                                <option key={i} value={p.right}>{p.right}</option>
+                              ))}
+                            </select>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          
+          {/* PART 3: WRITING (2.5 điểm) */}
+          <div className="test-section">
+            <div className="section-header">
+              <h4>✍️ PHẦN 3: VIẾT (2.5 điểm)</h4>
+            </div>
+            
+            <div className="writing-section">
+              {/* Writing Prompt */}
+              {writing.prompt && (
+                <div className="prompt-box">
+                  <h5>Đề bài:</h5>
+                  <p style={{ whiteSpace: 'pre-wrap' }}>{writing.prompt}</p>
+                </div>
+              )}
+              
+              {/* Writing Instructions */}
+              {writing.instructions && writing.instructions.length > 0 && (
+                <div className="instructions-box">
+                  <h5>Hướng dẫn:</h5>
+                  <ul>
+                    {writing.instructions.map((inst, i) => (
+                      <li key={i}>{inst}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              
+              {/* Writing Word Count Info */}
+              {(writing.min_words || writing.max_words) && (
+                <p className="word-requirement">
+                  Yêu cầu: {writing.min_words || 0} - {writing.max_words || 0} từ
+                </p>
+              )}
+              
+              {/* Writing Textarea */}
+              <textarea
+                className="writing-textarea"
+                rows={12}
+                placeholder="Nhập bài viết của bạn..."
+                value={writingAnswers['writing_main'] || ''}
+                onChange={(e) => {
+                  const txt = e.target.value;
+                  setWritingAnswers(prev => ({ ...prev, writing_main: txt }));
+                  const words = txt.trim().split(/\s+/).filter(Boolean);
+                  setWritingCounts(prev => ({ ...prev, writing_main: words.length }));
+                }}
+              />
+              <div className="word-counter">
+                Số từ hiện tại: {writingCounts['writing_main'] || 0}
+              </div>
+            </div>
+          </div>
+          
+          {/* PART 4: SPEAKING (2.5 điểm) */}
+          <div className="test-section">
+            <div className="section-header">
+              <h4>🗣️ PHẦN 4: NÓI (2.5 điểm)</h4>
+            </div>
+            
+            <div className="speaking-section">
+              {/* Speaking Prompt */}
+              {speaking.prompt && (
+                <div className="prompt-box">
+                  <h5>Đề bài:</h5>
+                  <p style={{ whiteSpace: 'pre-wrap' }}>{speaking.prompt}</p>
+                </div>
+              )}
+              
+              {/* Speaking Instructions */}
+              {speaking.instructions && speaking.instructions.length > 0 && (
+                <div className="instructions-box">
+                  <h5>Hướng dẫn:</h5>
+                  <ul>
+                    {speaking.instructions.map((inst, i) => (
+                      <li key={i}>{inst}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              
+              {/* Speaking Time Info */}
+              {(speaking.prep_time || speaking.speak_time) && (
+                <p className="time-info">
+                  ⏱️ Thời gian chuẩn bị: {speaking.prep_time || 60}s | 
+                  Thời gian nói: {speaking.speak_time || 120}s
+                </p>
+              )}
+              
+              {/* Recording Area */}
+              <div className="recording-area">
+                {!isRecording && !speakingAnswers['speaking_main'] && (
+                  <button className="btn-start-recording" onClick={() => startRecording('speaking_main')}>
+                    <Mic size={24} />
+                    Bắt đầu ghi âm
+                  </button>
+                )}
+
+                {isRecording && activeSpeakingQ === 'speaking_main' && (
+                  <div className="recording-active">
+                    <div className="pulse-dot"></div>
+                    <p>Đang ghi âm...</p>
+                    <button className="btn-stop-recording" onClick={stopRecording}>
+                      <Pause size={24} />
+                      Dừng
                     </button>
-                  )}
+                  </div>
+                )}
 
-                  {isRecording && activeSpeakingQ === q.id && (
-                    <div className="recording-active">
-                      <div className="pulse-dot"></div>
-                      <p>Đang ghi âm...</p>
-                      <button className="btn-stop-recording" onClick={stopRecording}>
-                        <Pause size={18} /> Dừng
+                {speakingAnswers['speaking_main']?.url && (
+                  <div className="recorded-section">
+                    <audio controls src={speakingAnswers['speaking_main'].url} className="recorded-audio" />
+                    <div className="recorded-actions">
+                      <button className="btn-re-record" onClick={() => reRecord('speaking_main')}>
+                        <RotateCcw size={18} />
+                        Ghi lại
                       </button>
                     </div>
-                  )}
-
-                  {speakingAnswers[q.id]?.url && (
-                    <div className="recorded-section">
-                      <audio controls src={speakingAnswers[q.id].url} />
-                      <div className="recorded-actions">
-                        <button className="btn-re-record" onClick={() => reRecord(q.id)}>
-                          <RotateCcw size={16} /> Ghi lại
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {recordingError && (
-                    <p className="recording-error-message">{recordingError}</p>
-                  )}
-
-                  <div className="upload-fallback">
-                    <span>Hoặc tải file âm thanh:</span>
-                    <input
-                      type="file"
-                      accept="audio/*"
-                      ref={(el) => { questionFileInputRefs.current[q.id] = el; }}
-                      onChange={(e) => handleAudioFileSelect(e, q.id)}
-                    />
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Writing question in comprehensive test */}
-              {q.type === 'writing' && (
-                <div className="ct-writing">
-                  <textarea
-                    className="answer-textarea"
-                    rows={8}
-                    placeholder="Nhập bài viết của bạn..."
-                    value={writingAnswers[q.id] || ''}
-                    onChange={(e) => {
-                      const txt = e.target.value;
-                      setWritingAnswers(prev => ({ ...prev, [q.id]: txt }));
-                      const words = txt.trim().split(/\s+/).filter(Boolean);
-                      setWritingCounts(prev => ({ ...prev, [q.id]: words.length }));
-                    }}
+                {recordingError && (
+                  <p className="recording-error-message">{recordingError}</p>
+                )}
+                
+                <div className="upload-fallback">
+                  <span>Hoặc tải file âm thanh:</span>
+                  <input
+                    type="file"
+                    accept="audio/*"
+                    ref={(el) => { questionFileInputRefs.current['speaking_main'] = el; }}
+                    onChange={(e) => handleAudioFileSelect(e, 'speaking_main')}
+                    style={{ display: 'block', marginTop: '8px' }}
                   />
-                  <div className="word-counter">Số từ: {writingCounts[q.id] || 0}</div>
                 </div>
-              )}
+              </div>
             </div>
-          ))}
+          </div>
         </div>
       );
     }

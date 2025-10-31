@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, or_, and_
 from typing import List, Optional
 from datetime import datetime
+import os
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.models.user import User, UserRole
@@ -106,13 +107,74 @@ class ExerciseWithStatsResponse(BaseModel):
 # Helper function for auto-grading
 def _auto_grade_submission(submission: Submission, exercise: Exercise, db: Session):
     """
-    Tự động chấm điểm:
-    - Trắc nghiệm (multiple_choice, true_false, fill_blank): Chấm ngay
-    - Tự luận (short_answer): Đợi teacher
-    - Speaking: Azure Speech API (chấm tự động, teacher có thể confirm)
+    Tự động chấm điểm using AI Grading Service:
+    - Comprehensive test: Full AI grading (all 4 skills)
+    - Trắc nghiệm (multiple_choice, true_false, fill_blank): AI semantic checking
     - Writing: ChatGPT AI (chấm tự động, teacher có thể confirm)
+    - Speaking: Azure Speech + ChatGPT (chấm tự động, teacher có thể confirm)
     """
+    import asyncio
+    from app.services.ai_grading_service import AIGradingService
+    
     skill_type = exercise.skill_type
+    content = exercise.content or {}
+    
+    # Check if comprehensive test
+    is_comprehensive = (not skill_type and content.get('type') == 'comprehensive_test')
+    
+    if is_comprehensive:
+        print(f"[AUTO-GRADE] Comprehensive test detected for submission {submission.id}")
+        
+        try:
+            # Initialize AI grading service
+            grading_service = AIGradingService()
+            
+            # Get audio file path if exists
+            audio_path = None
+            if submission.content_url:
+                audio_path = submission.content_url.replace('/media/', './media/')
+                if not os.path.exists(audio_path):
+                    audio_path = None
+            
+            # Run async grading
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            grading_results = loop.run_until_complete(
+                grading_service.grade_comprehensive_submission(
+                    content,
+                    submission.answers or {},
+                    audio_path
+                )
+            )
+            loop.close()
+            
+            # Store detailed results
+            submission.rubrics_scores = grading_results
+            submission.ai_score = grading_results.get("total_score", 0)
+            submission.score = grading_results.get("total_score", 0)
+            
+            # Generate feedback summary
+            feedback_parts = []
+            feedback_parts.append(f"🎧 Listening: {grading_results['listening']['total_points']:.1f}/2.5đ")
+            feedback_parts.append(f"📖 Reading: {grading_results['reading']['total_points']:.1f}/2.5đ")
+            feedback_parts.append(f"✍️ Writing: {grading_results['writing']['points_earned']:.1f}/2.5đ")
+            feedback_parts.append(f"🗣️ Speaking: {grading_results['speaking']['points_earned']:.1f}/2.5đ")
+            
+            submission.ai_feedback = "\n".join(feedback_parts)
+            submission.feedback = f"AI chấm tự động: {grading_results['total_score']:.1f}/10đ"
+            submission.status = "pending_review"  # Teacher can review and confirm
+            submission.ai_graded_at = datetime.utcnow()
+            
+            print(f"[AUTO-GRADE] Comprehensive test graded: {grading_results['total_score']}/10")
+            return
+            
+        except Exception as e:
+            print(f"[AUTO-GRADE] Comprehensive test error: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            submission.ai_feedback = f"Lỗi chấm bài: {str(e)}"
+            submission.status = "pending_review"
+            return
     
     # Helper to get a speaking reference text from exercise content
     def _extract_speaking_reference_text(content: Optional[dict]) -> str:
@@ -138,7 +200,6 @@ def _auto_grade_submission(submission: Submission, exercise: Exercise, db: Sessi
         from app.services.azure_speech_service import azure_speech_service
         
         # Get reference text from exercise content
-        content = exercise.content
         reference_text = _extract_speaking_reference_text(content)
         
         if reference_text and submission.content_url:
@@ -181,8 +242,7 @@ def _auto_grade_submission(submission: Submission, exercise: Exercise, db: Sessi
         from app.services.openai_service import openai_service
         
         # Get writing prompt
-        content = exercise.content
-        prompt = content.get('prompt', '') if content else ''
+        prompt = content.get('prompt', '')
         
         try:
             # Grade writing (synchronous to avoid event loop conflicts)
@@ -216,11 +276,6 @@ def _auto_grade_submission(submission: Submission, exercise: Exercise, db: Sessi
     
     # Multiple choice questions (for comprehensive tests, reading, listening)
     if not submission.answers:
-        return
-    
-    # Lấy nội dung bài tập
-    content = exercise.content
-    if not content or not isinstance(content, dict):
         return
     
     # Lấy danh sách câu hỏi
@@ -277,22 +332,101 @@ def _auto_grade_submission(submission: Submission, exercise: Exercise, db: Sessi
             }
         
         elif q_type == 'fill_blank':
-            # So sánh không phân biệt hoa thường và khoảng trắng
-            student_ans_normalized = str(student_answer).strip().lower()
-            correct_ans_normalized = str(correct_answer).strip().lower()
-            is_correct = (student_ans_normalized == correct_ans_normalized)
-            earned_points = q_points if is_correct else 0.0
-            total_score += earned_points
-            auto_graded_count += 1
-            
-            question_results[q_id] = {
-                'type': q_type,
-                'points': q_points,
-                'earned': earned_points,
-                'correct': is_correct,
-                'student_answer': student_answer,
-                'correct_answer': correct_answer
-            }
+            # Use AI for semantic similarity checking (not just exact match)
+            try:
+                from app.services.ai_grading_service import AIGradingService
+                grading_service = AIGradingService()
+                
+                import asyncio
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                fill_result = loop.run_until_complete(
+                    grading_service.grade_fill_blank(
+                        student_answer=str(student_answer),
+                        correct_answer=str(correct_answer),
+                        max_points=q_points
+                    )
+                )
+                loop.close()
+                
+                earned_points = fill_result['points_earned']
+                is_correct = fill_result['is_correct']
+                total_score += earned_points
+                auto_graded_count += 1
+                
+                question_results[q_id] = {
+                    'type': q_type,
+                    'points': q_points,
+                    'earned': earned_points,
+                    'correct': is_correct,
+                    'student_answer': student_answer,
+                    'correct_answer': correct_answer,
+                    'ai_feedback': fill_result.get('feedback', ''),
+                    'semantic_match': fill_result.get('is_semantically_similar', False)
+                }
+            except Exception as e:
+                print(f"[AUTO-GRADE] Fill blank AI error: {str(e)}")
+                # Fallback to exact match
+                student_ans_normalized = str(student_answer).strip().lower()
+                correct_ans_normalized = str(correct_answer).strip().lower()
+                is_correct = (student_ans_normalized == correct_ans_normalized)
+                earned_points = q_points if is_correct else 0.0
+                total_score += earned_points
+                auto_graded_count += 1
+                
+                question_results[q_id] = {
+                    'type': q_type,
+                    'points': q_points,
+                    'earned': earned_points,
+                    'correct': is_correct,
+                    'student_answer': student_answer,
+                    'correct_answer': correct_answer
+                }
+        
+        elif q_type == 'matching':
+            # Matching questions - grade with AI for partial credit
+            try:
+                from app.services.ai_grading_service import AIGradingService
+                grading_service = AIGradingService()
+                
+                # Get pairs from question
+                pairs = q.get('pairs', [])
+                
+                import asyncio
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                matching_result = loop.run_until_complete(
+                    grading_service.grade_matching(
+                        student_pairs=student_answer,
+                        correct_pairs=pairs,
+                        max_points=q_points
+                    )
+                )
+                loop.close()
+                
+                earned_points = matching_result['points_earned']
+                total_score += earned_points
+                auto_graded_count += 1
+                
+                question_results[q_id] = {
+                    'type': q_type,
+                    'points': q_points,
+                    'earned': earned_points,
+                    'correct': matching_result['all_correct'],
+                    'student_answer': student_answer,
+                    'correct_answer': pairs,
+                    'correct_count': matching_result['correct_count'],
+                    'total_pairs': matching_result['total_pairs'],
+                    'partial_credit': matching_result.get('partial_credit_given', False)
+                }
+            except Exception as e:
+                print(f"[AUTO-GRADE] Matching question AI error: {str(e)}")
+                question_results[q_id] = {
+                    'type': q_type,
+                    'points': q_points,
+                    'status': 'error',
+                    'error': str(e)
+                }
     
     # Cập nhật submission
     if auto_graded_count > 0:
@@ -777,10 +911,18 @@ async def submit_exercise(
         
         return existing_submission
     
-    # Check if late
+    # Check if late - fix timezone comparison
+    from datetime import timezone
     status_value = "submitted"
-    if exercise.due_at and datetime.utcnow() > exercise.due_at:
-        status_value = "late"
+    if exercise.due_at:
+        now_utc = datetime.now(timezone.utc)
+        # Make sure due_at is timezone-aware
+        if exercise.due_at.tzinfo is None:
+            due_at_aware = exercise.due_at.replace(tzinfo=timezone.utc)
+        else:
+            due_at_aware = exercise.due_at
+        if now_utc > due_at_aware:
+            status_value = "late"
     
     # Create new submission
     submission = Submission(
@@ -1380,4 +1522,67 @@ async def ai_grade_submission(
         "submission_id": submission.id,
         "ai_score": submission.ai_score
     })
+
+
+# ==================== AI Generation Endpoint ====================
+class AIGenerationRequest(BaseModel):
+    test_type: str  # skill_exercise, test_15min, midterm, final
+    skill: Optional[str] = None  # listening, speaking, reading, writing
+    grade: str  # 1-12
+    semester: str  # 1 or 2
+    class_id: Optional[int] = None
+    title: Optional[str] = None
+
+
+@router.post("/generate-ai")
+async def generate_exercise_with_ai(
+    request: AIGenerationRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Generate exercise using AI based on Vietnam's 2018 Foreign Language Curriculum
+    For midterm/final exams, generates all 4 skills
+    """
+    from app.services.ai_exercise_generator import AIExerciseGenerator
+    
+    # Check if user is teacher
+    if current_user.role != UserRole.TEACHER:
+        raise HTTPException(status_code=403, detail="Chỉ giáo viên mới có thể sử dụng tính năng này")
+    
+    try:
+        generator = AIExerciseGenerator()
+        
+        # Generate exercise based on type
+        if request.test_type in ['midterm', 'final']:
+            # Generate full exam with all 4 skills
+            exercise_data = await generator.generate_full_exam(
+                test_type=request.test_type,
+                grade=request.grade,
+                semester=request.semester
+            )
+        else:
+            # Generate single skill exercise
+            if not request.skill:
+                raise HTTPException(status_code=400, detail="Vui lòng chọn kỹ năng")
+            
+            exercise_data = await generator.generate_skill_exercise(
+                skill=request.skill,
+                test_type=request.test_type,
+                grade=request.grade,
+                semester=request.semester
+            )
+        
+        return JSONResponse(content={
+            "success": True,
+            "message": "Đã sinh đề bằng AI thành công",
+            "exercise": exercise_data
+        })
+        
+    except Exception as e:
+        print(f"AI Generation Error: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Lỗi khi sinh đề bằng AI: {str(e)}"
+        )
 
