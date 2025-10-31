@@ -12,6 +12,13 @@ For AI/agent contribution guidelines, please read the project rules in [AI_RULES
 ### Added
 - Comprehensive changelog documentation for project tracking
  - Documentation: AI collaboration rules in [AI_RULES.md](./AI_RULES.md)
+ - Repository workflow: PR template and commit message linting (commitlint + husky commit-msg hook)
+
+### Changed
+- Frontend: Centralized API calls
+  - Parent-Teacher Communication now uses `parentService` instead of direct fetch
+  - Exam import modal now uses `classesAPI.getTeachingClasses()`
+- Cleanup: Removed unused `frontend/src/components/Register/Register.jsx.new` (hardcoded URL)
 
 ---
 
