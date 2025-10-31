@@ -1,6 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.orm import Session
 from typing import List
+from pathlib import Path
+import os
+import uuid
 from app.core.database import get_db
 from app.core.dependencies import get_current_active_user
 from app.schemas.user import User, UserUpdate, PasswordChange, LinkParentRequest, ParentStudentLink
@@ -26,6 +29,78 @@ async def update_current_user(
 ):
     """Update current user profile"""
     return UserService.update_user(db, current_user.id, user_update)
+
+@router.post("/me/upload-avatar")
+async def upload_avatar(
+    file: UploadFile = File(...),
+    current_user: UserModel = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Upload avatar image for current user"""
+    # Validate file type
+    allowed_types = {"image/jpeg", "image/png", "image/gif", "image/webp", "image/jpg"}
+    if not file.content_type or file.content_type.lower() not in allowed_types:
+        raise HTTPException(status_code=400, detail="Định dạng ảnh không hỗ trợ. Chỉ chấp nhận: JPG, PNG, GIF, WEBP")
+    
+    # Read and validate file size
+    content = await file.read()
+    max_bytes = 5 * 1024 * 1024  # 5MB
+    if len(content) > max_bytes:
+        raise HTTPException(status_code=400, detail="Kích thước ảnh vượt quá 5MB")
+    
+    # Create avatars directory
+    media_dir = Path("media") / "avatars"
+    media_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Delete old avatar file if exists
+    if current_user.avatar_url:
+        try:
+            # Extract filename from URL path (e.g., "/media/avatars/filename.jpg" -> "filename.jpg")
+            old_filename = current_user.avatar_url.split("/")[-1]
+            old_file_path = media_dir / old_filename
+            if old_file_path.exists() and old_file_path.is_file():
+                os.remove(old_file_path)
+                print(f"Deleted old avatar: {old_file_path}")
+        except Exception as e:
+            # Log but don't fail if old file deletion fails
+            print(f"Warning: Could not delete old avatar: {e}")
+    
+    # Generate unique filename
+    ext = os.path.splitext(file.filename or "")[1].lower()
+    if ext not in {".jpg", ".jpeg", ".png", ".gif", ".webp"}:
+        # Derive from content-type
+        ct_map = {
+            "image/jpeg": ".jpg",
+            "image/jpg": ".jpg",
+            "image/png": ".png",
+            "image/gif": ".gif",
+            "image/webp": ".webp",
+        }
+        ext = ct_map.get((file.content_type or "").lower(), ".jpg")
+    
+    filename = f"user_{current_user.id}_{uuid.uuid4().hex}{ext}"
+    file_path = media_dir / filename
+    
+    # Save file
+    try:
+        with open(file_path, "wb") as f:
+            f.write(content)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Không thể lưu file: {str(e)}")
+    
+    # Update user avatar_url in database
+    # Store relative path in database for portability
+    avatar_url = f"/media/avatars/{filename}"
+    user_update = UserUpdate(avatar_url=avatar_url)
+    updated_user = UserService.update_user(db, current_user.id, user_update)
+    
+    # For response, include both relative and potentially full URL
+    # Frontend can use relative path which works with backend's /media mount
+    return {
+        "message": "Avatar uploaded successfully",
+        "avatar_url": avatar_url,
+        "user": updated_user
+    }
 
 @router.post("/me/change-password")
 async def change_password(

@@ -30,7 +30,8 @@ async def login(
                 "email": user.email,
                 "full_name": user.full_name,
                 "role": display_role,  # Display role
-                "phone": user.phone
+                "phone": user.phone,
+                "avatar_url": user.avatar_url  # Include avatar_url
             }
         }
     except HTTPException as e:

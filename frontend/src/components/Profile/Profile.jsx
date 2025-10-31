@@ -5,6 +5,7 @@ import { linkParent, unlinkParent, getMyParents, verifyParentLink } from '../../
 import './Profile.css';
 import Toast from '../Toast/Toast';
 import useToast from '../../hooks/useToast';
+import AvatarCropModal from './AvatarCropModal';
 
 const Profile = () => {
   const { toast, showSuccess, showError, showWarning, hideToast } = useToast();
@@ -18,6 +19,10 @@ const Profile = () => {
   const [linkedParent, setLinkedParent] = useState(null);
   const [resendCooldown, setResendCooldown] = useState(0);
   const fileInputRef = useRef(null);
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [tempImageUrl, setTempImageUrl] = useState(null);
+  const [clickCount, setClickCount] = useState(0);
+  const clickTimerRef = useRef(null);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -105,14 +110,139 @@ const Profile = () => {
     fileInputRef.current?.click();
   };
 
-  const handleAvatarChange = (e) => {
+  const handleAvatarDoubleClick = () => {
+    const avatarUrl = editedUser.avatar || editedUser.avatar_url || user?.avatar_url;
+    if (avatarUrl) {
+      const fullUrl = avatarUrl.startsWith('data:') ? avatarUrl : getAvatarUrl(avatarUrl);
+      setTempImageUrl(fullUrl);
+      setShowCropModal(true);
+    }
+  };
+
+  const handleCropSave = async (croppedBlob) => {
+    setShowCropModal(false);
+    
+    try {
+      const formData = new FormData();
+      formData.append('file', croppedBlob, 'avatar.jpg');
+
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        throw new Error('Không tìm thấy token. Vui lòng đăng nhập lại.');
+      }
+
+      const BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_BACKEND_BASE_URL || 'http://localhost:8000';
+      const response = await fetch(`${BASE_URL}/api/v1/users/me/upload-avatar`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ detail: 'Upload failed' }));
+        throw new Error(error.detail || 'Upload failed');
+      }
+
+      const data = await response.json();
+      
+      // Update user data with new avatar URL
+      const updatedUser = { ...user, avatar_url: data.avatar_url };
+      setUser(updatedUser);
+      setEditedUser(updatedUser);
+      
+      // Update localStorage
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      
+      // Dispatch custom event to update navbar avatar
+      window.dispatchEvent(new Event('avatarUpdated'));
+      
+      // Reset file input if exists
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      
+      showSuccess('Cập nhật ảnh đại diện thành công!');
+    } catch (error) {
+      console.error('Error uploading cropped avatar:', error);
+      showError(error.message || 'Có lỗi xảy ra khi tải ảnh lên!');
+    }
+  };
+
+  const handleAvatarChange = async (e) => {
     const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setEditedUser({ ...editedUser, avatar: reader.result });
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      showError('Định dạng ảnh không hỗ trợ. Chỉ chấp nhận: JPG, PNG, GIF, WEBP');
+      e.target.value = ''; // Reset input
+      return;
+    }
+
+    // Validate file size (5MB)
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      showError('Kích thước ảnh vượt quá 5MB');
+      e.target.value = ''; // Reset input
+      return;
+    }
+
+    // Show preview immediately
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setEditedUser(prev => ({ ...prev, avatar: reader.result }));
+    };
+    reader.readAsDataURL(file);
+
+    // Upload to server
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        throw new Error('Không tìm thấy token. Vui lòng đăng nhập lại.');
+      }
+
+      const BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_BACKEND_BASE_URL || 'http://localhost:8000';
+      const response = await fetch(`${BASE_URL}/api/v1/users/me/upload-avatar`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ detail: 'Upload failed' }));
+        throw new Error(error.detail || 'Upload failed');
+      }
+
+      const data = await response.json();
+      
+      // Update user data with new avatar URL
+      const updatedUser = { ...user, avatar_url: data.avatar_url };
+      setUser(updatedUser);
+      setEditedUser(updatedUser);
+      
+      // Update localStorage
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      
+      // Dispatch custom event to update navbar avatar
+      window.dispatchEvent(new Event('avatarUpdated'));
+      
+      // Reset file input to allow selecting the same file again
+      e.target.value = '';
+      
+      showSuccess('Cập nhật ảnh đại diện thành công!');
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      showError(error.message || 'Có lỗi xảy ra khi tải ảnh lên!');
+      // Reset file input on error
+      e.target.value = '';
     }
   };
 
@@ -212,6 +342,17 @@ const Profile = () => {
       .join('')
       .toUpperCase()
       .slice(0, 2);
+  };
+
+  const getAvatarUrl = (avatarUrl) => {
+    if (!avatarUrl) return null;
+    // If already full URL or data URL, return as is
+    if (avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://') || avatarUrl.startsWith('data:')) {
+      return avatarUrl;
+    }
+    // Otherwise prepend backend base URL
+    const BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_BACKEND_BASE_URL || 'http://localhost:8000';
+    return `${BASE_URL}${avatarUrl}`;
   };
 
   if (loading) {
@@ -562,12 +703,25 @@ const Profile = () => {
             {/* Profile Header with Avatar - Right Side */}
             <div className="profile-header-section">
               <div className="profile-avatar-container">
-                <div className="profile-avatar-wrapper">
-                  {editedUser.avatar ? (
-                    <img src={editedUser.avatar} alt={user.username} className="profile-avatar-img" />
+                <div 
+                  className="profile-avatar-wrapper"
+                  onDoubleClick={handleAvatarDoubleClick}
+                  style={{ cursor: (editedUser.avatar_url || editedUser.avatar || user?.avatar_url) ? 'pointer' : 'default' }}
+                  title={(editedUser.avatar_url || editedUser.avatar || user?.avatar_url) ? 'Double click để chỉnh sửa ảnh' : ''}
+                >
+                  {(editedUser.avatar || editedUser.avatar_url || user?.avatar_url) ? (
+                    <img 
+                      src={
+                        editedUser.avatar 
+                        || (editedUser.avatar_url ? getAvatarUrl(editedUser.avatar_url) : null)
+                        || (user?.avatar_url ? getAvatarUrl(user.avatar_url) : null)
+                      } 
+                      alt={user?.full_name || user?.username || 'Avatar'} 
+                      className="profile-avatar-img" 
+                    />
                   ) : (
                     <div className="profile-avatar-placeholder">
-                      <span className="profile-avatar-initials">{getInitials(user.username)}</span>
+                      <span className="profile-avatar-initials">{getInitials(user?.full_name || user?.username || 'U')}</span>
                     </div>
                   )}
                   {activeTab === 'settings' && (
@@ -583,7 +737,7 @@ const Profile = () => {
                     onChange={handleAvatarChange}
                   />
                 </div>
-                <h2 className="profile-display-name">{user.username}</h2>
+                <h2 className="profile-display-name">{user.full_name || user.username}</h2>
                 <span className="profile-role-badge">{getRoleDisplayName(displayRole)}</span>
               </div>
             </div>
@@ -597,6 +751,14 @@ const Profile = () => {
           type={toast.type}
           onClose={hideToast}
           duration={toast.duration}
+        />
+      )}
+
+      {showCropModal && tempImageUrl && (
+        <AvatarCropModal
+          imageUrl={tempImageUrl}
+          onSave={handleCropSave}
+          onClose={() => setShowCropModal(false)}
         />
       )}
     </div>
