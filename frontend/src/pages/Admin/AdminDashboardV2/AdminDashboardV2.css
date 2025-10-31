@@ -6,7 +6,7 @@
   right: 0;
   bottom: 0;
   background-color: #f9fafb;
-  overflow: hidden;
+  overflow: visible;
 }
 
 /* Remove padding/margin from admin page containers */

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import { User, LogOut, UserPlus, BookOpen } from 'lucide-react';
 import authService from '../../services/authService';
 import './ProfileDropdown.css';
@@ -7,7 +8,9 @@ import './ProfileDropdown.css';
 const ProfileDropdown = ({ onLogout }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [user, setUser] = useState(null);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 });
   const dropdownRef = useRef(null);
+  const triggerRef = useRef(null);
 
   useEffect(() => {
     const userData = authService.getCurrentUser();
@@ -31,6 +34,13 @@ const ProfileDropdown = ({ onLogout }) => {
   }, [isOpen]);
 
   const toggleDropdown = () => {
+    if (!isOpen && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + 8,
+        right: window.innerWidth - rect.right
+      });
+    }
     setIsOpen(!isOpen);
   };
 
@@ -50,9 +60,70 @@ const ProfileDropdown = ({ onLogout }) => {
 
   if (!user) return null;
 
+  const dropdownMenu = isOpen && (
+    <div 
+      className="profile-dropdown-menu"
+      ref={dropdownRef}
+      style={{
+        position: 'fixed',
+        top: `${dropdownPosition.top}px`,
+        right: `${dropdownPosition.right}px`,
+        zIndex: 999999
+      }}
+    >
+      <div className="dropdown-header">
+        <div className="profile-avatar-large">
+          {user.avatar ? (
+            <img src={user.avatar} alt={user.username} />
+          ) : (
+            <span className="profile-initials-large">{getInitials(user.username)}</span>
+          )}
+        </div>
+        <div className="profile-info-dropdown">
+          <h4>{user.username}</h4>
+          <p>{user.email}</p>
+        </div>
+      </div>
+
+      <div className="dropdown-divider"></div>
+
+      <div className="dropdown-menu-items">
+        <Link to="/profile" className="dropdown-item" onClick={handleMenuClick}>
+          <User size={18} />
+          <span>Thông tin</span>
+        </Link>
+
+        {/* Chỉ hiển thị nút Học bạ cho học sinh (role 'user' hoặc 'student') */}
+        {(user.role === 'user' || user.role === 'student') && (
+          <Link to="/report-card" className="dropdown-item" onClick={handleMenuClick}>
+            <BookOpen size={18} />
+            <span>Học bạ</span>
+          </Link>
+        )}
+
+        <Link to="/invite-friends" className="dropdown-item" onClick={handleMenuClick}>
+          <UserPlus size={18} />
+          <span>Giới thiệu bạn bè</span>
+        </Link>
+      </div>
+
+      <div className="dropdown-divider"></div>
+
+      <div className="dropdown-menu-items">
+        <button className="dropdown-item logout-item" onClick={() => {
+          handleMenuClick();
+          onLogout();
+        }}>
+          <LogOut size={18} />
+          <span>Đăng xuất</span>
+        </button>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="profile-dropdown-container" ref={dropdownRef}>
-      <button className="profile-trigger" onClick={toggleDropdown}>
+    <div className="profile-dropdown-container">
+      <button className="profile-trigger" onClick={toggleDropdown} ref={triggerRef}>
         <div className="profile-avatar-small">
           {user.avatar ? (
             <img src={user.avatar} alt={user.username} />
@@ -78,57 +149,7 @@ const ProfileDropdown = ({ onLogout }) => {
         </svg>
       </button>
 
-      {isOpen && (
-        <div className="profile-dropdown-menu">
-          <div className="dropdown-header">
-            <div className="profile-avatar-large">
-              {user.avatar ? (
-                <img src={user.avatar} alt={user.username} />
-              ) : (
-                <span className="profile-initials-large">{getInitials(user.username)}</span>
-              )}
-            </div>
-            <div className="profile-info-dropdown">
-              <h4>{user.username}</h4>
-              <p>{user.email}</p>
-            </div>
-          </div>
-
-          <div className="dropdown-divider"></div>
-
-          <div className="dropdown-menu-items">
-            <Link to="/profile" className="dropdown-item" onClick={handleMenuClick}>
-              <User size={18} />
-              <span>Thông tin</span>
-            </Link>
-
-            {/* Chỉ hiển thị nút Học bạ cho học sinh (role 'user' hoặc 'student') */}
-            {(user.role === 'user' || user.role === 'student') && (
-              <Link to="/report-card" className="dropdown-item" onClick={handleMenuClick}>
-                <BookOpen size={18} />
-                <span>Học bạ</span>
-              </Link>
-            )}
-
-            <Link to="/invite-friends" className="dropdown-item" onClick={handleMenuClick}>
-              <UserPlus size={18} />
-              <span>Giới thiệu bạn bè</span>
-            </Link>
-          </div>
-
-          <div className="dropdown-divider"></div>
-
-          <div className="dropdown-menu-items">
-            <button className="dropdown-item logout-item" onClick={() => {
-              handleMenuClick();
-              onLogout();
-            }}>
-              <LogOut size={18} />
-              <span>Đăng xuất</span>
-            </button>
-          </div>
-        </div>
-      )}
+      {dropdownMenu && createPortal(dropdownMenu, document.body)}
     </div>
   );
 };
