@@ -183,6 +183,9 @@ const examService = {
    * @param {string} params.exam_type - 'midterm' or 'final'
    * @param {string} params.grade - Grade level (e.g., '10', '11', '12')
    * @param {string} params.semester - Semester ('1' or '2')
+   * @param {string} params.difficulty - Difficulty level: 'easy', 'medium', 'hard', 'mixed'
+   * @param {number} params.questions_per_skill - Number of questions per skill (default 10)
+   * @param {string} params.additional_notes - Extra instructions for AI
    * @returns {Promise<Object>} Generated exam content with 4 skills
    */
   generateFullExam: async (params) => {
@@ -191,6 +194,9 @@ const examService = {
         test_type: params.exam_type,
         grade: params.grade,
         semester: params.semester,
+        difficulty: params.difficulty || 'mixed',
+        questions_per_skill: params.questions_per_skill || 10,
+        additional_notes: params.additional_notes || '',
       });
       
       // Return the exercise data from response

@@ -1532,6 +1532,10 @@ class AIGenerationRequest(BaseModel):
     semester: str  # 1 or 2
     class_id: Optional[int] = None
     title: Optional[str] = None
+    # New parameters for better control
+    difficulty: Optional[str] = 'mixed'  # easy, medium, hard, mixed
+    questions_per_skill: Optional[int] = 10  # Number of questions per skill (default 10 for longer exams)
+    additional_notes: Optional[str] = None  # Extra instructions for AI
 
 
 @router.post("/generate-ai")
@@ -1559,7 +1563,10 @@ async def generate_exercise_with_ai(
             exercise_data = await generator.generate_full_exam(
                 test_type=request.test_type,
                 grade=request.grade,
-                semester=request.semester
+                semester=request.semester,
+                difficulty=request.difficulty or 'mixed',
+                questions_per_skill=request.questions_per_skill or 10,
+                additional_notes=request.additional_notes or None
             )
         else:
             # Generate single skill exercise
