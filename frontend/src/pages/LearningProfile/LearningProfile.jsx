@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import ConsistentSidebarLayout from '../../components/Layout/ConsistentSidebarLayout';
 import './LearningProfile.css';
-import { studentProfileAPI } from '../../services/api';
+import { studentProfileAPI, classesAPI, authAPI, apiV1 } from '../../services/api';
 
 const LearningProfile = () => {
   const navigate = useNavigate();
@@ -16,6 +16,10 @@ const LearningProfile = () => {
   const [isContentPushed, setIsContentPushed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // User data from localStorage
+  const [userData, setUserData] = useState(null);
+  const [userClasses, setUserClasses] = useState([]);
 
   const handleMenuItemClick = (itemId) => {
     setActiveMenuItem(itemId);
@@ -42,18 +46,14 @@ const LearningProfile = () => {
   // Thống kê theo kỹ năng chính (từ backend)
   const [skillStats, setSkillStats] = useState([]);
 
-  // Thành tích đạt được
-  const achievements = [
-    { id: 1, icon: '🔥', title: 'Streak Master', description: '7 ngày học liên tiếp', earned: true, date: '15/10/2024' },
-    { id: 2, icon: '🎯', title: 'Perfect Score', description: 'Đạt 100% trong 1 bài test', earned: true, date: '12/10/2024' },
-    { id: 3, icon: '⚡', title: 'Speed Learner', description: 'Hoàn thành 10 bài trong 1 ngày', earned: true, date: '08/10/2024' },
-    { id: 4, icon: '🏆', title: 'Champion', description: 'Top 3 trong tuần', earned: true, date: '20/10/2024' },
-    { id: 5, icon: '💎', title: 'Diamond', description: 'Đạt 500 cúp', earned: false, progress: 268, target: 500 },
-    { id: 6, icon: '🌟', title: 'Star Student', description: 'Hoàn thành 100 bài học', earned: false, progress: 78, target: 100 }
-  ];
-
   // Lịch sử học tập gần đây (từ backend)
   const [recentActivity, setRecentActivity] = useState([]);
+
+  // Thành tích đạt được - computed from real data
+  const [achievements, setAchievements] = useState([]);
+
+  // Recommendations based on real data
+  const [recommendations, setRecommendations] = useState([]);
 
   useEffect(() => {
     let mounted = true;
@@ -61,14 +61,29 @@ const LearningProfile = () => {
       try {
         setLoading(true);
         setError(null);
-        const [overview, skills, recent] = await Promise.all([
+
+        // Fetch all data in parallel
+        const [overview, skills, recent, classes, userProfile] = await Promise.all([
           studentProfileAPI.getOverview(),
           studentProfileAPI.getSkills(),
           studentProfileAPI.getRecent(),
+          classesAPI.getMyClasses().catch(() => []), // Don't fail if no classes
+          apiV1.get('/users/me').then(res => res.data).catch(() => authAPI.getCurrentUser()) // Fallback to localStorage
         ]);
+        
         if (!mounted) return;
+
+        // Set user data
+        if (userProfile) {
+          console.log('User profile loaded:', userProfile);
+          setUserData(userProfile);
+        }
+
+        // Set classes
+        setUserClasses(classes || []);
+        
         // totalTime may be null from backend
-        setOverallStats({
+        const stats = {
           totalTime: overview.totalTime || '-',
           totalCups: overview.totalCups || 0,
           totalTests: overview.totalTests || 0,
@@ -77,9 +92,17 @@ const LearningProfile = () => {
           level: overview.level || 0,
           rank: overview.rank || 'Bronze',
           completionRate: overview.completionRate || 0,
-        });
+        };
+        setOverallStats(stats);
         setSkillStats(Array.isArray(skills) ? skills : []);
         setRecentActivity(Array.isArray(recent) ? recent : []);
+
+        // Generate achievements based on real data
+        generateAchievements(stats, skills);
+
+        // Generate recommendations based on skills
+        generateRecommendations(skills, stats);
+
       } catch (e) {
         if (!mounted) return;
         setError(e?.detail || 'Không thể tải hồ sơ học tập');
@@ -91,12 +114,194 @@ const LearningProfile = () => {
     return () => { mounted = false; };
   }, []);
 
-  // Khuyến nghị
-  const recommendations = [
-    { id: 1, title: 'Luyện thêm Listening', reason: 'Điểm Listening cần cải thiện', priority: 'high' },
-    { id: 2, title: 'Ôn tập Grammar Units 10-12', reason: 'Củng cố kiến thức cũ', priority: 'medium' },
-    { id: 3, title: 'Thực hành Speaking hàng ngày', reason: 'Tăng điểm Speaking', priority: 'high' }
-  ];
+  // Generate achievements based on real stats
+  const generateAchievements = (stats, skills) => {
+    const achievementsList = [];
+    
+    // Streak achievement
+    if (stats.streak >= 7) {
+      achievementsList.push({
+        id: 1,
+        icon: '🔥',
+        title: 'Streak Master',
+        description: `${stats.streak} ngày học liên tiếp`,
+        earned: true,
+        date: new Date().toLocaleDateString('vi-VN')
+      });
+    } else if (stats.streak > 0) {
+      achievementsList.push({
+        id: 1,
+        icon: '🔥',
+        title: 'Streak Master',
+        description: '7 ngày học liên tiếp',
+        earned: false,
+        progress: stats.streak,
+        target: 7
+      });
+    }
+
+    // Perfect score achievement
+    if (stats.completionRate >= 90) {
+      achievementsList.push({
+        id: 2,
+        icon: '🎯',
+        title: 'Perfect Score',
+        description: 'Đạt điểm cao trong các bài test',
+        earned: true,
+        date: new Date().toLocaleDateString('vi-VN')
+      });
+    }
+
+    // Lessons completion achievement
+    if (stats.totalLessons >= 10) {
+      achievementsList.push({
+        id: 3,
+        icon: '⚡',
+        title: 'Fast Learner',
+        description: `Hoàn thành ${stats.totalLessons} bài học`,
+        earned: true,
+        date: new Date().toLocaleDateString('vi-VN')
+      });
+    }
+
+    // Rank achievement
+    if (stats.rank === 'Gold') {
+      achievementsList.push({
+        id: 4,
+        icon: '🏆',
+        title: 'Champion',
+        description: 'Đạt hạng Gold',
+        earned: true,
+        date: new Date().toLocaleDateString('vi-VN')
+      });
+    }
+
+    // Cups achievement
+    if (stats.totalCups >= 500) {
+      achievementsList.push({
+        id: 5,
+        icon: '💎',
+        title: 'Diamond',
+        description: 'Đạt 500 cúp',
+        earned: true,
+        date: new Date().toLocaleDateString('vi-VN')
+      });
+    } else if (stats.totalCups > 0) {
+      achievementsList.push({
+        id: 5,
+        icon: '💎',
+        title: 'Diamond',
+        description: 'Đạt 500 cúp',
+        earned: false,
+        progress: stats.totalCups,
+        target: 500
+      });
+    }
+
+    // Total lessons achievement
+    if (stats.totalLessons >= 100) {
+      achievementsList.push({
+        id: 6,
+        icon: '🌟',
+        title: 'Star Student',
+        description: 'Hoàn thành 100 bài học',
+        earned: true,
+        date: new Date().toLocaleDateString('vi-VN')
+      });
+    } else if (stats.totalLessons > 0) {
+      achievementsList.push({
+        id: 6,
+        icon: '🌟',
+        title: 'Star Student',
+        description: 'Hoàn thành 100 bài học',
+        earned: false,
+        progress: stats.totalLessons,
+        target: 100
+      });
+    }
+
+    setAchievements(achievementsList);
+  };
+
+  // Generate recommendations based on skills performance
+  const generateRecommendations = (skills, stats) => {
+    const recs = [];
+    
+    // Check which skills need improvement (below 70%)
+    if (Array.isArray(skills)) {
+      skills.forEach(skill => {
+        if (skill.progress < 70) {
+          recs.push({
+            id: recs.length + 1,
+            title: `Luyện thêm ${skill.skill}`,
+            reason: `Điểm ${skill.skill} cần cải thiện (${skill.progress}%)`,
+            priority: skill.progress < 50 ? 'high' : 'medium'
+          });
+        }
+      });
+    }
+
+    // If no specific skill recommendations, add general ones
+    if (recs.length === 0) {
+      if (stats.streak === 0) {
+        recs.push({
+          id: 1,
+          title: 'Bắt đầu học hàng ngày',
+          reason: 'Xây dựng thói quen học tập đều đặn',
+          priority: 'high'
+        });
+      }
+      
+      if (stats.totalTests < 5) {
+        recs.push({
+          id: 2,
+          title: 'Làm thêm bài kiểm tra',
+          reason: 'Đánh giá trình độ và tiến bộ',
+          priority: 'medium'
+        });
+      }
+
+      if (stats.completionRate < 70 && stats.totalTests > 0) {
+        recs.push({
+          id: 3,
+          title: 'Ôn tập lại kiến thức cũ',
+          reason: 'Củng cố nền tảng để nâng cao điểm số',
+          priority: 'high'
+        });
+      }
+    }
+
+    // Limit to 3 recommendations
+    setRecommendations(recs.slice(0, 3));
+  };
+
+  // Get user's grade from their classes
+  const getUserGrade = () => {
+    if (userClasses.length > 0) {
+      // Try to get grade from first class
+      const firstClass = userClasses[0];
+      if (firstClass.grade) {
+        return `Lớp ${firstClass.grade}`;
+      }
+    }
+    return 'Học sinh';
+  };
+
+  // Get user initials for avatar
+  const getUserInitials = () => {
+    if (userData?.full_name && userData.full_name.trim()) {
+      const names = userData.full_name.trim().split(/\s+/); // Split by any whitespace
+      if (names.length >= 2) {
+        // For Vietnamese names: first letter of first name + first letter of last name
+        return (names[0][0] + names[names.length - 1][0]).toUpperCase();
+      }
+      return names[0].substring(0, 2).toUpperCase();
+    }
+    if (userData?.username) {
+      return userData.username.substring(0, 2).toUpperCase();
+    }
+    return 'HS';
+  };
 
   return (
     <ConsistentSidebarLayout 
@@ -111,14 +316,17 @@ const LearningProfile = () => {
         <div className="profile-header">
           <div className="header-content">
             <div className="user-avatar-large">
-              <span>NV</span>
+              <span>{getUserInitials()}</span>
             </div>
             <div className="user-info-large">
-              <h1>Nguyễn Văn Hoài</h1>
+              <h1>
+                {loading && !userData ? 'Đang tải...' : 
+                 (userData?.full_name || userData?.username || 'Học sinh')}
+              </h1>
               <div className="user-meta">
                 <span className="user-grade">
                   <GraduationCap size={16} />
-                  Lớp 8
+                  {getUserGrade()}
                 </span>
                 <span className="user-level">
                   <Star size={16} />
@@ -243,35 +451,48 @@ const LearningProfile = () => {
           <section className="achievements-section">
             <div className="section-header-flex">
               <h2 className="section-title">Thành tích</h2>
-              <Link to="#" className="see-all-link">
-                Xem tất cả <ChevronRight size={16} />
-              </Link>
+              {achievements.length > 0 && (
+                <Link to="#" className="see-all-link">
+                  Xem tất cả <ChevronRight size={16} />
+                </Link>
+              )}
             </div>
-            <div className="achievements-grid">
-              {achievements.map(achievement => (
-                <div 
-                  key={achievement.id} 
-                  className={`achievement-card ${achievement.earned ? 'earned' : 'locked'}`}
-                >
-                  <div className="achievement-icon">{achievement.icon}</div>
-                  <h3>{achievement.title}</h3>
-                  <p>{achievement.description}</p>
-                  {achievement.earned ? (
-                    <span className="earned-date">Đạt được: {achievement.date}</span>
-                  ) : (
-                    <div className="achievement-progress">
-                      <div className="progress-mini-bar">
-                        <div 
-                          className="progress-mini-fill"
-                          style={{ width: `${(achievement.progress / achievement.target) * 100}%` }}
-                        />
+            {achievements.length > 0 ? (
+              <div className="achievements-grid">
+                {achievements.map(achievement => (
+                  <div 
+                    key={achievement.id} 
+                    className={`achievement-card ${achievement.earned ? 'earned' : 'locked'}`}
+                  >
+                    <div className="achievement-icon">{achievement.icon}</div>
+                    <h3>{achievement.title}</h3>
+                    <p>{achievement.description}</p>
+                    {achievement.earned ? (
+                      <span className="earned-date">Đạt được: {achievement.date}</span>
+                    ) : (
+                      <div className="achievement-progress">
+                        <div className="progress-mini-bar">
+                          <div 
+                            className="progress-mini-fill"
+                            style={{ width: `${(achievement.progress / achievement.target) * 100}%` }}
+                          />
+                        </div>
+                        <span className="progress-mini-text">{achievement.progress}/{achievement.target}</span>
                       </div>
-                      <span className="progress-mini-text">{achievement.progress}/{achievement.target}</span>
-                    </div>
-                  )}
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="activity-item">
+                <div className="activity-details">
+                  <h4>Chưa có thành tích nào</h4>
+                  <div className="activity-meta">
+                    <span>Hoàn thành bài học và bài tập để nhận thành tích</span>
+                  </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
           </section>
 
           {/* Recent Activity */}
@@ -314,28 +535,30 @@ const LearningProfile = () => {
           </section>
 
           {/* Recommendations */}
-          <section className="recommendations-section">
-            <h2 className="section-title">Đề xuất cho bạn</h2>
-            <div className="recommendations-list">
-              {recommendations.map(rec => (
-                <div key={rec.id} className={`recommendation-card priority-${rec.priority}`}>
-                  <div className="rec-content">
-                    <div className="rec-header">
-                      <h3>{rec.title}</h3>
-                      <span className={`priority-badge ${rec.priority}`}>
-                        {rec.priority === 'high' ? 'Ưu tiên cao' : 'Ưu tiên trung bình'}
-                      </span>
+          {recommendations.length > 0 && (
+            <section className="recommendations-section">
+              <h2 className="section-title">Đề xuất cho bạn</h2>
+              <div className="recommendations-list">
+                {recommendations.map(rec => (
+                  <div key={rec.id} className={`recommendation-card priority-${rec.priority}`}>
+                    <div className="rec-content">
+                      <div className="rec-header">
+                        <h3>{rec.title}</h3>
+                        <span className={`priority-badge ${rec.priority}`}>
+                          {rec.priority === 'high' ? 'Ưu tiên cao' : 'Ưu tiên trung bình'}
+                        </span>
+                      </div>
+                      <p>{rec.reason}</p>
                     </div>
-                    <p>{rec.reason}</p>
+                    <button className="rec-action-btn">
+                      Bắt đầu
+                      <ChevronRight size={16} />
+                    </button>
                   </div>
-                  <button className="rec-action-btn">
-                    Bắt đầu
-                    <ChevronRight size={16} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </section>
+                ))}
+              </div>
+            </section>
+          )}
         </div>
       </main>
     </div>
