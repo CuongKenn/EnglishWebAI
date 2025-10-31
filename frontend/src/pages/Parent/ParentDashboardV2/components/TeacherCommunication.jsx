@@ -137,16 +137,8 @@ const TeacherCommunication = () => {
 
   const loadTeachersForChild = async (childId) => {
     try {
-      const response = await fetch(`/api/v1/parent/children/${childId}/teachers`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setTeachers(data);
-      }
+      const data = await parentAPI.getTeachersForChild(childId);
+      setTeachers(data);
     } catch (error) {
       console.error('Error loading teachers:', error);
     }

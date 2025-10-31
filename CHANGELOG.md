@@ -5,10 +5,13 @@ All notable changes to the EnglishWebAI project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+For AI/agent contribution guidelines, please read the project rules in [AI_RULES.md](./AI_RULES.md).
+
 ## [Unreleased]
 
 ### Added
 - Comprehensive changelog documentation for project tracking
+ - Documentation: AI collaboration rules in [AI_RULES.md](./AI_RULES.md)
 
 ---
 
