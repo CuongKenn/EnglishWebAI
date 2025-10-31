@@ -305,15 +305,42 @@ Trả về JSON format sau:
 Chỉ trả về JSON, không có text khác."""
 
         try:
-            response = self.client.chat.completions.create(
-                model="gpt-4",
-                messages=[
-                    {"role": "system", "content": "You are an expert English teacher in Vietnam, following the 2018 curriculum."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.7,
-                max_tokens=3000
-            )
+            # Calculate max tokens based on number of questions
+            # Reduce token count: Base 1500 + 200 per question per skill = up to 5000 tokens
+            max_tokens = min(1500 + (questions_per_skill * 200), 5000)
+            print(f"[AI Generate] Full Exam - Grade {grade}, Semester {semester}, {questions_per_skill} Q/skill")
+            print(f"[AI Generate] Using max_tokens={max_tokens}, timeout=300s")
+            
+            # Try GPT-4 first, fallback to GPT-3.5-turbo if quota exceeded
+            try:
+                model = "gpt-4"
+                print(f"[AI Generate] Attempting with {model}")
+                response = self.client.chat.completions.create(
+                    model=model,
+                    messages=[
+                        {"role": "system", "content": "You are an expert English teacher in Vietnam, following the 2018 curriculum. Generate concise and well-structured exams."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature=0.7,
+                    max_tokens=max_tokens,
+                    timeout=300  # 5 minutes timeout
+                )
+            except Exception as e:
+                if "429" in str(e) or "quota" in str(e).lower():
+                    print(f"[AI Generate] GPT-4 quota exceeded, trying GPT-3.5-turbo...")
+                    model = "gpt-3.5-turbo"
+                    response = self.client.chat.completions.create(
+                        model=model,
+                        messages=[
+                            {"role": "system", "content": "You are an expert English teacher in Vietnam, following the 2018 curriculum. Generate concise and well-structured exams."},
+                            {"role": "user", "content": prompt}
+                        ],
+                        temperature=0.7,
+                        max_tokens=max_tokens,
+                        timeout=300
+                    )
+                else:
+                    raise
             
             # Extract JSON from response
             content = response.choices[0].message.content.strip()

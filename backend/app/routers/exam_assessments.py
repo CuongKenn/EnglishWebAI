@@ -4,6 +4,7 @@ API endpoints for managing exam assessments (midterm/final exams)
 imported from Word documents
 """
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
@@ -11,6 +12,7 @@ import json
 import os
 import shutil
 from pathlib import Path
+import asyncio
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
@@ -32,6 +34,8 @@ from app.schemas.exam import (
 )
 from app.services.docx_service import docx_service
 from app.services.openai_service import openai_service
+from app.services.ai_grading_service import AIGradingService
+from app.services.notification_service import NotificationService
 
 
 router = APIRouter(prefix="/api/v1/exam-assessments", tags=["Exam Assessments"])
@@ -64,6 +68,175 @@ def _ensure_student_access(db: Session, current_user: User, class_id: int) -> bo
     ).first()
     
     return enrollment is not None
+
+
+async def _auto_grade_exam_submission(submission: ExamSubmission, exam: ExamAssessment, db: Session):
+    """
+    Auto-grade exam submission using AI Grading Service
+    - Multiple choice, True/False, Fill blank: Auto-graded with AI semantic checking
+    - Writing: ChatGPT AI (auto-graded, teacher can review)
+    - Speaking: Azure Speech + ChatGPT (auto-graded, teacher can review)
+    """
+    content = exam.content or {}
+    sections = content.get('sections', [])
+    student_answers = submission.answers or {}
+    
+    # Check if this is a comprehensive test
+    is_comprehensive = content.get('type') == 'comprehensive_test'
+    
+    if is_comprehensive:
+        print(f"[AUTO-GRADE-EXAM] Comprehensive test detected for submission {submission.id}")
+        try:
+            grading_service = AIGradingService()
+            
+            # Get audio file path if exists
+            audio_path = None
+            if hasattr(submission, 'content_url') and submission.content_url:
+                audio_path = submission.content_url.replace('/media/', './media/')
+                if not os.path.exists(audio_path):
+                    audio_path = None
+            
+            # Run async grading - NOW USING AWAIT
+            grading_results = await grading_service.grade_comprehensive_submission(
+                content,
+                student_answers,
+                audio_path
+            )
+            
+            # Store detailed results
+            submission.rubrics_scores = grading_results
+            submission.ai_score = grading_results.get("total_score", 0)
+            submission.score = grading_results.get("total_score", 0)
+            
+            # Generate feedback summary
+            feedback_parts = []
+            feedback_parts.append(f"🎧 Listening: {grading_results['listening']['total_points']:.1f}/2.5đ")
+            feedback_parts.append(f"📖 Reading: {grading_results['reading']['total_points']:.1f}/2.5đ")
+            feedback_parts.append(f"✍️ Writing: {grading_results['writing']['points_earned']:.1f}/2.5đ")
+            feedback_parts.append(f"🗣️ Speaking: {grading_results['speaking']['points_earned']:.1f}/2.5đ")
+            
+            submission.ai_feedback = "\n".join(feedback_parts)
+            submission.feedback = f"AI chấm tự động: {grading_results['total_score']:.1f}/10đ"
+            submission.status = "graded"
+            submission.graded_at = datetime.utcnow()
+            
+            print(f"[AUTO-GRADE-EXAM] Comprehensive test graded: {grading_results['total_score']:.1f}/10đ")
+            return
+            
+        except Exception as e:
+            print(f"[AUTO-GRADE-EXAM] Error grading comprehensive test: {e}")
+            import traceback
+            traceback.print_exc()
+            # Don't raise, fall through to regular grading
+    
+    # Regular grading for section-based exams
+    total_score = 0.0
+    max_possible_score = exam.total_points or 10.0
+    auto_graded_count = 0
+    total_questions = 0
+    has_essay = False
+    question_results = []
+    
+    grading_service = AIGradingService()
+    
+    try:
+        for section in sections:
+            tasks = section.get('tasks', [])
+            for task in tasks:
+                questions = task.get('questions', [])
+                for q in questions:
+                    total_questions += 1
+                    q_id = str(q.get('id', ''))
+                    q_type = q.get('type', 'multiple_choice')
+                    q_points = float(q.get('points', 0.5))
+                    student_answer = student_answers.get(q_id, '')
+                    
+                    # Check if essay/short answer
+                    if q_type in ['essay', 'short_answer']:
+                        has_essay = True
+                        question_results.append({
+                            'question_id': q_id,
+                            'type': q_type,
+                            'points_earned': None,
+                            'max_points': q_points,
+                            'status': 'needs_manual_review'
+                        })
+                        continue
+                    
+                    # Auto-grade objective questions
+                    try:
+                        grade_result = None
+                        
+                        if q_type == 'multiple_choice':
+                            grade_result = await grading_service.grade_multiple_choice(q, student_answer)
+                        elif q_type == 'true_false':
+                            grade_result = await grading_service.grade_true_false(q, student_answer)
+                        elif q_type == 'fill_blank':
+                            grade_result = await grading_service.grade_fill_blank(q, student_answer)
+                        elif q_type == 'matching':
+                            # Parse student answer if it's a string
+                            if isinstance(student_answer, str):
+                                try:
+                                    student_answer = json.loads(student_answer)
+                                except:
+                                    student_answer = {}
+                            grade_result = await grading_service.grade_matching(q, student_answer)
+                        
+                        if grade_result:
+                            points_earned = grade_result.get('points_earned', 0)
+                            total_score += points_earned
+                            auto_graded_count += 1
+                            
+                            question_results.append({
+                                'question_id': q_id,
+                                'type': q_type,
+                                'student_answer': student_answer,
+                                'points_earned': points_earned,
+                                'max_points': q_points,
+                                'is_correct': grade_result.get('is_correct', False),
+                                'feedback': grade_result.get('feedback', ''),
+                                'status': 'auto_graded'
+                            })
+                    
+                    except Exception as e:
+                        print(f"[AUTO-GRADE-EXAM] Error grading question {q_id}: {e}")
+                        question_results.append({
+                            'question_id': q_id,
+                            'type': q_type,
+                            'error': str(e),
+                            'status': 'grading_failed'
+                        })
+    
+    except Exception as e:
+        print(f"[AUTO-GRADE-EXAM] Error during auto-grading: {e}")
+        import traceback
+        traceback.print_exc()
+    
+    # Update submission with results
+    if auto_graded_count > 0:
+        if not submission.rubrics_scores:
+            submission.rubrics_scores = {}
+        
+        submission.rubrics_scores['auto_grade_results'] = question_results
+        submission.rubrics_scores['auto_graded_count'] = auto_graded_count
+        submission.rubrics_scores['total_questions'] = total_questions
+        submission.rubrics_scores['has_essay'] = has_essay
+        
+        if has_essay:
+            # Has essay questions -> save as pending review
+            submission.ai_score = total_score
+            submission.ai_feedback = f"Tự động chấm {auto_graded_count}/{total_questions} câu. Điểm tạm thời: {total_score:.1f}/{max_possible_score}. Chờ giáo viên chấm {total_questions - auto_graded_count} câu tự luận."
+            submission.status = "pending_review"
+        else:
+            # All objective -> fully graded
+            submission.score = total_score
+            submission.ai_score = total_score
+            submission.feedback = f"Tự động chấm: {total_score:.1f}/{max_possible_score} điểm"
+            submission.ai_feedback = f"Hoàn thành {auto_graded_count}/{total_questions} câu."
+            submission.status = "graded"
+            submission.graded_at = datetime.utcnow()
+        
+        print(f"[AUTO-GRADE-EXAM] Submission {submission.id}: {auto_graded_count}/{total_questions} auto-graded, score={total_score:.1f}/{max_possible_score}, has_essay={has_essay}")
 
 
 # ============= Exam Management Endpoints =============
@@ -421,16 +594,34 @@ async def submit_exam(
     if submission.status == "submitted":
         raise HTTPException(status_code=400, detail="Bài thi đã được nộp")
     
+    # Get exam details
+    exam = db.query(ExamAssessment).filter(ExamAssessment.id == submission.exam_id).first()
+    if not exam:
+        raise HTTPException(status_code=404, detail="Không tìm thấy đề thi")
+    
     # Update submission
     submission.answers = submit_data.answers
     submission.status = "submitted"
     submission.submitted_at = datetime.utcnow()
     
-    # TODO: Auto-grade objective questions
-    # For now, just mark as submitted
+    # Auto-grade objective questions
+    try:
+        await _auto_grade_exam_submission(submission, exam, db)
+        print(f"[SUBMIT-EXAM] Auto-grading completed for submission {submission.id}")
+    except Exception as e:
+        print(f"[SUBMIT-EXAM] Error auto-grading submission {submission.id}: {e}")
+        import traceback
+        traceback.print_exc()
+        # Don't fail the submission if auto-grading fails
     
     db.commit()
     db.refresh(submission)
+    
+    # Notify parents about submission
+    try:
+        NotificationService.notify_parents_on_exam_submission(db, submission)
+    except Exception as e:
+        print(f"[SUBMIT-EXAM] Error creating notification: {e}")
     
     return submission
 
@@ -474,6 +665,57 @@ async def get_my_exam_submission(
     return submission
 
 
+@router.post("/submissions/{submission_id}/auto-grade", response_class=JSONResponse)
+async def auto_grade_exam_submission(
+    submission_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Auto-grade exam submission (teacher triggered)
+    - Multiple choice, True/False, Fill blank: Auto-graded with AI
+    - Writing: ChatGPT AI grading
+    - Speaking: Azure Speech + ChatGPT grading
+    """
+    submission = db.query(ExamSubmission).filter(
+        ExamSubmission.id == submission_id
+    ).first()
+    
+    if not submission:
+        raise HTTPException(status_code=404, detail="Không tìm thấy bài làm")
+    
+    exam = db.query(ExamAssessment).filter(ExamAssessment.id == submission.exam_id).first()
+    if not exam:
+        raise HTTPException(status_code=404, detail="Không tìm thấy đề thi")
+    
+    # Check permissions
+    _ensure_teacher_access(db, current_user, exam.class_id)
+    
+    try:
+        await _auto_grade_exam_submission(submission, exam, db)
+        db.commit()
+        db.refresh(submission)
+        
+        return JSONResponse(content={
+            "success": True,
+            "message": "Đã chấm tự động thành công",
+            "submission": {
+                "id": submission.id,
+                "score": submission.score,
+                "ai_score": submission.ai_score,
+                "feedback": submission.feedback,
+                "ai_feedback": submission.ai_feedback,
+                "status": submission.status,
+                "rubrics_scores": submission.rubrics_scores
+            }
+        })
+    except Exception as e:
+        print(f"[AUTO-GRADE-EXAM] Error: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Lỗi chấm tự động: {str(e)}")
+
+
 @router.post("/submissions/{submission_id}/grade", response_model=ExamSubmissionResponse)
 async def grade_exam_submission(
     submission_id: int,
@@ -501,6 +743,17 @@ async def grade_exam_submission(
     
     db.commit()
     db.refresh(submission)
+    
+    # Notify parents about grading
+    try:
+        teacher_name = current_user.full_name or current_user.username
+        NotificationService.notify_parents_on_exam_grading(db, submission, teacher_name)
+        
+        # If low score, send warning
+        if submission.score and submission.score < 5.0:
+            NotificationService.notify_parents_on_exam_low_score(db, submission)
+    except Exception as e:
+        print(f"[EXAM-GRADE] Error creating notification: {e}")
     
     return submission
 

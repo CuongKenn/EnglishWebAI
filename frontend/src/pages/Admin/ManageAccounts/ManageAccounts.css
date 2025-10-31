@@ -103,28 +103,31 @@
 }
 
 .stat-title {
-  color: rgba(255, 255, 255, 0.85) !important;
-  font-size: 14px;
-  font-weight: 600;
+  color: #4b5563 !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
   margin-bottom: 8px;
   display: block;
+  opacity: 1 !important;
 }
 
 .stat-value {
-  font-size: 42px;
-  font-weight: 700;
-  color: #ffffff !important;
+  font-size: 42px !important;
+  font-weight: 800 !important;
+  color: #111827 !important;
   margin-bottom: 6px;
   line-height: 1;
-  display: block;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  display: block !important;
+  text-shadow: none !important;
+  opacity: 1 !important;
 }
 
 .stat-subtitle {
-  color: rgba(255, 255, 255, 0.75) !important;
-  font-size: 14px;
-  font-weight: 500;
+  color: #6b7280 !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
   display: block;
+  opacity: 1 !important;
 }
 
 .main-content {

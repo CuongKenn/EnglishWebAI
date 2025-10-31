@@ -190,13 +190,23 @@ const examService = {
    */
   generateFullExam: async (params) => {
     try {
+      // Calculate dynamic timeout based on questions per skill
+      // Full exam with 4 skills needs more time: base 2 min + 30s per question per skill
+      const questionsPerSkill = params.questions_per_skill || 10;
+      const totalQuestions = questionsPerSkill * 4; // 4 skills
+      const timeoutMs = Math.max(120000, Math.min(totalQuestions * 15000, 600000)); // 2-10 minutes
+      
+      console.log(`[AI Generate] Timeout: ${timeoutMs/1000}s for ${totalQuestions} questions (${questionsPerSkill} per skill)`);
+      
       const response = await api.post('/api/v1/exercises/generate-ai', {
         test_type: params.exam_type,
         grade: params.grade,
         semester: params.semester,
         difficulty: params.difficulty || 'mixed',
-        questions_per_skill: params.questions_per_skill || 10,
+        questions_per_skill: questionsPerSkill,
         additional_notes: params.additional_notes || '',
+      }, {
+        timeout: timeoutMs
       });
       
       // Return the exercise data from response

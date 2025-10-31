@@ -104,8 +104,12 @@
 }
 
 .stat-card,
-.stat-card * {
-  color: #1f2937 !important;
+.stat-card *,
+.stat-card .stat-value,
+.stat-card .stat-title,
+.stat-card .stat-subtitle {
+  color: #111827 !important;
+  opacity: 1 !important;
 }
 
 .stat-card:hover {
@@ -151,28 +155,31 @@
 }
 
 .stat-title {
-  color: #6b7280 !important;
-  font-size: 14px;
-  font-weight: 600;
+  color: #4b5563 !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
   margin-bottom: 8px;
   display: block;
+  opacity: 1 !important;
 }
 
 .stat-value {
-  font-size: 42px;
-  font-weight: 700;
-  color: #1f2937 !important;
+  font-size: 42px !important;
+  font-weight: 800 !important;
+  color: #111827 !important;
   margin-bottom: 6px;
   line-height: 1;
-  display: block;
-  text-shadow: none;
+  display: block !important;
+  text-shadow: none !important;
+  opacity: 1 !important;
 }
 
 .stat-subtitle {
-  color: #9ca3af !important;
-  font-size: 14px;
-  font-weight: 500;
+  color: #6b7280 !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
   display: block;
+  opacity: 1 !important;
 }
 
 .charts-grid {
