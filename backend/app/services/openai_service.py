@@ -32,12 +32,14 @@ class OpenAIService:
         else:
             print("Warning: OPENAI_API_KEY not configured")
     
-    def generate_content(self, prompt: str) -> str:
+    def generate_content(self, prompt: str, temperature: float = 0.7, max_tokens: int = None) -> str:
         """
         Generate content from a prompt using OpenAI
         
         Args:
             prompt: The prompt to send to OpenAI
+            temperature: Controls randomness (0.0-2.0). Higher = more creative. Default 0.7
+            max_tokens: Maximum tokens in response. None = no limit
             
         Returns:
             Generated text content
@@ -46,13 +48,16 @@ class OpenAIService:
             raise ValueError("OpenAI API is not configured. Please add OPENAI_API_KEY to your .env file. Get your API key at: https://platform.openai.com/api-keys")
         
         try:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.7,
-            )
+            kwargs = {
+                "model": self.model,
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": temperature,
+            }
+            
+            if max_tokens:
+                kwargs["max_tokens"] = max_tokens
+            
+            response = self.client.chat.completions.create(**kwargs)
             return response.choices[0].message.content
         except Exception as e:
             print(f"Error generating content: {str(e)}")

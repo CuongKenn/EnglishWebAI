@@ -31,7 +31,7 @@ const API_USERS = `${BASE_URL}/api/users`;
 // Create axios instance with default config
 const apiClient = axios.create({
   baseURL: BASE_URL,
-  timeout: 60000, // Increase to 60 seconds for AI requests
+  timeout: 180000, // Increase to 180 seconds (3 minutes) for AI requests
   headers: {
     'Content-Type': 'application/json',
   },
@@ -40,7 +40,7 @@ const apiClient = axios.create({
 // Create axios instance for /api/v1 endpoints
 const apiV1Client = axios.create({
   baseURL: API_V1,
-  timeout: 60000, // Increase to 60 seconds for AI requests
+  timeout: 180000, // Increase to 180 seconds (3 minutes) for AI requests
   headers: {
     'Content-Type': 'application/json',
   },

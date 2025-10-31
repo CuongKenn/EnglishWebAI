@@ -1,7 +1,7 @@
 import { useMemo, useState, useCallback, memo, useEffect } from 'react';
 import { 
   X, Download, Edit, Trash2, File, FileAudio, 
-  Eye, Clock, Award, Sparkles, Users, Copy, Check 
+  Eye, Clock, Award, Sparkles, Users, Copy, Check
 } from 'lucide-react';
 import './ExerciseManagement.css';
 import Toast from '../../../../../components/Toast/Toast';
@@ -13,6 +13,8 @@ const ExerciseDetailModal = memo(function ExerciseDetailModal({ exercise, onClos
   const [editedExercise, setEditedExercise] = useState(exercise);
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState('info'); // info | content | questions
+  const [showFileViewer, setShowFileViewer] = useState(false);
+  const [isLoadingWord, setIsLoadingWord] = useState(true);
   
   // Update editedExercise when exercise prop changes
   useEffect(() => {
@@ -42,6 +44,7 @@ const ExerciseDetailModal = memo(function ExerciseDetailModal({ exercise, onClos
       setTimeout(() => setCopied(false), 2000);
     });
   }, [exercise?.id]);
+  
   
   const getSkillIcon = useCallback((skill) => {
     const icons = {
@@ -178,9 +181,17 @@ const ExerciseDetailModal = memo(function ExerciseDetailModal({ exercise, onClos
               <span className={`type-badge-detail ${exercise.type}`}>
                 {getTypeLabel(exercise.type)}
               </span>
-              {exercise.skill && (
+              {exercise.skill && exercise.skill !== 'all' && (
                 <span className={`skill-badge-detail ${exercise.skill}`}>
                   {getSkillIcon(exercise.skill)} {exercise.skill}
+                </span>
+              )}
+              {exercise.skill === 'all' && (
+                <span className="skill-badge-detail all-skills" style={{
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  color: 'white'
+                }}>
+                  🎯 4 Kỹ năng
                 </span>
               )}
               <span className="class-badge-detail">
@@ -313,18 +324,143 @@ const ExerciseDetailModal = memo(function ExerciseDetailModal({ exercise, onClos
 
           {activeTab === 'content' && (
             <>
-              {exercise.skill === 'listening' && renderListeningContentOnly()}
-              {exercise.skill === 'speaking' && renderSpeakingContent()}
-              {exercise.skill === 'reading' && renderReadingContentOnly()}
-              {exercise.skill === 'writing' && renderWritingContent()}
+              {/* Check if this is an imported Word file exercise */}
+              {exercise.content?.file_path ? (
+                <div className="skill-content-section">
+                  <div className="content-block">
+                    <h3>📄 File đề thi</h3>
+                    <div className="file-attachment-detail" style={{
+                      padding: '20px',
+                      background: 'linear-gradient(135deg, #667eea15 0%, #764ba215 100%)',
+                      border: '2px solid #667eea30',
+                      borderRadius: '12px'
+                    }}>
+                      <File size={48} color="#667eea" />
+                      <div className="file-info-detail">
+                        <div style={{ fontWeight: '600', fontSize: '16px', marginBottom: '8px' }}>
+                          {exercise.content.original_filename || 'Đề thi.docx'}
+                        </div>
+                        <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '12px' }}>
+                          {exercise.content.file_size 
+                            ? `${(exercise.content.file_size / 1024 / 1024).toFixed(2)} MB`
+                            : 'File Word'}
+                        </div>
+                        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                          <button
+                            onClick={() => {
+                              setShowFileViewer(true);
+                              setIsLoadingWord(true);
+                            }}
+                            style={{
+                              padding: '8px 16px',
+                              background: '#3b82f6',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '8px',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              fontSize: '14px',
+                              fontWeight: '500'
+                            }}
+                          >
+                            <Eye size={16} />
+                            Xem file (Office Viewer)
+                          </button>
+                          <a 
+                            href={`/${exercise.content.file_path}`}
+                            download={exercise.content.original_filename}
+                            style={{
+                              padding: '8px 16px',
+                              background: '#10b981',
+                              color: 'white',
+                              borderRadius: '8px',
+                              textDecoration: 'none',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              fontSize: '14px',
+                              fontWeight: '500'
+                            }}
+                          >
+                            <Download size={16} />
+                            Tải xuống
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                    {exercise.content.description && (
+                      <div style={{
+                        marginTop: '16px',
+                        padding: '12px 16px',
+                        background: '#f3f4f6',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        color: '#374151'
+                      }}>
+                        <strong>📌 Lưu ý:</strong> {exercise.content.description}
+                      </div>
+                    )}
+                    
+                    <div style={{
+                      marginTop: '16px',
+                      padding: '16px',
+                      background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                      border: '2px solid #fbbf24',
+                      borderRadius: '12px',
+                      fontSize: '13px',
+                      lineHeight: '1.6'
+                    }}>
+                      <div style={{ fontWeight: '600', color: '#92400e', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '18px' }}>⚠️</span> Giới hạn hiển thị
+                      </div>
+                      <ul style={{ margin: '8px 0', paddingLeft: '20px', color: '#78350f' }}>
+                        <li>✅ Hỗ trợ: <strong>.docx</strong> (Word 2007 trở lên)</li>
+                        <li>❌ Không hỗ trợ: <strong>.doc</strong> (Word 97-2003)</li>
+                        <li>⚠️ Một số định dạng phức tạp có thể hiển thị không đầy đủ (bảng, hình ảnh, màu nền, v.v.)</li>
+                        <li>💡 Để xem đầy đủ 100%, vui lòng tải file về và mở bằng Microsoft Word</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {exercise.skill === 'listening' && renderListeningContentOnly()}
+                  {exercise.skill === 'speaking' && renderSpeakingContent()}
+                  {exercise.skill === 'reading' && renderReadingContentOnly()}
+                  {exercise.skill === 'writing' && renderWritingContent()}
+                  {(exercise.type === 'midterm' || exercise.type === 'final') && !exercise.skill && (
+                    <div className="skill-content-section">
+                      <div className="content-block">
+                        <h3>Bài kiểm tra tổng hợp</h3>
+                        <p className="no-content">Bài kiểm tra bao gồm đầy đủ 4 kỹ năng. Vui lòng xem tab "Câu hỏi" để xem chi tiết.</p>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </>
           )}
 
           {activeTab === 'questions' && (
             <div className="skill-content-section">
-              {((isEditMode ? editedExercise?.content?.questions : exercise?.content?.questions) || []).length > 0
-                ? renderQuestionsList((isEditMode ? editedExercise?.content?.questions : exercise?.content?.questions) || [])
-                : <p className="no-content">Chưa có câu hỏi</p>}
+              {exercise.content?.file_path ? (
+                <div className="content-block">
+                  <p className="no-content" style={{
+                    padding: '20px',
+                    textAlign: 'center',
+                    color: '#6b7280'
+                  }}>
+                    ℹ️ Bài tập này sử dụng file Word. Câu hỏi nằm trong file đính kèm. 
+                    Vui lòng xem tab "Nội dung" để tải file.
+                  </p>
+                </div>
+              ) : ((isEditMode ? editedExercise?.content?.questions : exercise?.content?.questions) || []).length > 0 ? (
+                renderQuestionsList((isEditMode ? editedExercise?.content?.questions : exercise?.content?.questions) || [])
+              ) : (
+                <p className="no-content">Chưa có câu hỏi</p>
+              )}
             </div>
           )}
   </div>
@@ -372,6 +508,164 @@ const ExerciseDetailModal = memo(function ExerciseDetailModal({ exercise, onClos
           onClose={hideToast}
           duration={toast.duration}
         />
+      )}
+
+      {/* File Viewer Modal */}
+      {showFileViewer && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.8)',
+            zIndex: 10001,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px'
+          }}
+          onClick={() => {
+            setShowFileViewer(false);
+            setIsEditingWord(false);
+          }}
+        >
+          <div 
+            style={{
+              width: '100%',
+              maxWidth: '1200px',
+              height: '90vh',
+              background: 'white',
+              borderRadius: '12px',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{
+              padding: '16px 24px',
+              borderBottom: '1px solid #e5e7eb',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              background: '#f9fafb'
+            }}>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>
+                📄 {exercise.content.original_filename || 'Đề thi.docx'}
+              </h3>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <a 
+                  href={`/${exercise.content.file_path}`}
+                  download={exercise.content.original_filename}
+                  style={{
+                    padding: '6px 12px',
+                    background: '#10b981',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '14px',
+                    textDecoration: 'none'
+                  }}
+                >
+                  <Download size={16} />
+                  Tải xuống
+                </a>
+                <button
+                  onClick={() => setShowFileViewer(false)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    fontSize: '24px',
+                    cursor: 'pointer',
+                    color: '#6b7280',
+                    padding: '4px 8px'
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+            
+            <div style={{
+              flex: 1,
+              overflow: 'auto',
+              padding: '0',
+              background: '#525659'
+            }}>
+              {isLoadingWord ? (
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: '100%',
+                  gap: '16px',
+                  background: 'white'
+                }}>
+                  <div style={{
+                    width: '48px',
+                    height: '48px',
+                    border: '4px solid #e5e7eb',
+                    borderTop: '4px solid #3b82f6',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite'
+                  }} />
+                  <p style={{ color: '#6b7280' }}>Đang tải file Word...</p>
+                </div>
+              ) : (
+                <iframe
+                  src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(window.location.origin + '/' + exercise.content.file_path)}`}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    border: 'none'
+                  }}
+                  title="Word Document Viewer"
+                  onLoad={() => setIsLoadingWord(false)}
+                  onError={() => {
+                    setIsLoadingWord(false);
+                    showError('Không thể tải Office Viewer. Đang chạy trên localhost hoặc file không tồn tại.');
+                  }}
+                />
+              )}
+            </div>
+            
+            <div style={{
+              padding: '12px 24px',
+              borderTop: '1px solid #e5e7eb',
+              background: '#f9fafb',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: '16px'
+            }}>
+              <div style={{ fontSize: '13px', color: '#6b7280', flex: 1 }}>
+                <div style={{ marginBottom: '4px' }}>
+                  ✅ <strong>Hỗ trợ:</strong> .docx, .doc với đầy đủ rich text formatting
+                </div>
+                <div style={{ fontSize: '12px', color: '#9ca3af' }}>
+                  💡 Xem giống 100% như trong Microsoft Word
+                </div>
+              </div>
+              <div style={{ 
+                padding: '8px 16px', 
+                background: '#fef3c7', 
+                borderRadius: '8px',
+                fontSize: '12px',
+                color: '#92400e',
+                fontWeight: '500'
+              }}>
+                ⚠️ Trên localhost có thể không load được. Deploy lên server để xem đầy đủ.
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

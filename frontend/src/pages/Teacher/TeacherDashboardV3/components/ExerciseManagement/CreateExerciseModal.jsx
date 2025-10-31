@@ -24,6 +24,7 @@ export default function CreateExerciseModal({ onClose, onCreate }) {
   // Classes from API
   const [classes, setClasses] = useState([]);
   const [loadingClasses, setLoadingClasses] = useState(true);
+  const [isGenerating, setIsGenerating] = useState(false);
   
   // Listening fields
   const [audioFile, setAudioFile] = useState(null);
@@ -178,16 +179,27 @@ export default function CreateExerciseModal({ onClose, onCreate }) {
     setWritingInstructions(writingInstructions.filter((_, i) => i !== index));
   };
   
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     // Validate
-    if (!title) {
+    if (!title.trim()) {
       showWarning('Vui lòng nhập tiêu đề!');
       return;
     }
+
+    if (!classId) {
+      showWarning('Vui lòng chọn lớp học!');
+      return;
+    }
     
-    // Build exercise object
+    // If AI generation mode
+    if (creationMethod === 'ai') {
+      await handleAIGeneration();
+      return;
+    }
+    
+    // Manual creation - Build exercise object
     const exercise = {
-      title,
+      title: title.trim(),
       type: testType,
       skill_type: requiresSkill ? selectedSkill : null,
       class: classId,
@@ -201,6 +213,14 @@ export default function CreateExerciseModal({ onClose, onCreate }) {
     
     // Add content based on skill
     if (selectedSkill === 'listening') {
+      if (!audioFile) {
+        showWarning('Vui lòng upload file audio!');
+        return;
+      }
+      if (questions.length === 0) {
+        showWarning('Vui lòng thêm ít nhất 1 câu hỏi!');
+        return;
+      }
       exercise.content = {
         audio_url: audioFile ? URL.createObjectURL(audioFile) : '',
         transcript,
@@ -208,6 +228,10 @@ export default function CreateExerciseModal({ onClose, onCreate }) {
         questions
       };
     } else if (selectedSkill === 'speaking') {
+      if (!speakingPrompt.trim()) {
+        showWarning('Vui lòng nhập đề bài Speaking!');
+        return;
+      }
       exercise.content = {
         prompt: speakingPrompt,
         instructions: speakingInstructions.filter(i => i),
@@ -216,6 +240,14 @@ export default function CreateExerciseModal({ onClose, onCreate }) {
         sample_audio: sampleAudio ? URL.createObjectURL(sampleAudio) : null
       };
     } else if (selectedSkill === 'reading') {
+      if (!passageText.trim() && !passageFile) {
+        showWarning('Vui lòng nhập hoặc upload đoạn văn!');
+        return;
+      }
+      if (questions.length === 0) {
+        showWarning('Vui lòng thêm ít nhất 1 câu hỏi!');
+        return;
+      }
       exercise.content = {
         passage: passageText,
         passage_url: passageFile ? URL.createObjectURL(passageFile) : null,
@@ -223,6 +255,10 @@ export default function CreateExerciseModal({ onClose, onCreate }) {
         questions
       };
     } else if (selectedSkill === 'writing') {
+      if (!writingPrompt.trim()) {
+        showWarning('Vui lòng nhập đề bài Writing!');
+        return;
+      }
       exercise.content = {
         prompt: writingPrompt,
         type: writingType,
@@ -233,6 +269,75 @@ export default function CreateExerciseModal({ onClose, onCreate }) {
     }
     
     onCreate(exercise);
+  };
+
+  const handleAIGeneration = async () => {
+    setIsGenerating(true);
+    try {
+      if (aiSource === 'files') {
+        // AI from uploaded files
+        if (aiFiles.length === 0) {
+          showWarning('Vui lòng upload ít nhất 1 file tài liệu!');
+          setIsGenerating(false);
+          return;
+        }
+
+        // Upload files first
+        const formData = new FormData();
+        aiFiles.forEach(file => {
+          formData.append('files', file);
+        });
+        formData.append('title', title.trim());
+        formData.append('class_id', classId);
+        formData.append('test_type', testType);
+        formData.append('skill_type', selectedSkill);
+        formData.append('max_score', maxScore);
+        formData.append('due_date', dueDate);
+        if (aiPrompt.trim()) {
+          formData.append('prompt', aiPrompt.trim());
+        }
+
+        // Call AI generation endpoint
+        const response = await apiV1.post('/exercises/generate-from-files', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+
+        onCreate(response.data);
+        
+      } else if (aiSource === 'question_bank') {
+        // AI from question bank
+        if (qbEasyPercent + qbMediumPercent + qbHardPercent !== 100 && qbDifficulty === 'mixed') {
+          showWarning('Tổng phân bố độ khó phải bằng 100%!');
+          setIsGenerating(false);
+          return;
+        }
+
+        const payload = {
+          title: title.trim(),
+          class_id: classId,
+          test_type: testType,
+          skill_type: selectedSkill,
+          max_score: maxScore,
+          due_date: dueDate,
+          num_questions: qbNumQuestions,
+          difficulty: qbDifficulty,
+          difficulty_distribution: qbDifficulty === 'mixed' ? {
+            easy: qbEasyPercent,
+            medium: qbMediumPercent,
+            hard: qbHardPercent
+          } : null
+        };
+
+        const response = await apiV1.post('/exercises/generate-from-qb', payload);
+        onCreate(response.data);
+      }
+      
+    } catch (error) {
+      console.error('Error generating AI exercise:', error);
+      showWarning('Lỗi khi sinh đề: ' + (error.response?.data?.detail || error.message));
+    } finally {
+      setIsGenerating(false);
+    }
   };
   
   return (
@@ -425,11 +530,30 @@ export default function CreateExerciseModal({ onClose, onCreate }) {
         </div>
         
         <div className="modal-footer-ex">
-          <button className="btn-cancel-ex" onClick={onClose}>Hủy</button>
-          <button className="btn-create-ex" onClick={handleSubmit}>
-            <Plus size={18} />
-            Tạo bài tập
-          </button>
+          <button className="btn-cancel-ex" onClick={onClose} disabled={isGenerating}>Hủy</button>
+          {creationMethod === 'manual' && (
+            <button 
+              className="btn-create-ex" 
+              onClick={handleSubmit}
+              disabled={isGenerating}
+            >
+              <Plus size={18} />
+              Tạo bài tập
+            </button>
+          )}
+          {creationMethod === 'ai' && (
+            <div style={{
+              fontSize: '14px',
+              color: '#6b7280',
+              fontStyle: 'italic',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+              <Bot size={18} />
+              Sử dụng nút "Sinh đề bằng AI" bên trên
+            </div>
+          )}
         </div>
       </div>
       {toast.show && (
@@ -918,7 +1042,34 @@ export default function CreateExerciseModal({ onClose, onCreate }) {
   function renderAIForm() {
     return (
       <div className="ai-form-content">
-        <h4 className="section-title">🤖 AI Sinh đề</h4>
+        <div style={{
+          background: 'linear-gradient(135deg, #667eea15 0%, #764ba215 100%)',
+          border: '2px solid #667eea30',
+          borderRadius: '12px',
+          padding: '16px',
+          marginBottom: '24px'
+        }}>
+          <h4 style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            color: '#667eea',
+            fontSize: '16px',
+            fontWeight: '700',
+            marginBottom: '8px'
+          }}>
+            <Bot size={20} />
+            AI Sinh đề Tự động
+          </h4>
+          <p style={{
+            fontSize: '14px',
+            color: '#6b7280',
+            margin: 0,
+            lineHeight: '1.6'
+          }}>
+            AI sẽ phân tích tài liệu hoặc ngân hàng câu hỏi của bạn để tự động tạo bài tập phù hợp với cấp độ và yêu cầu.
+          </p>
+        </div>
         
         {/* AI Source Selection */}
         <div className="ai-source-selection">
@@ -999,6 +1150,61 @@ export default function CreateExerciseModal({ onClose, onCreate }) {
                 onChange={(e) => setAiPrompt(e.target.value)}
               />
             </div>
+
+            {/* Generate Button */}
+            <div style={{marginTop: '24px', padding: '20px', background: '#f9fafb', borderRadius: '12px', border: '2px dashed #e5e7eb'}}>
+              <button 
+                type="button"
+                onClick={handleAIGeneration}
+                disabled={aiFiles.length === 0 || isGenerating}
+                style={{
+                  width: '100%',
+                  padding: '16px',
+                  background: aiFiles.length === 0 || isGenerating ? '#9ca3af' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontSize: '16px',
+                  fontWeight: '700',
+                  cursor: aiFiles.length === 0 || isGenerating ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '10px',
+                  transition: 'all 0.3s ease',
+                  opacity: aiFiles.length === 0 || isGenerating ? 0.6 : 1
+                }}
+              >
+                {isGenerating ? (
+                  <>
+                    <span className="spinner" style={{
+                      display: 'inline-block',
+                      width: '18px',
+                      height: '18px',
+                      border: '3px solid #ffffff',
+                      borderTopColor: 'transparent',
+                      borderRadius: '50%',
+                      animation: 'spin 0.6s linear infinite'
+                    }}></span>
+                    Đang phân tích và sinh đề...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={20} />
+                    🤖 Sinh đề bằng AI từ Files
+                  </>
+                )}
+              </button>
+              <p style={{
+                marginTop: '12px',
+                fontSize: '13px',
+                color: '#6b7280',
+                textAlign: 'center',
+                margin: '12px 0 0 0'
+              }}>
+                {aiFiles.length === 0 ? '⚠️ Vui lòng upload ít nhất 1 file tài liệu' : '✓ Sẵn sàng sinh đề từ ' + aiFiles.length + ' file(s)'}
+              </p>
+            </div>
           </div>
         )}
         
@@ -1075,6 +1281,65 @@ export default function CreateExerciseModal({ onClose, onCreate }) {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Generate from Question Bank Button */}
+        {aiSource === 'question_bank' && (
+          <div style={{marginTop: '24px', padding: '20px', background: '#f9fafb', borderRadius: '12px', border: '2px dashed #e5e7eb'}}>
+            <button 
+              type="button"
+              onClick={handleAIGeneration}
+              disabled={isGenerating || (qbDifficulty === 'mixed' && qbEasyPercent + qbMediumPercent + qbHardPercent !== 100)}
+              style={{
+                width: '100%',
+                padding: '16px',
+                background: (isGenerating || (qbDifficulty === 'mixed' && qbEasyPercent + qbMediumPercent + qbHardPercent !== 100)) ? '#9ca3af' : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '10px',
+                fontSize: '16px',
+                fontWeight: '700',
+                cursor: (isGenerating || (qbDifficulty === 'mixed' && qbEasyPercent + qbMediumPercent + qbHardPercent !== 100)) ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '10px',
+                transition: 'all 0.3s ease',
+                opacity: (isGenerating || (qbDifficulty === 'mixed' && qbEasyPercent + qbMediumPercent + qbHardPercent !== 100)) ? 0.6 : 1
+              }}
+            >
+              {isGenerating ? (
+                <>
+                  <span className="spinner" style={{
+                    display: 'inline-block',
+                    width: '18px',
+                    height: '18px',
+                    border: '3px solid #ffffff',
+                    borderTopColor: 'transparent',
+                    borderRadius: '50%',
+                    animation: 'spin 0.6s linear infinite'
+                  }}></span>
+                  Đang tạo đề từ ngân hàng...
+                </>
+              ) : (
+                <>
+                  <Database size={20} />
+                  🤖 Sinh đề từ Ngân hàng Câu hỏi
+                </>
+              )}
+            </button>
+            <p style={{
+              marginTop: '12px',
+              fontSize: '13px',
+              color: '#6b7280',
+              textAlign: 'center',
+              margin: '12px 0 0 0'
+            }}>
+              {qbDifficulty === 'mixed' && qbEasyPercent + qbMediumPercent + qbHardPercent !== 100 
+                ? '⚠️ Tổng phân bố độ khó phải bằng 100%' 
+                : `✓ Sẽ tạo ${qbNumQuestions} câu hỏi với độ khó ${qbDifficulty === 'mixed' ? 'trộn lẫn' : qbDifficulty}`}
+            </p>
           </div>
         )}
       </div>

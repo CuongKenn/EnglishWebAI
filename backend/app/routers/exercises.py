@@ -4,6 +4,10 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, or_, and_
 from typing import List, Optional
 from datetime import datetime
+from pathlib import Path
+import json
+import uuid
+import logging
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.models.user import User, UserRole
@@ -17,9 +21,12 @@ from app.schemas.student import (
     ExerciseCreate,
     ExerciseUpdate,
 )
+from app.services.docx_service import docx_service
+from app.services.openai_service import openai_service
 from pydantic import BaseModel
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 # Schemas for submission
@@ -1353,3 +1360,457 @@ async def ai_grade_submission(
         "ai_score": submission.ai_score
     })
 
+
+@router.post("/generate-from-files")
+async def generate_exercise_from_files(
+    files: List[UploadFile] = File(...),
+    title: str = Form(...),
+    class_id: int = Form(...),
+    test_type: str = Form(...),
+    skill_type: Optional[str] = Form(None),
+    max_score: Optional[float] = Form(10.0),
+    due_date: Optional[str] = Form(None),
+    prompt: Optional[str] = Form(None),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Generate exercise from uploaded files using AI
+    
+    Supports:
+    - Word documents (.docx, .doc)
+    - PDF files
+    - Text files
+    """
+    # Check permissions
+    _ensure_can_manage_class(db, current_user, class_id)
+    
+    # Validate file types
+    allowed_extensions = ['.docx', '.doc', '.pdf', '.txt']
+    for file in files:
+        ext = Path(file.filename).suffix.lower()
+        if ext not in allowed_extensions:
+            raise HTTPException(
+                status_code=400,
+                detail=f"File {file.filename}: Chỉ hỗ trợ định dạng .docx, .doc, .pdf, .txt"
+            )
+    
+    try:
+        # Extract content from all files
+        all_content = []
+        all_images = []
+        
+        for file in files:
+            file_content = await file.read()
+            ext = Path(file.filename).suffix.lower()
+            
+            if ext in ['.docx', '.doc']:
+                # Extract Word document
+                extracted = docx_service.extract_content(file_content, save_images=True)
+                all_content.append({
+                    "filename": file.filename,
+                    "text": extracted['text'],
+                    "paragraphs": extracted['paragraphs'],
+                    "tables": extracted['tables']
+                })
+                all_images.extend(extracted['images'])
+            
+            elif ext == '.pdf':
+                # TODO: Implement PDF extraction
+                # For now, just indicate PDF is uploaded
+                all_content.append({
+                    "filename": file.filename,
+                    "text": f"[PDF File: {file.filename}]",
+                    "note": "PDF extraction sẽ được implement sau"
+                })
+            
+            elif ext == '.txt':
+                # Plain text file
+                text_content = file_content.decode('utf-8', errors='ignore')
+                all_content.append({
+                    "filename": file.filename,
+                    "text": text_content
+                })
+        
+        # Build comprehensive AI prompt with examples and better structure
+        skill_instructions = {
+            "reading": {
+                "focus": "Đọc hiểu - Reading Comprehension",
+                "question_types": "multiple_choice (main idea, details, inference, vocabulary), true_false, fill_blank",
+                "example": """Ví dụ câu hỏi Reading:
+{
+    "question_id": "r1",
+    "question_text": "What is the main idea of the passage?",
+    "question_type": "multiple_choice",
+    "options": ["A. Technology improves education", "B. Students dislike computers", "C. Teachers need training", "D. Schools lack funding"],
+    "correct_answer": "A",
+    "points": 2.0,
+    "explanation": "Đoạn văn chủ yếu nói về lợi ích của công nghệ trong giáo dục"
+}"""
+            },
+            "listening": {
+                "focus": "Nghe hiểu - Listening Comprehension",
+                "question_types": "multiple_choice, true_false, fill_blank, short_answer",
+                "example": """Ví dụ câu hỏi Listening:
+{
+    "question_id": "l1",
+    "question_text": "Where does the conversation take place?",
+    "question_type": "multiple_choice",
+    "options": ["A. At a restaurant", "B. At a library", "C. At a school", "D. At a hospital"],
+    "correct_answer": "A",
+    "points": 1.5,
+    "explanation": "Đoạn hội thoại đề cập đến menu và order food"
+}"""
+            },
+            "writing": {
+                "focus": "Viết - Writing Skills",
+                "question_types": "essay, paragraph_writing, sentence_writing, grammar_correction",
+                "example": """Ví dụ câu hỏi Writing:
+{
+    "question_id": "w1",
+    "question_text": "Write a paragraph (100-150 words) about the advantages of learning English.",
+    "question_type": "essay",
+    "options": null,
+    "correct_answer": null,
+    "points": 10.0,
+    "rubric": {
+        "content": "30%",
+        "organization": "20%",
+        "vocabulary": "20%",
+        "grammar": "20%",
+        "mechanics": "10%"
+    }
+}"""
+            },
+            "speaking": {
+                "focus": "Nói - Speaking Skills",
+                "question_types": "monologue, dialogue_response, presentation, role_play",
+                "example": """Ví dụ câu hỏi Speaking:
+{
+    "question_id": "s1",
+    "question_text": "Describe your favorite hobby and explain why you enjoy it. Speak for 2 minutes.",
+    "question_type": "monologue",
+    "options": null,
+    "correct_answer": null,
+    "points": 8.0,
+    "prep_time": "1 minute",
+    "speaking_time": "2 minutes"
+}"""
+            }
+        }
+        
+        # Get skill-specific guidance
+        skill_guide = skill_instructions.get(skill_type, {
+            "focus": "Kỹ năng tổng hợp",
+            "question_types": "multiple_choice, fill_blank, short_answer, essay",
+            "example": "Tạo câu hỏi đa dạng phù hợp với tài liệu"
+        })
+        
+        ai_prompt = f"""You are an expert English teacher creating high-quality exercises and tests.
+
+🎯 TASK:
+Generate a comprehensive English {skill_guide['focus']} exercise based on the provided document content.
+
+📋 EXERCISE INFORMATION:
+- Title: {title}
+- Type: {test_type}
+- Skill: {skill_type or 'Mixed Skills'}
+- Max Score: {max_score}
+- Target: Vietnamese high school/university students
+
+📄 DOCUMENT CONTENT:
+"""
+        
+        # Add document content with better formatting
+        for idx, content in enumerate(all_content, 1):
+            ai_prompt += f"\n\n━━━ DOCUMENT {idx}: {content['filename']} ━━━\n"
+            # Include more context (up to 5000 chars per file)
+            text_content = content['text'][:5000]
+            ai_prompt += text_content
+            if len(content['text']) > 5000:
+                ai_prompt += f"\n... [truncated, total {len(content['text'])} characters]"
+        
+        if prompt:
+            ai_prompt += f"\n\n📝 ADDITIONAL REQUIREMENTS:\n{prompt}"
+        
+        ai_prompt += f"""
+
+📚 GENERATION REQUIREMENTS:
+
+1. **Question Types**: Use {skill_guide['question_types']}
+2. **Question Count**: Generate 8-12 questions (total should equal {max_score} points)
+3. **Difficulty Mix**: 
+   - 40% Easy (basic comprehension)
+   - 40% Medium (application, inference)
+   - 20% Hard (synthesis, evaluation)
+4. **Content Relevance**: ALL questions MUST be directly answerable from the document
+5. **Language**: Questions in English, explanations in Vietnamese when helpful
+6. **Point Distribution**: Vary points (1-3 for objective, 5-10 for subjective)
+
+{skill_guide['example']}
+
+🔍 QUESTION QUALITY CHECKLIST:
+✓ Clear and unambiguous question text
+✓ All options grammatically parallel (for MC)
+✓ One clearly correct answer (for objective questions)
+✓ Distractors are plausible but incorrect (for MC)
+✓ Points reflect difficulty and expected time
+✓ Include explanations for tricky questions
+
+📤 JSON OUTPUT FORMAT:
+{{
+    "questions": [
+        {{
+            "question_id": "q1",
+            "question_text": "Clear question in English",
+            "question_type": "multiple_choice|fill_blank|short_answer|essay|true_false",
+            "options": ["A. ...", "B. ...", "C. ...", "D. ..."],
+            "correct_answer": "A" OR "correct text answer" OR null,
+            "acceptable_answers": ["answer1", "answer2"],
+            "points": 2.0,
+            "difficulty": "easy|medium|hard",
+            "explanation": "Vietnamese explanation (optional)",
+            "rubric": {{...}}
+        }}
+    ],
+    "content": {{
+        "instructions": "Student instructions in English and Vietnamese",
+        "passage": "Reading passage if applicable",
+        "audio_script": "Transcript for listening if applicable",
+        "time_limit": "Suggested time in minutes"
+    }}
+}}
+
+⚠️ IMPORTANT:
+- Return ONLY valid JSON, no markdown code blocks or extra text
+- Ensure all JSON is properly formatted and parseable
+- Questions should test understanding, not just memorization
+- For reading/listening: include the passage/script in content.passage or content.audio_script
+"""
+        
+        # Call OpenAI with enhanced parameters
+        print(f"[generate_exercise] Calling AI for {len(files)} files, skill={skill_type}...")
+        response = openai_service.generate_content(
+            ai_prompt,
+            temperature=0.7,  # Balance creativity and consistency
+            max_tokens=4000    # Allow comprehensive responses
+        )
+        
+        # Parse JSON response with robust error handling
+        response_text = response.strip()
+        
+        # Remove markdown code blocks
+        if "```json" in response_text:
+            response_text = response_text.split("```json")[1].split("```")[0].strip()
+        elif "```" in response_text:
+            response_text = response_text.split("```")[1].split("```")[0].strip()
+        
+        # Try to extract JSON if response has extra text
+        if not response_text.startswith("{"):
+            # Find first { and last }
+            start = response_text.find("{")
+            end = response_text.rfind("}")
+            if start != -1 and end != -1:
+                response_text = response_text[start:end+1]
+        
+        print(f"[generate_exercise] Parsing JSON response (length: {len(response_text)} chars)")
+        
+        try:
+            ai_data = json.loads(response_text)
+        except json.JSONDecodeError as e:
+            print(f"[generate_exercise] JSON parse failed: {e}")
+            print(f"[generate_exercise] Response preview: {response_text[:500]}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"AI response is not valid JSON: {str(e)}"
+            )
+        
+        # Validate response structure
+        if not ai_data.get('questions'):
+            raise HTTPException(
+                status_code=500,
+                detail="AI response missing 'questions' field"
+            )
+        
+        print(f"[generate_exercise] Successfully parsed {len(ai_data['questions'])} questions")
+        
+        # Build exercise content
+        exercise_content = {
+            "questions": ai_data.get('questions', []),
+            "instructions": ai_data.get('content', {}).get('instructions', ''),
+            "passage": ai_data.get('content', {}).get('passage', ''),
+            "audio_script": ai_data.get('content', {}).get('audio_script', ''),
+            "images": [{"path": img['relative_path'], "filename": img['filename']} for img in all_images],
+            "ai_generated": True,
+            "source_files": [f.filename for f in files]
+        }
+        
+        # Parse due date
+        due_at = None
+        if due_date:
+            try:
+                due_at = datetime.fromisoformat(due_date)
+            except:
+                pass
+        
+        # Create exercise
+        exercise = Exercise(
+            title=title,
+            description=f"Bài tập được AI sinh từ {len(files)} file tài liệu",
+            type=test_type,
+            skill_type=skill_type,
+            class_id=class_id,
+            max_score=max_score,
+            due_at=due_at,
+            content=exercise_content
+        )
+        
+        db.add(exercise)
+        db.commit()
+        db.refresh(exercise)
+        
+        print(f"[generate_exercise] Created exercise ID: {exercise.id}")
+        
+        return JSONResponse(content={
+            "success": True,
+            "message": "Đã sinh bài tập thành công từ AI",
+            "exercise_id": exercise.id,
+            "exercise": {
+                "id": exercise.id,
+                "title": exercise.title,
+                "type": exercise.type,
+                "skill_type": exercise.skill_type,
+                "max_score": exercise.max_score,
+                "num_questions": len(exercise_content.get('questions', [])),
+                "created_at": exercise.created_at.isoformat(),
+                "content": exercise_content  # Include full content for preview
+            }
+        })
+        
+    except json.JSONDecodeError as e:
+        print(f"[generate_exercise] JSON parse error: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Lỗi phân tích nội dung từ AI: {str(e)}"
+        )
+    except Exception as e:
+        print(f"[generate_exercise] Error: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Lỗi khi tạo bài tập: {str(e)}"
+        )
+
+
+@router.post("/generate-from-qb")
+async def generate_exercise_from_question_bank(
+    title: str = Form(...),
+    class_id: int = Form(...),
+    test_type: str = Form(...),
+    skill_type: Optional[str] = Form(None),
+    max_score: Optional[float] = Form(10.0),
+    due_date: Optional[str] = Form(None),
+    num_questions: int = Form(10),
+    difficulty: str = Form('mixed'),
+    difficulty_distribution: Optional[str] = Form(None),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Generate exercise from question bank
+    
+    This will be implemented after question bank module is complete
+    """
+    _ensure_can_manage_class(db, current_user, class_id)
+    
+    # TODO: Implement question bank selection logic
+    raise HTTPException(
+        status_code=501,
+        detail="Tính năng sinh đề từ ngân hàng câu hỏi đang được phát triển"
+    )
+
+
+@router.post("/import-word")
+async def import_exercise_from_word(
+    file: UploadFile = File(...),
+    title: str = Form(...),
+    type: str = Form(...),
+    skill_type: str = Form(...),
+    class_id: int = Form(...),
+    max_score: Optional[float] = Form(10.0),
+    due_date: Optional[str] = Form(None),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Import exercise from Word file
+    The Word file will be saved on the server and students can download it
+    """
+    try:
+        _ensure_can_manage_class(db, current_user, class_id)
+        
+        # Validate file type
+        if not file.filename.endswith(('.doc', '.docx')):
+            raise HTTPException(
+                status_code=400,
+                detail="Chỉ hỗ trợ file Word (.doc, .docx)"
+            )
+        
+        # Create media directory if not exists
+        media_dir = Path("media/exercises")
+        media_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Generate unique filename
+        file_extension = Path(file.filename).suffix
+        unique_filename = f"{uuid.uuid4()}{file_extension}"
+        file_path = media_dir / unique_filename
+        
+        # Save file
+        with open(file_path, "wb") as buffer:
+            content = await file.read()
+            buffer.write(content)
+        
+        # Create exercise record
+        new_exercise = Exercise(
+            title=title.strip(),
+            type=type,
+            skill_type=skill_type,
+            class_id=class_id,
+            max_score=max_score,
+            due_at=datetime.fromisoformat(due_date.replace('Z', '+00:00')) if due_date else None,
+            content={
+                'file_path': str(file_path),
+                'original_filename': file.filename,
+                'file_size': len(content),
+                'description': 'Bài tập từ file Word. Học sinh tải file về, làm bài và nộp lại.'
+            }
+        )
+        
+        db.add(new_exercise)
+        db.commit()
+        db.refresh(new_exercise)
+        
+        return {
+            'success': True,
+            'message': 'Tạo bài tập từ file Word thành công!',
+            'exercise_id': new_exercise.id,
+            'exercise': {
+                'id': new_exercise.id,
+                'title': new_exercise.title,
+                'type': new_exercise.type,
+                'skill_type': new_exercise.skill_type,
+                'file_path': str(file_path),
+                'original_filename': file.filename
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error importing Word file: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Lỗi khi import file Word: {str(e)}"
+        )

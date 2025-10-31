@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Eye, Trash2, FileText, Clock, Award, Users, Sparkles, Headphones, BookOpen, PenTool, Mic, Search, List } from 'lucide-react';
 import { Card } from '../../../../../components/ui/card';
 import { apiV1 } from '../../../../../services/api';
-import CreateExerciseModalComplete from './CreateExerciseModalComplete';
+import CreateExerciseModalV2 from './CreateExerciseModalV2';
 import ExerciseDetailModal from './ExerciseDetailModal';
 import ExerciseListTable from './ExerciseListTable';
 import Toast from '../../../../../components/Toast/Toast';
@@ -75,15 +75,25 @@ export default function ExerciseManagementV2() {
 
   const handleCreateExercise = async (newExercise) => {
     try {
+      console.log('Creating exercise with data:', newExercise);
+      
+      // If exercise was already created (e.g., via import), just refresh
+      if (newExercise._imported) {
+        console.log('Exercise already imported, refreshing list...');
+        await fetchExercises();
+        setShowCreateModal(false);
+        return;
+      }
+      
       // Call API to create exercise
       const response = await apiV1.post('/exercises/', {
-        class_id: parseInt(newExercise.classId),
+        class_id: parseInt(newExercise.class_id),
         title: newExercise.title,
         description: newExercise.description || '',
         type: newExercise.type || 'skill_exercise',
-        skill_type: newExercise.skill,
-        max_score: newExercise.maxScore || 10,
-        due_at: newExercise.dueDate || null,
+        skill_type: newExercise.skill_type,
+        max_score: newExercise.max_score || 10,
+        due_at: newExercise.due_at || null,
         content: newExercise.content || {},
         enable_ai_grading: false
       });
@@ -95,6 +105,7 @@ export default function ExerciseManagementV2() {
       setShowCreateModal(false);
     } catch (error) {
       console.error('Error creating exercise:', error);
+      console.error('Error details:', error.response?.data);
       showError(`Không thể tạo bài tập: ${error.response?.data?.detail || error.message}`);
     }
   };
@@ -460,7 +471,7 @@ export default function ExerciseManagementV2() {
 
       {/* Modals */}
       {showCreateModal && (
-        <CreateExerciseModalComplete
+        <CreateExerciseModalV2
           onClose={() => setShowCreateModal(false)}
           onCreate={handleCreateExercise}
         />
