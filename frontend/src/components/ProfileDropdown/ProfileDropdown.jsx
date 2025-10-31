@@ -15,6 +15,21 @@ const ProfileDropdown = ({ onLogout }) => {
   useEffect(() => {
     const userData = authService.getCurrentUser();
     setUser(userData);
+    
+    // Listen for storage changes to update avatar in real-time
+    const handleStorageChange = () => {
+      const updatedUserData = authService.getCurrentUser();
+      setUser(updatedUserData);
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    // Also listen for custom event when avatar is updated
+    window.addEventListener('avatarUpdated', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('avatarUpdated', handleStorageChange);
+    };
   }, []);
 
   useEffect(() => {
@@ -58,6 +73,17 @@ const ProfileDropdown = ({ onLogout }) => {
       .slice(0, 2);
   };
 
+  const getAvatarUrl = (avatarUrl) => {
+    if (!avatarUrl) return null;
+    // If already full URL, return as is
+    if (avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://') || avatarUrl.startsWith('data:')) {
+      return avatarUrl;
+    }
+    // Otherwise prepend backend base URL
+    const BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_BACKEND_BASE_URL || 'http://localhost:8000';
+    return `${BASE_URL}${avatarUrl}`;
+  };
+
   if (!user) return null;
 
   const dropdownMenu = isOpen && (
@@ -73,14 +99,14 @@ const ProfileDropdown = ({ onLogout }) => {
     >
       <div className="dropdown-header">
         <div className="profile-avatar-large">
-          {user.avatar ? (
-            <img src={user.avatar} alt={user.username} />
+          {user.avatar_url ? (
+            <img src={getAvatarUrl(user.avatar_url)} alt={user.full_name || user.username} />
           ) : (
-            <span className="profile-initials-large">{getInitials(user.username)}</span>
+            <span className="profile-initials-large">{getInitials(user.full_name || user.username)}</span>
           )}
         </div>
         <div className="profile-info-dropdown">
-          <h4>{user.username}</h4>
+          <h4>{user.full_name || user.username}</h4>
           <p>{user.email}</p>
         </div>
       </div>
@@ -125,13 +151,13 @@ const ProfileDropdown = ({ onLogout }) => {
     <div className="profile-dropdown-container">
       <button className="profile-trigger" onClick={toggleDropdown} ref={triggerRef}>
         <div className="profile-avatar-small">
-          {user.avatar ? (
-            <img src={user.avatar} alt={user.username} />
+          {user.avatar_url ? (
+            <img src={getAvatarUrl(user.avatar_url)} alt={user.full_name || user.username} />
           ) : (
-            <span className="profile-initials">{getInitials(user.username)}</span>
+            <span className="profile-initials">{getInitials(user.full_name || user.username)}</span>
           )}
         </div>
-        <span className="profile-username-nav">{user.username}</span>
+        <span className="profile-username-nav">{user.full_name || user.username}</span>
         <svg 
           className={`dropdown-arrow ${isOpen ? 'open' : ''}`} 
           width="12" 
