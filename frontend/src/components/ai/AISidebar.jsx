@@ -1,6 +1,7 @@
 import { Bot, Languages, MessageCircle, Headphones, PenTool, BookOpen, Layers } from "lucide-react";
+import React from 'react';
 
-export function AISidebar({ activeTab, onTabChange }) {
+export const AISidebar = React.memo(function AISidebar({ activeTab, onTabChange }) {
   const menuItems = [
     {
       id: "translate",
@@ -129,5 +130,6 @@ export function AISidebar({ activeTab, onTabChange }) {
       </div>
     </div>
   );
-}
+});
 
+export default AISidebar;

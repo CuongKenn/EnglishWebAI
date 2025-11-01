@@ -1,7 +1,8 @@
+import React from 'react';
 import { Eye, Edit, Trash2, Users, Calendar, Award, FileText, Clock } from 'lucide-react';
 import './ExerciseManagement.css';
 
-export default function ExerciseList({ exercises, onViewDetail, onDelete }) {
+const ExerciseList = React.memo(function ExerciseList({ exercises, onViewDetail, onDelete }) {
   const getSkillIcon = (skill) => {
     const icons = {
       listening: '🎧',
@@ -115,5 +116,6 @@ export default function ExerciseList({ exercises, onViewDetail, onDelete }) {
       )}
     </div>
   );
-}
+});
 
+export default ExerciseList;

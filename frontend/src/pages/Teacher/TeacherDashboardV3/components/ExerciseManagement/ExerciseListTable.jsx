@@ -1,6 +1,7 @@
+import React from 'react';
 import { Eye, Trash2 } from 'lucide-react';
 
-export default function ExerciseListTable({ items = [], onView, onDelete }) {
+const ExerciseListTable = React.memo(function ExerciseListTable({ items = [], onView, onDelete }) {
   return (
     <div className="overflow-x-auto border border-gray-200 rounded-lg">
       <table className="min-w-full bg-white">
@@ -91,4 +92,6 @@ export default function ExerciseListTable({ items = [], onView, onDelete }) {
       return dt || '-';
     }
   }
-}
+});
+
+export default ExerciseListTable;

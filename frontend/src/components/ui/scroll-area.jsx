@@ -1,6 +1,6 @@
 import React from 'react';
 
-export const ScrollArea = ({ className = '', children, ...props }) => {
+export const ScrollArea = React.memo(({ className = '', children, ...props }) => {
   return (
     <div
       className={`overflow-auto ${className}`}
@@ -9,4 +9,4 @@ export const ScrollArea = ({ className = '', children, ...props }) => {
       {children}
     </div>
   );
-};
+});

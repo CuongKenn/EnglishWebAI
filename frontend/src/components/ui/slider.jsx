@@ -1,6 +1,6 @@
 import React from 'react';
 
-export const Slider = ({ 
+export const Slider = React.memo(({ 
   value = [50], 
   onValueChange, 
   min = 0, 
@@ -27,4 +27,4 @@ export const Slider = ({
       {...props}
     />
   );
-};
+});

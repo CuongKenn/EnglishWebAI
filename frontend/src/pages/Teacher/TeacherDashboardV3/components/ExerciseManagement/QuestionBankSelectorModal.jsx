@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Search, Filter, Check } from 'lucide-react';
 import './ExerciseManagement.css';
 
-export default function QuestionBankSelectorModal({ skillType, onClose, onSelect }) {
+const QuestionBankSelectorModal = React.memo(function QuestionBankSelectorModal({ skillType, onClose, onSelect }) {
   const [questions, setQuestions] = useState([]);
   const [filteredQuestions, setFilteredQuestions] = useState([]);
   const [selectedQuestions, setSelectedQuestions] = useState([]);
@@ -285,5 +285,6 @@ export default function QuestionBankSelectorModal({ skillType, onClose, onSelect
       </div>
     </div>
   );
-}
+});
 
+export default QuestionBankSelectorModal;
