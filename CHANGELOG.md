@@ -10,15 +10,56 @@ For AI/agent contribution guidelines, please read the project rules in [AI_RULES
 ## [Unreleased]
 
 ### Added
+- **404 Not Found Page**: Beautiful animated 404 error page (Commit: ccd5995)
+  - Gradient background with animation effects
+  - Bouncing search icon with pulse animation
+  - Multiple recovery actions: Go Back, Go Home, My Classes
+  - Quick links navigation: News, Materials, Exercises, Discussion
+  - Fully responsive design with Tailwind CSS
+- **About Us Page**: Comprehensive company information page (Commit: ae571ec)
+  - Team member profiles with animated cards
+  - Mission and vision statements
+  - Contact information and social media links
+  - Statistics showcase with counters
+  - Interactive UI with smooth animations
+- **Error Boundary System**: Comprehensive error handling (Commits: 446eacb, f129d8d)
+  - Phase 1: Protected 5 critical routes (DoExercise, TakeExam, Admin/Teacher/Parent Dashboards)
+  - Phase 2: Extended to 17 routes total including:
+    - All exercise types (Reading, Writing, Speaking, Listening)
+    - AI practice pages (AI Practice, AI Writing, AI Reading)
+    - Course pages (Course Content, Course Lessons)
+    - Teacher pages (Teacher Materials, Submission Grading)
+    - Parent pages (Track Progress, Notifications, Teacher Communication)
+  - Beautiful gradient fallback UI with recovery options
+  - Development mode error details
+  - Custom error handler hook for async errors
 - Comprehensive changelog documentation for project tracking
- - Documentation: AI collaboration rules in [AI_RULES.md](./AI_RULES.md)
- - Repository workflow: PR template and commit message linting (commitlint + husky commit-msg hook)
+- Documentation: AI collaboration rules in [AI_RULES.md](./AI_RULES.md)
+- Repository workflow: PR template and commit message linting (commitlint + husky commit-msg hook)
 
 ### Changed
+- **Code Quality Improvements**: Frontend cleanup (Commit: c27ba34)
+  - Removed 50+ unnecessary console.log and console.warn statements
+  - Kept console.error for proper error logging
+  - Fixed build errors in App.jsx and parentService.js
+  - Improved code maintainability and production readiness
+- **Navigation Updates**: Enhanced user navigation
+  - Added "About Us" link to main navbar
+  - Added "About Us" link to home page header
+  - Improved routing structure with catch-all 404 route
 - Frontend: Centralized API calls
   - Parent-Teacher Communication now uses `parentService` instead of direct fetch
   - Exam import modal now uses `classesAPI.getTeachingClasses()`
 - Cleanup: Removed unused `frontend/src/components/Register/Register.jsx.new` (hardcoded URL)
+
+### Fixed
+- **Toast Notification Bug**: Fixed null reference error in Register component (Commit: cc08a0f)
+  - Fixed TypeError: Cannot read properties of null (reading 'show')
+  - Changed toast check from `toast.show &&` to `toast &&`
+  - Improved error handling in registration flow
+
+### Removed
+- Cleaned up ERROR_BOUNDARIES.md documentation file (Commit: edfd109)
 
 ---
 
