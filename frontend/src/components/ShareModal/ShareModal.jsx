@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import './ShareModal.css';
+import { UI_CONFIG } from '../../config/constants';
 
 const ShareModal = ({ isOpen, onClose, shareUrl, title = 'Chia sẻ bài viết' }) => {
   const [copied, setCopied] = useState(false);
@@ -8,7 +9,7 @@ const ShareModal = ({ isOpen, onClose, shareUrl, title = 'Chia sẻ bài viết'
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setTimeout(() => setCopied(false), UI_CONFIG.COPIED_INDICATOR_DURATION);
     } catch (err) {
       // Fallback for older browsers
       const textArea = document.createElement('textarea');
@@ -18,7 +19,7 @@ const ShareModal = ({ isOpen, onClose, shareUrl, title = 'Chia sẻ bài viết'
       document.execCommand('copy');
       document.body.removeChild(textArea);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setTimeout(() => setCopied(false), UI_CONFIG.COPIED_INDICATOR_DURATION);
     }
   };
 

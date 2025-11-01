@@ -1,13 +1,12 @@
 import { useMemo, useState, useCallback, memo, useEffect } from 'react';
-import { 
-  X, Download, Edit, Trash2, Save, Calendar, Target, 
+import {
+  X, Download, Edit, Trash2, Save, Calendar, Target,
   Users, BarChart2, Copy, Check, Plus, Circle, CheckCircle2
 } from 'lucide-react';
 import './ExerciseDetailModal.css';
 import Toast from '../../../../../components/Toast/Toast';
 import useToast from '../../../../../hooks/useToast';
-
-const ExerciseDetailModal = memo(function ExerciseDetailModal({ exercise, onClose, onUpdate, onDelete }) {
+import { UI_CONFIG } from '../../../../../config/constants';const ExerciseDetailModal = memo(function ExerciseDetailModal({ exercise, onClose, onUpdate, onDelete }) {
   const { toast, showSuccess, showError, showWarning, hideToast } = useToast();
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedExercise, setEditedExercise] = useState(exercise);
@@ -54,7 +53,7 @@ const ExerciseDetailModal = memo(function ExerciseDetailModal({ exercise, onClos
     navigator.clipboard.writeText(link).then(() => {
       setCopied(true);
       showSuccess('Đã sao chép link!');
-      setTimeout(() => setCopied(false), 2000);
+      setTimeout(() => setCopied(false), UI_CONFIG.COPIED_INDICATOR_DURATION);
     });
   }, [exercise?.id, showSuccess]);
   

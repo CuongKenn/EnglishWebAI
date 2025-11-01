@@ -40,6 +40,13 @@
 - ✅ `AISidebar.jsx`, `ScrollArea.jsx`, `Slider.jsx` - UI components
 - ✅ Expected: ~30-40% reduction in unnecessary re-renders
 
+### 8. Debouncing for Search Inputs
+- ✅ `src/hooks/useDebounce.js` - Custom debounce hook (300ms delay)
+- ✅ Applied to `QuestionBankV2.jsx` search (2000+ questions)
+- ✅ Applied to `ExerciseManagementV2.jsx` search
+- ✅ Prevents filter operations on every keystroke
+- ✅ Expected: ~50-60% reduction in filter operations, smoother UX
+
 ---
 
 ## 🔧 Cần implement (To Do)

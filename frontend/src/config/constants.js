@@ -74,14 +74,33 @@ export const PAGINATION_CONFIG = {
 // UI Configuration
 export const UI_CONFIG = {
   // Debounce delays (in milliseconds)
-  SEARCH_DEBOUNCE: 500,
+  SEARCH_DEBOUNCE: 300,
   INPUT_DEBOUNCE: 300,
   SCROLL_DEBOUNCE: 150,
   
+  // Toast/Notification durations (in milliseconds)
+  TOAST_DURATION: 3000, // 3 seconds
+  TOAST_SUCCESS_DURATION: 2000, // 2 seconds
+  TOAST_ERROR_DURATION: 4000, // 4 seconds
+  NOTIFICATION_DURATION: 3000, // 3 seconds
+  COPIED_INDICATOR_DURATION: 2000, // 2 seconds
+  SUCCESS_INDICATOR_DURATION: 2000, // 2 seconds
+  
+  // Auto-save delays
+  AUTO_SAVE_DELAY: 2000, // 2 seconds
+  
   // Animation durations (in milliseconds)
-  TOAST_DURATION: 3000,
   MODAL_ANIMATION: 300,
   TRANSITION_DURATION: 200,
+  RIPPLE_DURATION: 600,
+  
+  // Focus and interaction delays
+  FOCUS_DELAY: 100,
+  INTERACTION_DELAY: 100,
+  
+  // Timer intervals
+  TIMER_INTERVAL: 1000, // 1 second
+  COUNTDOWN_INTERVAL: 1000,
   
   // Loading states
   SKELETON_ITEMS: 6,
