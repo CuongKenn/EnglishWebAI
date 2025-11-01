@@ -280,7 +280,7 @@ const ListeningExercise = () => {
         type: 'error',
         message: 'Không thể phát audio. Vui lòng kiểm tra lại file audio.'
       });
-      setTimeout(() => setNotification(null), 3000);
+      setTimeout(() => setNotification(null), UI_CONFIG.NOTIFICATION_DURATION);
     };
 
     // Metadata may be available before listeners attach (e.g., cached file)
@@ -362,7 +362,7 @@ const ListeningExercise = () => {
                 type: 'error',
                 message: 'Trình duyệt không thể phát file audio. Kiểm tra lại quyền truy cập hoặc định dạng.'
               });
-              setTimeout(() => setNotification(null), 3000);
+              setTimeout(() => setNotification(null), UI_CONFIG.NOTIFICATION_DURATION);
             });
         } else {
           setIsPlaying(true);
@@ -425,7 +425,7 @@ const ListeningExercise = () => {
       // Restart speech for skip backward
       speechSynthRef.current.cancel();
       setIsPlaying(false);
-      setTimeout(() => togglePlayPause(), 100);
+      setTimeout(() => togglePlayPause(), UI_CONFIG.INTERACTION_DELAY);
     }
   };
 
@@ -500,7 +500,7 @@ const ListeningExercise = () => {
         type: 'error',
         message: `Vui lòng trả lời tất cả ${totalQuestions} câu hỏi trước khi nộp bài`
       });
-      setTimeout(() => setNotification(null), 3000);
+      setTimeout(() => setNotification(null), UI_CONFIG.NOTIFICATION_DURATION);
       return;
     }
 

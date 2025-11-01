@@ -210,7 +210,7 @@ export default function DoExercise() {
   useEffect(() => {
     // Timer
     if (timeRemaining > 0) {
-      const timer = setTimeout(() => setTimeRemaining(timeRemaining - 1), 1000);
+      const timer = setTimeout(() => setTimeRemaining(timeRemaining - 1), UI_CONFIG.TIMER_INTERVAL);
       return () => clearTimeout(timer);
     } else if (timeRemaining === 0) {
       handleSubmit();

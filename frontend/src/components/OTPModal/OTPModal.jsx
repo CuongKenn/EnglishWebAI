@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import './OTPModal.css';
+import { UI_CONFIG } from '../../config/constants';
 
 const OTPModal = ({ 
   isOpen, 
@@ -23,7 +24,7 @@ const OTPModal = ({
       setOtp(['', '', '', '', '', '']);
       setError('');
       // Focus first input
-      setTimeout(() => inputRefs.current[0]?.focus(), 100);
+      setTimeout(() => inputRefs.current[0]?.focus(), UI_CONFIG.FOCUS_DELAY);
     }
   }, [isOpen]);
 
@@ -31,7 +32,7 @@ const OTPModal = ({
     if (timer > 0 && isOpen) {
       const interval = setInterval(() => {
         setTimer((prev) => prev - 1);
-      }, 1000);
+      }, UI_CONFIG.COUNTDOWN_INTERVAL);
       return () => clearInterval(interval);
     }
   }, [timer, isOpen]);

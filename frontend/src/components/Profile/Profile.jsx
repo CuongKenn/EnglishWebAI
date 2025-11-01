@@ -57,7 +57,7 @@ const Profile = () => {
 
   useEffect(() => {
     if (resendCooldown > 0) {
-      const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
+      const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), UI_CONFIG.COUNTDOWN_INTERVAL);
       return () => clearTimeout(timer);
     }
   }, [resendCooldown]);
