@@ -176,7 +176,8 @@ class GradingQueueService:
             submission.ai_score = result['total_score']
             submission.original_ai_score = result['total_score']
             submission.rubrics_scores = result
-            submission.ai_feedback = str(result)
+            # Only save feedback text, not the entire result object
+            submission.ai_feedback = result.get('feedback', f"Tự động chấm: {result['total_score']}/{result['max_score']} điểm")
             submission.grading_status = "ai_graded"
             submission.ai_graded_at = datetime.utcnow()
             submission.teacher_reviewed = False
