@@ -288,13 +288,20 @@ async def get_student_analytics(
         ).all()
         
         total_submissions = len(submissions)
-        graded_submissions = len([s for s in submissions if s.status == "graded"])
+        graded_submissions = len([s for s in submissions if (s.score is not None or s.ai_score is not None)])
         
-        # Calculate average score
-        scores = [s.score for s in submissions if s.score is not None]
+        # Calculate average score (use teacher score or AI score) - scaled to 10
+        scores = []
+        for s in submissions:
+            final_score = s.score if s.score is not None else s.ai_score
+            if final_score is not None and s.exercise and s.exercise.max_score and s.exercise.max_score > 0:
+                # Scale to 10
+                score_out_of_10 = (final_score / s.exercise.max_score) * 10
+                scores.append(score_out_of_10)
+        
         average_score = sum(scores) / len(scores) if scores else 0
         
-        # Calculate skill scores
+        # Calculate skill scores based on exercise.skill_type - scaled to 10
         skill_scores = {
             "reading": [],
             "writing": [],
@@ -303,18 +310,17 @@ async def get_student_analytics(
         }
         
         for sub in submissions:
-            if sub.rubrics_scores:
-                for rubric in sub.rubrics_scores:
-                    if isinstance(rubric, dict) and 'skill' in rubric and 'score' in rubric and 'max_score' in rubric:
-                        skill = rubric['skill']
-                        if skill in skill_scores and rubric['max_score'] > 0:
-                            percentage = (rubric['score'] / rubric['max_score']) * 100
-                            skill_scores[skill].append(percentage)
+            if sub.exercise and sub.exercise.skill_type and sub.exercise.skill_type in skill_scores:
+                final_score = sub.score if sub.score is not None else sub.ai_score
+                if final_score is not None and sub.exercise.max_score and sub.exercise.max_score > 0:
+                    # Scale to 10
+                    score_out_of_10 = (final_score / sub.exercise.max_score) * 10
+                    skill_scores[sub.exercise.skill_type].append(score_out_of_10)
         
         # Calculate average for each skill
         skill_averages = {}
         for skill, scores_list in skill_scores.items():
-            skill_averages[skill] = round(sum(scores_list) / len(scores_list), 2) if scores_list else 0
+            skill_averages[skill] = round(sum(scores_list) / len(scores_list), 1) if scores_list else 0.0
         
         # Determine trend (simple: compare first half vs second half)
         trend = "stable"
