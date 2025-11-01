@@ -349,22 +349,7 @@ export default function ExamGradingPage() {
                   </div>
                 )}
 
-                {/* Auto Grade Button */}
-                <button 
-                  className={`btn-auto-grade ${aiLoading ? 'loading' : ''}`} 
-                  onClick={runAutoGrade} 
-                  disabled={aiLoading}
-                >
-                  {aiLoading ? (
-                    <>
-                      <Loader2 className="spinner" size={18} /> Đang chấm...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles size={18} /> Chấm lại bằng AI
-                    </>
-                  )}
-                </button>
+              {/* Auto-grade AI button - Removed */}
 
                 {/* Manual Grading Form */}
                 <div className="manual-grade-card">

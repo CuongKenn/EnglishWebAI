@@ -455,8 +455,8 @@ export default function GradingFeedback() {
                         <span className="question-id">Câu {qId}</span>
                         <span className="question-points">
                           {result.earned !== undefined 
-                            ? `${result.earned}/${result.points} điểm` 
-                            : `${result.points} điểm (chờ chấm)`
+                            ? `${typeof result.earned === 'number' ? result.earned.toFixed(2) : result.earned}/${typeof result.points === 'number' ? result.points.toFixed(2) : result.points} điểm` 
+                            : `${typeof result.points === 'number' ? result.points.toFixed(2) : result.points} điểm (chờ chấm)`
                           }
                         </span>
                       </div>
@@ -520,17 +520,6 @@ export default function GradingFeedback() {
                     )}
                   </div>
                 )}
-                <button className={`btn-ai-grade full ${aiLoading ? 'loading' : ''}`} onClick={runAutoGrade} disabled={loading}>
-                  {aiLoading ? (
-                    <>
-                      <Loader2 className="spinner" size={18} /> Đang chấm...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles size={18} /> {hasAI ? 'Chấm lại bằng AI' : 'Chấm tự động (AI)'}
-                    </>
-                  )}
-                </button>
               </div>
 
               <div className="sidebar-card">
@@ -542,11 +531,6 @@ export default function GradingFeedback() {
                   <input type="number" min="0" max="10" step="0.1" value={scoreInput} onChange={(e)=>setScoreInput(e.target.value)} />
                   <label>Nhận xét</label>
                   <textarea value={feedbackInput} onChange={(e)=>setFeedbackInput(e.target.value)} />
-                  {typeof selectedSubmission?.ai_score === 'number' && (
-                    <button className="btn-use-ai full" type="button" onClick={applyAIResultToForm}>
-                      <Sparkles size={16} /> Dùng gợi ý AI
-                    </button>
-                  )}
                   <button className="btn-save-grade full" onClick={() => handleManualSave(parseFloat(scoreInput), feedbackInput)} disabled={loading}>
                     <CheckCircle size={18} /> Xác nhận & lưu điểm
                   </button>
@@ -601,9 +585,6 @@ export default function GradingFeedback() {
                   >
                     <div className="exercise-item-header">
                       <h4>{classItem.name}</h4>
-                      <span className="class-badge">
-                        Lớp thầy Trung
-                      </span>
                     </div>
                     <div className="exercise-item-stats">
                       <div className="stat-item-grading pending">

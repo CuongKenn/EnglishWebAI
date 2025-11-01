@@ -49,6 +49,17 @@ export default function SubmissionGradingPage() {
     overall_comment: ''
   });
 
+  // Writing feedback editable states
+  const [editableWriting, setEditableWriting] = useState({
+    content: '',
+    grammar: '',
+    vocabulary: '',
+    structure: '',
+    strengths: [],
+    improvements: [],
+    overall_comment: ''
+  });
+
   const hasAI = typeof submission?.ai_score === 'number';
 
   // Fetch a single submission either via class submissions list or exercise submissions list
@@ -108,6 +119,20 @@ export default function SubmissionGradingPage() {
               improvements: Array.isArray(content.improvements) ? content.improvements : [],
               suggestions: Array.isArray(content.suggestions) ? content.suggestions : [],
               overall_comment: content.overall_comment || ''
+            });
+          }
+          
+          // Initialize editable writing feedback from rubrics_scores.writing or writing.feedback
+          if (found.rubrics_scores?.writing?.feedback || found.rubrics_scores?.writing) {
+            const feedback = found.rubrics_scores.writing?.feedback || found.rubrics_scores.writing;
+            setEditableWriting({
+              content: feedback.content || '',
+              grammar: feedback.grammar || '',
+              vocabulary: feedback.vocabulary || '',
+              structure: feedback.structure || '',
+              strengths: Array.isArray(feedback.strengths) ? feedback.strengths : [],
+              improvements: Array.isArray(feedback.improvements) ? feedback.improvements : [],
+              overall_comment: feedback.overall_comment || ''
             });
           }
         }
@@ -236,9 +261,11 @@ export default function SubmissionGradingPage() {
         <div className="gp-q-head">
           <div className="gp-q-id">Câu {idx + 1} {q.type && `(${q.type})`}</div>
           <div className="gp-q-pts">
-            {q.points_earned !== undefined ? `${q.points_earned.toFixed(1)}/${q.max_points || q.points} điểm` : 
-             q.earned !== undefined ? `${q.earned}/${q.points} điểm` : 
-             `${q.points || q.max_points} điểm`}
+            {q.points_earned !== undefined 
+              ? `${q.points_earned.toFixed(2)}/${(q.max_points || q.points).toFixed(2)} điểm` 
+              : q.earned !== undefined 
+                ? `${q.earned.toFixed(2)}/${(q.points).toFixed(2)} điểm` 
+                : `${(q.points || q.max_points).toFixed(2)} điểm`}
           </div>
         </div>
         
@@ -325,9 +352,6 @@ export default function SubmissionGradingPage() {
               <div className="gp-ring-value">{typeof submission?.ai_score === 'number' ? submission.ai_score : '-'}</div>
               <div className="gp-ring-max">/10</div>
             </div>
-            <button className={`gp-btn ai ${aiLoading ? 'loading' : ''}`} onClick={runAutoGrade} disabled={loading}>
-              {aiLoading ? (<><Loader2 className="spinner" size={16} /> Đang chấm...</>) : (<><Sparkles size={16} /> {hasAI ? 'Chấm lại bằng AI' : 'Chấm tự động (AI)'} </>)}
-            </button>
           </div>
         </div>
 
@@ -445,26 +469,238 @@ export default function SubmissionGradingPage() {
                     
                     {writingSection.feedback && (
                       <div className="gp-feedback">
-                        <strong>Nhận xét AI:</strong>
+                        <div style={{ fontSize: '15px', fontWeight: '700', marginBottom: '12px', color: '#4f46e5' }}>
+                          💡 Nhận xét chi tiết từ Cô giáo
+                        </div>
                         {typeof writingSection.feedback === 'object' && writingSection.feedback !== null ? (
                           <div style={{ marginTop: '10px' }}>
-                            {Object.entries(writingSection.feedback).map(([criterion, text]) => (
-                              <div key={criterion} style={{ 
-                                marginBottom: '10px', 
-                                padding: '10px', 
-                                background: '#f8f9fa', 
-                                borderRadius: '6px',
-                                borderLeft: '3px solid #10b981'
+                            {writingSection.feedback.content && (
+                              <div style={{ 
+                                marginBottom: '12px', 
+                                padding: '14px', 
+                                background: '#fef3c7', 
+                                borderRadius: '8px',
+                                borderLeft: '4px solid #f59e0b'
                               }}>
-                                <div style={{ fontWeight: 'bold', marginBottom: '5px', textTransform: 'capitalize' }}>
-                                  {criterion === 'content' ? '📝 Nội dung' : 
-                                   criterion === 'grammar' ? '📖 Ngữ pháp' :
-                                   criterion === 'vocabulary' ? '📚 Từ vựng' :
-                                   criterion === 'structure' ? '🏗️ Cấu trúc' : criterion}:
+                                <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#92400e' }}>
+                                  📝 Nội dung:
                                 </div>
-                                <div style={{ color: '#374151' }}>{safeRender(text)}</div>
+                                <textarea
+                                  value={editableWriting.content}
+                                  onChange={(e) => setEditableWriting(prev => ({...prev, content: e.target.value}))}
+                                  style={{ 
+                                    width: '100%',
+                                    minHeight: '80px',
+                                    color: '#78350f', 
+                                    lineHeight: '1.7',
+                                    padding: '10px',
+                                    border: '1px solid #f59e0b',
+                                    borderRadius: '6px',
+                                    background: 'white',
+                                    resize: 'vertical',
+                                    fontFamily: 'inherit'
+                                  }}
+                                />
                               </div>
-                            ))}
+                            )}
+                            
+                            {writingSection.feedback.grammar && (
+                              <div style={{ 
+                                marginBottom: '12px', 
+                                padding: '14px', 
+                                background: '#fce7f3', 
+                                borderRadius: '8px',
+                                borderLeft: '4px solid #ec4899'
+                              }}>
+                                <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#831843' }}>
+                                  📖 Ngữ pháp:
+                                </div>
+                                <textarea
+                                  value={editableWriting.grammar}
+                                  onChange={(e) => setEditableWriting(prev => ({...prev, grammar: e.target.value}))}
+                                  style={{ 
+                                    width: '100%',
+                                    minHeight: '80px',
+                                    color: '#9f1239', 
+                                    lineHeight: '1.7',
+                                    padding: '10px',
+                                    border: '1px solid #ec4899',
+                                    borderRadius: '6px',
+                                    background: 'white',
+                                    resize: 'vertical',
+                                    fontFamily: 'inherit'
+                                  }}
+                                />
+                              </div>
+                            )}
+                            
+                            {writingSection.feedback.vocabulary && (
+                              <div style={{ 
+                                marginBottom: '12px', 
+                                padding: '14px', 
+                                background: '#dbeafe', 
+                                borderRadius: '8px',
+                                borderLeft: '4px solid #3b82f6'
+                              }}>
+                                <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#1e40af' }}>
+                                  📚 Từ vựng:
+                                </div>
+                                <textarea
+                                  value={editableWriting.vocabulary}
+                                  onChange={(e) => setEditableWriting(prev => ({...prev, vocabulary: e.target.value}))}
+                                  style={{ 
+                                    width: '100%',
+                                    minHeight: '80px',
+                                    color: '#1e3a8a', 
+                                    lineHeight: '1.7',
+                                    padding: '10px',
+                                    border: '1px solid #3b82f6',
+                                    borderRadius: '6px',
+                                    background: 'white',
+                                    resize: 'vertical',
+                                    fontFamily: 'inherit'
+                                  }}
+                                />
+                              </div>
+                            )}
+                            
+                            {writingSection.feedback.structure && (
+                              <div style={{ 
+                                marginBottom: '12px', 
+                                padding: '14px', 
+                                background: '#dcfce7', 
+                                borderRadius: '8px',
+                                borderLeft: '4px solid #10b981'
+                              }}>
+                                <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#065f46' }}>
+                                  🏗️ Cấu trúc:
+                                </div>
+                                <textarea
+                                  value={editableWriting.structure}
+                                  onChange={(e) => setEditableWriting(prev => ({...prev, structure: e.target.value}))}
+                                  style={{ 
+                                    width: '100%',
+                                    minHeight: '80px',
+                                    color: '#064e3b', 
+                                    lineHeight: '1.7',
+                                    padding: '10px',
+                                    border: '1px solid #10b981',
+                                    borderRadius: '6px',
+                                    background: 'white',
+                                    resize: 'vertical',
+                                    fontFamily: 'inherit'
+                                  }}
+                                />
+                              </div>
+                            )}
+                            
+                            {/* Strengths */}
+                            {Array.isArray(editableWriting.strengths) && editableWriting.strengths.length > 0 && (
+                              <div style={{ 
+                                marginBottom: '12px', 
+                                padding: '14px', 
+                                background: '#d1fae5', 
+                                borderRadius: '8px',
+                                borderLeft: '4px solid #059669'
+                              }}>
+                                <div style={{ fontWeight: 'bold', marginBottom: '10px', color: '#065f46' }}>
+                                  � Điểm mạnh của em:
+                                </div>
+                                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                                  {editableWriting.strengths.map((item, idx) => (
+                                    <li key={idx} style={{ marginBottom: '6px', color: '#047857', lineHeight: '1.6' }}>
+                                      <input 
+                                        type="text"
+                                        value={item}
+                                        onChange={(e) => {
+                                          const newStrengths = [...editableWriting.strengths];
+                                          newStrengths[idx] = e.target.value;
+                                          setEditableWriting(prev => ({...prev, strengths: newStrengths}));
+                                        }}
+                                        style={{ 
+                                          width: '100%', 
+                                          border: '1px solid #059669', 
+                                          borderRadius: '4px', 
+                                          padding: '6px',
+                                          background: 'white',
+                                          color: '#047857'
+                                        }}
+                                      />
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            
+                            {/* Improvements */}
+                            {Array.isArray(editableWriting.improvements) && editableWriting.improvements.length > 0 && (
+                              <div style={{ 
+                                marginBottom: '12px', 
+                                padding: '14px', 
+                                background: '#fed7aa', 
+                                borderRadius: '8px',
+                                borderLeft: '4px solid #ea580c'
+                              }}>
+                                <div style={{ fontWeight: 'bold', marginBottom: '10px', color: '#7c2d12' }}>
+                                  📈 Cần cải thiện:
+                                </div>
+                                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                                  {editableWriting.improvements.map((item, idx) => (
+                                    <li key={idx} style={{ marginBottom: '6px', color: '#9a3412', lineHeight: '1.6' }}>
+                                      <input 
+                                        type="text"
+                                        value={item}
+                                        onChange={(e) => {
+                                          const newImprovements = [...editableWriting.improvements];
+                                          newImprovements[idx] = e.target.value;
+                                          setEditableWriting(prev => ({...prev, improvements: newImprovements}));
+                                        }}
+                                        style={{ 
+                                          width: '100%', 
+                                          border: '1px solid #ea580c', 
+                                          borderRadius: '4px', 
+                                          padding: '6px',
+                                          background: 'white',
+                                          color: '#9a3412'
+                                        }}
+                                      />
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            
+                            {/* Overall Comment */}
+                            {editableWriting.overall_comment && (
+                              <div style={{ 
+                                marginBottom: '12px', 
+                                padding: '14px', 
+                                background: 'linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%)', 
+                                borderRadius: '10px',
+                                border: '2px solid #6366f1'
+                              }}>
+                                <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#3730a3' }}>
+                                  💬 Lời nhận xét chung từ Cô:
+                                </div>
+                                <textarea
+                                  value={editableWriting.overall_comment}
+                                  onChange={(e) => setEditableWriting(prev => ({...prev, overall_comment: e.target.value}))}
+                                  style={{ 
+                                    width: '100%',
+                                    minHeight: '100px',
+                                    color: '#312e81', 
+                                    lineHeight: '1.7',
+                                    padding: '10px',
+                                    border: '2px solid #6366f1',
+                                    borderRadius: '6px',
+                                    background: 'white',
+                                    resize: 'vertical',
+                                    fontFamily: 'inherit',
+                                    fontWeight: '500'
+                                  }}
+                                />
+                              </div>
+                            )}
                           </div>
                         ) : (
                           <p>{safeRender(writingSection.feedback)}</p>
@@ -1579,9 +1815,6 @@ export default function SubmissionGradingPage() {
               <input className="gp-input" type="number" min="0" max="10" step="0.1" value={scoreInput} onChange={(e)=>setScoreInput(e.target.value)} />
               <label className="gp-label">Nhận xét</label>
               <textarea className="gp-textarea" value={feedbackInput} onChange={(e)=>setFeedbackInput(e.target.value)} />
-              {typeof submission?.ai_score === 'number' && (
-                <button className="gp-btn use-ai" onClick={applyAIResultToForm}><Sparkles size={16} /> Dùng gợi ý AI</button>
-              )}
               <button className="gp-btn save" onClick={saveGrade} disabled={loading}><CheckCircle size={16} /> Xác nhận & lưu điểm</button>
             </div>
           </div>

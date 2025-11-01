@@ -29,14 +29,14 @@ class AIGradingService:
         correct_normalized = str(correct).strip().upper()
         
         is_correct = student_normalized == correct_normalized
-        points_earned = question.get("points", 0.5) if is_correct else 0
+        points_earned = question.get("points", 0.25) if is_correct else 0
         
         print(f"[GRADE_MC] Q{question.get('id')}: Student='{student_normalized}' vs Correct='{correct_normalized}' => {is_correct}")
         
         return {
             "is_correct": is_correct,
             "points_earned": points_earned,
-            "max_points": question.get("points", 0.5),
+            "max_points": question.get("points", 0.25),
             "feedback": "Chính xác!" if is_correct else f"Sai. Đáp án đúng là: {correct}"
         }
     
@@ -86,7 +86,7 @@ Respond with JSON:
             
             result = json.loads(content)
             
-            max_points = question.get("points", 0.5)
+            max_points = question.get("points", 0.25)
             points_earned = max_points * (result.get("score_percentage", 0) / 100)
             
             return {
@@ -102,8 +102,8 @@ Respond with JSON:
             is_correct = student_answer.strip().lower() == correct_answer.strip().lower()
             return {
                 "is_correct": is_correct,
-                "points_earned": question.get("points", 0.5) if is_correct else 0,
-                "max_points": question.get("points", 0.5),
+                "points_earned": question.get("points", 0.25) if is_correct else 0,
+                "max_points": question.get("points", 0.25),
                 "feedback": "Chính xác!" if is_correct else f"Sai. Đáp án đúng: {correct_answer}"
             }
     
@@ -113,14 +113,14 @@ Respond with JSON:
         student = str(student_answer).strip().lower()
         
         is_correct = student == correct
-        points_earned = question.get("points", 0.5) if is_correct else 0
+        points_earned = question.get("points", 0.25) if is_correct else 0
         
         print(f"[GRADE_TF] Q{question.get('id')}: Student='{student}' vs Correct='{correct}' => {is_correct}")
         
         return {
             "is_correct": is_correct,
             "points_earned": points_earned,
-            "max_points": question.get("points", 0.5),
+            "max_points": question.get("points", 0.25),
             "feedback": "Chính xác!" if is_correct else f"Sai. Đáp án đúng: {'Đúng' if correct == 'true' else 'Sai'}"
         }
     
@@ -136,7 +136,7 @@ Respond with JSON:
                 correct_count += 1
         
         score_percentage = (correct_count / total_pairs * 100) if total_pairs > 0 else 0
-        max_points = question.get("points", 0.5)
+        max_points = question.get("points", 0.25)
         points_earned = max_points * (score_percentage / 100)
         
         return {

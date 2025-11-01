@@ -1741,6 +1741,8 @@ export default function DoExercise() {
             {submission.rubrics_scores.writing_assessment && (
               <div className="rubric-section">
                 <h4>✍️ Đánh giá kỹ năng Writing</h4>
+                
+                {/* Writing Assessment Grid */}
                 <div className="writing-assessment-grid">
                   {Object.entries(submission.rubrics_scores.writing_assessment).map(([k, v]) => (
                     <div key={k} className="assessment-item">
@@ -1749,11 +1751,48 @@ export default function DoExercise() {
                     </div>
                   ))}
                 </div>
+                
+                {/* Word Count */}
                 {submission.rubrics_scores.word_count != null && (
                   <div className="word-count-display">
                     <strong>📊 Số từ:</strong> {submission.rubrics_scores.word_count}
                   </div>
                 )}
+                
+                {/* Writing Content Feedback */}
+                {submission.rubrics_scores.writing && submission.rubrics_scores.writing.content && (
+                  <div className="speaking-content-feedback">
+                    {submission.rubrics_scores.writing.content.content_feedback && (
+                      <div className="feedback-item content-feedback">
+                        <strong>📝 Nội dung:</strong>
+                        <p>{submission.rubrics_scores.writing.content.content_feedback}</p>
+                      </div>
+                    )}
+                    
+                    {submission.rubrics_scores.writing.content.grammar_feedback && (
+                      <div className="feedback-item grammar-feedback">
+                        <strong>📐 Ngữ pháp:</strong>
+                        <p>{submission.rubrics_scores.writing.content.grammar_feedback}</p>
+                      </div>
+                    )}
+                    
+                    {submission.rubrics_scores.writing.content.vocabulary_feedback && (
+                      <div className="feedback-item vocabulary-feedback">
+                        <strong>📚 Từ vựng:</strong>
+                        <p>{submission.rubrics_scores.writing.content.vocabulary_feedback}</p>
+                      </div>
+                    )}
+                    
+                    {submission.rubrics_scores.writing.content.structure_feedback && (
+                      <div className="feedback-item pronunciation-feedback">
+                        <strong>🏗️ Cấu trúc:</strong>
+                        <p>{submission.rubrics_scores.writing.content.structure_feedback}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {/* Strengths */}
                 {Array.isArray(submission.rubrics_scores.strengths) && submission.rubrics_scores.strengths.length > 0 && (
                   <div className="feedback-item strengths">
                     <strong>💪 Điểm mạnh:</strong>
@@ -1762,12 +1801,35 @@ export default function DoExercise() {
                     </ul>
                   </div>
                 )}
+                
+                {/* Improvements */}
                 {Array.isArray(submission.rubrics_scores.improvements) && submission.rubrics_scores.improvements.length > 0 && (
                   <div className="feedback-item improvements">
                     <strong>📈 Cần cải thiện:</strong>
                     <ul>
                       {submission.rubrics_scores.improvements.map((s, i) => <li key={i}>{s}</li>)}
                     </ul>
+                  </div>
+                )}
+                
+                {/* Suggestions */}
+                {Array.isArray(submission.rubrics_scores.writing?.content?.suggestions) && 
+                 submission.rubrics_scores.writing.content.suggestions.length > 0 && (
+                  <div className="feedback-item suggestions">
+                    <strong>💡 Gợi ý:</strong>
+                    <ul>
+                      {submission.rubrics_scores.writing.content.suggestions.map((s, i) => (
+                        <li key={i}>{s}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                
+                {/* Overall Comment */}
+                {submission.rubrics_scores.writing?.content?.overall_comment && (
+                  <div className="feedback-item overall-comment">
+                    <strong>💬 Nhận xét tổng quan:</strong>
+                    <p>{submission.rubrics_scores.writing.content.overall_comment}</p>
                   </div>
                 )}
               </div>
