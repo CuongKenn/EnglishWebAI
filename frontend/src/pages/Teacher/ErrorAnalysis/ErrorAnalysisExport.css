@@ -1,17 +1,12 @@
 /* Error Analysis Export Page */
 .error-analysis-export-page {
-  padding: 2rem;
-  max-width: 1400px;
-  margin: 0 auto;
-  background: linear-gradient(to bottom, #f8f9fa 0%, #ffffff 100%);
-  min-height: 100vh;
+  animation: fadeIn 0.4s ease-in-out;
 }
 
-/* Animations */
-@keyframes fadeInUp {
+@keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
@@ -19,23 +14,47 @@
   }
 }
 
+/* Stats card animation */
 .stats-card-animate {
-  animation: fadeInUp 0.5s ease-out forwards;
-  opacity: 0;
+  animation: slideInUp 0.5s ease-out both;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .card-hover-effect {
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .card-hover-effect:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Gradient text animation */
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-  .error-analysis-export-page {
-    padding: 1rem;
+  .stats-card-animate {
+    animation-delay: 0s !important;
   }
 }

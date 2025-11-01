@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileBarChart, Download, Filter, AlertCircle, CheckCircle, TrendingDown, FileText } from 'lucide-react';
+import { FileBarChart, Download, Filter, AlertCircle, CheckCircle, TrendingDown, FileText, Users, Calendar, Award } from 'lucide-react';
 import { Card } from '../../../components/ui/card';
 import { apiV1 } from '../../../services/api';
 import './ErrorAnalysisExport.css';
@@ -141,104 +141,68 @@ export default function ErrorAnalysisExport() {
       </div>
 
       {/* Export Form */}
-      <Card className="p-8 mb-8">
+      <Card className="p-6 mb-8 border-2 border-blue-100 shadow-lg">
         <div className="flex items-center gap-3 mb-6">
-          <Download className="w-6 h-6 text-blue-600" />
-          <h2 className="text-xl font-semibold text-gray-900">Bộ Lọc Dữ Liệu</h2>
+          <div className="bg-gradient-to-r from-blue-500 to-cyan-500 p-2 rounded-lg">
+            <Download className="w-6 h-6 text-white" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900">Bộ Lọc Dữ Liệu</h2>
         </div>
 
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                🎓 Lớp học <span className="text-red-500">*</span>
-              </label>
-              <select
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
-                value={selectedClass}
-                onChange={(e) => setSelectedClass(e.target.value)}
-              >
-                <option value="">Chọn lớp học</option>
-                {classes.map(cls => (
-                  <option key={cls.id} value={cls.id}>{cls.name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                📅 Tuần học (tùy chọn)
-              </label>
-              <input
-                type="number"
-                min="1"
-                max="52"
-                placeholder="Để trống = Tất cả các tuần"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
-                value={weekNumber}
-                onChange={(e) => setWeekNumber(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                🎯 Kỹ năng (tùy chọn)
-              </label>
-              <select
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
-                value={skillType}
-                onChange={(e) => setSkillType(e.target.value)}
-              >
-                <option value="all">Tất cả kỹ năng</option>
-                <option value="reading">📖 Reading (Đọc)</option>
-                <option value="writing">✍️ Writing (Viết)</option>
-                <option value="listening">🎧 Listening (Nghe)</option>
-                <option value="speaking">🗣️ Speaking (Nói)</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                📊 Định dạng xuất <span className="text-red-500">*</span>
-              </label>
-              <select
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
-                value={exportFormat}
-                onChange={(e) => setExportFormat(e.target.value)}
-              >
-                <option value="csv">📊 CSV (Excel)</option>
-                <option value="json">📄 JSON</option>
-              </select>
-            </div>
-          </div>
-
-          {error && (
-            <div className="bg-red-100 border border-red-300 text-red-800 px-4 py-3 rounded-lg flex items-center gap-2">
-              <AlertCircle className="w-5 h-5" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          <div className="flex gap-4 pt-4">
-            <button
-              onClick={() => {
-                setSelectedClass('');
-                setWeekNumber('');
-                setSkillType('all');
-                setExportFormat('csv');
-                setError('');
-              }}
-              className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              🎓 Lớp học <span className="text-red-500">*</span>
+            </label>
+            <select
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+              value={selectedClass}
+              onChange={(e) => setSelectedClass(e.target.value)}
             >
-              🔄 Xem trước
-            </button>
-            
+              <option value="">Chọn lớp học</option>
+              {classes.map(cls => (
+                <option key={cls.id} value={cls.id}>{cls.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              📅 Tuần học (tùy chọn)
+            </label>
+            <input
+              type="number"
+              min="1"
+              max="52"
+              placeholder="Tất cả"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+              value={weekNumber}
+              onChange={(e) => setWeekNumber(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              🎯 Kỹ năng (tùy chọn)
+            </label>
+            <select
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+              value={skillType}
+              onChange={(e) => setSkillType(e.target.value)}
+            >
+              <option value="all">Tất cả kỹ năng</option>
+              <option value="reading">📖 Reading (Đọc)</option>
+              <option value="writing">✍️ Writing (Viết)</option>
+              <option value="listening">🎧 Listening (Nghe)</option>
+              <option value="speaking">🗣️ Speaking (Nói)</option>
+            </select>
+          </div>
+
+          <div className="flex items-end">
             <button
               onClick={handleExport}
               disabled={loading || !selectedClass}
-              className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-600 text-white py-3 px-6 rounded-lg hover:from-blue-700 hover:to-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2 font-semibold shadow-lg hover:shadow-xl"
+              className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white py-3 px-6 rounded-lg hover:from-blue-700 hover:to-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2 font-bold shadow-lg hover:shadow-xl hover:scale-105 transform"
             >
               {loading ? (
                 <>
@@ -248,12 +212,19 @@ export default function ErrorAnalysisExport() {
               ) : (
                 <>
                   <Download className="w-5 h-5" />
-                  Tải xuống báo cáo
+                  Tải xuống
                 </>
               )}
             </button>
           </div>
         </div>
+
+        {error && (
+          <div className="bg-red-100 border-2 border-red-200 text-red-800 px-4 py-3 rounded-lg mb-4 flex items-center gap-2">
+            <span className="text-2xl">❌</span>
+            <span>{error}</span>
+          </div>
+        )}
       </Card>
 
       {/* Info Section */}
