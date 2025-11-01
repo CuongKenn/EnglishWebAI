@@ -232,9 +232,10 @@ export default function ExerciseHub() {
 
   const renderExerciseCard = (exercise) => {
     const hasSubmission = exercise.my_submission;
-    const score = hasSubmission?.score;
+    const score = hasSubmission?.score || hasSubmission?.ai_score;
     const maxScore = exercise.max_score;
     const isOverdue = exercise.due_at && new Date(exercise.due_at) < new Date();
+    const gradingStatus = hasSubmission?.grading_status;
     
     let statusClass = '';
     let statusText = '';
@@ -244,11 +245,18 @@ export default function ExerciseHub() {
       statusClass = isOverdue ? 'status-danger' : 'status-neutral';
       statusText = isOverdue ? 'Quá hạn' : 'Chưa làm';
       statusIcon = isOverdue ? <AlertCircle size={16} /> : <Clock size={16} />;
-    } else if (hasSubmission.status === 'graded') {
+    } else if (gradingStatus === 'ai_graded' || gradingStatus === 'graded' || hasSubmission.teacher_reviewed) {
+      // AI has graded or teacher has reviewed
       statusClass = 'status-success';
-      statusText = 'Đã chấm';
+      statusText = hasSubmission.teacher_reviewed ? 'Đã chấm' : 'AI đã chấm';
       statusIcon = <CheckCircle size={16} />;
+    } else if (gradingStatus === 'grading' || gradingStatus === 'pending') {
+      // Currently grading
+      statusClass = 'status-warning';
+      statusText = 'Đang chấm';
+      statusIcon = <Clock size={16} />;
     } else {
+      // Submitted but not graded
       statusClass = 'status-info';
       statusText = 'Đã nộp';
       statusIcon = <Clock size={16} />;
@@ -318,9 +326,9 @@ export default function ExerciseHub() {
               className="btn-success-new"
               onClick={() => {
                 if (exercise.exam_type) {
-                  navigate(`/exam/${exercise.id}`);
+                  navigate(`/exam/${exercise.id}`, { state: { viewMode: 'result' } });
                 } else {
-                  navigate(`/exercise/${exercise.id}`);
+                  navigate(`/exercise/${exercise.id}`, { state: { viewMode: 'result' } });
                 }
               }}
             >

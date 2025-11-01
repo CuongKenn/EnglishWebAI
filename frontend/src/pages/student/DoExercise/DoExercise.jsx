@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { 
   Clock, Save, Send, Volume2, Mic, Play, Pause, RotateCcw,
   Check, X, FileText, AlertCircle, Zap, BookOpen
@@ -13,6 +13,8 @@ export default function DoExercise() {
   const { toast, showSuccess, showError, showWarning, hideToast } = useToast();
   const { exerciseId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const requestedViewMode = location.state?.viewMode; // 'result' if coming from "Xem kết quả"
   
   // Full screen management
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -54,7 +56,14 @@ export default function DoExercise() {
   useEffect(() => {
     fetchExercise();
     fetchSubmission();
-  }, [exerciseId]);
+    
+    // If coming from "Xem kết quả" button, force result view
+    if (requestedViewMode === 'result') {
+      setViewMode('result');
+      setShowStartScreen(false);
+      console.log('[DoExercise] Force showing result view from navigation state');
+    }
+  }, [exerciseId, requestedViewMode]);
   
   // Sync refs with state
   useEffect(() => {
@@ -150,7 +159,7 @@ export default function DoExercise() {
         
         window.removeEventListener('keydown', preventKeys, true);
       };
-    } else if (viewMode === 'result') {
+    } else if (requestedViewMode === 'result') {
       // Exit fullscreen when in result view
       exitFullscreen();
     }
@@ -290,25 +299,32 @@ export default function DoExercise() {
       const exerciseSubmission = response.data.find(s => s.exercise_id === parseInt(exerciseId));
       console.log('[DoExercise] Found submission:', exerciseSubmission);
       
-      // Check grading status first (new queue system)
-      const gradingStatus = exerciseSubmission?.grading_status;
-      const teacherReviewed = exerciseSubmission?.teacher_reviewed;
-      
-      // Show results only if teacher has reviewed
-      const hasFinalScore = !!exerciseSubmission && exerciseSubmission.score !== null && teacherReviewed;
-      const hasAIScore = !!exerciseSubmission && exerciseSubmission.ai_score !== null && teacherReviewed;
-      
-      if (exerciseSubmission && (hasFinalScore || hasAIScore)) {
-        // Has graded submission and teacher reviewed, show result view
+      if (exerciseSubmission) {
+        // Check grading status
+        const gradingStatus = exerciseSubmission.grading_status;
+        const hasScore = exerciseSubmission.score !== null || exerciseSubmission.ai_score !== null;
+        
+        // Show result view if:
+        // 1. Coming from "Xem kết quả" button (requestedViewMode === 'result') OR
+        // 2. Has final score (teacher reviewed) OR
+        // 3. Has AI score and grading completed (ai_graded) OR
+        // 4. Teacher has reviewed
+        const shouldShowResult = requestedViewMode === 'result' || (hasScore && (
+          exerciseSubmission.teacher_reviewed === true ||
+          gradingStatus === 'ai_graded' ||
+          gradingStatus === 'graded'
+        ));
+        
         setSubmission(exerciseSubmission);
-        setViewMode('result');
-        setShowStartScreen(false);
-        console.log('[DoExercise] Submission reviewed by teacher, showing result view');
-      } else if (exerciseSubmission) {
-        // Has submission but not graded/reviewed yet
-        setSubmission(exerciseSubmission);
-        setShowStartScreen(false);
-        console.log(`[DoExercise] Submission exists (status: ${gradingStatus}), waiting for grading/review`);
+        
+        if (shouldShowResult) {
+          setViewMode('result');
+          setShowStartScreen(false);
+          console.log('[DoExercise] Showing result view. Status:', gradingStatus, 'Teacher reviewed:', exerciseSubmission.teacher_reviewed, 'ViewMode:', viewMode);
+        } else {
+          setShowStartScreen(false);
+          console.log(`[DoExercise] Submission exists (status: ${gradingStatus}), waiting for grading`);
+        }
       }
     } catch (error) {
       console.error('[DoExercise] Error fetching submission:', error);
@@ -1555,8 +1571,9 @@ export default function DoExercise() {
     const gradingStatus = submission.grading_status;
     const teacherReviewed = submission.teacher_reviewed;
     
-    // If not reviewed yet, show waiting message
-    if (!teacherReviewed && ['pending', 'grading', 'ai_graded'].includes(gradingStatus)) {
+    // If still pending or grading, show waiting message
+    // But if ai_graded, show results even without teacher review
+    if (['pending', 'grading'].includes(gradingStatus)) {
       return (
         <div className="result-view-container">
           <div className="result-header">
@@ -1686,57 +1703,36 @@ export default function DoExercise() {
 
         {submission.ai_feedback && (
           <div className="feedback-card">
-            <h3>🤖 Phản hồi AI</h3>
+            <h3>📝 Nhận xét tổng quan</h3>
             <div className="feedback-content">
               {(() => {
-                // Try to parse if it's JSON, otherwise display as-is
-                try {
-                  const parsed = typeof submission.ai_feedback === 'string' && 
-                                 submission.ai_feedback.trim().startsWith('{') 
-                                 ? JSON.parse(submission.ai_feedback) 
-                                 : submission.ai_feedback;
+                // Display ai_feedback as formatted text with line breaks
+                if (typeof submission.ai_feedback === 'string') {
+                  // Split by double newlines to create sections
+                  const sections = submission.ai_feedback.split('\n\n').filter(s => s.trim());
                   
-                  if (typeof parsed === 'object' && parsed !== null) {
-                    // Display structured feedback
-                    return (
-                      <div className="structured-feedback">
-                        {Object.entries(parsed).map(([key, value]) => {
-                          if (key === 'listening' && typeof value === 'object') {
-                            return (
-                              <div key={key} className="feedback-section">
-                                <h4>🎧 Listening</h4>
-                                {value.questions && Array.isArray(value.questions) && (
-                                  <div className="questions-list">
-                                    {value.questions.map((q, idx) => (
-                                      <div key={idx} className="question-result">
-                                        <div className="question-header">
-                                          <span className="question-id">Câu {q.question_id || idx + 1}</span>
-                                          <span className={`question-status ${q.is_correct ? 'correct' : 'incorrect'}`}>
-                                            {q.is_correct ? '✓ Đúng' : '✗ Sai'}
-                                          </span>
-                                          <span className="question-points">
-                                            {q.points_earned?.toFixed(2) || 0}/{q.max_points?.toFixed(2) || 0} điểm
-                                          </span>
-                                        </div>
-                                        {q.feedback && (
-                                          <div className="question-feedback">{q.feedback}</div>
-                                        )}
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
+                  return (
+                    <div className="formatted-feedback">
+                      {sections.map((section, idx) => {
+                        // Check if section starts with emoji icons
+                        const hasIcon = /^[🎧📖✍️🗣️💡]/.test(section.trim());
+                        
+                        return (
+                          <div key={idx} className={`feedback-section ${hasIcon ? 'with-icon' : ''}`}>
+                            {section.split('\n').map((line, lineIdx) => (
+                              <div key={lineIdx} className="feedback-line">
+                                {line}
                               </div>
-                            );
-                          }
-                          return null;
-                        })}
-                      </div>
-                    );
-                  }
-                  return parsed;
-                } catch {
-                  return submission.ai_feedback;
+                            ))}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
                 }
+                
+                // Fallback for other types
+                return submission.ai_feedback;
               })()}
             </div>
           </div>

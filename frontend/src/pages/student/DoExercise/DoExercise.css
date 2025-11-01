@@ -1254,7 +1254,40 @@ audio::-webkit-media-controls-fullscreen-button {
   font-size: 15px;
   line-height: 1.6;
   color: #4b5563;
-  white-space: pre-wrap;
+}
+
+/* Formatted Feedback Styles */
+.formatted-feedback {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.formatted-feedback .feedback-section {
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 12px;
+  border-left: 3px solid #e5e7eb;
+}
+
+.formatted-feedback .feedback-section.with-icon {
+  border-left-color: #8b5cf6;
+  background: linear-gradient(to right, #faf5ff 0%, #f9fafb 100%);
+}
+
+.formatted-feedback .feedback-line {
+  margin-bottom: 8px;
+  line-height: 1.8;
+}
+
+.formatted-feedback .feedback-line:last-child {
+  margin-bottom: 0;
+}
+
+.formatted-feedback .feedback-line:first-child {
+  font-weight: 600;
+  color: #111827;
+  font-size: 16px;
 }
 
 .submission-content-card {
