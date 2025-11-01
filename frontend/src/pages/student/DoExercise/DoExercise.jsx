@@ -14,6 +14,14 @@ export default function DoExercise() {
   const { exerciseId } = useParams();
   const navigate = useNavigate();
   
+  // Full screen management
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showStartScreen, setShowStartScreen] = useState(true);
+  const [fullscreenWarningCount, setFullscreenWarningCount] = useState(0);
+  const isFullscreenRef = useRef(false); // Use ref to avoid re-render loops
+  const viewModeRef = useRef('exercise');
+  const showStartScreenRef = useRef(true);
+  
   const [exercise, setExercise] = useState(null);
   const [answers, setAnswers] = useState({});
   const [timeRemaining, setTimeRemaining] = useState(null);
@@ -47,6 +55,157 @@ export default function DoExercise() {
     fetchExercise();
     fetchSubmission();
   }, [exerciseId]);
+  
+  // Sync refs with state
+  useEffect(() => {
+    isFullscreenRef.current = isFullscreen;
+  }, [isFullscreen]);
+  
+  useEffect(() => {
+    viewModeRef.current = viewMode;
+  }, [viewMode]);
+  
+  useEffect(() => {
+    showStartScreenRef.current = showStartScreen;
+  }, [showStartScreen]);
+  
+  // Separate effect for fullscreen management based on viewMode
+  useEffect(() => {
+    // Only enable fullscreen blocking when already in fullscreen and in exercise mode
+    if (viewMode === 'exercise' && isFullscreen && !showStartScreen) {
+      let reenterTimeout = null;
+      
+      // Block fullscreen exit - re-enter immediately
+      const preventExit = () => {
+        const isInFullscreen = !!(
+          document.fullscreenElement || 
+          document.webkitFullscreenElement || 
+          document.mozFullScreenElement || 
+          document.msFullscreenElement
+        );
+        
+        if (!isInFullscreen && viewModeRef.current === 'exercise' && !showStartScreenRef.current) {
+          // Fullscreen was exited, schedule re-enter
+          if (reenterTimeout) clearTimeout(reenterTimeout);
+          
+          reenterTimeout = setTimeout(() => {
+            if (viewModeRef.current === 'exercise' && !showStartScreenRef.current && isFullscreenRef.current) {
+              console.log('[FULLSCREEN] Re-entering fullscreen...');
+              enterFullscreen();
+              setFullscreenWarningCount(prev => prev + 1);
+            }
+          }, 200);
+        }
+      };
+      
+      // Prevent ESC key, F11, and other fullscreen exit shortcuts
+      const preventKeys = (e) => {
+        // Block ESC key
+        if (e.key === 'Escape' || e.keyCode === 27) {
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          return false;
+        }
+        // Block F11 (fullscreen toggle)
+        if (e.key === 'F11' || e.keyCode === 122) {
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          return false;
+        }
+        // Block Cmd+Shift+F (Mac fullscreen)
+        if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'f') {
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          return false;
+        }
+      };
+      
+      // Add listeners with capture phase for maximum priority
+      document.addEventListener('fullscreenchange', preventExit, true);
+      document.addEventListener('webkitfullscreenchange', preventExit, true);
+      document.addEventListener('mozfullscreenchange', preventExit, true);
+      document.addEventListener('MSFullscreenChange', preventExit, true);
+      
+      document.addEventListener('keydown', preventKeys, { capture: true, passive: false });
+      document.addEventListener('keyup', preventKeys, { capture: true, passive: false });
+      document.addEventListener('keypress', preventKeys, { capture: true, passive: false });
+      
+      // Also prevent via window
+      window.addEventListener('keydown', preventKeys, { capture: true, passive: false });
+      
+      return () => {
+        if (reenterTimeout) clearTimeout(reenterTimeout);
+        
+        document.removeEventListener('fullscreenchange', preventExit, true);
+        document.removeEventListener('webkitfullscreenchange', preventExit, true);
+        document.removeEventListener('mozfullscreenchange', preventExit, true);
+        document.removeEventListener('MSFullscreenChange', preventExit, true);
+        
+        document.removeEventListener('keydown', preventKeys, true);
+        document.removeEventListener('keyup', preventKeys, true);
+        document.removeEventListener('keypress', preventKeys, true);
+        
+        window.removeEventListener('keydown', preventKeys, true);
+      };
+    } else if (viewMode === 'result') {
+      // Exit fullscreen when in result view
+      exitFullscreen();
+    }
+  }, [viewMode, isFullscreen, showStartScreen]);
+  
+  // Fullscreen functions
+  const enterFullscreen = async () => {
+    try {
+      const elem = document.documentElement;
+      if (elem.requestFullscreen) {
+        await elem.requestFullscreen();
+      } else if (elem.webkitRequestFullscreen) { /* Safari */
+        await elem.webkitRequestFullscreen();
+      } else if (elem.msRequestFullscreen) { /* IE11 */
+        await elem.msRequestFullscreen();
+      }
+      setIsFullscreen(true);
+      console.log('[FULLSCREEN] Entered fullscreen successfully');
+      return true;
+    } catch (error) {
+      console.warn('[FULLSCREEN] Cannot enter fullscreen:', error);
+      // Only show error on initial attempt, not on re-entry
+      if (showStartScreenRef.current) {
+        showError('Không thể vào chế độ toàn màn hình. Vui lòng thử lại hoặc cho phép quyền fullscreen trong trình duyệt.');
+      }
+      return false;
+    }
+  };
+  
+  // Start exercise with fullscreen
+  const handleStartExercise = async () => {
+    const success = await enterFullscreen();
+    if (success) {
+      setShowStartScreen(false);
+      // Start timer if needed
+      if (exercise?.duration && timeRemaining === null) {
+        setTimeRemaining(exercise.duration * 60);
+      }
+    }
+  };
+  
+  const exitFullscreen = () => {
+    try {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if (document.webkitExitFullscreen) { /* Safari */
+        document.webkitExitFullscreen();
+      } else if (document.msExitFullscreen) { /* IE11 */
+        document.msExitFullscreen();
+      }
+      setIsFullscreen(false);
+    } catch (error) {
+      console.warn('Cannot exit fullscreen:', error);
+    }
+  };
 
   useEffect(() => {
     // Timer
@@ -71,6 +230,9 @@ export default function DoExercise() {
       } catch (error) {
         console.warn('Error cleaning up media recorder:', error);
       }
+      
+      // Exit fullscreen when component unmounts
+      exitFullscreen();
     };
   }, []);
 
@@ -93,10 +255,10 @@ export default function DoExercise() {
         setAnswers(initialAnswers);
       }
       
-      // Set timer if applicable
+      // Set timer if applicable (but don't start it yet)
       if (response.data.duration) {
-        console.log('[DoExercise] Setting timer:', response.data.duration, 'minutes');
-        setTimeRemaining(response.data.duration * 60); // Convert to seconds
+        console.log('[DoExercise] Timer will be set when exercise starts:', response.data.duration, 'minutes');
+        // Don't set timer here, will be set when user clicks Start
       }
       
       setLoading(false);
@@ -123,10 +285,12 @@ export default function DoExercise() {
         // Has graded submission (teacher or AI), show result view
         setSubmission(exerciseSubmission);
         setViewMode('result');
+        setShowStartScreen(false); // Skip start screen if viewing results
         console.log('[DoExercise] Submission has score (final or AI), showing result view');
       } else if (exerciseSubmission) {
         // Has submission but not graded yet
         setSubmission(exerciseSubmission);
+        setShowStartScreen(false); // Skip start screen if already submitted
         console.log('[DoExercise] Submission exists but not graded yet');
       }
     } catch (error) {
@@ -301,6 +465,8 @@ export default function DoExercise() {
       if (sub) {
         setSubmission(sub);
         setViewMode('result');
+        // Exit fullscreen when viewing results
+        exitFullscreen();
       }
       showSuccess('Nộp bài thành công! Hệ thống đã chấm tự động nếu có thể.');
     } catch (error) {
@@ -1441,29 +1607,164 @@ export default function DoExercise() {
         {submission.rubrics_scores && (
           <div className="feedback-card">
             <h3>📊 Chi tiết chấm điểm</h3>
+            
+            {/* Speaking Assessment - Detailed like teacher view */}
+            {(submission.rubrics_scores.speaking_assessment || submission.rubrics_scores.speaking) && (
+              <div className="rubric-section speaking-detailed">
+                <h4>🗣️ Đánh giá kỹ năng Speaking</h4>
+                
+                {/* KPI Scores Display */}
+                {submission.rubrics_scores.speaking_assessment && (
+                  <div className="kpi-scores-grid">
+                    {['pronunciation', 'fluency', 'completeness', 'accuracy'].map((key) => {
+                      const value = submission.rubrics_scores.speaking_assessment[key];
+                      const labels = {
+                        pronunciation: { name: 'Phát âm', icon: '🗣️', color: '#f59e0b' },
+                        fluency: { name: 'Trôi chảy', icon: '⚡', color: '#3b82f6' },
+                        completeness: { name: 'Hoàn chỉnh', icon: '✅', color: '#10b981' },
+                        accuracy: { name: 'Chính xác', icon: '🎯', color: '#ef4444' }
+                      };
+                      if (typeof value !== 'number') return null;
+                      return (
+                        <div key={key} className="kpi-card" style={{ borderColor: labels[key].color }}>
+                          <div className="kpi-icon">{labels[key].icon}</div>
+                          <div className="kpi-value" style={{ color: labels[key].color }}>
+                            {value.toFixed(1)}
+                          </div>
+                          <div className="kpi-label">{labels[key].name}</div>
+                          <div className="kpi-progress-bar">
+                            <div 
+                              className="kpi-progress-fill" 
+                              style={{ width: `${value}%`, backgroundColor: labels[key].color }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                
+                {/* Speaking Content Feedback */}
+                {submission.rubrics_scores.speaking?.content && (
+                  <div className="speaking-content-feedback">
+                    {submission.rubrics_scores.speaking.content.content_feedback && (
+                      <div className="feedback-item content-feedback">
+                        <strong>📝 Nội dung:</strong>
+                        <p>{submission.rubrics_scores.speaking.content.content_feedback}</p>
+                      </div>
+                    )}
+                    
+                    {submission.rubrics_scores.speaking.content.grammar_feedback && (
+                      <div className="feedback-item grammar-feedback">
+                        <strong>📐 Ngữ pháp:</strong>
+                        <p>{submission.rubrics_scores.speaking.content.grammar_feedback}</p>
+                      </div>
+                    )}
+                    
+                    {submission.rubrics_scores.speaking.content.vocabulary_feedback && (
+                      <div className="feedback-item vocabulary-feedback">
+                        <strong>📚 Từ vựng:</strong>
+                        <p>{submission.rubrics_scores.speaking.content.vocabulary_feedback}</p>
+                      </div>
+                    )}
+                    
+                    {submission.rubrics_scores.speaking.content.pronunciation_note && (
+                      <div className="feedback-item pronunciation-feedback">
+                        <strong>🗣️ Phát âm:</strong>
+                        <p>{submission.rubrics_scores.speaking.content.pronunciation_note}</p>
+                      </div>
+                    )}
+                    
+                    {/* Strengths */}
+                    {Array.isArray(submission.rubrics_scores.speaking.content.strengths) && 
+                     submission.rubrics_scores.speaking.content.strengths.length > 0 && (
+                      <div className="feedback-item strengths">
+                        <strong>💪 Điểm mạnh:</strong>
+                        <ul>
+                          {submission.rubrics_scores.speaking.content.strengths.map((s, i) => (
+                            <li key={i}>{s}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    
+                    {/* Improvements */}
+                    {Array.isArray(submission.rubrics_scores.speaking.content.improvements) && 
+                     submission.rubrics_scores.speaking.content.improvements.length > 0 && (
+                      <div className="feedback-item improvements">
+                        <strong>📈 Cần cải thiện:</strong>
+                        <ul>
+                          {submission.rubrics_scores.speaking.content.improvements.map((s, i) => (
+                            <li key={i}>{s}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    
+                    {/* Suggestions */}
+                    {Array.isArray(submission.rubrics_scores.speaking.content.suggestions) && 
+                     submission.rubrics_scores.speaking.content.suggestions.length > 0 && (
+                      <div className="feedback-item suggestions">
+                        <strong>💡 Gợi ý:</strong>
+                        <ul>
+                          {submission.rubrics_scores.speaking.content.suggestions.map((s, i) => (
+                            <li key={i}>{s}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    
+                    {/* Overall Comment */}
+                    {submission.rubrics_scores.speaking.content.overall_comment && (
+                      <div className="feedback-item overall-comment">
+                        <strong>💬 Nhận xét tổng quan:</strong>
+                        <p>{submission.rubrics_scores.speaking.content.overall_comment}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {/* Recognized Text */}
+                {submission.rubrics_scores.recognized_text && (
+                  <div className="recognized-text-section">
+                    <strong>📝 Văn bản nhận dạng được:</strong>
+                    <div className="recognized-text-content">
+                      {submission.rubrics_scores.recognized_text}
+                    </div>
+                    <small className="hint-text">Văn bản được Azure Speech API nhận dạng từ audio của bạn</small>
+                  </div>
+                )}
+              </div>
+            )}
+            
             {/* Writing breakdown */}
             {submission.rubrics_scores.writing_assessment && (
               <div className="rubric-section">
-                <h4>✍️ Writing assessment</h4>
-                <ul>
+                <h4>✍️ Đánh giá kỹ năng Writing</h4>
+                <div className="writing-assessment-grid">
                   {Object.entries(submission.rubrics_scores.writing_assessment).map(([k, v]) => (
-                    <li key={k}><strong>{k}:</strong> {safeRenderValue(v)}</li>
+                    <div key={k} className="assessment-item">
+                      <span className="assessment-label">{k}:</span>
+                      <span className="assessment-value">{safeRenderValue(v)}</span>
+                    </div>
                   ))}
-                </ul>
+                </div>
                 {submission.rubrics_scores.word_count != null && (
-                  <p><strong>Word count:</strong> {submission.rubrics_scores.word_count}</p>
+                  <div className="word-count-display">
+                    <strong>📊 Số từ:</strong> {submission.rubrics_scores.word_count}
+                  </div>
                 )}
                 {Array.isArray(submission.rubrics_scores.strengths) && submission.rubrics_scores.strengths.length > 0 && (
-                  <div>
-                    <strong>Điểm mạnh:</strong>
+                  <div className="feedback-item strengths">
+                    <strong>💪 Điểm mạnh:</strong>
                     <ul>
                       {submission.rubrics_scores.strengths.map((s, i) => <li key={i}>{s}</li>)}
                     </ul>
                   </div>
                 )}
                 {Array.isArray(submission.rubrics_scores.improvements) && submission.rubrics_scores.improvements.length > 0 && (
-                  <div>
-                    <strong>Cần cải thiện:</strong>
+                  <div className="feedback-item improvements">
+                    <strong>📈 Cần cải thiện:</strong>
                     <ul>
                       {submission.rubrics_scores.improvements.map((s, i) => <li key={i}>{s}</li>)}
                     </ul>
@@ -1471,28 +1772,17 @@ export default function DoExercise() {
                 )}
               </div>
             )}
-
-            {/* Speaking breakdown */}
-            {submission.rubrics_scores.speaking_assessment && (
-              <div className="rubric-section">
-                <h4>🗣️ Speaking assessment</h4>
-                <ul>
-                  {Object.entries(submission.rubrics_scores.speaking_assessment).map(([k, v]) => (
-                    <li key={k}><strong>{k}:</strong> {safeRenderValue(v)}</li>
-                  ))}
-                </ul>
-                {submission.rubrics_scores.recognized_text && (
-                  <p><strong>Recognized text:</strong> {submission.rubrics_scores.recognized_text}</p>
-                )}
-                {submission.rubrics_scores.detailed_feedback && (
-                  <details>
-                    <summary>Chi tiết</summary>
-                    <pre style={{ whiteSpace: 'pre-wrap' }}>{submission.rubrics_scores.detailed_feedback}</pre>
-                  </details>
-                )}
+            
+            {/* Detailed Feedback from Teacher */}
+            {submission.rubrics_scores.detailed_feedback && (
+              <div className="detailed-feedback-section">
+                <strong>💡 Nhận xét chi tiết:</strong>
+                <div className="detailed-feedback-content">
+                  {submission.rubrics_scores.detailed_feedback}
+                </div>
               </div>
             )}
-
+            
             {/* Objective questions auto-grade breakdown */}
             {submission.rubrics_scores.auto_grade_results && (
               <div className="rubric-section">
@@ -1595,7 +1885,10 @@ export default function DoExercise() {
 
         {/* Actions */}
         <div className="result-actions">
-          <button className="btn-back" onClick={() => navigate('/exercise-hub')}>
+          <button className="btn-back" onClick={() => {
+            exitFullscreen();
+            navigate('/exercise-hub');
+          }}>
             <BookOpen size={18} />
             Quay lại Exercise Hub
           </button>
@@ -1606,8 +1899,81 @@ export default function DoExercise() {
 
   return (
     <div className="do-exercise-container">
+      {/* Fullscreen violation warning overlay */}
+      {fullscreenWarningCount > 2 && viewMode === 'exercise' && !showStartScreen && (
+        <div className="fullscreen-violation-overlay">
+          <div className="violation-card">
+            <div className="violation-icon">🚨</div>
+            <h2>CẢNH BÁO VI PHẠM</h2>
+            <p>Bạn đã cố gắng thoát chế độ toàn màn hình <strong>{fullscreenWarningCount}</strong> lần!</p>
+            <p className="violation-warning">
+              Hành vi này có thể bị coi là gian lận. Vui lòng tuân thủ quy định thi cử!
+            </p>
+            <button className="btn-understand" onClick={() => setFullscreenWarningCount(0)}>
+              Tôi hiểu và sẽ tuân thủ
+            </button>
+          </div>
+        </div>
+      )}
+      
+      {/* Start Screen - Must click to enter fullscreen */}
+      {viewMode === 'exercise' && showStartScreen && exercise && (
+        <div className="start-screen-overlay">
+          <div className="start-screen-card">
+            <div className="start-screen-icon">
+              {exercise.skill_type === 'listening' && '🎧'}
+              {exercise.skill_type === 'speaking' && '🗣️'}
+              {exercise.skill_type === 'reading' && '📖'}
+              {exercise.skill_type === 'writing' && '✍️'}
+              {!exercise.skill_type && '📝'}
+            </div>
+            <h2>{exercise.title}</h2>
+            <p className="start-screen-desc">{exercise.description}</p>
+            
+            <div className="start-screen-info">
+              <div className="info-item">
+                <strong>⏱️ Thời gian:</strong> {exercise.duration ? `${exercise.duration} phút` : 'Không giới hạn'}
+              </div>
+              <div className="info-item">
+                <strong>📊 Điểm tối đa:</strong> {exercise.max_score || 10} điểm
+              </div>
+            </div>
+            
+            <div className="start-screen-warning">
+              <AlertCircle size={24} />
+              <div>
+                <strong>Lưu ý quan trọng:</strong>
+                <ul>
+                  <li>Bài thi sẽ được mở ở chế độ <strong>toàn màn hình</strong></li>
+                  <li>Không được thoát fullscreen trong quá trình làm bài</li>
+                  <li>Nếu thoát fullscreen, hệ thống sẽ tự động bật lại</li>
+                  <li>Vui lòng cho phép quyền fullscreen khi trình duyệt yêu cầu</li>
+                </ul>
+              </div>
+            </div>
+            
+            <button className="btn-start-exam" onClick={handleStartExercise}>
+              <Zap size={24} />
+              Bắt đầu làm bài
+            </button>
+            
+            <button className="btn-cancel" onClick={() => navigate('/exercise-hub')}>
+              Quay lại
+            </button>
+          </div>
+        </div>
+      )}
+      
+      {/* Fullscreen Warning Banner - Only show when doing exercise */}
+      {viewMode === 'exercise' && !showStartScreen && isFullscreen && (
+        <div className="fullscreen-warning-banner">
+          <AlertCircle size={20} />
+          <span>Chế độ làm bài: Toàn màn hình. Không được thoát fullscreen!</span>
+        </div>
+      )}
+      
       {/* Show result view if graded, otherwise show exercise view */}
-      {viewMode === 'result' ? renderResultView() : (
+      {viewMode === 'result' ? renderResultView() : !showStartScreen && (
         <>
       {/* Header */}
       <div className="exercise-header">

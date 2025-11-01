@@ -213,9 +213,9 @@ function App() {
       <Route 
         path="/exercise/:exerciseId" 
         element={
-          <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+          <ProtectedRoute isLoggedIn={isLoggedIn}>
             <DoExercise />
-          </Layout>
+          </ProtectedRoute>
         } 
       />
       <Route 
