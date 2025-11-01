@@ -12,7 +12,7 @@ import csv
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.models.submission import Submission
 from app.models.exercise import Exercise
 from app.models.enrollment import Enrollment
@@ -91,7 +91,7 @@ async def export_exercise_grades(
     - **exercise_id**: ID of the exercise
     - **format**: Export format (xlsx or csv)
     """
-    if current_user.role not in ["teacher", "admin"]:
+    if current_user.role not in (UserRole.TEACHER, UserRole.ADMIN, UserRole.SUPERADMIN):
         raise HTTPException(status_code=403, detail="Only teachers can export grades")
     
     # Get exercise
@@ -99,9 +99,22 @@ async def export_exercise_grades(
     if not exercise:
         raise HTTPException(status_code=404, detail="Exercise not found")
     
+    # Determine classroom for permission checks
+    class_obj = None
+    if exercise.class_id:
+        class_obj = db.query(Classroom).filter(Classroom.id == exercise.class_id).first()
+    elif exercise.lesson_id:
+        from app.models.lesson import Lesson  # local import to avoid circular
+        lesson = db.query(Lesson).filter(Lesson.id == exercise.lesson_id).first()
+        if lesson and lesson.class_id:
+            class_obj = db.query(Classroom).filter(Classroom.id == lesson.class_id).first()
+
     # Check if teacher owns this exercise
-    if current_user.role == "teacher" and exercise.teacher_id != current_user.id:
-        raise HTTPException(status_code=403, detail="You don't have permission to export this exercise")
+    if current_user.role == UserRole.TEACHER:
+        if not class_obj or class_obj.teacher_id != current_user.id:
+            raise HTTPException(status_code=403, detail="You don't have permission to export this exercise")
+
+    max_score_value = exercise.max_score or 100
     
     # Get all submissions for this exercise
     submissions = db.query(Submission).filter(
@@ -113,15 +126,20 @@ async def export_exercise_grades(
     for sub in submissions:
         student = db.query(User).filter(User.id == sub.student_id).first()
         if student:
+            student_name = student.full_name or student.username or "Unknown"
+            score_value = sub.score if sub.score is not None else 0
+            is_graded = bool(sub.status == "graded" or sub.graded_at)
+            percentage = round((score_value / max_score_value * 100), 2) if max_score_value and is_graded else 0.0
+
             student_grades.append({
                 'student_id': student.id,
-                'student_name': student.full_name,
+                'student_name': student_name,
                 'student_email': student.email,
-                'score': sub.score or 0,
-                'max_score': sub.max_score or 100,
-                'percentage': round((sub.score / sub.max_score * 100) if sub.max_score else 0, 2),
+                'score': score_value,
+                'max_score': max_score_value,
+                'percentage': percentage,
                 'submitted_at': sub.submitted_at.strftime('%Y-%m-%d %H:%M') if sub.submitted_at else 'N/A',
-                'status': 'Đã chấm' if sub.is_graded else 'Chưa chấm'
+                'status': 'Đã chấm' if is_graded else 'Chưa chấm'
             })
     
     # Sort by student name
@@ -250,7 +268,7 @@ async def export_class_grades(
     - **from_date**: Optional start date filter
     - **to_date**: Optional end date filter
     """
-    if current_user.role not in ["teacher", "admin"]:
+    if current_user.role not in (UserRole.TEACHER, UserRole.ADMIN, UserRole.SUPERADMIN):
         raise HTTPException(status_code=403, detail="Only teachers can export grades")
     
     # Get class
@@ -259,12 +277,12 @@ async def export_class_grades(
         raise HTTPException(status_code=404, detail="Class not found")
     
     # Check if teacher owns this class
-    if current_user.role == "teacher" and class_obj.teacher_id != current_user.id:
+    if current_user.role == UserRole.TEACHER and class_obj.teacher_id != current_user.id:
         raise HTTPException(status_code=403, detail="You don't have permission to export this class")
     
     # Get all students in class
     enrollments = db.query(Enrollment).filter(Enrollment.class_id == class_id).all()
-    student_ids = [e.student_id for e in enrollments]
+    student_ids = [e.user_id for e in enrollments]
     
     students = db.query(User).filter(User.id.in_(student_ids)).all()
     
@@ -299,14 +317,18 @@ async def export_class_grades(
                     Submission.exercise_id == exercise.id
                 )
             ).first()
-            
-            if submission and submission.is_graded:
+
+            exercise_max = exercise.max_score or 100
+            score_value = submission.score if submission and submission.score is not None else 0
+            is_graded = bool(submission and (submission.status == "graded" or submission.graded_at))
+
+            if submission and is_graded:
                 row['grades'][exercise.id] = {
-                    'score': submission.score or 0,
-                    'max_score': submission.max_score or 100
+                    'score': score_value,
+                    'max_score': exercise_max
                 }
-                total_score += submission.score or 0
-                total_max += submission.max_score or 100
+                total_score += score_value
+                total_max += exercise_max
             else:
                 row['grades'][exercise.id] = None
         
@@ -429,7 +451,7 @@ async def export_student_list(
     - **class_id**: ID of the class
     - **format**: Export format (xlsx or csv)
     """
-    if current_user.role not in ["teacher", "admin"]:
+    if current_user.role not in (UserRole.TEACHER, UserRole.ADMIN, UserRole.SUPERADMIN):
         raise HTTPException(status_code=403, detail="Only teachers can export student lists")
     
     # Get class
@@ -438,12 +460,12 @@ async def export_student_list(
         raise HTTPException(status_code=404, detail="Class not found")
     
     # Check permission
-    if current_user.role == "teacher" and class_obj.teacher_id != current_user.id:
+    if current_user.role == UserRole.TEACHER and class_obj.teacher_id != current_user.id:
         raise HTTPException(status_code=403, detail="You don't have permission to export this class")
     
     # Get students
     enrollments = db.query(Enrollment).filter(Enrollment.class_id == class_id).all()
-    student_ids = [e.student_id for e in enrollments]
+    student_ids = [e.user_id for e in enrollments]
     students = db.query(User).filter(User.id.in_(student_ids)).order_by(User.full_name).all()
     
     if format == "xlsx":

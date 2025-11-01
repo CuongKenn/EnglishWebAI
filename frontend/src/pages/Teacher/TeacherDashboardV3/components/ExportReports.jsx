@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Download, FileSpreadsheet, Calendar, Users, Filter, CheckCircle, FileText, Layers } from 'lucide-react';
 import exportService from '../../../../services/exportService';
 import { apiV1 } from '../../../../services/api';
@@ -16,6 +16,7 @@ export default function ExportReports() {
   const [loading, setLoading] = useState(false);
   const [exercises, setExercises] = useState([]);
   const [classes, setClasses] = useState([]);
+  const [exerciseFilters, setExerciseFilters] = useState({ classId: 'all', from: '', to: '' });
   const { toast, showSuccess, showError, showWarning, hideToast } = useToast();
 
   useEffect(() => {
@@ -69,6 +70,33 @@ export default function ExportReports() {
       setLoading(false);
     }
   };
+
+  const sortedExercises = useMemo(() => {
+    if (!exercises?.length) return [];
+    return [...exercises].sort((a, b) => new Date(b.date) - new Date(a.date));
+  }, [exercises]);
+
+  const filteredExercises = useMemo(() => {
+    if (!sortedExercises.length) return [];
+
+    return sortedExercises.filter((exercise) => {
+      const matchClass =
+        exerciseFilters.classId === 'all' || String(exercise.classId) === String(exerciseFilters.classId);
+
+      const matchFrom = !exerciseFilters.from || exercise.date >= exerciseFilters.from;
+      const matchTo = !exerciseFilters.to || exercise.date <= exerciseFilters.to;
+
+      return matchClass && matchFrom && matchTo;
+    });
+  }, [sortedExercises, exerciseFilters]);
+
+  useEffect(() => {
+    if (exportType !== 'multiple') return;
+
+    setSelectedExercises((prev) =>
+      prev.filter((id) => filteredExercises.some((exercise) => exercise.id === id))
+    );
+  }, [exportType, filteredExercises]);
 
   const handleToggleExercise = (exerciseId) => {
     setSelectedExercises(prev =>
@@ -209,14 +237,14 @@ export default function ExportReports() {
               <span className="selected-count">{selectedExercises.length} đã chọn</span>
             </div>
             
-            {exercises.length === 0 ? (
+            {sortedExercises.length === 0 ? (
               <div className="empty-state" style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
                 <FileText size={48} style={{ opacity: 0.3, margin: '0 auto 16px' }} />
                 <p>Chưa có bài tập nào. Vui lòng tạo bài tập trước!</p>
               </div>
             ) : (
             <div className="exercise-list-export">
-              {exercises.map((exercise) => (
+              {sortedExercises.map((exercise) => (
                 <div
                   key={exercise.id}
                   className={`exercise-card-export ${selectedExercises.includes(exercise.id) ? 'selected' : ''}`}
@@ -273,22 +301,48 @@ export default function ExportReports() {
             </div>
             
             <div className="filter-bar-export">
-              <select className="filter-select">
-                <option>Tất cả lớp</option>
-                <option>Lớp 10A1</option>
-                <option>Lớp 10A2</option>
-                <option>Lớp 11B1</option>
+              <select
+                className="filter-select"
+                value={exerciseFilters.classId}
+                onChange={(e) =>
+                  setExerciseFilters((prev) => ({ ...prev, classId: e.target.value }))
+                }
+              >
+                <option value="all">Tất cả lớp</option>
+                {classes.map((cls) => (
+                  <option key={cls.id} value={cls.id}>
+                    {cls.name}
+                  </option>
+                ))}
               </select>
               <div className="date-range-filter">
                 <Calendar size={16} />
-                <input type="date" placeholder="Từ ngày" onChange={(e) => setDateRange({ ...dateRange, from: e.target.value })} />
+                <input
+                  type="date"
+                  placeholder="Từ ngày"
+                  value={exerciseFilters.from}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setExerciseFilters((prev) => ({ ...prev, from: value }));
+                    setDateRange((prev) => ({ ...prev, from: value }));
+                  }}
+                />
                 <span>-</span>
-                <input type="date" placeholder="Đến ngày" onChange={(e) => setDateRange({ ...dateRange, to: e.target.value })} />
+                <input
+                  type="date"
+                  placeholder="Đến ngày"
+                  value={exerciseFilters.to}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setExerciseFilters((prev) => ({ ...prev, to: value }));
+                    setDateRange((prev) => ({ ...prev, to: value }));
+                  }}
+                />
               </div>
             </div>
 
             <div className="exercise-list-export">
-              {exercises.map((exercise) => (
+              {filteredExercises.map((exercise) => (
                 <div
                   key={exercise.id}
                   className={`exercise-card-export ${selectedExercises.includes(exercise.id) ? 'selected' : ''}`}
@@ -319,15 +373,17 @@ export default function ExportReports() {
                   </div>
                 </div>
               ))}
+              {filteredExercises.length === 0 && (
+                <div className="empty-filter-badge">Không có bài nào khớp bộ lọc đã chọn</div>
+              )}
             </div>
 
             <div className="export-options-box">
               <h4>📊 File sẽ bao gồm:</h4>
               <ul>
-                <li>1 sheet tổng hợp với điểm tất cả bài</li>
-                <li>Mỗi bài tập 1 sheet riêng (chi tiết)</li>
-                <li>Sheet thống kê và biểu đồ</li>
-                <li>So sánh tiến độ giữa các bài</li>
+                <li>Các file điểm tương ứng từng bài (mỗi bài 1 file riêng)</li>
+                <li>Sheet chi tiết trong từng file gồm điểm, trạng thái chấm</li>
+                <li>Tự động đặt tên theo bài và ngày xuất</li>
               </ul>
             </div>
           </div>
@@ -413,7 +469,9 @@ export default function ExportReports() {
               <>
                 <p><strong>Loại:</strong> Báo cáo nhiều bài tập</p>
                 <p><strong>Số bài tập:</strong> {selectedExercises.length}</p>
-                <p><strong>Sheets:</strong> {selectedExercises.length + 2} (bài tập + tổng hợp + thống kê)</p>
+                <p>
+                  <strong>Ghi chú:</strong> Mỗi bài sẽ được tải về thành một file {format.toUpperCase()} riêng
+                </p>
               </>
             )}
             {exportType === 'class' && selectedClasses.length > 0 && (
@@ -421,6 +479,14 @@ export default function ExportReports() {
                 <p><strong>Loại:</strong> Báo cáo theo lớp</p>
                 <p><strong>Số lớp:</strong> {selectedClasses.length}</p>
                 <p><strong>Tổng HS:</strong> {classes.filter(c => selectedClasses.includes(c.id)).reduce((sum, c) => sum + c.students, 0)}</p>
+                {(dateRange.from || dateRange.to) && (
+                  <p>
+                    <strong>Khoảng thời gian:</strong>{' '}
+                    {dateRange.from ? dateRange.from : 'Tất cả'}
+                    {' '}→{' '}
+                    {dateRange.to ? dateRange.to : 'Tất cả'}
+                  </p>
+                )}
               </>
             )}
           </div>
