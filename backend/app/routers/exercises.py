@@ -20,6 +20,7 @@ from app.schemas.student import (
     ExerciseUpdate,
 )
 from app.services.notification_service import NotificationService
+from app.utils import logger
 from pydantic import BaseModel
 
 router = APIRouter()
@@ -123,7 +124,7 @@ async def _auto_grade_submission(submission: Submission, exercise: Exercise, db:
     is_comprehensive = (not skill_type and content.get('type') == 'comprehensive_test')
     
     if is_comprehensive:
-        print(f"[AUTO-GRADE] Comprehensive test detected for submission {submission.id}")
+        logger.debug(f"[AUTO-GRADE] Comprehensive test detected for submission {submission.id}")
         
         try:
             # Initialize AI grading service
@@ -162,11 +163,11 @@ async def _auto_grade_submission(submission: Submission, exercise: Exercise, db:
             submission.status = "pending_review"  # Teacher can review and confirm
             submission.ai_graded_at = datetime.utcnow()
             
-            print(f"[AUTO-GRADE] Comprehensive test graded: {grading_results['total_score']}/10")
+            logger.info(f"[AUTO-GRADE] Comprehensive test graded: {grading_results['total_score']}/10")
             return
             
         except Exception as e:
-            print(f"[AUTO-GRADE] Comprehensive test error: {str(e)}")
+            logger.error(f"[AUTO-GRADE] Comprehensive test error: {str(e)}")
             import traceback
             traceback.print_exc()
             submission.ai_feedback = f"Lỗi chấm bài: {str(e)}"
@@ -192,7 +193,7 @@ async def _auto_grade_submission(submission: Submission, exercise: Exercise, db:
 
     # Speaking: Use Azure Speech API (works for speaking skill or mixed tests if we have audio + reference)
     if submission.content_url:
-        print(f"[AUTO-GRADE] Speaking exercise detected for submission {submission.id}")
+        logger.debug(f"[AUTO-GRADE] Speaking exercise detected for submission {submission.id}")
         # Import service
         from app.services.azure_speech_service import azure_speech_service
         
@@ -223,18 +224,18 @@ async def _auto_grade_submission(submission: Submission, exercise: Exercise, db:
                 submission.status = "pending_review"  # Teacher can confirm
                 submission.ai_graded_at = datetime.utcnow()
                 
-                print(f"[AUTO-GRADE] Speaking graded: {score_result['score']}/{exercise.max_score}")
+                logger.debug(f"[AUTO-GRADE] Speaking graded: {score_result['score']}/{exercise.max_score}")
                 return
                 
             except Exception as e:
-                print(f"[AUTO-GRADE] Speaking error: {str(e)}")
+                logger.debug(f"[AUTO-GRADE] Speaking error: {str(e)}")
                 submission.ai_feedback = f"Lỗi chấm speaking: {str(e)}"
                 submission.status = "pending_review"
                 return
     
     # Writing: Use ChatGPT AI
     if skill_type == 'writing' and submission.content_text:
-        print(f"[AUTO-GRADE] Writing exercise detected for submission {submission.id}")
+        logger.debug(f"[AUTO-GRADE] Writing exercise detected for submission {submission.id}")
         # Import service
         from app.services.openai_service import openai_service
         
@@ -262,11 +263,11 @@ async def _auto_grade_submission(submission: Submission, exercise: Exercise, db:
             submission.status = "pending_review"  # Teacher can confirm
             submission.ai_graded_at = datetime.utcnow()
             
-            print(f"[AUTO-GRADE] Writing graded: {grading_result['score']}/{exercise.max_score}")
+            logger.debug(f"[AUTO-GRADE] Writing graded: {grading_result['score']}/{exercise.max_score}")
             return
             
         except Exception as e:
-            print(f"[AUTO-GRADE] Writing error: {str(e)}")
+            logger.debug(f"[AUTO-GRADE] Writing error: {str(e)}")
             submission.ai_feedback = f"Lỗi chấm writing: {str(e)}"
             submission.status = "pending_review"
             return
@@ -356,7 +357,7 @@ async def _auto_grade_submission(submission: Submission, exercise: Exercise, db:
                     'semantic_match': fill_result.get('is_semantically_similar', False)
                 }
             except Exception as e:
-                print(f"[AUTO-GRADE] Fill blank AI error: {str(e)}")
+                logger.debug(f"[AUTO-GRADE] Fill blank AI error: {str(e)}")
                 # Fallback to exact match
                 student_ans_normalized = str(student_answer).strip().lower()
                 correct_ans_normalized = str(correct_answer).strip().lower()
@@ -405,7 +406,7 @@ async def _auto_grade_submission(submission: Submission, exercise: Exercise, db:
                     'partial_credit': matching_result.get('partial_credit_given', False)
                 }
             except Exception as e:
-                print(f"[AUTO-GRADE] Matching question AI error: {str(e)}")
+                logger.debug(f"[AUTO-GRADE] Matching question AI error: {str(e)}")
                 question_results[q_id] = {
                     'type': q_type,
                     'points': q_points,
@@ -439,7 +440,7 @@ async def _auto_grade_submission(submission: Submission, exercise: Exercise, db:
             submission.graded_at = datetime.utcnow()
             submission.ai_graded_at = datetime.utcnow()
         
-        print(f"[AUTO-GRADE] Submission {submission.id}: {auto_graded_count}/{total_questions} auto-graded, score={total_score}/{max_possible_score}, has_essay={has_short_answer}")
+        logger.debug(f"[AUTO-GRADE] Submission {submission.id}: {auto_graded_count}/{total_questions} auto-graded, score={total_score}/{max_possible_score}, has_essay={has_short_answer}")
 
 @router.post("/teacher-grading/submissions/{submission_id}/auto-grade", response_class=JSONResponse)
 async def auto_grade_submission(
@@ -559,7 +560,7 @@ async def get_exercises(
     - Lọc theo lớp học (nếu có)
     - Lọc theo trạng thái (chưa làm, đã nộp, đã chấm)
     """
-    print(f"[GET /exercises/] User {current_user.id} ({current_user.email}) requesting exercises")
+    logger.debug(f"[GET /exercises/] User {current_user.id} ({current_user.email}) requesting exercises")
     
     # Lấy danh sách lớp học sinh đã tham gia
     enrolled_class_ids = (
@@ -573,10 +574,10 @@ async def get_exercises(
     )
     enrolled_class_ids = [c[0] for c in enrolled_class_ids]
     
-    print(f"[GET /exercises/] Enrolled classes: {enrolled_class_ids}")
+    logger.debug(f"[GET /exercises/] Enrolled classes: {enrolled_class_ids}")
     
     if not enrolled_class_ids:
-        print(f"[GET /exercises/] No enrolled classes found!")
+        logger.debug(f"[GET /exercises/] No enrolled classes found!")
         return []
     
     # Query exercises từ các lớp đã tham gia
@@ -589,7 +590,7 @@ async def get_exercises(
     # Get exercises
     exercises = query.order_by(Exercise.due_at.desc().nulls_last(), Exercise.created_at.desc()).offset(skip).limit(limit).all()
     
-    print(f"[GET /exercises/] Found {len(exercises)} exercises")
+    logger.debug(f"[GET /exercises/] Found {len(exercises)} exercises")
     
     # Get class names
     class_map = {}
@@ -609,7 +610,7 @@ async def get_exercises(
             )
             .all()
         )
-        print(f"[GET /exercises/] Found {len(subs)} submissions for user")
+        logger.debug(f"[GET /exercises/] Found {len(subs)} submissions for user")
         for sub in subs:
             submissions[sub.exercise_id] = sub
     
@@ -645,7 +646,7 @@ async def get_exercises(
             "my_submission": my_sub
         })
     
-    print(f"[GET /exercises/] Returning {len(result)} exercises to frontend")
+    logger.debug(f"[GET /exercises/] Returning {len(result)} exercises to frontend")
     return result
 
 
@@ -665,7 +666,7 @@ async def get_my_submissions(
     - exercise_id: Lọc theo bài tập cụ thể
     - skip, limit: Phân trang
     """
-    print(f"[GET /my-submissions] User {current_user.id} requesting submissions (status={status}, exercise_id={exercise_id})")
+    logger.debug(f"[GET /my-submissions] User {current_user.id} requesting submissions (status={status}, exercise_id={exercise_id})")
     
     try:
         query = db.query(Submission).filter(
@@ -680,7 +681,7 @@ async def get_my_submissions(
         
         submissions = query.order_by(Submission.submitted_at.desc()).offset(skip).limit(limit).all()
         
-        print(f"[GET /my-submissions] Found {len(submissions)} submissions")
+        logger.debug(f"[GET /my-submissions] Found {len(submissions)} submissions")
         
         # Get exercise info for each submission
         exercise_ids = [sub.exercise_id for sub in submissions]
@@ -720,10 +721,10 @@ async def get_my_submissions(
                 } if exercise else None
             })
         
-        print(f"[GET /my-submissions] Returning {len(result)} submissions")
+        logger.debug(f"[GET /my-submissions] Returning {len(result)} submissions")
         return JSONResponse(content=result)
     except Exception as e:
-        print(f"[GET /my-submissions] ERROR: {e}")
+        logger.debug(f"[GET /my-submissions] ERROR: {e}")
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
@@ -861,10 +862,10 @@ async def submit_exercise(
                 f.write(content)
             
             audio_url = f"/media/speaking_submissions/{filename}"
-            print(f"[UPLOAD] Saved speaking audio to {audio_url}")
+            logger.debug(f"[UPLOAD] Saved speaking audio to {audio_url}")
             
         except Exception as e:
-            print(f"[UPLOAD ERROR] Failed to save audio: {str(e)}")
+            logger.error(f"[UPLOAD ERROR] Failed to save audio: {str(e)}")
             audio_url = None
     
     # Check if already submitted
@@ -892,7 +893,7 @@ async def submit_exercise(
             NotificationService.notify_parents_on_submission(db, existing_submission)
         except Exception as e:
             # Log error nhưng không làm fail request
-            print(f"Error creating notification on submission: {e}")
+            logger.error(f"Error creating notification on submission: {e}")
         
         return existing_submission
     
@@ -933,7 +934,7 @@ async def submit_exercise(
         NotificationService.notify_parents_on_submission(db, submission)
     except Exception as e:
         # Log error nhưng không làm fail request
-        print(f"Error creating notification on submission: {e}")
+        logger.error(f"Error creating notification on submission: {e}")
     
     return submission
 
@@ -1397,7 +1398,7 @@ async def grade_submission(
             NotificationService.notify_parents_on_low_score(db, submission)
     except Exception as e:
         # Log error nhưng không làm fail request
-        print(f"Error creating notification: {e}")
+        logger.error(f"Error creating notification: {e}")
     
     return JSONResponse(content={
         "message": "Đã chấm điểm thành công",
@@ -1542,8 +1543,8 @@ async def generate_exercise_with_ai(
     try:
         generator = AIExerciseGenerator()
         
-        print(f"[AI Generate API] Generating {request.test_type} for Grade {request.grade}, Semester {request.semester}")
-        print(f"[AI Generate API] Questions per skill: {request.questions_per_skill or 10}")
+        logger.debug(f"[AI Generate API] Generating {request.test_type} for Grade {request.grade}, Semester {request.semester}")
+        logger.debug(f"[AI Generate API] Questions per skill: {request.questions_per_skill or 10}")
         
         # Generate exercise based on type
         if request.test_type in ['midterm', 'final']:
@@ -1568,7 +1569,7 @@ async def generate_exercise_with_ai(
                 grade=request.grade,
                 semester=request.semester
             )
-            print(f"[AI Generate API] ✅ {request.skill.capitalize()} exercise generated successfully")
+            logger.info(f"[AI Generate API] ✅ {request.skill.capitalize()} exercise generated successfully")
         
         return JSONResponse(content={
             "success": True,
@@ -1579,7 +1580,7 @@ async def generate_exercise_with_ai(
     except HTTPException:
         raise
     except TimeoutError as e:
-        print(f"[AI Generate API] ❌ Timeout Error: {str(e)}")
+        logger.error(f"[AI Generate API] ❌ Timeout Error: {str(e)}")
         import traceback
         traceback.print_exc()
         raise HTTPException(
@@ -1587,7 +1588,7 @@ async def generate_exercise_with_ai(
             detail="OpenAI timeout - Đề thi có thể quá dài. Vui lòng thử giảm số câu hỏi hoặc thử lại."
         )
     except json.JSONDecodeError as e:
-        print(f"[AI Generate API] ❌ JSON Parse Error: {str(e)}")
+        logger.error(f"[AI Generate API] ❌ JSON Parse Error: {str(e)}")
         import traceback
         traceback.print_exc()
         raise HTTPException(
@@ -1596,7 +1597,7 @@ async def generate_exercise_with_ai(
         )
     except Exception as e:
         error_msg = str(e)
-        print(f"[AI Generate API] ❌ Error: {error_msg}")
+        logger.error(f"[AI Generate API] ❌ Error: {error_msg}")
         import traceback
         traceback.print_exc()
         

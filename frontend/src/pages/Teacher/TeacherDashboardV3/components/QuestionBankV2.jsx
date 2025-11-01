@@ -12,6 +12,7 @@ import { questionBankAPI } from '../../../../services/api';
 import './QuestionBankV2.css';
 import Toast from '../../../../components/Toast/Toast';
 import useToast from '../../../../hooks/useToast';
+import logger from '../../../../utils/logger';
 
 export default function QuestionBankV2() {
   const { toast, showSuccess, showError, showWarning, hideToast } = useToast();
@@ -250,12 +251,12 @@ export default function QuestionBankV2() {
     setIsGenerating(true);
     
     // Debug: Log config being sent
-    console.log('=== AI Generation Config ===');
-    console.log('Total Questions:', aiGenerationConfig.totalQuestions);
-    console.log('Skill Distribution:', aiGenerationConfig.skillDistribution);
-    console.log('Time Limit:', aiGenerationConfig.timeLimit);
-    console.log('AI Only:', aiGenerationConfig.aiOnly);
-    console.log('Avoid Duplicates:', aiGenerationConfig.avoidDuplicates);
+    logger.debug('=== AI Generation Config ===');
+    logger.debug('Total Questions:', aiGenerationConfig.totalQuestions);
+    logger.debug('Skill Distribution:', aiGenerationConfig.skillDistribution);
+    logger.debug('Time Limit:', aiGenerationConfig.timeLimit);
+    logger.debug('AI Only:', aiGenerationConfig.aiOnly);
+    logger.debug('Avoid Duplicates:', aiGenerationConfig.avoidDuplicates);
     
     try {
       const res = await questionBankAPI.generateTest(aiGenerationConfig);
@@ -287,14 +288,14 @@ export default function QuestionBankV2() {
       });
       
       // Debug: Log actual results
-      console.log('=== AI Generation Results ===');
-      console.log('Total Questions Generated:', mapped.length);
+      logger.debug('=== AI Generation Results ===');
+      logger.debug('Total Questions Generated:', mapped.length);
       const skillCounts = {};
       ['listening', 'speaking', 'reading', 'writing'].forEach(skill => {
         skillCounts[skill] = mapped.filter(q => q.skill_type === skill).length;
       });
-      console.log('Skill Counts:', skillCounts);
-      console.log('Expected Distribution:', aiGenerationConfig.skillDistribution);
+      logger.debug('Skill Counts:', skillCounts);
+      logger.debug('Expected Distribution:', aiGenerationConfig.skillDistribution);
       
       // Show warning if mismatch
       const totalPct = Object.values(aiGenerationConfig.skillDistribution).reduce((s, v) => s + v, 0);
@@ -343,7 +344,7 @@ export default function QuestionBankV2() {
         }))
       };
 
-      console.log('[EXPORT] Sending payload:', payload);
+      logger.debug('[EXPORT] Sending payload:', payload);
       
       const res = await questionBankAPI.exportDocx(payload);
       const blob = res.data;
@@ -645,7 +646,7 @@ export default function QuestionBankV2() {
         }))
       };
 
-      console.log('[EXPORT TEST SET] Sending payload:', payload);
+      logger.debug('[EXPORT TEST SET] Sending payload:', payload);
       
       const res = await questionBankAPI.exportDocx(payload);
       const blob = res.data;
@@ -1338,7 +1339,7 @@ export default function QuestionBankV2() {
                           className="w-full"
                           onChange={(e) => {
                             const newValue = parseInt(e.target.value);
-                            console.log(`Skill ${skill} changed to ${newValue}%`);
+                            logger.debug(`Skill ${skill} changed to ${newValue}%`);
                             setAiGenerationConfig(prev => ({
                               ...prev,
                               skillDistribution: {
@@ -1716,31 +1717,31 @@ export default function QuestionBankV2() {
           mode="add"
           onClose={() => setShowAddModal(false)}
           onAdd={async (newQuestion) => {
-            console.log('[ADD QUESTION] Received:', newQuestion);
+            logger.debug('[ADD QUESTION] Received:', newQuestion);
             
             try {
               let payload = {};
               
               // ========== LISTENING ==========
               if (newQuestion.skill_type === 'listening') {
-                console.log('[LISTENING] Processing...');
+                logger.debug('[LISTENING] Processing...');
                 
                 // Upload audio nếu có
                 let media_url = null;
                 const files = newQuestion._files || {};
-                console.log('[LISTENING] Files object:', files);
-                console.log('[LISTENING] audioFile:', files.audioFile);
+                logger.debug('[LISTENING] Files object:', files);
+                logger.debug('[LISTENING] audioFile:', files.audioFile);
                 
                 if (files.audioFile) {
                   try {
-                    console.log('[LISTENING] Uploading audio...', {
+                    logger.debug('[LISTENING] Uploading audio...', {
                       name: files.audioFile.name,
                       type: files.audioFile.type,
                       size: files.audioFile.size
                     });
                     const uploadRes = await questionBankAPI.uploadAudio(files.audioFile);
                     media_url = uploadRes.url;
-                    console.log('[LISTENING] Audio uploaded successfully:', media_url);
+                    logger.debug('[LISTENING] Audio uploaded successfully:', media_url);
                   } catch (err) {
                     console.error('[LISTENING] Audio upload failed:', err);
                     console.error('[LISTENING] Error response:', err.response?.data);
@@ -1749,7 +1750,7 @@ export default function QuestionBankV2() {
                     return;
                   }
                 } else {
-                  console.log('[LISTENING] No audio file provided');
+                  logger.debug('[LISTENING] No audio file provided');
                 }
                 
                 payload = {
@@ -1769,7 +1770,7 @@ export default function QuestionBankV2() {
               
               // ========== SPEAKING ==========
               else if (newQuestion.skill_type === 'speaking') {
-                console.log('[SPEAKING] Processing...');
+                logger.debug('[SPEAKING] Processing...');
                 
                 payload = {
                   skill_type: 'speaking',
@@ -1785,7 +1786,7 @@ export default function QuestionBankV2() {
               
               // ========== READING ==========
               else if (newQuestion.skill_type === 'reading') {
-                console.log('[READING] Processing...');
+                logger.debug('[READING] Processing...');
                 
                 // Xử lý passage
                 let passage_text = newQuestion.passage || null;
@@ -1794,10 +1795,10 @@ export default function QuestionBankV2() {
                 const files = newQuestion._files || {};
                 if (files.passageFile) {
                   try {
-                    console.log('[READING] Uploading passage file...');
+                    logger.debug('[READING] Uploading passage file...');
                     const uploadRes = await questionBankAPI.uploadPassage(files.passageFile);
                     passage_url = uploadRes.url;
-                    console.log('[READING] Passage uploaded:', passage_url);
+                    logger.debug('[READING] Passage uploaded:', passage_url);
                   } catch (err) {
                     console.error('[READING] Passage upload failed:', err);
                     showWarning('⚠️ Upload passage thất bại, sử dụng text passage thay thế...');
@@ -1821,7 +1822,7 @@ export default function QuestionBankV2() {
               
               // ========== WRITING ==========
               else if (newQuestion.skill_type === 'writing') {
-                console.log('[WRITING] Processing...');
+                logger.debug('[WRITING] Processing...');
                 
                 payload = {
                   skill_type: 'writing',
@@ -1843,11 +1844,11 @@ export default function QuestionBankV2() {
                 throw new Error('Thiếu thông tin bắt buộc: skill_type, question_text, topic');
               }
               
-              console.log('[ADD QUESTION] Final payload:', payload);
+              logger.debug('[ADD QUESTION] Final payload:', payload);
               
               // Create question
               await questionBankAPI.create(payload);
-              console.log('[ADD QUESTION] Success!');
+              logger.debug('[ADD QUESTION] Success!');
               
               showSuccess('✅ Đã thêm câu hỏi thành công');
               await loadQuestions();
@@ -2097,14 +2098,14 @@ export default function QuestionBankV2() {
           initialData={editingQuestion}
           onClose={() => setEditingQuestion(null)}
           onAdd={async (updatedQuestion) => {
-            console.log('[EDIT QUESTION] Received:', updatedQuestion);
+            logger.debug('[EDIT QUESTION] Received:', updatedQuestion);
             
             try {
               let payload = {};
               
               // ========== LISTENING ==========
               if (updatedQuestion.skill_type === 'listening') {
-                console.log('[LISTENING] Processing update...');
+                logger.debug('[LISTENING] Processing update...');
                 
                 // Upload audio nếu có file mới
                 let media_url = editingQuestion.media_url; // Keep existing URL
@@ -2112,10 +2113,10 @@ export default function QuestionBankV2() {
                 
                 if (files.audioFile) {
                   try {
-                    console.log('[LISTENING] Uploading new audio...');
+                    logger.debug('[LISTENING] Uploading new audio...');
                     const uploadRes = await questionBankAPI.uploadAudio(files.audioFile);
                     media_url = uploadRes.url;
-                    console.log('[LISTENING] New audio uploaded:', media_url);
+                    logger.debug('[LISTENING] New audio uploaded:', media_url);
                   } catch (err) {
                     console.error('[LISTENING] Audio upload failed:', err);
                     showError(`⚠️ Upload audio thất bại:\n\n${err.response?.data?.detail || err.message}`);
@@ -2160,7 +2161,7 @@ export default function QuestionBankV2() {
                 const files = updatedQuestion._files || {};
                 if (files.passageFile) {
                   try {
-                    console.log('[READING] Uploading new passage...');
+                    logger.debug('[READING] Uploading new passage...');
                     const uploadRes = await questionBankAPI.uploadPassage(files.passageFile);
                     passage_url = uploadRes.url;
                     passage_text = null; // Use file instead
@@ -2201,11 +2202,11 @@ export default function QuestionBankV2() {
                 };
               }
               
-              console.log('[EDIT QUESTION] Final payload:', payload);
+              logger.debug('[EDIT QUESTION] Final payload:', payload);
               
               // Update question
               await questionBankAPI.update(editingQuestion.id, payload);
-              console.log('[EDIT QUESTION] Success!');
+              logger.debug('[EDIT QUESTION] Success!');
               
               showSuccess('✅ Đã cập nhật câu hỏi thành công');
               await loadQuestions();
@@ -2230,3 +2231,4 @@ export default function QuestionBankV2() {
     </div>
   );
 }
+

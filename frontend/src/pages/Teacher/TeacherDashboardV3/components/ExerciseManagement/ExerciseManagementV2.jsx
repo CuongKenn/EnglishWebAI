@@ -7,6 +7,7 @@ import ExerciseDetailModal from './ExerciseDetailModal';
 import ExerciseListTable from './ExerciseListTable';
 import Toast from '../../../../../components/Toast/Toast';
 import useToast from '../../../../../hooks/useToast';
+import logger from '../../../../../utils/logger';
 
 export default function ExerciseManagementV2() {
   const { toast, showSuccess, showError, showWarning, hideToast } = useToast();
@@ -88,13 +89,13 @@ export default function ExerciseManagementV2() {
         enable_ai_grading: false
       });
       
-      console.log('Exercise created successfully:', response.data);
+      logger.debug('Exercise created successfully:', response.data);
       
       // Refresh exercises list
       await fetchExercises();
       setShowCreateModal(false);
     } catch (error) {
-      console.error('Error creating exercise:', error);
+      logger.error('Error creating exercise:', error);
       showError(`Không thể tạo bài tập: ${error.response?.data?.detail || error.message}`);
     }
   };

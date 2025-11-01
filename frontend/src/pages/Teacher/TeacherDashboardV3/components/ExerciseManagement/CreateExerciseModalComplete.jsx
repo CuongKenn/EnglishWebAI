@@ -9,6 +9,7 @@ import { apiV1 } from '../../../../../services/api';
 import examService from '../../../../../services/examService';
 import Toast from '../../../../../components/Toast/Toast';
 import useToast from '../../../../../hooks/useToast';
+import logger from '../../../../../utils/logger';
 
 export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   const { toast, showSuccess, showWarning, hideToast } = useToast();
@@ -242,12 +243,12 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
         formData.append('end_time', dueDate);
       }
       
-      console.log('[Word Import] Uploading file:', wordFile.name);
+      logger.debug('Word Import', 'Uploading file:', wordFile.name);
       
       // Call API to upload and process Word file
       const response = await examService.uploadExamFromWord(formData);
       
-      console.log('[Word Import] Success:', response);
+      logger.debug('Word Import', 'Success:', response);
       
       showSuccess('✅ Import thành công! Đề thi đã được tạo.');
       
@@ -260,7 +261,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
       }, 1500);
       
     } catch (error) {
-      console.error('[Word Import] Error:', error);
+      logger.error('[Word Import] Error:', error);
       
       // Extract error message
       let errorMessage = 'Lỗi khi upload file Word!';
@@ -307,22 +308,22 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
         additional_notes: aiFormData.additionalNotes || ''
       };
       
-      console.log('[AI Generate] Payload:', payload);
+      logger.debug('AI Generate', 'Payload:', payload);
       
       // Call AI generate API
       const response = await examService.generateFullExam(payload);
       
-      console.log('[AI Generate] Full Response:', JSON.stringify(response, null, 2));
-      console.log('[AI Generate] Listening:', response?.listening);
-      console.log('[AI Generate] Reading:', response?.reading);
-      console.log('[AI Generate] Writing:', response?.writing);
-      console.log('[AI Generate] Speaking:', response?.speaking);
+      logger.debug('AI Generate', 'Full Response:', JSON.stringify(response, null, 2));
+      logger.debug('AI Generate', 'Listening:', response?.listening);
+      logger.debug('AI Generate', 'Reading:', response?.reading);
+      logger.debug('AI Generate', 'Writing:', response?.writing);
+      logger.debug('AI Generate', 'Speaking:', response?.speaking);
       
       // Populate form with AI generated data
       // LISTENING Section
       if (response && response.listening) {
         const listeningData = response.listening;
-        console.log('[AI Generate] Setting Listening data:', listeningData);
+        logger.debug('AI Generate', 'Setting Listening data:', listeningData);
         
         // Set script/transcript
         setTranscript(listeningData.script || listeningData.transcript || '');
@@ -330,7 +331,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
         // Set audio URL if available
         if (listeningData.audio_url) {
           setAudioUrl(listeningData.audio_url);
-          console.log('[AI Generate] Audio URL set:', listeningData.audio_url);
+          logger.debug('AI Generate', 'Audio URL set:', listeningData.audio_url);
         }
         
         // Show transcript by default for teacher preview
@@ -340,7 +341,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
       // READING Section
       if (response && response.reading) {
         setPassageText(response.reading.passage || '');
-        console.log('[AI Generate] Setting Reading passage');
+        logger.debug('AI Generate', 'Setting Reading passage');
       }
       
       // WRITING Section
@@ -351,25 +352,25 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
         }
         if (response.writing.min_words) setMinWords(response.writing.min_words);
         if (response.writing.max_words) setMaxWords(response.writing.max_words);
-        console.log('[AI Generate] Setting Writing data');
+        logger.debug('AI Generate', 'Setting Writing data');
       }
       
       // SPEAKING Section
       if (response && response.speaking) {
-        console.log('[AI Generate] Speaking section received:', response.speaking);
+        logger.debug('AI Generate', 'Speaking section received:', response.speaking);
         // Try to get prompt from various possible fields
         const speakingPrompt = response.speaking.prompt || response.speaking.topic || '';
-        console.log('[AI Generate] Extracted speakingPrompt:', speakingPrompt);
+        logger.debug('AI Generate', 'Extracted speakingPrompt:', speakingPrompt);
         setSpeakingPrompt(speakingPrompt);
         
         if (response.speaking.instructions && Array.isArray(response.speaking.instructions)) {
-          console.log('[AI Generate] Setting speaking instructions:', response.speaking.instructions);
+          logger.debug('AI Generate', 'Setting speaking instructions:', response.speaking.instructions);
           setSpeakingInstructions(response.speaking.instructions);
         } else if (response.speaking.questions && response.speaking.questions.length > 0) {
           // Fallback: use questions as instructions if no instructions provided
           const speakingQ = response.speaking.questions.map(q => q.question || q.text || '').filter(q => q);
           if (speakingQ.length > 0) {
-            console.log('[AI Generate] Using questions as instructions:', speakingQ);
+            logger.debug('AI Generate', 'Using questions as instructions:', speakingQ);
             setSpeakingInstructions(speakingQ);
           }
         }
@@ -377,7 +378,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
         if (response.speaking.prep_time) setPrepTime(response.speaking.prep_time);
         if (response.speaking.speak_time) setSpeakTime(response.speaking.speak_time);
         
-        console.log('[AI Generate] Speaking data set successfully');
+        logger.debug('AI Generate', 'Speaking data set successfully');
       }
       
       // Collect all questions from sections
@@ -391,7 +392,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
           skill: 'listening'
         }));
         allQuestions.push(...listeningQuestions);
-        console.log(`[AI Generate] Added ${listeningQuestions.length} listening questions`);
+        logger.debug('AI Generate', `Added ${listeningQuestions.length} listening questions`);
       }
       
       if (response.reading && response.reading.questions) {
@@ -402,20 +403,20 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
           skill: 'reading'
         }));
         allQuestions.push(...readingQuestions);
-        console.log(`[AI Generate] Added ${readingQuestions.length} reading questions`);
+        logger.debug('AI Generate', `Added ${readingQuestions.length} reading questions`);
       }
       
       setQuestions(allQuestions);
-      console.log(`[AI Generate] Total questions set: ${allQuestions.length}`);
+      logger.debug('AI Generate', `Total questions set: ${allQuestions.length}`);
       
       // Switch to manual mode to show preview
       setInputMethod('manual');
-      console.log('[AI Generate] Switched to manual mode for preview');
+      logger.debug('AI Generate', 'Switched to manual mode for preview');
       
       showSuccess('✨ AI đã sinh đề thành công! Vui lòng kiểm tra và chỉnh sửa nếu cần.');
       
     } catch (error) {
-      console.error('[AI Generate] Error:', error);
+      logger.error('[AI Generate] Error:', error);
       showWarning('Lỗi khi sinh đề với AI: ' + (error.response?.data?.detail || error.message));
     } finally {
       setIsGeneratingAI(false);
