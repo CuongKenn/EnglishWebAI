@@ -70,12 +70,17 @@ This guide documents all performance optimizations applied to EnglishWebAI proje
 - ✅ Prevents filter operations on every keystroke
 - ✅ Expected: ~50-60% reduction in filter operations, smoother UX
 
-### 9. Timing Constants (Partial Progress)
+### 9. Timing Constants (In Progress)
 - ✅ Expanded `UI_CONFIG` with 10+ timing constants
-- ✅ Constants added: NOTIFICATION_DURATION (3000ms), COPIED_INDICATOR_DURATION (2000ms), RIPPLE_DURATION (600ms), FOCUS_DELAY (100ms), TIMER_INTERVAL (1000ms)
-- ✅ Applied to: `ShareModal.jsx` (2 setTimeout replacements)
-- ⏳ **Remaining work:** 20+ files with hardcoded setTimeout values need constant replacement
-- 📄 Files identified: ListeningExercise.jsx, WritingExercise.jsx, DoExercise.jsx, Login.jsx, Register.jsx, Profile.jsx, Admin/Settings.jsx, AISettings.jsx
+- ✅ Constants added: NOTIFICATION_DURATION (3000ms), COPIED_INDICATOR_DURATION (2000ms), RIPPLE_DURATION (600ms), FOCUS_DELAY (100ms), TIMER_INTERVAL (1000ms), COUNTDOWN_INTERVAL (1000ms), INTERACTION_DELAY (100ms)
+- ✅ Applied to 6 files: 
+  - `ShareModal.jsx` (2 replacements)
+  - `DoExercise.jsx` (1 replacement)
+  - `Profile.jsx` (1 replacement)
+  - `OTPModal.jsx` (2 replacements)
+  - `ListeningExercise.jsx` (4 replacements)
+- ⏳ **Remaining work:** ~15 files with hardcoded setTimeout values
+- 📄 Files still need updates: WritingExercise.jsx, ReportCard.jsx, Login.jsx, Register.jsx, Admin/Settings.jsx, AISettings.jsx, ManageClasses.jsx, TranslateAI.jsx, ListeningAI.jsx
 
 ---
 
