@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import ProfileDropdown from '../ProfileDropdown/ProfileDropdown';
-import NotificationDropdown from '../NotificationDropdown/NotificationDropdown';
 import AuthModal from './AuthModal';
 import authService from '../../services/authService';
 import './Navbar.css';
@@ -144,7 +143,6 @@ const Navbar = ({ userRole = 'student', isLoggedIn: isLoggedInProp = false, onLo
         <div className="navbar-user">
           {isLoggedIn ? (
             <>
-              <NotificationDropdown />
               <ProfileDropdown onLogout={onLogout} />
             </>
           ) : (
