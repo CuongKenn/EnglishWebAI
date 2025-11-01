@@ -876,7 +876,6 @@ export const questionBankAPI = {
     // Base: 2 minutes + 1 minute per 10 questions
     const numQuestions = config.totalQuestions || 10;
     const timeoutMs = Math.max(120000, Math.min(numQuestions * 12000, 600000)); // 2-10 minutes
-    console.log(`[API] Generate test timeout: ${timeoutMs/1000}s for ${numQuestions} questions`);
     
     const response = await apiClient.post('/api/v1/question-bank/generate-test', config, {
       timeout: timeoutMs

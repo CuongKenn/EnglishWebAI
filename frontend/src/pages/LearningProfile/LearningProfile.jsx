@@ -75,7 +75,7 @@ const LearningProfile = () => {
 
         // Set user data
         if (userProfile) {
-          console.log('User profile loaded:', userProfile);
+
           setUserData(userProfile);
         }
 

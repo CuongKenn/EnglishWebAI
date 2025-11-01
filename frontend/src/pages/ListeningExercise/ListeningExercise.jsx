@@ -175,7 +175,7 @@ const ListeningExercise = () => {
               const pathname = parsed.pathname.replace(/\/?api\/?v1\/?$/i, '').replace(/\/$/, '');
               return `${origin}${pathname}`;
             } catch (err) {
-              console.warn('Không thể phân tích VITE_API_BASE_URL:', err);
+
             }
           }
 

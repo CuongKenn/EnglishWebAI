@@ -622,7 +622,6 @@ const ExercisesTests = () => {
             <DialogTitle>{selectedTest?.title}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto">
-            {console.log('Detail modal opened, selectedTest:', selectedTest)}
             <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded">
               <div>
                 <p className="text-xs text-gray-500">Lớp</p>

@@ -46,8 +46,7 @@ export default function AddQuestionModal({ onClose, onAdd, mode = 'add', initial
   // Populate form when editing
   useEffect(() => {
     if (mode === 'edit' && initialData) {
-      console.log('[EDIT MODAL] Populating with data:', initialData);
-      
+
       setQuestionText(initialData.question_text || '');
       setQuestionType(initialData.question_type || 'multiple_choice');
       setSkillType(initialData.skill_type || 'listening');
@@ -96,11 +95,6 @@ export default function AddQuestionModal({ onClose, onAdd, mode = 'add', initial
   const handleAudioUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      console.log('[ADD MODAL] Audio file selected:', {
-        name: file.name,
-        type: file.type,
-        size: file.size
-      });
       setAudioFile(file);
     }
   };
@@ -115,16 +109,13 @@ export default function AddQuestionModal({ onClose, onAdd, mode = 'add', initial
     const fileName = file.name.toLowerCase();
     if (fileName.endsWith('.docx') || fileName.endsWith('.doc')) {
       try {
-        console.log('[READING] Parsing DOCX file:', file.name);
-        
+
         // Import API
         const { questionBankAPI } = await import('../../../../services/api');
         
         // Parse DOCX
         const result = await questionBankAPI.parseDocx(file);
-        
-        console.log('[READING] DOCX parsed:', result.paragraphs, 'paragraphs,', result.characters, 'chars');
-        
+
         // Set text to textarea
         setReadingPassage(result.text);
         

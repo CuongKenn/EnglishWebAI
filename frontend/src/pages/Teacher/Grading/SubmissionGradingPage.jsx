@@ -90,7 +90,7 @@ export default function SubmissionGradingPage() {
               if (found) setIsExam(true);
             }
           } catch (examError) {
-            console.log('Not an exam submission, trying exercise...', examError);
+
           }
         }
         
@@ -242,11 +242,11 @@ export default function SubmissionGradingPage() {
   
   // Debug logs
   if (submission && isComprehensiveTest) {
-    console.log('[DEBUG] Comprehensive test detected');
-    console.log('[DEBUG] Listening section:', listeningSection);
-    console.log('[DEBUG] Reading section:', readingSection);
-    console.log('[DEBUG] Writing section:', writingSection);
-    console.log('[DEBUG] Speaking section:', speakingSection);
+
+
+
+
+
   }
   
   // Legacy single-skill data

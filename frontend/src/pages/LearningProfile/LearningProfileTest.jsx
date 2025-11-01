@@ -1,8 +1,7 @@
 import React from 'react';
 
 const LearningProfileTest = () => {
-  console.log('LearningProfileTest component is rendering');
-  
+
   return (
     <div style={{ 
       padding: '20px', 

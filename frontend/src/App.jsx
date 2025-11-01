@@ -109,7 +109,7 @@ function App() {
   };
 
   return (
-    <>
+    <ToastProvider>
       {/* Welcome Notification */}
       <WelcomeNotification
         isVisible={showWelcome}

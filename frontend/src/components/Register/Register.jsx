@@ -164,7 +164,7 @@ const Register = () => {
   };
 
   const handleSocialRegister = (provider) => {
-    console.log(`Register with ${provider}`);
+
   };
 
   const handleNavigateToLogin = () => {

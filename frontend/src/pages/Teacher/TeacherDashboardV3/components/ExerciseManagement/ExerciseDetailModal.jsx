@@ -138,9 +138,9 @@ const ExerciseDetailModal = memo(function ExerciseDetailModal({ exercise, onClos
   
   const questions = useMemo(() => {
     const ex = isEditMode ? editedExercise : exercise;
-    console.log('Exercise data:', ex);
-    console.log('Exercise content:', ex?.content);
-    console.log('Questions:', ex?.content?.questions);
+
+
+
     return ex?.content?.questions || [];
   }, [isEditMode, editedExercise, exercise]);
   

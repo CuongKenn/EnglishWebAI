@@ -60,18 +60,16 @@ const CourseContentPage = () => {
   // Hàm xử lý click vào bài học
   const handleLessonClick = (unit) => {
     if (!courseData) {
-      console.warn('No course data available');
+
       return;
     }
 
     // Get skill type từ backend (check cả skill và category)
     const skillType = (courseData.skill || courseData.category || '').toLowerCase();
-    
-    console.log('Course Data:', courseData);
-    console.log('Skill Type:', skillType);
-    console.log('Unit ID:', unit.id);
-    console.log('Course ID (cid):', cid);
-    
+
+
+
+
     // Route dựa trên skill type - dùng cid thay vì courseId
     if (skillType === 'reading') {
       navigate(`/reading-exercise/${cid}/${unit.id}`);
@@ -83,7 +81,7 @@ const CourseContentPage = () => {
       navigate(`/speaking-exercise/${cid}/${unit.id}`);
     } else {
       // Với các loại khóa học khác (vocabulary, grammar), mở/đóng panel câu hỏi
-      console.log('Other skill type:', skillType, '- opening questions panel');
+
       setOpenUnitId(openUnitId === unit.id ? null : unit.id);
       if (!questions[unit.id]) {
         loadQuestions(unit.id);

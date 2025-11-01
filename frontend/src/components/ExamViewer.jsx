@@ -53,7 +53,7 @@ const ExamViewer = ({ examId, onSubmitSuccess }) => {
         setAnswers(submissionData.answers || {});
       } catch (err) {
         // No submission yet
-        console.log('No existing submission');
+
       }
     } catch (err) {
       console.error('Load exam error:', err);

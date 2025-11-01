@@ -31,11 +31,9 @@ const AvatarCropModal = ({ imageUrl, onSave, onClose }) => {
         
         // Calculate zoom to fit the circle (with a bit of padding)
         const initialZoom = (circleDiameter / maxDimension) * 1.2; // 20% padding for better view
-        
-        console.log('Image dimensions:', img.width, 'x', img.height);
-        console.log('Max dimension:', maxDimension);
-        console.log('Initial zoom:', initialZoom);
-        
+
+
+
         setZoom(initialZoom);
         
         // Reset position and rotation

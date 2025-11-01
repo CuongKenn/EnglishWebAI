@@ -134,9 +134,7 @@ export default function ExerciseHub() {
         studentService.getExercises(),
         studentService.getExerciseStatistics()
       ]);
-      
-      console.log('All exercises from API:', allExercises);
-      
+
       // Filter exercises vs tests
       // Tests: quiz, test, test_15min, midterm, final
       // Exercises: assignment, skill_exercise, or items without type
@@ -177,12 +175,12 @@ export default function ExerciseHub() {
             className: cls.name
           }))];
         } catch (err) {
-          console.log(`No exams for class ${cls.id}`);
+
         }
       }
       
       setExams(allExams);
-      console.log('Fetched exams:', allExams);
+
     } catch (error) {
       console.error('Error fetching exams:', error);
     }

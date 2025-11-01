@@ -87,9 +87,7 @@ export default function ExerciseManagementV2() {
         content: newExercise.content || {},
         enable_ai_grading: false
       });
-      
-      console.log('Exercise created successfully:', response.data);
-      
+
       // Refresh exercises list
       await fetchExercises();
       setShowCreateModal(false);

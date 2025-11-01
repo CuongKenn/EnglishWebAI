@@ -37,7 +37,7 @@ const StudentAnalytics = () => {
   const fetchAnalytics = async (classId) => {
     try {
       const response = await apiV1.get(`/teacher/classes/${classId}/analytics/students`);
-      console.log('[StudentAnalytics] API Response:', response.data);
+
       // API returns paginated response with 'students' field
       const studentsData = response.data.students || response.data;
       setAnalytics(Array.isArray(studentsData) ? studentsData : []);
@@ -144,7 +144,7 @@ const StudentAnalytics = () => {
               <div>
                 <p className="text-sm font-medium text-gray-700 mb-3">Điểm theo kỹ năng</p>
                 {(() => {
-                  console.log('[StudentAnalytics] Student skill_scores:', student.student_name, student.skill_scores);
+
                   return Object.keys(student.skill_scores || {}).length > 0 ? (
                     <div className="space-y-2">
                       {Object.entries(student.skill_scores).map(([skill, score]) => (

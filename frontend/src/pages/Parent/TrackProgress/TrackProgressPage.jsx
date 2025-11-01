@@ -47,12 +47,12 @@ const TrackProgressPage = () => {
   }, []);
 
   const handleExportTypeSelect = (type) => {
-    console.log('[Export] handleExportTypeSelect called with type:', type);
+
     setSelectedExportType(type);
     setShowExportModal(false);
     setShowExportDetailModal(true);
-    console.log('[Export] selectedExportType set to:', type);
-    console.log('[Export] showExportDetailModal set to true');
+
+
   };
 
   const handleExportOptionToggle = (option) => {
@@ -63,11 +63,10 @@ const TrackProgressPage = () => {
   };
 
   const handleExportConfirm = async () => {
-    console.log('[Export] handleExportConfirm called');
-    console.log('[Export] selectedChild:', selectedChild);
-    console.log('[Export] selectedExportType:', selectedExportType);
-    console.log('[Export] exportOptions:', exportOptions);
-    
+
+
+
+
     if (!selectedChild) {
       console.error('[Export] Error: No child selected!');
       alert('Vui lòng chọn con em trước khi xuất báo cáo.');
@@ -81,12 +80,11 @@ const TrackProgressPage = () => {
     }
     
     try {
-      console.log('[Export] Starting export process...');
-      console.log('[Export] Selected child:', selectedChild);
-      console.log('[Export] Export type:', selectedExportType);
-      console.log('[Export] Export options:', exportOptions);
-      console.log('[Export] Filter options:', filterOptions);
-      
+
+
+
+
+
       // Sanitize filename - remove special characters
       const safeName = selectedChild.name.replace(/[^a-zA-Z0-9]/g, '_');
       const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
@@ -95,7 +93,7 @@ const TrackProgressPage = () => {
       let filename;
       
       if (selectedExportType === 'pdf') {
-        console.log('Calling exportProgressPDF...');
+
         blob = await parentAPI.exportProgressPDF(
           selectedChild.id,
           exportOptions,
@@ -107,14 +105,6 @@ const TrackProgressPage = () => {
         );
         filename = `bao_cao_tien_do_${safeName}_${dateStr}.pdf`;
       } else if (selectedExportType === 'excel') {
-        console.log('[Export] Calling exportProgressExcel API...');
-        console.log('[Export] Child ID:', selectedChild.id);
-        console.log('[Export] Export options:', exportOptions);
-        console.log('[Export] Filters:', {
-          subject: filterOptions.subject,
-          timeRange: filterOptions.timeRange,
-          evaluationType: filterOptions.evaluationType
-        });
         
         blob = await parentAPI.exportProgressExcel(
           selectedChild.id,
@@ -125,20 +115,17 @@ const TrackProgressPage = () => {
             evaluationType: filterOptions.evaluationType
           }
         );
-        
-        console.log('[Export] Excel blob received!', blob);
+
         filename = `bao_cao_tien_do_${safeName}_${dateStr}.xlsx`;
       } else {
         console.error('[Export] Unknown export type:', selectedExportType);
         alert('Định dạng xuất báo cáo không hợp lệ.');
         return;
       }
-      
-      console.log('[Export] Blob received:', blob);
-      console.log('[Export] Blob size:', blob?.size || 'N/A');
-      console.log('[Export] Blob type:', blob?.type || 'N/A');
-      console.log('[Export] Filename:', filename);
-      
+
+
+
+
       if (!blob) {
         throw new Error('Không nhận được dữ liệu từ server');
       }
@@ -170,8 +157,7 @@ const TrackProgressPage = () => {
         attendance: true,
         overallEvaluation: true
       });
-      
-      console.log('[Export] Export completed successfully!');
+
       alert('Xuất báo cáo thành công!');
     } catch (error) {
       console.error('[Export] Error during export:', error);
@@ -203,7 +189,7 @@ const TrackProgressPage = () => {
   };
 
   const handleApplyFilter = async () => {
-    console.log('Áp dụng bộ lọc:', filterOptions);
+
     setShowFilterModal(false);
     
     // Reload progress with new filters

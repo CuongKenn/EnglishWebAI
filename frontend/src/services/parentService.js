@@ -46,8 +46,6 @@ export const parentAPI = {
       const queryString = params.toString();
       const url = `/parent/children/${childId}/export/pdf${queryString ? '?' + queryString : ''}`;
       
-      console.log('[ParentService] Export PDF URL:', url);
-      
       const res = await apiV1.post(url, exportOptions, {
         responseType: 'blob',
         timeout: 60000
@@ -78,34 +76,21 @@ export const parentAPI = {
       const queryString = params.toString();
       const url = `/parent/children/${childId}/export/excel${queryString ? '?' + queryString : ''}`;
       
-      console.log('[ParentService] Export Excel URL:', url);
-      console.log('[ParentService] Export Options:', exportOptions);
-      console.log('[ParentService] Filters:', filters);
-      
       const res = await apiV1.post(url, exportOptions, {
         responseType: 'blob',
         timeout: 60000 // 60 seconds timeout
       });
       
-      console.log('[ParentService] Excel export response:', {
-        status: res.status,
-        headers: res.headers,
-        dataSize: res.data?.size || 0
-      });
-      
       return res.data;
     } catch (error) {
-      console.error('[ParentService] Excel export error:', error);
-      console.error('[ParentService] Error response:', error.response);
-      
       // Try to parse error message from blob if possible
       if (error.response?.data instanceof Blob) {
         try {
           const text = await error.response.data.text();
           const errorData = JSON.parse(text);
-          console.error('[ParentService] Error message from server:', errorData);
+          // Error already logged by interceptor
         } catch (parseError) {
-          console.error('[ParentService] Could not parse error blob');
+          // Parsing failed, error already logged
         }
       }
       

@@ -8,14 +8,13 @@ import {
 import ConsistentSidebarLayout from '../../components/Layout/ConsistentSidebarLayout';
 
 const LearningProfileSimple = () => {
-  console.log('LearningProfileSimple component is rendering');
-  
+
   const navigate = useNavigate();
   const [activeMenuItem, setActiveMenuItem] = useState('profile');
   const [isContentPushed, setIsContentPushed] = useState(false);
 
   const handleMenuItemClick = (itemId) => {
-    console.log('Menu item clicked:', itemId);
+
     setActiveMenuItem(itemId);
     setIsContentPushed(true);
     

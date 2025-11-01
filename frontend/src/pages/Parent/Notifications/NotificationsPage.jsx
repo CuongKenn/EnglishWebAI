@@ -75,8 +75,7 @@ const NotificationsPage = () => {
       window.URL.revokeObjectURL(url);
       
       // Show success message (optional - có thể thêm toast notification)
-      console.log('Xuất file thành công!');
-      
+
     } catch (error) {
       console.error('Lỗi khi xuất file:', error);
       alert('Không thể xuất file. Vui lòng thử lại!');

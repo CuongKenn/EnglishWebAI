@@ -30,7 +30,7 @@ const Dashboard = () => {
     try {
       setLoading(true);
       const response = await apiV1.get('/teacher/dashboard/overview');
-      console.log('Dashboard data received:', response.data);
+
       setDashboardData(response.data);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);

@@ -39,9 +39,9 @@ export default function GradingFeedback() {
 
   const fetchClasses = async () => {
     try {
-      console.log('Fetching classes...');
+
       const response = await apiV1.get('/classes/teaching');
-      console.log('Classes response:', response.data);
+
       setClasses(response.data);
       if (response.data.length > 0) {
         setSelectedClass(response.data[0].id);
@@ -55,10 +55,10 @@ export default function GradingFeedback() {
   const fetchSubmissions = async () => {
     try {
       setLoading(true);
-      console.log('Fetching all submissions for class:', selectedClass);
+
       // Get all submissions for the class (no exercise filter)
       const response = await apiV1.get(`/exercises/teacher-grading/classes/${selectedClass}/submissions`);
-      console.log('Submissions response:', response.data);
+
       setSubmissions(response.data);
     } catch (error) {
       console.error('Error fetching submissions:', error);
@@ -153,10 +153,9 @@ export default function GradingFeedback() {
     if (!selectedSubmission) return null;
 
     // Debug: Log submission data
-    console.log('Selected submission:', selectedSubmission);
-    console.log('Rubrics scores:', selectedSubmission.rubrics_scores);
-    console.log('Speaking assessment:', selectedSubmission.rubrics_scores?.speaking_assessment);
-    console.log('Writing assessment:', selectedSubmission.rubrics_scores?.writing_assessment);
+
+
+
 
   const hasAI = typeof selectedSubmission.ai_score === 'number';
 

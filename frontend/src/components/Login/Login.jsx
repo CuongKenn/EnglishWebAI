@@ -143,7 +143,7 @@ const Login = ({ onLogin }) => {
   };
 
   const handleSocialLogin = (provider) => {
-    console.log(`Login with ${provider}`);
+
   };
 
   const handleForgotPassword = () => {

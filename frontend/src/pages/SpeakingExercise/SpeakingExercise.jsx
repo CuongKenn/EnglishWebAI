@@ -402,8 +402,6 @@ const SpeakingExercise = () => {
         }
       });
 
-      console.log('[submitRecording] API response:', response.data);
-
       // Store results
       setAssessmentResults(response.data);
       setShowResults(true);

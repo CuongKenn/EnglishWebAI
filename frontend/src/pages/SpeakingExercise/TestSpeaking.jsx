@@ -3,9 +3,7 @@ import { useParams } from 'react-router-dom';
 
 const TestSpeaking = () => {
   const { courseId } = useParams();
-  
-  console.log('TestSpeaking component loaded with courseId:', courseId);
-  
+
   return (
     <div style={{ 
       padding: '40px', 
@@ -55,7 +53,7 @@ const TestSpeaking = () => {
         fontSize: '14px',
         opacity: '0.8'
       }}>
-        <p>🔧 <strong>Debug Console:</strong> Mở Developer Tools (F12) để xem console.log</p>
+        <p>🔧 <strong>Debug Console:</strong> Mở Developer Tools (F12) để debug</p>
       </div>
     </div>
   );

@@ -53,16 +53,14 @@ const ManageAccounts = () => {
         skip: 0,
         limit: 1000 // Load nhiều để không bị giới hạn
       };
-      
-      console.log('📡 Loading users with params:', params);
+
       const data = await adminAPI.getUsers(params);
-      console.log('✅ Received data:', data);
-      
+
       setUsers(Array.isArray(data) ? data : []);
       setCurrentPage(1); // Reset về trang 1 khi reload
       
       if (!data || data.length === 0) {
-        console.warn('⚠️ No users returned from API');
+
       }
     } catch (e) {
       console.error('❌ Error loading users:', e);

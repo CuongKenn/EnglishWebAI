@@ -55,13 +55,11 @@ export function FlashcardAI() {
       // Load all levels from AI API
       const levels = ["A1", "A2", "B1", "B2", "C1", "C2"];
       const allCards = [];
-      
-      console.log('🔄 Loading flashcards from AI...');
-      
+
       for (const level of levels) {
         try {
           const cards = await getFlashcards(level, 7); // 7 cards per level from AI (tổng 42 cards)
-          console.log(`✅ Loaded ${cards?.length || 0} cards for level ${level}`);
+
           if (cards && Array.isArray(cards) && cards.length > 0) {
             allCards.push(...cards);
           }
@@ -72,7 +70,7 @@ export function FlashcardAI() {
       
       // Use AI-generated cards
       if (allCards.length > 0) {
-        console.log(`✅ Successfully loaded ${allCards.length} flashcards from AI`);
+
         setAllFlashcards(allCards);
         aiUsageAPI.logUsage('flashcard', { action: 'load', source: 'ai', count: allCards.length });
       } else {
@@ -264,15 +262,6 @@ export function FlashcardAI() {
       </div>
     );
   }
-
-  // Debug info
-  console.log('FlashcardAI Debug:', {
-    allFlashcardsLength: allFlashcards.length,
-    selectedLevel,
-    filteredFlashcardsLength: filteredFlashcards.length,
-    currentIndex,
-    currentCard
-  });
 
   if (!currentCard || filteredFlashcards.length === 0) {
     return (

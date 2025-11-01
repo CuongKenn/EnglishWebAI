@@ -196,8 +196,6 @@ const examService = {
       const totalQuestions = questionsPerSkill * 4; // 4 skills
       const timeoutMs = Math.max(120000, Math.min(totalQuestions * 15000, 600000)); // 2-10 minutes
       
-      console.log(`[AI Generate] Timeout: ${timeoutMs/1000}s for ${totalQuestions} questions (${questionsPerSkill} per skill)`);
-      
       const response = await api.post('/api/v1/exercises/generate-ai', {
         test_type: params.exam_type,
         grade: params.grade,

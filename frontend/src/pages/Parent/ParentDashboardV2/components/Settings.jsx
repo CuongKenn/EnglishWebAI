@@ -25,13 +25,13 @@ const Settings = () => {
           icon: User,
           label: 'Thông tin cá nhân',
           description: 'Cập nhật thông tin tài khoản',
-          action: () => console.log('Edit profile')
+          action: () => {}
         },
         {
           icon: Lock,
           label: 'Bảo mật',
           description: 'Mật khẩu và xác thực',
-          action: () => console.log('Security settings')
+          action: () => {}
         }
       ]
     },
@@ -42,7 +42,7 @@ const Settings = () => {
           icon: HelpCircle,
           label: 'Trung tâm trợ giúp',
           description: 'Hướng dẫn và câu hỏi thường gặp',
-          action: () => console.log('Help center')
+          action: () => {}
         }
       ]
     }

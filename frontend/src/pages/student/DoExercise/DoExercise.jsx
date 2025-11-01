@@ -61,7 +61,7 @@ export default function DoExercise() {
     if (requestedViewMode === 'result') {
       setViewMode('result');
       setShowStartScreen(false);
-      console.log('[DoExercise] Force showing result view from navigation state');
+
     }
   }, [exerciseId, requestedViewMode]);
   
@@ -99,7 +99,7 @@ export default function DoExercise() {
           
           reenterTimeout = setTimeout(() => {
             if (viewModeRef.current === 'exercise' && !showStartScreenRef.current && isFullscreenRef.current) {
-              console.log('[FULLSCREEN] Re-entering fullscreen...');
+
               enterFullscreen();
               setFullscreenWarningCount(prev => prev + 1);
             }
@@ -177,10 +177,10 @@ export default function DoExercise() {
         await elem.msRequestFullscreen();
       }
       setIsFullscreen(true);
-      console.log('[FULLSCREEN] Entered fullscreen successfully');
+
       return true;
     } catch (error) {
-      console.warn('[FULLSCREEN] Cannot enter fullscreen:', error);
+
       // Only show error on initial attempt, not on re-entry
       if (showStartScreenRef.current) {
         showError('Không thể vào chế độ toàn màn hình. Vui lòng thử lại hoặc cho phép quyền fullscreen trong trình duyệt.');
@@ -222,7 +222,7 @@ export default function DoExercise() {
       }
       setIsFullscreen(false);
     } catch (error) {
-      console.warn('Cannot exit fullscreen:', error);
+
       setIsFullscreen(false);
     }
   };
@@ -248,7 +248,7 @@ export default function DoExercise() {
         }
         mediaRecorderRef.current?.stream?.getTracks().forEach((track) => track.stop());
       } catch (error) {
-        console.warn('Error cleaning up media recorder:', error);
+
       }
       
       // Exit fullscreen when component unmounts
@@ -258,16 +258,16 @@ export default function DoExercise() {
 
   const fetchExercise = async () => {
     try {
-      console.log('[DoExercise] Fetching exercise ID:', exerciseId);
+
       const response = await apiV1.get(`/exercises/${exerciseId}`);
-      console.log('[DoExercise] Exercise data received:', response.data);
-      console.log('[DoExercise] Exercise content:', response.data.content);
-      console.log('[DoExercise] Exercise skill_type:', response.data.skill_type);
+
+
+
       setExercise(response.data);
       
       // Initialize answers
       if (response.data.content && response.data.content.questions) {
-        console.log('[DoExercise] Initializing answers for questions:', response.data.content.questions);
+
         const initialAnswers = {};
         response.data.content.questions.forEach(q => {
           initialAnswers[q.id] = '';
@@ -277,7 +277,7 @@ export default function DoExercise() {
       
       // Set timer if applicable (but don't start it yet)
       if (response.data.duration) {
-        console.log('[DoExercise] Timer will be set when exercise starts:', response.data.duration, 'minutes');
+
         // Don't set timer here, will be set when user clicks Start
       }
       
@@ -291,13 +291,13 @@ export default function DoExercise() {
 
   const fetchSubmission = async () => {
     try {
-      console.log('[DoExercise] Fetching submission for exercise:', exerciseId);
+
       const response = await apiV1.get(`/exercises/my-submissions`);
-      console.log('[DoExercise] My submissions:', response.data);
+
       
       // Find submission for this exercise
       const exerciseSubmission = response.data.find(s => s.exercise_id === parseInt(exerciseId));
-      console.log('[DoExercise] Found submission:', exerciseSubmission);
+
       
       if (exerciseSubmission) {
         // Check grading status
@@ -320,11 +320,9 @@ export default function DoExercise() {
         if (shouldShowResult) {
           setViewMode('result');
           setShowStartScreen(false);
-          console.log('[DoExercise] Showing result view. Status:', gradingStatus, 'Teacher reviewed:', exerciseSubmission.teacher_reviewed, 'ViewMode:', viewMode);
+
         } else {
-          setShowStartScreen(false);
-          console.log(`[DoExercise] Submission exists (status: ${gradingStatus}), waiting for grading`);
-        }
+          setShowStartScreen(false);}
       }
     } catch (error) {
       console.error('[DoExercise] Error fetching submission:', error);
@@ -332,7 +330,7 @@ export default function DoExercise() {
   };
 
   const handleAnswerChange = (questionId, value) => {
-    console.log(`[ANSWER_CHANGE] Q${questionId} = "${value}"`);
+
     setAnswers(prev => ({ ...prev, [questionId]: value }));
   };
   
@@ -396,13 +394,7 @@ export default function DoExercise() {
   };
 
   const handleSubmit = async () => {
-    if (!confirm('Bạn có chắc muốn nộp bài?')) return;
-    
-    console.log('[SUBMIT] Answers before submit:', answers);
-    console.log('[SUBMIT] Writing answers:', writingAnswers);
-    console.log('[SUBMIT] Speaking answers keys:', Object.keys(speakingAnswers));
-    
-    setIsSubmitting(true);
+    if (!confirm('Bạn có chắc muốn nộp bài?')) return;setIsSubmitting(true);
     try {
       // Prepare submission data
       const formData = new FormData();
@@ -459,7 +451,7 @@ export default function DoExercise() {
             formData.append('audio_file', audioFile);
             mergedAnswers['speaking_main'] = '[speaking-audio-attached]';
           } catch (e) {
-            console.warn('Failed to attach speaking_main audio:', e);
+
           }
         }
         
@@ -480,7 +472,7 @@ export default function DoExercise() {
             formData.append('audio_file', audioFile);
             mergedAnswers[firstQId] = '[speaking-audio-attached]';
           } catch (e) {
-            console.warn('Failed to attach speaking audio:', e);
+
           }
         }
         
@@ -516,17 +508,15 @@ export default function DoExercise() {
     // Normalize param: if called as onClick handler without args, first arg is the event
     const qid = (questionIdOrEvent && typeof questionIdOrEvent === 'object' && (questionIdOrEvent.nativeEvent || questionIdOrEvent.target))
       ? null
-      : questionIdOrEvent;
-    console.log('[startRecording] START - questionId (normalized):', qid);
-    try {
+      : questionIdOrEvent;try {
       setRecordingError(null);
-      console.log('[startRecording] Cleared error state');
+
 
       // Allow localhost/127.0.0.1 even if secureContext is false (older browsers)
       if (!window.isSecureContext) {
-        console.log('[startRecording] Not secure context, checking hostname...');
+
         const host = window.location.hostname;
-        console.log('[startRecording] hostname:', host);
+
         const isLocal = host === 'localhost' || host === '127.0.0.1';
         if (!isLocal) {
           const message = 'Trình duyệt yêu cầu kết nối an toàn (https hoặc localhost) để ghi âm.';
@@ -535,7 +525,7 @@ export default function DoExercise() {
           console.error('[startRecording] BLOCKED: not secure context and not local');
           return;
         }
-        console.log('[startRecording] localhost detected, proceeding...');
+
       }
 
       if (!navigator.mediaDevices?.getUserMedia) {
@@ -545,7 +535,7 @@ export default function DoExercise() {
         console.error('[startRecording] BLOCKED: getUserMedia not supported');
         return;
       }
-      console.log('[startRecording] getUserMedia available');
+
 
       if (typeof window.MediaRecorder === 'undefined') {
         const message = 'Trình duyệt của bạn chưa hỗ trợ MediaRecorder. Vui lòng dùng Chrome, Edge hoặc Firefox phiên bản mới.';
@@ -554,7 +544,7 @@ export default function DoExercise() {
         console.error('[startRecording] BLOCKED: MediaRecorder not defined');
         return;
       }
-      console.log('[startRecording] MediaRecorder available');
+
 
       // Release any previous recording for this slot
       if (qid) {
@@ -562,20 +552,20 @@ export default function DoExercise() {
         if (prev?.url) {
           URL.revokeObjectURL(prev.url);
           objectUrlRef.current.delete(prev.url);
-          console.log('[startRecording] Released previous recording for question', qid);
+
         }
       } else if (recordedAudio?.url) {
         URL.revokeObjectURL(recordedAudio.url);
         objectUrlRef.current.delete(recordedAudio.url);
         setRecordedAudio(null);
-        console.log('[startRecording] Released previous general recording');
+
       }
 
-      console.log('[startRecording] Requesting microphone access...');
+
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: true, noiseSuppression: true }
       });
-      console.log('[startRecording] ✓ Got stream:', stream);
+
 
       const mimeCandidates = [
         'audio/webm;codecs=opus',
@@ -590,23 +580,21 @@ export default function DoExercise() {
           if (MediaRecorder.isTypeSupported(candidate)) {
             recorderOptions = { mimeType: candidate };
             selectedMime = candidate;
-            console.log('[startRecording] Selected MIME:', candidate);
+
             break;
           }
         }
       } else {
-        console.warn('[startRecording] MediaRecorder.isTypeSupported not available, using default');
+
       }
 
       let recorder;
       try {
         recorder = recorderOptions ? new MediaRecorder(stream, recorderOptions) : new MediaRecorder(stream);
-        console.log('[startRecording] ✓ MediaRecorder created with options:', recorderOptions);
+
       } catch (e) {
-        console.warn('MediaRecorder init failed with options, retrying without options:', e);
-        recorder = new MediaRecorder(stream);
-        console.log('[startRecording] ✓ MediaRecorder created (default, no options)');
-      }
+
+        recorder = new MediaRecorder(stream);}
       mediaRecorderRef.current = recorder;
       audioChunksRef.current = [];
 
@@ -615,7 +603,7 @@ export default function DoExercise() {
         if (event.data && event.data.size > 0) {
           audioChunksRef.current.push(event.data);
           hadData = true;
-          console.log('[recorder.ondataavailable] chunk size:', event.data.size, 'total chunks:', audioChunksRef.current.length);
+
         }
       };
 
@@ -627,9 +615,9 @@ export default function DoExercise() {
       recorder.onstop = () => {
         const mimeType = recorder.mimeType || selectedMime || 'audio/webm';
         const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
-        console.log('[recorder.onstop] hadData:', hadData, 'blob size:', audioBlob?.size, 'mime:', mimeType);
+
         if (!hadData || !audioBlob || audioBlob.size === 0) {
-          console.warn('[Recorder] no audio data received');
+
           setRecordingError('Không nhận được dữ liệu âm thanh. Hãy đảm bảo đã cho phép micro và thử lại, hoặc tải file âm thanh ở dưới.');
           try { recorder.stream?.getTracks().forEach(t => t.stop()); } catch {}
           return;
@@ -644,25 +632,21 @@ export default function DoExercise() {
         if (qid) {
           setSpeakingAnswers(prev => ({ ...prev, [qid]: audioPayload }));
           setActiveSpeakingQ(null);
-          console.log('[recorder.onstop] Saved per-question audio for qid:', qid);
+
         } else {
           setRecordedAudio(audioPayload);
-          console.log('[recorder.onstop] Saved general speaking audio');
+
         }
       };
 
       // Use a small timeslice to ensure dataavailable fires consistently across browsers
-      console.log('[startRecording] Starting recorder with 200ms timeslice...');
+
       try {
-        recorder.start(200);
-        console.log('[startRecording] ✓ recorder.start(200) succeeded, state:', recorder.state);
-      } catch {
-        recorder.start();
-        console.log('[startRecording] ✓ recorder.start() succeeded (no timeslice), state:', recorder.state);
-      }
+        recorder.start(200);} catch {
+        recorder.start();}
       setIsRecording(true);
       if (qid) setActiveSpeakingQ(qid);
-      console.log('[startRecording] ✓✓✓ RECORDING ACTIVE ✓✓✓');
+
     } catch (error) {
       console.error('Error accessing microphone:', error);
       console.error('[startRecording] Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
@@ -674,7 +658,7 @@ export default function DoExercise() {
       try {
         mediaRecorderRef.current?.stream?.getTracks().forEach(track => track.stop());
       } catch (cleanupError) {
-        console.warn('Không thể dừng stream sau lỗi micro:', cleanupError);
+
       }
     }
   };
@@ -693,14 +677,14 @@ export default function DoExercise() {
         recorder.stop();
       }
     } catch (error) {
-      console.warn('Error while stopping recorder:', error);
+
     } finally {
       setIsRecording(false);
     }
   };
 
   const reRecord = async (questionId = null) => {
-    console.log('[reRecord] invoked for qid:', questionId);
+
     audioChunksRef.current = [];
 
     if (questionId) {
@@ -717,7 +701,7 @@ export default function DoExercise() {
       try {
         await startRecording(questionId);
       } catch (e) {
-        console.warn('[reRecord] failed to start new recording for qid:', questionId, e);
+
       }
     } else {
       if (recordedAudio?.url) {
@@ -733,7 +717,7 @@ export default function DoExercise() {
       try {
         await startRecording();
       } catch (e) {
-        console.warn('[reRecord] failed to start new general recording:', e);
+
       }
     }
   };
@@ -798,14 +782,14 @@ export default function DoExercise() {
   }
 
   const renderExerciseContent = () => {
-    console.log('[renderExerciseContent] exercise:', exercise);
-    console.log('[renderExerciseContent] exercise.content:', exercise?.content);
-    console.log('[renderExerciseContent] exercise.skill_type:', exercise?.skill_type);
+
+
+
     
     const { skill_type, content: exerciseContent } = exercise;
     
-    console.log('[renderExerciseContent] destructured skill_type:', skill_type);
-    console.log('[renderExerciseContent] destructured exerciseContent:', exerciseContent);
+
+
 
     // Check if content exists
     if (!exerciseContent) {
@@ -835,14 +819,14 @@ export default function DoExercise() {
 
     // COMPREHENSIVE TEST (Mid-term/Final)
   if (!skill_type && exerciseContent.type === 'comprehensive_test') {
-      console.log('[COMPREHENSIVE TEST] exerciseContent:', exerciseContent);
+
       
       const listening = exerciseContent.listening || {};
       const reading = exerciseContent.reading || {};
       const writing = exerciseContent.writing || {};
       const speaking = exerciseContent.speaking || {};
       
-      console.log('[COMPREHENSIVE TEST] sections:', { listening, reading, writing, speaking });
+
       
       // Get questions from each section
       const listeningQuestions = listening.questions || [];
@@ -1253,7 +1237,7 @@ export default function DoExercise() {
 
     // LISTENING
     if (skill_type === 'listening') {
-      console.log('[LISTENING] exerciseContent:', exerciseContent);
+
       return (
         <div className="listening-exercise">
           <div className="audio-section">
@@ -1343,7 +1327,7 @@ export default function DoExercise() {
 
     // SPEAKING
     if (skill_type === 'speaking') {
-      console.log('[SPEAKING] exerciseContent:', exerciseContent);
+
       return (
         <div className="speaking-exercise">
           <div className="prompt-section">
@@ -1418,7 +1402,7 @@ export default function DoExercise() {
 
     // READING
     if (skill_type === 'reading') {
-      console.log('[READING] exerciseContent:', exerciseContent);
+
       return (
         <div className="reading-exercise">
           <div className="reading-layout">
@@ -1478,10 +1462,10 @@ export default function DoExercise() {
 
     // WRITING
     if (skill_type === 'writing') {
-      console.log('[WRITING] exerciseContent:', exerciseContent);
-      console.log('[WRITING] exerciseContent.word_limit:', exerciseContent?.word_limit);
-      console.log('[WRITING] exerciseContent.prompt:', exerciseContent?.prompt);
-      console.log('[WRITING] exerciseContent.instructions:', exerciseContent?.instructions);
+
+
+
+
       
       if (!exerciseContent || !exerciseContent.word_limit) {
         console.error('[WRITING] Missing exerciseContent or word_limit!');
@@ -1496,7 +1480,7 @@ export default function DoExercise() {
       
       const minWords = exerciseContent.word_limit.min;
       const maxWords = exerciseContent.word_limit.max;
-      console.log('[WRITING] minWords:', minWords, 'maxWords:', maxWords);
+
       const progress = (wordCount / minWords) * 100;
 
       return (

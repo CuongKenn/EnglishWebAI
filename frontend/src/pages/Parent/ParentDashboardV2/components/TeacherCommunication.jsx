@@ -61,8 +61,7 @@ const TeacherCommunication = () => {
       }
       
       const user = await getCurrentUser();
-      console.log('Current user:', user);
-      
+
       if (user.role !== 'parent') {
         showWarning('Chỉ phụ huynh mới có thể truy cập trang này!');
         window.location.href = '/';

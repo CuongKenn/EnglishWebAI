@@ -50,7 +50,7 @@ const Courses = () => {
       if (selectedSkill !== 'all') params.skill = selectedSkill;
       
       const data = await coursesManageAPI.getCourses(params);
-      console.log('Courses loaded:', data);
+
       setCourses(data || []);
     } catch (err) {
       console.error('Error loading courses:', err);
