@@ -122,44 +122,61 @@ async def _auto_grade_exam_submission(submission: ExamSubmission, db: Session):
                 
                 # Auto-grade based on question type
                 if q_type == 'multiple_choice':
-                    is_correct = str(student_answer).strip().upper() == str(correct_answer).strip().upper()
-                    result['correct'] = is_correct
-                    result['earned'] = q_points if is_correct else 0.0
+                    # Use AI grading service for consistency
+                    grade_result = await ai_grading_service.grade_multiple_choice(
+                        {'id': q_id, 'correct_answer': correct_answer, 'points': q_points},
+                        student_answer
+                    )
+                    result['correct'] = grade_result['is_correct']
+                    result['earned'] = grade_result['points_earned']
+                    result['feedback'] = grade_result.get('feedback', '')
                     total_score += result['earned']
                     auto_graded_count += 1
                     
                 elif q_type == 'true_false':
-                    is_correct = str(student_answer).strip().lower() == str(correct_answer).strip().lower()
-                    result['correct'] = is_correct
-                    result['earned'] = q_points if is_correct else 0.0
+                    # Use AI grading service for consistency
+                    grade_result = await ai_grading_service.grade_true_false(
+                        {'id': q_id, 'correct_answer': correct_answer, 'points': q_points},
+                        student_answer
+                    )
+                    result['correct'] = grade_result['is_correct']
+                    result['earned'] = grade_result['points_earned']
+                    result['feedback'] = grade_result.get('feedback', '')
                     total_score += result['earned']
                     auto_graded_count += 1
                     
                 elif q_type == 'fill_blank':
-                    # Normalized string comparison (trim, lowercase, collapse spaces)
-                    def _norm(x):
-                        return " ".join(str(x if x is not None else "").strip().lower().split())
-                    is_correct = _norm(student_answer) == _norm(correct_answer)
-                    result['correct'] = is_correct
-                    result['earned'] = q_points if is_correct else 0.0
+                    # Use AI grading service for consistency
+                    grade_result = await ai_grading_service.grade_fill_blank(
+                        {'id': q_id, 'correct_answer': correct_answer, 'points': q_points},
+                        student_answer
+                    )
+                    result['correct'] = grade_result['is_correct']
+                    result['earned'] = grade_result['points_earned']
+                    result['feedback'] = grade_result.get('feedback', '')
                     total_score += result['earned']
                     auto_graded_count += 1
                     
                 elif q_type == 'matching':
-                    # For matching, student_answer should be a dict
-                    if isinstance(student_answer, dict) and isinstance(correct_answer, dict):
-                        correct_pairs = sum(1 for k, v in correct_answer.items() if student_answer.get(k) == v)
-                        total_pairs = len(correct_answer)
-                        score_percent = (correct_pairs / total_pairs) if total_pairs > 0 else 0
-                        result['correct'] = (correct_pairs == total_pairs)
-                        result['earned'] = q_points * score_percent
-                        result['correct_pairs'] = correct_pairs
-                        result['total_pairs'] = total_pairs
-                        total_score += result['earned']
-                        auto_graded_count += 1
-                    else:
-                        result['earned'] = 0.0
-                        result['status'] = 'invalid_format'
+                    # Use AI grading service for consistency
+                    # Parse student answer as JSON if it's a string
+                    if isinstance(student_answer, str):
+                        try:
+                            student_answer = json.loads(student_answer) if student_answer else {}
+                        except:
+                            student_answer = {}
+                    
+                    grade_result = await ai_grading_service.grade_matching(
+                        {'id': q_id, 'correct_answer': correct_answer, 'points': q_points},
+                        student_answer
+                    )
+                    result['correct'] = grade_result['is_correct']
+                    result['earned'] = grade_result['points_earned']
+                    result['feedback'] = grade_result.get('feedback', '')
+                    result['correct_pairs'] = grade_result.get('feedback', '').split('/')[0].split(' ')[-1] if 'Ghép đúng' in grade_result.get('feedback', '') else 0
+                    result['total_pairs'] = len(correct_answer) if isinstance(correct_answer, dict) else 0
+                    total_score += result['earned']
+                    auto_graded_count += 1
                         
                 elif q_type in ['short_answer', 'essay']:
                     # Grade writing with ChatGPT

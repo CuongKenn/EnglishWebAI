@@ -26,9 +26,23 @@ class AIGradingService:
         """Grade multiple choice question"""
         correct = question.get("correct_answer", "")
         
-        # Normalize answers for comparison (trim whitespace, uppercase)
-        student_normalized = str(student_answer).strip().upper()
-        correct_normalized = str(correct).strip().upper()
+        # Handle None/empty values
+        if student_answer is None or student_answer == "":
+            return {
+                "is_correct": False,
+                "points_earned": 0,
+                "max_points": question.get("points", 0.25),
+                "feedback": f"Chưa trả lời. Đáp án đúng là: {correct}"
+            }
+        
+        # Normalize answers for comparison (trim whitespace, collapse spaces, uppercase)
+        def normalize(text):
+            if text is None:
+                return ""
+            return " ".join(str(text).strip().upper().split())
+        
+        student_normalized = normalize(student_answer)
+        correct_normalized = normalize(correct)
         
         is_correct = student_normalized == correct_normalized
         points_earned = question.get("points", 0.25) if is_correct else 0
@@ -52,10 +66,37 @@ class AIGradingService:
                 return ""
             return " ".join(str(text).strip().lower().split())
 
+        # Handle None/empty values
+        if student_answer is None or student_answer == "":
+            return {
+                "is_correct": False,
+                "points_earned": 0,
+                "max_points": question.get("points", 0.25),
+                "feedback": f"Chưa trả lời. Đáp án đúng: {correct_answer}"
+            }
+
         student_norm = _normalize(student_answer)
         correct_norm = _normalize(correct_answer)
 
+        # Check exact match first
         is_correct = (student_norm == correct_norm)
+        
+        # If not exact match, check if correct_answer contains multiple acceptable answers separated by | or /
+        if not is_correct and ('|' in correct_answer or '/' in correct_answer):
+            # Split by | or / to get multiple acceptable answers
+            separators = ['|', '/']
+            acceptable_answers = [correct_answer]
+            for sep in separators:
+                if sep in correct_answer:
+                    acceptable_answers = [ans.strip() for ans in correct_answer.split(sep)]
+                    break
+            
+            # Check if student answer matches any acceptable answer
+            for acceptable in acceptable_answers:
+                if _normalize(acceptable) == student_norm:
+                    is_correct = True
+                    break
+
         max_points = question.get("points", 0.25)
         points_earned = max_points if is_correct else 0
 
@@ -69,18 +110,50 @@ class AIGradingService:
     async def grade_true_false(self, question: Dict, student_answer: str) -> Dict:
         """Grade true/false question"""
         correct = str(question.get("correct_answer", "")).strip().lower()
+        
+        # Handle None/empty values
+        if student_answer is None or student_answer == "":
+            return {
+                "is_correct": False,
+                "points_earned": 0,
+                "max_points": question.get("points", 0.25),
+                "feedback": f"Chưa trả lời. Đáp án đúng: {'Đúng' if correct in ['true', '1', 'yes', 'đúng'] else 'Sai'}"
+            }
+        
         student = str(student_answer).strip().lower()
         
-        is_correct = student == correct
+        # Normalize true values
+        true_values = ['true', '1', 'yes', 'đúng', 't', 'y']
+        false_values = ['false', '0', 'no', 'sai', 'f', 'n']
+        
+        # Map student answer to true/false
+        student_normalized = None
+        if student in true_values:
+            student_normalized = 'true'
+        elif student in false_values:
+            student_normalized = 'false'
+        else:
+            # Invalid answer
+            return {
+                "is_correct": False,
+                "points_earned": 0,
+                "max_points": question.get("points", 0.25),
+                "feedback": f"Đáp án không hợp lệ. Đáp án đúng: {'Đúng' if correct in true_values else 'Sai'}"
+            }
+        
+        # Map correct answer to true/false
+        correct_normalized = 'true' if correct in true_values else 'false'
+        
+        is_correct = student_normalized == correct_normalized
         points_earned = question.get("points", 0.25) if is_correct else 0
         
-        print(f"[GRADE_TF] Q{question.get('id')}: Student='{student}' vs Correct='{correct}' => {is_correct}")
+        print(f"[GRADE_TF] Q{question.get('id')}: Student='{student}' ({student_normalized}) vs Correct='{correct}' ({correct_normalized}) => {is_correct}")
         
         return {
             "is_correct": is_correct,
             "points_earned": points_earned,
             "max_points": question.get("points", 0.25),
-            "feedback": "Chính xác!" if is_correct else f"Sai. Đáp án đúng: {'Đúng' if correct == 'true' else 'Sai'}"
+            "feedback": "Chính xác!" if is_correct else f"Sai. Đáp án đúng: {'Đúng' if correct_normalized == 'true' else 'Sai'}"
         }
     
     async def grade_matching(self, question: Dict, student_answer: Dict) -> Dict:
@@ -91,19 +164,39 @@ class AIGradingService:
         print(f"[GRADE_MATCHING] Correct pairs: {correct_pairs}")
         print(f"[GRADE_MATCHING] Student answer: {student_answer}")
         
+        # Handle None/empty values
+        if not student_answer or not isinstance(student_answer, dict):
+            return {
+                "is_correct": False,
+                "points_earned": 0,
+                "max_points": question.get("points", 0.25),
+                "feedback": "Chưa trả lời hoặc định dạng không đúng. Ghép đúng 0 cặp."
+            }
+        
         correct_count = 0
         total_pairs = len(correct_pairs)
         
+        if total_pairs == 0:
+            return {
+                "is_correct": False,
+                "points_earned": 0,
+                "max_points": question.get("points", 0.25),
+                "feedback": "Câu hỏi không có đáp án đúng"
+            }
+        
         for left, right in correct_pairs.items():
             student_right = student_answer.get(left)
-            is_match = student_right == right
-            print(f"[GRADE_MATCHING] Checking '{left}': student='{student_right}' vs correct='{right}' => {is_match}")
+            # Normalize both for comparison
+            student_right_norm = str(student_right).strip() if student_right else ""
+            right_norm = str(right).strip() if right else ""
+            is_match = student_right_norm == right_norm
+            print(f"[GRADE_MATCHING] Checking '{left}': student='{student_right_norm}' vs correct='{right_norm}' => {is_match}")
             if is_match:
                 correct_count += 1
         
         score_percentage = (correct_count / total_pairs * 100) if total_pairs > 0 else 0
         max_points = question.get("points", 0.25)
-        points_earned = max_points * (score_percentage / 100)
+        points_earned = max_points * (correct_count / total_pairs)  # Fixed: use direct ratio instead of percentage/100
         
         print(f"[GRADE_MATCHING] Result: {correct_count}/{total_pairs} correct, {points_earned}/{max_points} points")
         
@@ -111,13 +204,24 @@ class AIGradingService:
             "is_correct": correct_count == total_pairs,
             "points_earned": round(points_earned, 2),
             "max_points": max_points,
-            "feedback": f"Ghép đúng {correct_count}/{total_pairs} cặp"
+            "feedback": f"Ghép đúng {correct_count}/{total_pairs} cặp ({score_percentage:.0f}%)"
         }
     
     async def grade_writing(self, question: Dict, student_text: str, prompt: str) -> Dict:
         """Grade writing essay using AI"""
         rubric = question.get("rubric", {})
         max_points = question.get("points", 2.5)
+        
+        # Check if OpenAI client is available
+        if not self.client:
+            return {
+                "points_earned": 0,
+                "max_points": max_points,
+                "feedback": {},
+                "overall_comment": "OpenAI API key chưa được cấu hình. Không thể chấm tự động.",
+                "needs_review": True,
+                "error": "OpenAI client not initialized"
+            }
         
         try:
             rubric_str = "\n".join([f"- {key}: {value}" for key, value in rubric.items()])
@@ -158,10 +262,27 @@ Respond with JSON:
                     {"role": "user", "content": prompt_text}
                 ],
                 temperature=0.5,
-                max_tokens=800
+                max_tokens=800,
+                response_format={"type": "json_object"}  # Force JSON response
             )
             
-            content = response.choices[0].message.content.strip()
+            content = response.choices[0].message.content
+            
+            # Check if content is None or empty
+            if not content or content.strip() == "":
+                print(f"[GRADE_WRITING] Empty response from OpenAI")
+                return {
+                    "points_earned": 0,
+                    "max_points": max_points,
+                    "feedback": {},
+                    "overall_comment": "Lỗi: API không trả về kết quả. Vui lòng thử lại.",
+                    "needs_review": True,
+                    "error": "Empty API response"
+                }
+            
+            content = content.strip()
+            
+            # Remove markdown code blocks if present
             if content.startswith("```json"):
                 content = content[7:]
             if content.startswith("```"):
@@ -169,6 +290,18 @@ Respond with JSON:
             if content.endswith("```"):
                 content = content[:-3]
             content = content.strip()
+            
+            # Validate JSON before parsing
+            if not content:
+                print(f"[GRADE_WRITING] Content is empty after cleanup")
+                return {
+                    "points_earned": 0,
+                    "max_points": max_points,
+                    "feedback": {},
+                    "overall_comment": "Lỗi: Không thể phân tích kết quả. Vui lòng thử lại.",
+                    "needs_review": True,
+                    "error": "Invalid JSON format"
+                }
             
             result = json.loads(content)
             
@@ -182,8 +315,21 @@ Respond with JSON:
                 "needs_review": True  # Always needs teacher review
             }
             
+        except json.JSONDecodeError as je:
+            print(f"Error grading writing - JSON decode error: {je}")
+            print(f"Raw content that failed to parse: {content if 'content' in locals() else 'N/A'}")
+            return {
+                "points_earned": 0,
+                "max_points": max_points,
+                "feedback": {},
+                "overall_comment": "Lỗi khi phân tích kết quả từ AI. Giáo viên sẽ chấm thủ công.",
+                "needs_review": True,
+                "error": f"JSON decode error: {str(je)}"
+            }
         except Exception as e:
             print(f"Error grading writing: {e}")
+            import traceback
+            traceback.print_exc()
             return {
                 "points_earned": 0,
                 "max_points": max_points,
@@ -311,6 +457,21 @@ Respond with JSON:
         """Grade speaking content using ChatGPT with detailed feedback"""
         max_points = rubric.get("points", 0.83)
         
+        # Check if OpenAI client is available
+        if not self.client:
+            return {
+                "content_score": 0,
+                "content_feedback": "OpenAI API key chưa được cấu hình",
+                "grammar_feedback": "",
+                "vocabulary_feedback": "",
+                "pronunciation_note": "",
+                "strengths": [],
+                "improvements": [],
+                "suggestions": [],
+                "overall_comment": "Không thể chấm tự động. Cần giáo viên chấm thủ công.",
+                "error": "OpenAI client not initialized"
+            }
+        
         try:
             rubric_str = "\n".join([f"- {key}: {value}" for key, value in rubric.items() if key != "points"])
             
@@ -354,10 +515,31 @@ Trả về JSON với format:
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.7,
-                max_tokens=1200
+                max_tokens=1200,
+                response_format={"type": "json_object"}  # Force JSON response
             )
             
-            content = response.choices[0].message.content.strip()
+            content = response.choices[0].message.content
+            
+            # Check if content is None or empty
+            if not content or content.strip() == "":
+                print(f"[GRADE_SPEAKING] Empty response from OpenAI")
+                return {
+                    "content_score": 0,
+                    "content_feedback": "Lỗi: API không trả về kết quả",
+                    "grammar_feedback": "",
+                    "vocabulary_feedback": "",
+                    "pronunciation_note": "",
+                    "strengths": [],
+                    "improvements": [],
+                    "suggestions": [],
+                    "overall_comment": "Không thể chấm điểm. Vui lòng thử lại.",
+                    "error": "Empty API response"
+                }
+            
+            content = content.strip()
+            
+            # Remove markdown code blocks if present
             if content.startswith("```json"):
                 content = content[7:]
             if content.startswith("```"):
@@ -365,6 +547,25 @@ Trả về JSON với format:
             if content.endswith("```"):
                 content = content[:-3]
             content = content.strip()
+            
+            # Validate JSON before parsing
+            if not content:
+                print(f"[GRADE_SPEAKING] Content is empty after cleanup")
+                return {
+                    "content_score": 0,
+                    "content_feedback": "Lỗi: Không thể phân tích kết quả",
+                    "grammar_feedback": "",
+                    "vocabulary_feedback": "",
+                    "pronunciation_note": "",
+                    "strengths": [],
+                    "improvements": [],
+                    "suggestions": [],
+                    "overall_comment": "Không thể chấm điểm. Vui lòng thử lại.",
+                    "error": "Invalid JSON format"
+                }
+            
+            # Debug: print raw content
+            print(f"[GRADE_SPEAKING] Raw API response (first 200 chars): {content[:200]}")
             
             result = json.loads(content)
             
@@ -380,6 +581,21 @@ Trả về JSON với format:
                 "overall_comment": result.get("overall_comment", "")
             }
             
+        except json.JSONDecodeError as je:
+            print(f"Error grading speaking content - JSON decode error: {je}")
+            print(f"Raw content that failed to parse: {content if 'content' in locals() else 'N/A'}")
+            return {
+                "content_score": 0,
+                "content_feedback": "Lỗi khi phân tích kết quả từ AI",
+                "grammar_feedback": "",
+                "vocabulary_feedback": "",
+                "pronunciation_note": "",
+                "strengths": [],
+                "improvements": [],
+                "suggestions": [],
+                "overall_comment": "Không thể chấm điểm. Cần giáo viên chấm thủ công.",
+                "error": f"JSON decode error: {str(je)}"
+            }
         except Exception as e:
             print(f"Error grading speaking content: {e}")
             import traceback
@@ -387,6 +603,13 @@ Trả về JSON với format:
             return {
                 "content_score": 0,
                 "content_feedback": "Lỗi khi chấm nội dung",
+                "grammar_feedback": "",
+                "vocabulary_feedback": "",
+                "pronunciation_note": "",
+                "strengths": [],
+                "improvements": [],
+                "suggestions": [],
+                "overall_comment": "Không thể chấm điểm. Cần giáo viên chấm thủ công.",
                 "error": str(e)
             }
     
@@ -480,8 +703,16 @@ Trả về JSON với format:
                 # Parse student answer as JSON if it's a string
                 if isinstance(student_ans, str):
                     try:
-                        student_ans = json.loads(student_ans)
-                    except:
+                        if student_ans.strip():  # Only parse if not empty
+                            student_ans = json.loads(student_ans)
+                        else:
+                            student_ans = {}
+                    except json.JSONDecodeError as e:
+                        print(f"Error grading fill blank: {e}")
+                        print(f"Failed to parse matching answer: '{student_ans}'")
+                        student_ans = {}
+                    except Exception as e:
+                        print(f"Error grading fill blank: {e}")
                         student_ans = {}
                 grade_result = await self.grade_matching(q, student_ans)
             else:
