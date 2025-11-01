@@ -38,6 +38,7 @@ const Navbar = ({ userRole = 'student', isLoggedIn: isLoggedInProp = false, onLo
   const getNavigationItems = () => {
     // Menu cơ bản cho student
     const studentMenu = [
+      { path: '/about', label: 'Giới thiệu', icon: 'fa-info-circle' },
       { path: '/lessons', label: 'Học bài', icon: 'fa-book-open' },
       { path: '/news', label: 'Tin tức', icon: 'fa-newspaper' },
       { path: '/my-classes', label: 'Lớp học của tôi', icon: 'fa-chalkboard-teacher' },
@@ -61,6 +62,7 @@ const Navbar = ({ userRole = 'student', isLoggedIn: isLoggedInProp = false, onLo
       case 'parent':
         // Parent: các trang theo dõi + Thông tin chung cuối
         return [
+          { path: '/about', label: 'Giới thiệu', icon: 'fa-info-circle' },
           { path: '/track-progress', label: 'Theo dõi tiến độ', icon: 'fa-chart-line' },
           { path: '/notifications', label: 'Thông báo', icon: 'fa-bell' },
           { path: '/teacher-communication', label: 'Trao đổi', icon: 'fa-message' },
