@@ -4,7 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { 
   FileText, Clock, User, CheckCircle, XCircle, Eye, Edit, 
   Sparkles, Download, Filter, Search, Award, MessageSquare,
-  TrendingUp, AlertCircle, PlayCircle, FileAudio, FileImage, Loader2
+  TrendingUp, AlertCircle, PlayCircle, FileAudio, FileImage, Loader2,
+  BookOpen, Users
 } from 'lucide-react';
 import './GradingFeedback.css';
 import { apiV1 } from '../../../../services/api';

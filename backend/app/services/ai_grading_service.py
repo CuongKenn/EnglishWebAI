@@ -128,16 +128,25 @@ Respond with JSON:
         """Grade matching question"""
         correct_pairs = question.get("correct_answer", {})
         
+        print(f"[GRADE_MATCHING] Question ID: {question.get('id')}")
+        print(f"[GRADE_MATCHING] Correct pairs: {correct_pairs}")
+        print(f"[GRADE_MATCHING] Student answer: {student_answer}")
+        
         correct_count = 0
         total_pairs = len(correct_pairs)
         
         for left, right in correct_pairs.items():
-            if student_answer.get(left) == right:
+            student_right = student_answer.get(left)
+            is_match = student_right == right
+            print(f"[GRADE_MATCHING] Checking '{left}': student='{student_right}' vs correct='{right}' => {is_match}")
+            if is_match:
                 correct_count += 1
         
         score_percentage = (correct_count / total_pairs * 100) if total_pairs > 0 else 0
         max_points = question.get("points", 0.25)
         points_earned = max_points * (score_percentage / 100)
+        
+        print(f"[GRADE_MATCHING] Result: {correct_count}/{total_pairs} correct, {points_earned}/{max_points} points")
         
         return {
             "is_correct": correct_count == total_pairs,

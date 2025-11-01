@@ -15,6 +15,10 @@ const safeRender = (value) => {
     return String(value);
   }
   if (typeof value === 'object') {
+    // For matching questions - format as pairs
+    if (value.constructor === Object) {
+      return Object.entries(value).map(([key, val]) => `${key}: ${val}`).join(', ');
+    }
     return JSON.stringify(value);
   }
   return String(value);
