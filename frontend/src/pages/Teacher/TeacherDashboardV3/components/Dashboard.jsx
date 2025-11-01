@@ -1,10 +1,13 @@
 import { Card } from '../../../../components/ui/card';
-import { Users, FileCheck, Brain, TrendingUp, Clock, CheckCircle, Sun, Moon, Coffee } from 'lucide-react';
+import { Users, FileCheck, Brain, TrendingUp, Clock, CheckCircle, Sun, Moon, Coffee, Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { apiV1 } from '../../../../services/api';
 
 const Dashboard = () => {
   const [greeting, setGreeting] = useState('');
   const [greetingIcon, setGreetingIcon] = useState(Sun);
+  const [loading, setLoading] = useState(true);
+  const [dashboardData, setDashboardData] = useState(null);
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -18,29 +21,63 @@ const Dashboard = () => {
       setGreeting('Chào buổi tối');
       setGreetingIcon(Moon);
     }
+
+    // Fetch dashboard data
+    fetchDashboardData();
   }, []);
 
-  const stats = [
-    { label: 'Tổng số lớp', value: '8', icon: Users, color: 'bg-blue-500' },
-    { label: 'Học sinh', value: '245', icon: Users, color: 'bg-green-500' },
-    { label: 'Bài kiểm tra', value: '32', icon: FileCheck, color: 'bg-purple-500' },
-    { label: 'Câu hỏi', value: '1,248', icon: Brain, color: 'bg-orange-500' }
-  ];
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      const response = await apiV1.get('/teacher/dashboard/overview');
+      console.log('Dashboard data received:', response.data);
+      setDashboardData(response.data);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      console.error('Error details:', error.response?.data || error.message);
+      // Set empty data structure to show empty state
+      setDashboardData({
+        stats: {
+          total_classes: 0,
+          total_students: 0,
+          total_tests: 0,
+          total_questions: 0
+        },
+        recent_activities: [],
+        upcoming_tests: []
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const recentActivities = [
-    { title: 'Lớp 10A1 hoàn thành bài kiểm tra giữa kỳ', time: '10 phút trước', status: 'completed' },
-    { title: 'Đã thêm 15 câu hỏi mới vào ngân hàng', time: '1 giờ trước', status: 'info' },
-    { title: 'Bài kiểm tra "Unit 5 - Listening" đã được tạo', time: '2 giờ trước', status: 'info' },
-    { title: 'Lớp 11B2 cần chấm điểm (25 bài)', time: '3 giờ trước', status: 'pending' }
-  ];
+  const stats = dashboardData ? [
+    { label: 'Tổng số lớp', value: dashboardData.stats.total_classes.toString(), icon: Users, color: 'bg-blue-500' },
+    { label: 'Học sinh', value: dashboardData.stats.total_students.toString(), icon: Users, color: 'bg-green-500' },
+    { label: 'Bài kiểm tra', value: dashboardData.stats.total_tests.toString(), icon: FileCheck, color: 'bg-purple-500' },
+    { label: 'Câu hỏi', value: dashboardData.stats.total_questions.toLocaleString('vi-VN'), icon: Brain, color: 'bg-orange-500' }
+  ] : [];
 
-  const upcomingTests = [
-    { class: '10A1', title: 'Kiểm tra 15 phút - Unit 6', date: '28/10/2025', students: 32 },
-    { class: '11B2', title: 'Kiểm tra giữa kỳ HK1', date: '30/10/2025', students: 28 },
-    { class: '10A3', title: 'Bài tập về nhà - Reading', date: '01/11/2025', students: 30 }
-  ];
+  const recentActivities = dashboardData?.recent_activities || [];
+  const upcomingTests = dashboardData?.upcoming_tests?.map(test => ({
+    class: test.class_name,
+    title: test.title,
+    date: test.date,
+    students: test.students
+  })) || [];
 
   const GreetingIcon = greetingIcon;
+
+  if (loading) {
+    return (
+      <div className="p-8 flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4 text-purple-600" />
+          <p className="text-gray-600">Đang tải dữ liệu dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-8">
@@ -93,18 +130,24 @@ const Dashboard = () => {
             <h2 className="text-xl font-semibold text-gray-900">Hoạt động gần đây</h2>
           </div>
           <div className="space-y-4">
-            {recentActivities.map((activity, idx) => (
-              <div key={idx} className="flex gap-3 pb-4 border-b border-gray-100 last:border-0 last:pb-0">
-                <div className={`w-2 h-2 rounded-full mt-2 ${
-                  activity.status === 'completed' ? 'bg-green-500' :
-                  activity.status === 'pending' ? 'bg-orange-500' : 'bg-blue-500'
-                }`} />
-                <div className="flex-1">
-                  <p className="text-gray-900 text-sm">{activity.title}</p>
-                  <p className="text-gray-500 text-xs mt-1">{activity.time}</p>
+            {recentActivities.length > 0 ? (
+              recentActivities.map((activity, idx) => (
+                <div key={idx} className="flex gap-3 pb-4 border-b border-gray-100 last:border-0 last:pb-0">
+                  <div className={`w-2 h-2 rounded-full mt-2 ${
+                    activity.status === 'completed' ? 'bg-green-500' :
+                    activity.status === 'pending' ? 'bg-orange-500' : 'bg-blue-500'
+                  }`} />
+                  <div className="flex-1">
+                    <p className="text-gray-900 text-sm">{activity.title}</p>
+                    <p className="text-gray-500 text-xs mt-1">{activity.time}</p>
+                  </div>
                 </div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <p className="text-sm">Chưa có hoạt động nào gần đây</p>
               </div>
-            ))}
+            )}
           </div>
         </Card>
 
@@ -115,22 +158,28 @@ const Dashboard = () => {
             <h2 className="text-xl font-semibold text-gray-900">Bài kiểm tra sắp tới</h2>
           </div>
           <div className="space-y-4">
-            {upcomingTests.map((test, idx) => (
-              <div key={idx} className="p-4 bg-gray-50 rounded-lg">
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <span className="inline-block px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs mb-2">
-                      {test.class}
-                    </span>
-                    <p className="text-gray-900 text-sm font-medium">{test.title}</p>
+            {upcomingTests.length > 0 ? (
+              upcomingTests.map((test, idx) => (
+                <div key={idx} className="p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <span className="inline-block px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs mb-2">
+                        {test.class}
+                      </span>
+                      <p className="text-gray-900 text-sm font-medium">{test.title}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-gray-500">
+                    <span>{test.date}</span>
+                    <span>{test.students} học sinh</span>
                   </div>
                 </div>
-                <div className="flex items-center justify-between text-xs text-gray-500">
-                  <span>{test.date}</span>
-                  <span>{test.students} học sinh</span>
-                </div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <p className="text-sm">Chưa có bài kiểm tra sắp tới</p>
               </div>
-            ))}
+            )}
           </div>
         </Card>
       </div>
