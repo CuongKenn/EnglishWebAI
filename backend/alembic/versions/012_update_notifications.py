@@ -1,7 +1,7 @@
 """update notifications with related fields
 
 Revision ID: 012
-Revises: 011
+Revises: 011b
 Create Date: 2025-10-31
 
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = '012'
-down_revision = '011_exam_assessments'
+down_revision = '011b'
 branch_labels = None
 depends_on = None
 

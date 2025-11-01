@@ -1,6 +1,6 @@
 """add analytics indexes for performance
 
-Revision ID: 011
+Revision ID: 011a
 Revises: 010
 Create Date: 2025-10-30
 
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '011'
+revision = '011a'
 down_revision = '010'
 branch_labels = None
 depends_on = None

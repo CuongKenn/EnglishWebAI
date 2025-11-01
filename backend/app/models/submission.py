@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Float, JSON, Index
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Float, JSON, Index, Boolean
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.core.database import Base
@@ -24,6 +24,14 @@ class Submission(Base):
     graded_at = Column(DateTime(timezone=True), nullable=True, index=True)  # INDEXED for filtering graded submissions
     ai_graded_at = Column(DateTime(timezone=True), nullable=True)
     duration = Column(Integer, nullable=True)  # Time limit in minutes
+    
+    # Queue-based grading system fields
+    grading_status = Column(String, default="pending", nullable=False, index=True)  # pending | grading | ai_graded | completed | failed
+    teacher_reviewed = Column(Boolean, default=False, nullable=False, index=True)  # Whether teacher has reviewed AI grading
+    queue_position = Column(Integer, nullable=True, index=True)  # Position in grading queue
+    grading_attempts = Column(Integer, default=0, nullable=False)  # Number of grading attempts
+    last_grading_error = Column(Text, nullable=True)  # Last error message if grading failed
+    teacher_modified_score = Column(Float, nullable=True)  # Score modified by teacher (if different from AI)
 
     exercise = relationship("Exercise", back_populates="submissions")
     
@@ -32,6 +40,8 @@ class Submission(Base):
         Index('idx_submission_student_exercise', 'student_id', 'exercise_id'),
         Index('idx_submission_graded', 'graded_at', 'score'),
         Index('idx_submission_date_range', 'submitted_at', 'exercise_id'),
+        Index('idx_submission_queue_status', 'grading_status', 'queue_position'),
+        Index('idx_submission_teacher_review', 'teacher_reviewed', 'grading_status'),
     )
 
     def __repr__(self) -> str:

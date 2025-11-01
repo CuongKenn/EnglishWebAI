@@ -20,9 +20,31 @@ from app.schemas.student import (
     ExerciseUpdate,
 )
 from app.services.notification_service import NotificationService
+from app.services.grading_queue_service import GradingQueueService
 from pydantic import BaseModel
 
 router = APIRouter()
+
+# Initialize grading queue service
+grading_queue_service = GradingQueueService()
+
+
+# Helper function to calculate queue priority
+def _calculate_priority(exercise: Exercise) -> int:
+    """
+    Calculate priority for grading queue
+    - Exam: 100 (highest priority)
+    - Exercise: 50 (medium priority)
+    - Homework: 10 (low priority)
+    """
+    exercise_type = exercise.type if hasattr(exercise, 'type') else None
+    
+    if exercise_type == "exam":
+        return 100
+    elif exercise_type == "exercise":
+        return 50
+    else:  # homework or default
+        return 10
 
 
 # Schemas for submission
@@ -36,16 +58,21 @@ class SubmissionResponse(BaseModel):
     id: int
     exercise_id: int
     student_id: int
-    content_text: Optional[str]
-    content_url: Optional[str]
-    answers: Optional[dict]
-    score: Optional[float]
-    ai_score: Optional[float]
-    feedback: Optional[str]
-    ai_feedback: Optional[str]
-    rubrics_scores: Optional[dict]
+    content_text: Optional[str] = None
+    content_url: Optional[str] = None
+    answers: Optional[dict] = None
+    score: Optional[float] = None
+    ai_score: Optional[float] = None
+    feedback: Optional[str] = None
+    ai_feedback: Optional[str] = None
+    rubrics_scores: Optional[dict] = None
     status: str
+    grading_status: Optional[str] = None  # pending, grading, ai_graded, reviewed, failed
+    teacher_reviewed: Optional[bool] = None
     submitted_at: datetime
+    
+    class Config:
+        from_attributes = True
 
 
 class GradeRequest(BaseModel):
@@ -534,11 +561,12 @@ async def get_exercises(
     print(f"[GET /exercises/] User {current_user.id} ({current_user.email}) requesting exercises")
     
     # Lấy danh sách lớp học sinh đã tham gia
+    # Note: enrollment.role is lowercase string "student", not enum
     enrolled_class_ids = (
         db.query(Enrollment.class_id)
         .filter(
             Enrollment.user_id == current_user.id,
-            Enrollment.role == "student",
+            Enrollment.role.in_(["student", "STUDENT", "user", "USER"]),  # Support both cases
             Enrollment.status == "active"
         )
         .all()
@@ -723,7 +751,7 @@ async def get_exercise(
         enrollment = db.query(Enrollment).filter(
             Enrollment.class_id == exercise.class_id,
             Enrollment.user_id == current_user.id,
-            Enrollment.role == "student",
+            Enrollment.role.in_(["student", "STUDENT", "user", "USER"]),
             Enrollment.status == "active"
         ).first()
         
@@ -793,7 +821,7 @@ async def submit_exercise(
     enrollment = db.query(Enrollment).filter(
         Enrollment.class_id == exercise.class_id,
         Enrollment.user_id == current_user.id,
-        Enrollment.role == "student",
+        Enrollment.role.in_(["student", "STUDENT", "user", "USER"]),
         Enrollment.status == "active"
     ).first()
     
@@ -852,12 +880,25 @@ async def submit_exercise(
         existing_submission.answers = parsed_answers
         existing_submission.submitted_at = datetime.utcnow()
         existing_submission.status = "submitted"
-        
-        # Auto-grade if possible (speaking/writing/objective)
-        await _auto_grade_submission(existing_submission, exercise, db)
+        existing_submission.grading_status = "pending"
+        existing_submission.teacher_reviewed = False
+        existing_submission.score = None  # Clear old score
+        existing_submission.ai_score = None
+        existing_submission.ai_feedback = None
         
         db.commit()
         db.refresh(existing_submission)
+        
+        # Add to grading queue instead of immediate grading
+        priority = _calculate_priority(exercise)
+        grading_queue_service.add_to_queue(
+            db=db,
+            submission_id=existing_submission.id,
+            exercise_id=exercise_id,
+            student_id=current_user.id,
+            class_id=exercise.class_id,
+            priority=priority
+        )
         
         # Tự động tạo thông báo cho phụ huynh khi học sinh nộp lại bài
         try:
@@ -888,17 +929,25 @@ async def submit_exercise(
         content_text=content_text,
         content_url=audio_url,
         answers=parsed_answers,
-        status=status_value
+        status=status_value,
+        grading_status="pending",
+        teacher_reviewed=False
     )
     
     db.add(submission)
     db.commit()
     db.refresh(submission)
     
-    # Auto-grade if possible
-    await _auto_grade_submission(submission, exercise, db)
-    db.commit()
-    db.refresh(submission)
+    # Add to grading queue instead of immediate grading
+    priority = _calculate_priority(exercise)
+    grading_queue_service.add_to_queue(
+        db=db,
+        submission_id=submission.id,
+        exercise_id=exercise_id,
+        student_id=current_user.id,
+        class_id=exercise.class_id,
+        priority=priority
+    )
     
     # Tự động tạo thông báo cho phụ huynh khi học sinh nộp bài
     try:
@@ -932,7 +981,7 @@ async def save_draft(
     enrollment = db.query(Enrollment).filter(
         Enrollment.class_id == exercise.class_id,
         Enrollment.user_id == current_user.id,
-        Enrollment.role == "student",
+        Enrollment.role.in_(["student", "STUDENT", "user", "USER"]),
         Enrollment.status == "active"
     ).first()
     
@@ -982,6 +1031,7 @@ async def get_my_submission(
 ):
     """
     Lấy bài nộp của học sinh cho bài tập này
+    Chỉ hiển thị điểm và feedback khi teacher đã review
     """
     submission = db.query(Submission).filter(
         Submission.exercise_id == exercise_id,
@@ -994,6 +1044,34 @@ async def get_my_submission(
             detail="Chưa có bài nộp"
         )
     
+    # Check if results should be hidden (not yet reviewed by teacher)
+    grading_status = getattr(submission, 'grading_status', None)
+    teacher_reviewed = getattr(submission, 'teacher_reviewed', False)
+    
+    # If student and not reviewed yet, hide scores and feedback
+    if current_user.role == UserRole.STUDENT and not teacher_reviewed:
+        if grading_status in ['pending', 'grading', 'ai_graded']:
+            # Return submission but hide results
+            response = SubmissionResponse(
+                id=submission.id,
+                exercise_id=submission.exercise_id,
+                student_id=submission.student_id,
+                content_text=submission.content_text,
+                content_url=submission.content_url,
+                answers=submission.answers,
+                score=None,
+                ai_score=None,
+                feedback="Đang chờ giáo viên chấm điểm...",
+                ai_feedback=None,
+                rubrics_scores=None,
+                status=submission.status,
+                grading_status=grading_status or "grading",
+                teacher_reviewed=False,
+                submitted_at=submission.submitted_at
+            )
+            return response
+    
+    # Teacher or reviewed submission - show all results
     return submission
 
 
@@ -1048,7 +1126,7 @@ async def get_exercise_statistics(
         db.query(Enrollment.class_id)
         .filter(
             Enrollment.user_id == current_user.id,
-            Enrollment.role == "student",
+            Enrollment.role.in_(["student", "STUDENT", "user", "USER"]),
             Enrollment.status == "active"
         )
         .all()

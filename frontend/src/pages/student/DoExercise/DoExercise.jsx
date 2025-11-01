@@ -279,19 +279,25 @@ export default function DoExercise() {
       const exerciseSubmission = response.data.find(s => s.exercise_id === parseInt(exerciseId));
       console.log('[DoExercise] Found submission:', exerciseSubmission);
       
-      const hasFinalScore = !!exerciseSubmission && exerciseSubmission.score !== null;
-      const hasAIScore = !!exerciseSubmission && exerciseSubmission.ai_score !== null;
+      // Check grading status first (new queue system)
+      const gradingStatus = exerciseSubmission?.grading_status;
+      const teacherReviewed = exerciseSubmission?.teacher_reviewed;
+      
+      // Show results only if teacher has reviewed
+      const hasFinalScore = !!exerciseSubmission && exerciseSubmission.score !== null && teacherReviewed;
+      const hasAIScore = !!exerciseSubmission && exerciseSubmission.ai_score !== null && teacherReviewed;
+      
       if (exerciseSubmission && (hasFinalScore || hasAIScore)) {
-        // Has graded submission (teacher or AI), show result view
+        // Has graded submission and teacher reviewed, show result view
         setSubmission(exerciseSubmission);
         setViewMode('result');
-        setShowStartScreen(false); // Skip start screen if viewing results
-        console.log('[DoExercise] Submission has score (final or AI), showing result view');
+        setShowStartScreen(false);
+        console.log('[DoExercise] Submission reviewed by teacher, showing result view');
       } else if (exerciseSubmission) {
-        // Has submission but not graded yet
+        // Has submission but not graded/reviewed yet
         setSubmission(exerciseSubmission);
-        setShowStartScreen(false); // Skip start screen if already submitted
-        console.log('[DoExercise] Submission exists but not graded yet');
+        setShowStartScreen(false);
+        console.log(`[DoExercise] Submission exists (status: ${gradingStatus}), waiting for grading/review`);
       }
     } catch (error) {
       console.error('[DoExercise] Error fetching submission:', error);
@@ -1253,7 +1259,7 @@ export default function DoExercise() {
                       <label key={i} className="option-label">
                         <input
                           type="radio"
-                          name={uniqueQuestionId}
+                          name={`question_${q.id}`}
                           value={opt[0]}
                           checked={answers[q.id] === opt[0]}
                           onChange={(e) => handleAnswerChange(q.id, e.target.value)}
@@ -1279,7 +1285,7 @@ export default function DoExercise() {
                     <label className="tf-option">
                       <input
                         type="radio"
-                        name={uniqueQuestionId}
+                        name={`question_${q.id}`}
                         value="true"
                         checked={answers[q.id] === 'true'}
                         onChange={(e) => handleAnswerChange(q.id, e.target.value)}
@@ -1290,7 +1296,7 @@ export default function DoExercise() {
                     <label className="tf-option">
                       <input
                         type="radio"
-                        name={uniqueQuestionId}
+                        name={`question_${q.id}`}
                         value="false"
                         checked={answers[q.id] === 'false'}
                         onChange={(e) => handleAnswerChange(q.id, e.target.value)}
@@ -1414,7 +1420,7 @@ export default function DoExercise() {
                         <label key={i} className="option-label">
                           <input
                             type="radio"
-                            name={uniqueQuestionId}
+                            name={`question_${q.id}`}
                             value={opt[0]}
                             checked={answers[q.id] === opt[0]}
                             onChange={(e) => handleAnswerChange(q.id, e.target.value)}
@@ -1534,12 +1540,84 @@ export default function DoExercise() {
   const renderResultView = () => {
     if (!submission || !exercise) return null;
 
+    const gradingStatus = submission.grading_status;
+    const teacherReviewed = submission.teacher_reviewed;
+    
+    // If not reviewed yet, show waiting message
+    if (!teacherReviewed && ['pending', 'grading', 'ai_graded'].includes(gradingStatus)) {
+      return (
+        <div className="result-view-container">
+          <div className="result-header">
+            <div className="result-header-left">
+              <h1>
+                {exercise.skill_type === 'listening' && '🎧'}
+                {exercise.skill_type === 'speaking' && '🗣️'}
+                {exercise.skill_type === 'reading' && '📖'}
+                {exercise.skill_type === 'writing' && '✍️'}
+                {' '}
+                {exercise.title}
+              </h1>
+              <p className="result-subtitle">Bài làm của bạn</p>
+            </div>
+          </div>
+
+          <div className="result-info-card">
+            <div className="info-item">
+              <span className="info-label">📅 Ngày nộp:</span>
+              <span className="info-value">{new Date(submission.submitted_at).toLocaleString('vi-VN')}</span>
+            </div>
+            <div className="info-item">
+              <span className="info-label">📊 Trạng thái:</span>
+              <span className="info-value status-pending">
+                {gradingStatus === 'pending' && '⏳ Đang chờ chấm điểm...'}
+                {gradingStatus === 'grading' && '⚙️ Đang tự động chấm...'}
+                {gradingStatus === 'ai_graded' && '👨‍🏫 Đang chờ giáo viên duyệt...'}
+              </span>
+            </div>
+          </div>
+
+          <div className="feedback-card">
+            <h3>ℹ️ Thông báo</h3>
+            <div className="feedback-content">
+              <p>Bài làm của bạn đang được xử lý và chờ giáo viên chấm điểm.</p>
+              <p>Bạn sẽ nhận được thông báo khi kết quả đã sẵn sàng.</p>
+              {gradingStatus === 'ai_graded' && (
+                <p><strong>Hệ thống đã tự động chấm xong, đang chờ giáo viên xem xét và phê duyệt.</strong></p>
+              )}
+            </div>
+            <div style={{ marginTop: '20px', textAlign: 'center' }}>
+              <button 
+                onClick={() => navigate('/student/exercises')}
+                className="btn-primary"
+                style={{
+                  padding: '12px 24px',
+                  fontSize: '16px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  backgroundColor: '#10b981',
+                  color: 'white',
+                  border: 'none',
+                  fontWeight: '600',
+                  transition: 'all 0.3s ease',
+                }}
+                onMouseOver={(e) => e.target.style.backgroundColor = '#059669'}
+                onMouseOut={(e) => e.target.style.backgroundColor = '#10b981'}
+              >
+                🏠 Quay về danh sách bài tập
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Show full results (teacher reviewed)
     const effectiveScore = (submission.score ?? submission.ai_score);
     const gradedByAI = submission.score == null && submission.ai_score != null;
     const statusLabel = submission.status === 'graded'
       ? 'Đã chấm'
       : gradedByAI
-        ? 'Đã chấm (AI) - chờ giáo viên duyệt'
+        ? 'Đã chấm (AI)'
         : (submission.status === 'pending_review' ? 'Đang chờ duyệt' : (submission.status || '')); 
 
     return (
@@ -1562,7 +1640,7 @@ export default function DoExercise() {
               <span className="score-number">{effectiveScore ?? '-'}</span>
               <span className="score-total">/{exercise.max_score || 10}</span>
             </div>
-            <div className="score-label">{gradedByAI ? 'Điểm AI (tạm thời)' : 'Điểm'}</div>
+            <div className="score-label">{teacherReviewed ? 'Điểm đã duyệt' : 'Điểm'}</div>
           </div>
         </div>
 

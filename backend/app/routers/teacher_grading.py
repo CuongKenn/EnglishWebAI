@@ -14,6 +14,7 @@ from app.models.exercise import Exercise
 from app.models.submission import Submission
 from app.models.classroom import Classroom
 from app.models.enrollment import Enrollment
+from app.services.notification_service import NotificationService
 from pydantic import BaseModel
 
 router = APIRouter()
@@ -532,4 +533,204 @@ async def export_progress_report(
         return {"message": "Excel export coming soon", "data": report}
     else:
         raise HTTPException(status_code=400, detail="Invalid format. Use json, pdf, or excel")
+
+
+# ============= Queue-based Grading Review (NEW) =============
+
+class SubmissionListItem(BaseModel):
+    """Submission item for review list"""
+    id: int
+    exercise_id: int
+    exercise_title: str
+    student_id: int
+    student_name: str
+    student_email: str
+    class_id: int
+    class_name: str
+    score: Optional[float]
+    ai_score: Optional[float]
+    grading_status: str
+    status: str
+    submitted_at: datetime
+    ai_graded_at: Optional[datetime]
+    
+    class Config:
+        from_attributes = True
+
+
+class ReviewRequest(BaseModel):
+    """Request to review and approve/modify submission"""
+    approved: bool  # True = approve AI score, False = modify
+    final_score: Optional[float] = None  # If not approved, provide new score
+    teacher_notes: Optional[str] = None  # Optional notes for student/record
+    feedback: Optional[str] = None  # Override AI feedback
+
+
+class ReviewResponse(BaseModel):
+    """Response after review"""
+    id: int
+    final_score: float
+    teacher_reviewed: bool
+    teacher_reviewed_at: datetime
+    message: str
+    
+    class Config:
+        from_attributes = True
+
+
+@router.get("/pending-review", response_model=List[SubmissionListItem])
+async def get_pending_review_submissions(
+    class_id: Optional[int] = None,
+    exercise_id: Optional[int] = None,
+    limit: int = 50,
+    offset: int = 0,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get list of submissions pending teacher review (ai_graded status)
+    Teachers can filter by class or exercise
+    """
+    if current_user.role not in [UserRole.TEACHER, UserRole.ADMIN]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Chỉ giáo viên mới có quyền xem bài chấm"
+        )
+    
+    # Build query
+    query = db.query(Submission).filter(
+        Submission.grading_status == "ai_graded",
+        Submission.teacher_reviewed == False
+    )
+    
+    # Filter by class if specified
+    if class_id:
+        _ensure_teacher_access(db, current_user, class_id)
+        query = query.join(Exercise).filter(Exercise.class_id == class_id)
+    elif current_user.role == UserRole.TEACHER:
+        # Teacher can only see their own classes
+        teacher_classes = db.query(Classroom.id).filter(
+            Classroom.teacher_id == current_user.id
+        ).all()
+        class_ids = [c[0] for c in teacher_classes]
+        query = query.join(Exercise).filter(Exercise.class_id.in_(class_ids))
+    
+    # Filter by exercise if specified
+    if exercise_id:
+        query = query.filter(Submission.exercise_id == exercise_id)
+    
+    # Order by submitted_at (oldest first for FIFO processing)
+    query = query.order_by(Submission.submitted_at.asc())
+    
+    # Paginate
+    submissions = query.offset(offset).limit(limit).all()
+    
+    # Build response with join data
+    results = []
+    for sub in submissions:
+        exercise = db.query(Exercise).filter(Exercise.id == sub.exercise_id).first()
+        student = db.query(User).filter(User.id == sub.student_id).first()
+        classroom = db.query(Classroom).filter(Classroom.id == exercise.class_id).first() if exercise else None
+        
+        results.append(SubmissionListItem(
+            id=sub.id,
+            exercise_id=sub.exercise_id,
+            exercise_title=exercise.title if exercise else "N/A",
+            student_id=sub.student_id,
+            student_name=student.full_name if student else "N/A",
+            student_email=student.email if student else "N/A",
+            class_id=exercise.class_id if exercise else 0,
+            class_name=classroom.name if classroom else "N/A",
+            score=sub.score,
+            ai_score=sub.ai_score,
+            grading_status=getattr(sub, 'grading_status', 'unknown'),
+            status=sub.status,
+            submitted_at=sub.submitted_at,
+            ai_graded_at=sub.ai_graded_at
+        ))
+    
+    return results
+
+
+@router.post("/{submission_id}/review", response_model=ReviewResponse)
+async def review_submission(
+    submission_id: int,
+    review: ReviewRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Review and approve/modify AI-graded submission
+    - approved=True: Keep AI score, mark as reviewed
+    - approved=False: Use teacher's final_score instead
+    """
+    if current_user.role not in [UserRole.TEACHER, UserRole.ADMIN]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Chỉ giáo viên mới có quyền chấm bài"
+        )
+    
+    submission = db.query(Submission).filter(Submission.id == submission_id).first()
+    
+    if not submission:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Không tìm thấy bài nộp"
+        )
+    
+    exercise = db.query(Exercise).filter(Exercise.id == submission.exercise_id).first()
+    
+    # Check teacher access
+    if current_user.role == UserRole.TEACHER:
+        _ensure_teacher_access(db, current_user, exercise.class_id)
+    
+    # Check if already reviewed
+    if getattr(submission, 'teacher_reviewed', False):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Bài nộp này đã được chấm rồi"
+        )
+    
+    # Apply review
+    if review.approved:
+        # Keep AI score
+        final_score = submission.ai_score or 0.0
+        message = "Đã xác nhận điểm AI"
+    else:
+        # Use teacher's score
+        if review.final_score is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Vui lòng nhập điểm mới nếu không đồng ý với điểm AI"
+            )
+        final_score = review.final_score
+        message = "Đã cập nhật điểm do giáo viên chấm"
+    
+    # Update submission
+    submission.score = final_score
+    submission.grading_status = "reviewed"
+    submission.teacher_reviewed = True
+    submission.teacher_reviewed_at = datetime.utcnow()
+    submission.teacher_reviewed_by = current_user.id
+    submission.teacher_notes = review.teacher_notes
+    submission.graded_at = datetime.utcnow()
+    
+    # Override feedback if provided
+    if review.feedback:
+        submission.feedback = review.feedback
+    elif not submission.feedback:
+        # Generate default feedback
+        submission.feedback = f"Điểm: {final_score}/10"
+    
+    db.commit()
+    db.refresh(submission)
+    
+    return ReviewResponse(
+        id=submission.id,
+        final_score=final_score,
+        teacher_reviewed=True,
+        teacher_reviewed_at=submission.teacher_reviewed_at,
+        message=message
+    )
+
 

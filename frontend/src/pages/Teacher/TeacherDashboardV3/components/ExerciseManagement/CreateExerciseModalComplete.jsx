@@ -78,6 +78,14 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   const requiresSkill = testType === 'skill_exercise' || testType === 'test_15min';
   const isMidtermOrFinal = testType === 'midterm' || testType === 'final';
   
+  // Set default due date to today at 23:59
+  useEffect(() => {
+    const today = new Date();
+    today.setHours(23, 59, 0, 0);
+    const defaultDueDate = today.toISOString().slice(0, 16); // Format: YYYY-MM-DDTHH:mm
+    setDueDate(defaultDueDate);
+  }, []);
+
   // Fetch classes on mount
   useEffect(() => {
     const fetchClasses = async () => {
@@ -671,10 +679,43 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
                 renderMidtermFinalForm()
               ) : (
                 <>
-                  {selectedSkill === 'listening' && renderListeningForm()}
-                  {selectedSkill === 'speaking' && renderSpeakingForm()}
-                  {selectedSkill === 'reading' && renderReadingForm()}
-                  {selectedSkill === 'writing' && renderWritingForm()}
+                  {/* Input Method Selection for Skill Exercise / Test 15min */}
+                  <div className="form-section-ex">
+                    <label className="form-label-ex">Phương thức tạo đề</label>
+                    <div className="input-method-selector">
+                      <label className="method-option">
+                        <input 
+                          type="radio" 
+                          name="inputMethod" 
+                          value="manual" 
+                          checked={inputMethod === 'manual'}
+                          onChange={() => setInputMethod('manual')}
+                        />
+                        <span>✍️ Tạo thủ công</span>
+                      </label>
+                      <label className="method-option">
+                        <input 
+                          type="radio" 
+                          name="inputMethod" 
+                          value="ai" 
+                          checked={inputMethod === 'ai'}
+                          onChange={() => setInputMethod('ai')}
+                        />
+                        <span>🤖 AI Sinh đề</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Render based on selected method */}
+                  {inputMethod === 'manual' && (
+                    <>
+                      {selectedSkill === 'listening' && renderListeningForm()}
+                      {selectedSkill === 'speaking' && renderSpeakingForm()}
+                      {selectedSkill === 'reading' && renderReadingForm()}
+                      {selectedSkill === 'writing' && renderWritingForm()}
+                    </>
+                  )}
+                  {inputMethod === 'ai' && renderAIForm()}
                 </>
               )}
         </div>
@@ -740,16 +781,6 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
               />
               <span>🤖 AI Sinh đề</span>
             </label>
-            <label className="method-option">
-              <input 
-                type="radio" 
-                name="inputMethod" 
-                value="import" 
-                checked={inputMethod === 'import'}
-                onChange={() => setInputMethod('import')}
-              />
-              <span>📄 Import từ File</span>
-            </label>
           </div>
         </div>
         
@@ -789,7 +820,6 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
           </>
         )}
         {inputMethod === 'ai' && renderAIForm()}
-        {inputMethod === 'import' && renderImportForm()}
       </div>
     );
   }
@@ -1489,40 +1519,6 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
                 <p>Theo SGK Tiếng Anh 2018</p>
               </div>
             </label>
-            
-            <label className={`ai-source-card ${aiSource === 'files' ? 'active' : ''}`}>
-              <input 
-                type="radio"
-                name="ai-source"
-                value="files"
-                checked={aiSource === 'files'}
-                onChange={(e) => setAiSource(e.target.value)}
-              />
-              <div className="source-icon">
-                <FileUp size={28} />
-              </div>
-              <div className="source-content">
-                <h4>Upload Files</h4>
-                <p>AI phân tích từ file của bạn</p>
-              </div>
-            </label>
-            
-            <label className={`ai-source-card ${aiSource === 'question_bank' ? 'active' : ''}`}>
-              <input 
-                type="radio"
-                name="ai-source"
-                value="question_bank"
-                checked={aiSource === 'question_bank'}
-                onChange={(e) => setAiSource(e.target.value)}
-              />
-              <div className="source-icon">
-                <Database size={28} />
-              </div>
-              <div className="source-content">
-                <h4>Ngân hàng câu hỏi</h4>
-                <p>Từ câu hỏi có sẵn</p>
-              </div>
-            </label>
           </div>
         </div>
         
@@ -1613,88 +1609,6 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
                   value={aiFormData.additionalNotes || ''}
                   onChange={(e) => setAiFormData({ ...aiFormData, additionalNotes: e.target.value })}
                 />
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {/* AI from Files */}
-        {aiSource === 'files' && (
-          <div className="ai-files-section">
-            <div className="form-section-ex">
-              <label className="form-label-ex">Upload tài liệu tham khảo (có thể nhiều files)</label>
-              <div className="file-upload-zone-multiple" onClick={() => aiFilesInputRef.current?.click()}>
-                <input 
-                  ref={aiFilesInputRef}
-                  type="file"
-                  multiple
-                  accept=".pdf,.doc,.docx,.txt"
-                  onChange={handleAiFilesUpload}
-                  style={{ display: 'none' }}
-                />
-                <FileUp size={48} />
-                <p>Click để chọn files (có thể chọn nhiều)</p>
-                <span className="upload-hint">Word, PDF, hoặc Text</span>
-              </div>
-            </div>
-            
-            {aiFiles.length > 0 && (
-              <div className="uploaded-files-list">
-                <h5>📄 Files đã upload ({aiFiles.length})</h5>
-                {aiFiles.map((file, idx) => (
-                  <div key={idx} className="uploaded-file-item">
-                    <File size={18} />
-                    <span className="file-name">{file.name}</span>
-                    <button onClick={() => removeAiFile(idx)} className="btn-remove-file-small">
-                      <X size={14} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-            
-            <div className="form-section-ex">
-              <label className="form-label-ex">Yêu cầu bổ sung với AI (tùy chọn)</label>
-              <textarea 
-                className="form-textarea-ex"
-                rows="4"
-                placeholder="Ví dụ: Tạo 10 câu hỏi trắc nghiệm về thì hiện tại hoàn thành, độ khó trung bình..."
-                value={aiPrompt}
-                onChange={(e) => setAiPrompt(e.target.value)}
-              />
-            </div>
-          </div>
-        )}
-        
-        {/* AI from Question Bank */}
-        {aiSource === 'question_bank' && (
-          <div className="ai-qb-section">
-            <h4>Cấu hình tạo đề từ Ngân hàng</h4>
-            
-            <div className="form-row-ex">
-              <div className="form-section-ex">
-                <label className="form-label-ex">Số câu hỏi</label>
-                <input 
-                  type="number"
-                  className="form-input-ex"
-                  value={qbNumQuestions}
-                  onChange={(e) => setQbNumQuestions(Number(e.target.value))}
-                  min="5"
-                  max="50"
-                />
-              </div>
-              <div className="form-section-ex">
-                <label className="form-label-ex">Độ khó</label>
-                <select 
-                  className="form-select-ex"
-                  value={qbDifficulty}
-                  onChange={(e) => setQbDifficulty(e.target.value)}
-                >
-                  <option value="mixed">Trộn lẫn</option>
-                  <option value="easy">Dễ</option>
-                  <option value="medium">Trung bình</option>
-                  <option value="hard">Khó</option>
-                </select>
               </div>
             </div>
           </div>

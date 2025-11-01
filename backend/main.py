@@ -152,6 +152,41 @@ async def startup_event():
         print(f"[ERROR] Startup error: {str(e)}")
     finally:
         db.close()
+    
+    # Start background grading queue worker
+    import asyncio
+    from app.services.grading_queue_service import GradingQueueService
+    
+    async def run_grading_worker():
+        """Background task to process grading queue"""
+        grading_service = GradingQueueService()
+        while True:
+            try:
+                db = SessionLocal()
+                try:
+                    # Process next pending item
+                    processed = await grading_service.process_next_pending(db)
+                    
+                    if not processed:
+                        # No items in queue, wait before checking again
+                        await asyncio.sleep(10)  # Check every 10 seconds
+                    else:
+                        # Item processed, check for next immediately
+                        await asyncio.sleep(1)
+                        
+                except Exception as e:
+                    print(f"[GRADING WORKER ERROR] {e}")
+                    await asyncio.sleep(30)  # Wait longer on error
+                finally:
+                    db.close()
+                    
+            except Exception as e:
+                print(f"[GRADING WORKER CRITICAL ERROR] {e}")
+                await asyncio.sleep(60)
+    
+    # Start worker task in background
+    asyncio.create_task(run_grading_worker())
+    print("[SUCCESS] Grading queue worker started!")
 
 @app.get("/")
 async def root():

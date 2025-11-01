@@ -11,6 +11,7 @@ from app.models.lesson import Lesson
 from app.models.material import Material
 from app.models.exercise import Exercise
 from app.models.submission import Submission
+from app.models.grading_queue import GradingQueue
 from app.models.discussion import DiscussionThread, DiscussionPost
 from app.models.discussion_like import DiscussionLike
 from app.models.news import NewsPost
@@ -36,6 +37,7 @@ __all__ = [
     "Material",
     "Exercise",
     "Submission",
+    "GradingQueue",
     "DiscussionThread",
     "DiscussionPost",
     "DiscussionLike",
