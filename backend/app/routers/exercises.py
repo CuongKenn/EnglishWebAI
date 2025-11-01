@@ -136,7 +136,9 @@ async def _auto_grade_submission(submission: Submission, exercise: Exercise, db:
                 if not os.path.exists(audio_path):
                     audio_path = None
             
-            # Run async grading - NOW USING AWAIT
+
+            # Run async grading - use await instead of event loop
+
             grading_results = await grading_service.grade_comprehensive_submission(
                 content,
                 submission.answers or {},

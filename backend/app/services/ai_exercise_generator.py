@@ -189,8 +189,10 @@ YÊU CẦU QUAN TRỌNG:
    - Đoạn văn phải phong phú và liên quan đến chủ đề
 5. Writing (2.5đ): Đề bài viết essay 200-250 từ
    - Cho hướng dẫn cụ thể về cấu trúc và nội dung
-6. Speaking (2.5đ): 5 câu hỏi để học sinh trả lời miệng
-   - Câu hỏi ngắn và dài, từ cá nhân đến trừu tượng{additional_instructions}
+6. Speaking (2.5đ): Đề bài nói với prompt rõ ràng
+   - Có prompt/topic để học sinh trình bày (1-2 phút)
+   - Có instructions hướng dẫn cụ thể
+   - Thời gian chuẩn bị và thời gian nói{additional_instructions}
 
 Trả về JSON format sau:
 {{
@@ -275,6 +277,15 @@ Trả về JSON format sau:
         {{
             "section": "speaking",
             "total_points": 2.5,
+            "prompt": "Talk about your favorite subject at school. You should mention: What is your favorite subject? Why do you like it? What do you learn in this subject?",
+            "instructions": [
+                "Speak clearly and confidently",
+                "Use complete sentences",
+                "Give specific examples",
+                "Speak for about 1-2 minutes"
+            ],
+            "prep_time": 60,
+            "speak_time": 120,
             "questions": [
                 {{
                     "id": 1,
