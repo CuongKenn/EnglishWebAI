@@ -349,12 +349,12 @@ The following large files have many .filter() and .map() operations but are comp
 
 ### 8. Code Refactoring for Maintainability
 
-**✅ Completed - CoursesManagement.jsx modularized (commit 7b9f525):**
+#### ✅ Completed - CoursesManagement.jsx (Commit a5df1f0)
 
-#### New Folder Structure:
+**New Folder Structure:**
 ```
 CoursesManagement/
-├── CoursesManagement.jsx       # Main component (to be updated)
+├── CoursesManagement.jsx       # Main component (1252 lines, was 1480)
 ├── components/                 # UI components
 │   ├── CourseStats.jsx        # Statistics cards (52 lines)
 │   ├── CourseFilters.jsx      # Search & filters (66 lines)
@@ -364,52 +364,45 @@ CoursesManagement/
 │   └── useCourseManagement.js # CRUD operations (165 lines)
 ├── utils/                      # Helper functions
 │   └── courseUtils.js         # Pure functions (68 lines)
-└── constants.js                # Shared constants (32 lines)
+├── constants.js                # Shared constants (32 lines)
+└── REFACTORING.md             # Documentation
 ```
 
-#### Components Created:
-1. **CourseStats** (React.memo)
-   - Displays 4 statistics cards
-   - Props: `{ stats }`
-   - Reusable and memoized
+**Benefits Achieved:**
+- ✅ File size reduced 15% (1480 → 1252 lines)
+- ✅ Separation of concerns (UI vs logic vs utils)
+- ✅ Reusable components with React.memo
+- ✅ Easier testing (small, focused units)
+- ✅ Better maintainability
+- ✅ Build successful, all features working
 
-2. **CourseFilters** (React.memo)
-   - Search bar + skill/grade filters
-   - Props: `{ searchQuery, onSearchChange, selectedSkill, onSkillChange, ... }`
-   - Prevents unnecessary re-renders
+**Next Files to Refactor:**
+The following large files need similar modular refactoring:
 
-3. **CourseCard** (React.memo)
-   - Individual course display
-   - Props: `{ course, onView, onEdit, onDelete }`
-   - Can be reused in other pages
+1. **CreateExerciseModalComplete.jsx** (1999 lines) →
+   - Extract: ExerciseFormFields, QuestionEditor, QuestionList, AIGenerationPanel, ImportPanel, SkillForms (Listening/Reading/Writing/Speaking)
+   - Custom hook: useExerciseCreation
+   - Utils: validation helpers, question formatting
 
-#### Custom Hook: useCourseManagement
-- Encapsulates all CRUD logic
-- Returns state and action functions
-- Testable in isolation
-- Reusable across components
+2. **DoExercise.jsx** (2013 lines) →
+   - Extract: ListeningSection, ReadingSection, WritingSection, SpeakingSection, SubmissionView, ProgressBar
+   - Custom hook: useExerciseSubmission
+   - Utils: answer validation, scoring helpers, time management
 
-#### Utility Functions:
-- `getSkillColor()` - Skill color mapping
-- `getSkillEmoji()` - Skill emoji mapping
-- `calculateCourseStats()` - Statistics calculation
-- `filterCoursesBySearch()` - Search filtering
-- `validateCourseForm()` - Form validation
+3. **SubmissionGradingPage.jsx** (1804 lines) →
+   - Extract: GradingForm, FeedbackPanel, ScoreDisplay, AIFeedbackSection, RubricEditor
+   - Custom hook: useGrading
+   - Utils: grading calculations, feedback formatting
 
-#### Benefits Achieved:
-- ✅ **Separation of Concerns**: UI, logic, utils separated
-- ✅ **Reusability**: Components can be used elsewhere
-- ✅ **Maintainability**: Single responsibility principle
-- ✅ **Testability**: Pure functions, isolated components
-- ✅ **Scalability**: Easy to extend and modify
-- ✅ **Performance**: React.memo on all components
-
-#### Pattern to Apply Next:
-This refactoring pattern should be applied to:
-- **CreateExerciseModalComplete.jsx** (1996 lines) → Extract QuestionEditor, QuestionList, AIPanel
-- **DoExercise.jsx** (2013 lines) → Extract ListeningSection, ReadingSection, WritingSection, SpeakingSection
-- **SubmissionGradingPage.jsx** (1804 lines) → Extract GradingForm, FeedbackEditor, ScoreDisplay
-- **QuestionBankV2.jsx** (2180 lines) → Extract QuestionCard, QuestionFilters, TestGenerator
+**Refactoring Pattern Applied:**
+1. Create modular folder structure (components/, hooks/, utils/, constants.js)
+2. Extract UI components (with React.memo)
+3. Move business logic to custom hooks (with useCallback)
+4. Create utility functions (pure functions)
+5. Centralize constants
+6. Document architecture (REFACTORING.md)
+7. Update main file to use extracted modules
+8. Test build and functionality
 
 ---
 
