@@ -176,8 +176,43 @@ class GradingQueueService:
             submission.ai_score = result['total_score']
             submission.original_ai_score = result['total_score']
             submission.rubrics_scores = result
-            # Only save feedback text, not the entire result object
-            submission.ai_feedback = result.get('feedback', f"Tự động chấm: {result['total_score']}/{result['max_score']} điểm")
+            
+            # Build comprehensive feedback from all sections
+            feedback_parts = []
+            
+            # Listening feedback
+            if result.get('listening', {}).get('total_points', 0) > 0:
+                listening_correct = len([q for q in result['listening']['questions'] if q.get('is_correct', False)])
+                listening_total = len(result['listening']['questions'])
+                feedback_parts.append(f"🎧 Listening: {listening_correct}/{listening_total} câu đúng - {result['listening']['total_points']:.1f}/2.5đ")
+            
+            # Reading feedback
+            if result.get('reading', {}).get('total_points', 0) > 0:
+                reading_correct = len([q for q in result['reading']['questions'] if q.get('is_correct', False)])
+                reading_total = len(result['reading']['questions'])
+                feedback_parts.append(f"📖 Reading: {reading_correct}/{reading_total} câu đúng - {result['reading']['total_points']:.1f}/2.5đ")
+            
+            # Writing feedback
+            if result.get('writing', {}).get('points_earned', 0) > 0:
+                writing_comment = result['writing'].get('overall_comment', '')
+                if writing_comment:
+                    feedback_parts.append(f"✍️ Writing: {result['writing']['points_earned']:.1f}/2.5đ\n{writing_comment[:200]}")
+                else:
+                    feedback_parts.append(f"✍️ Writing: {result['writing']['points_earned']:.1f}/2.5đ")
+            
+            # Speaking feedback
+            if result.get('speaking', {}).get('points_earned', 0) > 0:
+                speaking_feedback = result['speaking'].get('feedback', {})
+                pronunciation_text = speaking_feedback.get('pronunciation', '')
+                content_text = speaking_feedback.get('content', '')
+                feedback_parts.append(f"🗣️ Speaking: {result['speaking']['points_earned']:.1f}/2.5đ\n{pronunciation_text}\n{content_text[:200]}")
+            
+            # Combine all feedback
+            if feedback_parts:
+                submission.ai_feedback = "\n\n".join(feedback_parts)
+            else:
+                submission.ai_feedback = f"Tự động chấm: {result['total_score']}/{result['max_score']} điểm"
+            
             submission.grading_status = "ai_graded"
             submission.ai_graded_at = datetime.utcnow()
             submission.teacher_reviewed = False
