@@ -23,9 +23,15 @@ class AIGradingService:
     async def grade_multiple_choice(self, question: Dict, student_answer: str) -> Dict:
         """Grade multiple choice question"""
         correct = question.get("correct_answer", "")
-        is_correct = str(student_answer).upper() == str(correct).upper()
         
+        # Normalize answers for comparison (trim whitespace, uppercase)
+        student_normalized = str(student_answer).strip().upper()
+        correct_normalized = str(correct).strip().upper()
+        
+        is_correct = student_normalized == correct_normalized
         points_earned = question.get("points", 0.5) if is_correct else 0
+        
+        print(f"[GRADE_MC] Q{question.get('id')}: Student='{student_normalized}' vs Correct='{correct_normalized}' => {is_correct}")
         
         return {
             "is_correct": is_correct,
@@ -103,11 +109,13 @@ Respond with JSON:
     
     async def grade_true_false(self, question: Dict, student_answer: str) -> Dict:
         """Grade true/false question"""
-        correct = str(question.get("correct_answer", "")).lower()
-        student = str(student_answer).lower()
+        correct = str(question.get("correct_answer", "")).strip().lower()
+        student = str(student_answer).strip().lower()
         
         is_correct = student == correct
         points_earned = question.get("points", 0.5) if is_correct else 0
+        
+        print(f"[GRADE_TF] Q{question.get('id')}: Student='{student}' vs Correct='{correct}' => {is_correct}")
         
         return {
             "is_correct": is_correct,
@@ -377,10 +385,27 @@ Respond with JSON:
             "max_score": 10
         }
         
+        print(f"[GRADE_COMPREHENSIVE] Exercise content keys: {exercise_content.keys()}")
+        print(f"[GRADE_COMPREHENSIVE] Student answers keys: {student_answers.keys()}")
+        
         # Grade Listening questions
-        listening_questions = [q for q in exercise_content.get("questions", []) if q.get("skill") == "listening"]
+        # Check both locations: content.listening.questions AND content.questions with skill="listening"
+        listening_questions = []
+        if "listening" in exercise_content and "questions" in exercise_content["listening"]:
+            listening_questions = exercise_content["listening"]["questions"]
+            print(f"[GRADE_COMPREHENSIVE] Found {len(listening_questions)} listening questions in content.listening.questions")
+        else:
+            listening_questions = [q for q in exercise_content.get("questions", []) if q.get("skill") == "listening"]
+            print(f"[GRADE_COMPREHENSIVE] Found {len(listening_questions)} listening questions in content.questions")
+        
         for q in listening_questions:
-            student_ans = student_answers.get(str(q["id"]), "")
+            # Try multiple key formats: "listening_X", "X", X (int)
+            q_id = q["id"]
+            student_ans = (
+                student_answers.get(f"listening_{q_id}", "") or 
+                student_answers.get(str(q_id), "") or 
+                student_answers.get(q_id, "")
+            )
             q_type = q.get("type", "multiple_choice")
             
             if q_type == "multiple_choice":
@@ -396,14 +421,31 @@ Respond with JSON:
                 "question_id": q["id"],
                 "question": q.get("question", ""),
                 "student_answer": student_ans,
+                "correct_answer": q.get("correct_answer", ""),
                 **grade_result
             })
             results["listening"]["total_points"] += grade_result.get("points_earned", 0)
         
+        print(f"[GRADE_COMPREHENSIVE] Listening graded: {results['listening']['total_points']}/2.5")
+        
         # Grade Reading questions
-        reading_questions = [q for q in exercise_content.get("questions", []) if q.get("skill") == "reading"]
+        # Check both locations: content.reading.questions AND content.questions with skill="reading"
+        reading_questions = []
+        if "reading" in exercise_content and "questions" in exercise_content["reading"]:
+            reading_questions = exercise_content["reading"]["questions"]
+            print(f"[GRADE_COMPREHENSIVE] Found {len(reading_questions)} reading questions in content.reading.questions")
+        else:
+            reading_questions = [q for q in exercise_content.get("questions", []) if q.get("skill") == "reading"]
+            print(f"[GRADE_COMPREHENSIVE] Found {len(reading_questions)} reading questions in content.questions")
+        
         for q in reading_questions:
-            student_ans = student_answers.get(str(q["id"]), "")
+            # Try multiple key formats: "reading_X", "X", X (int)
+            q_id = q["id"]
+            student_ans = (
+                student_answers.get(f"reading_{q_id}", "") or 
+                student_answers.get(str(q_id), "") or 
+                student_answers.get(q_id, "")
+            )
             q_type = q.get("type", "multiple_choice")
             
             if q_type == "multiple_choice":
@@ -425,9 +467,12 @@ Respond with JSON:
                 "question_id": q["id"],
                 "question": q.get("question", ""),
                 "student_answer": student_ans,
+                "correct_answer": q.get("correct_answer", ""),
                 **grade_result
             })
             results["reading"]["total_points"] += grade_result.get("points_earned", 0)
+        
+        print(f"[GRADE_COMPREHENSIVE] Reading graded: {results['reading']['total_points']}/2.5")
         
         # Grade Writing
         writing_text = student_answers.get("writing_main", "")

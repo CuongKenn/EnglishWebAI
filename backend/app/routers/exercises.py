@@ -105,7 +105,7 @@ class ExerciseWithStatsResponse(BaseModel):
         from_attributes = True
 
 # Helper function for auto-grading
-def _auto_grade_submission(submission: Submission, exercise: Exercise, db: Session):
+async def _auto_grade_submission(submission: Submission, exercise: Exercise, db: Session):
     """
     Tự động chấm điểm using AI Grading Service:
     - Comprehensive test: Full AI grading (all 4 skills)
@@ -113,7 +113,6 @@ def _auto_grade_submission(submission: Submission, exercise: Exercise, db: Sessi
     - Writing: ChatGPT AI (chấm tự động, teacher có thể confirm)
     - Speaking: Azure Speech + ChatGPT (chấm tự động, teacher có thể confirm)
     """
-    import asyncio
     from app.services.ai_grading_service import AIGradingService
     
     skill_type = exercise.skill_type
@@ -136,17 +135,12 @@ def _auto_grade_submission(submission: Submission, exercise: Exercise, db: Sessi
                 if not os.path.exists(audio_path):
                     audio_path = None
             
-            # Run async grading
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            grading_results = loop.run_until_complete(
-                grading_service.grade_comprehensive_submission(
-                    content,
-                    submission.answers or {},
-                    audio_path
-                )
+            # Run async grading - use await instead of event loop
+            grading_results = await grading_service.grade_comprehensive_submission(
+                content,
+                submission.answers or {},
+                audio_path
             )
-            loop.close()
             
             # Store detailed results
             submission.rubrics_scores = grading_results
@@ -535,7 +529,7 @@ async def auto_grade_submission(
 
         if not ran_specialized:
             # Fallback to generic auto-grade (MC/TF/FillBlank, etc.)
-            _auto_grade_submission(submission, exercise, db)
+            await _auto_grade_submission(submission, exercise, db)
 
         db.commit()
         db.refresh(submission)
@@ -897,7 +891,7 @@ async def submit_exercise(
         existing_submission.status = "submitted"
         
         # Auto-grade if possible (speaking/writing/objective)
-        _auto_grade_submission(existing_submission, exercise, db)
+        await _auto_grade_submission(existing_submission, exercise, db)
         
         db.commit()
         db.refresh(existing_submission)
@@ -939,7 +933,7 @@ async def submit_exercise(
     db.refresh(submission)
     
     # Auto-grade if possible
-    _auto_grade_submission(submission, exercise, db)
+    await _auto_grade_submission(submission, exercise, db)
     db.commit()
     db.refresh(submission)
     

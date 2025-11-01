@@ -316,17 +316,28 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
       
       // SPEAKING Section
       if (response && response.speaking) {
+        console.log('[AI Generate] Speaking section received:', response.speaking);
         // Try to get prompt from various possible fields
         const speakingPrompt = response.speaking.prompt || response.speaking.topic || '';
+        console.log('[AI Generate] Extracted speakingPrompt:', speakingPrompt);
         setSpeakingPrompt(speakingPrompt);
         
-        if (response.speaking.questions && response.speaking.questions.length > 0) {
+        if (response.speaking.instructions && Array.isArray(response.speaking.instructions)) {
+          console.log('[AI Generate] Setting speaking instructions:', response.speaking.instructions);
+          setSpeakingInstructions(response.speaking.instructions);
+        } else if (response.speaking.questions && response.speaking.questions.length > 0) {
+          // Fallback: use questions as instructions if no instructions provided
           const speakingQ = response.speaking.questions.map(q => q.question || q.text || '').filter(q => q);
           if (speakingQ.length > 0) {
+            console.log('[AI Generate] Using questions as instructions:', speakingQ);
             setSpeakingInstructions(speakingQ);
           }
         }
-        console.log('[AI Generate] Setting Speaking data');
+        
+        if (response.speaking.prep_time) setPrepTime(response.speaking.prep_time);
+        if (response.speaking.speak_time) setSpeakTime(response.speaking.speak_time);
+        
+        console.log('[AI Generate] Speaking data set successfully');
       }
       
       // Collect all questions from sections

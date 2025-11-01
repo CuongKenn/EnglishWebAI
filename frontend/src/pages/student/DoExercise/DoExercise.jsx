@@ -135,7 +135,42 @@ export default function DoExercise() {
   };
 
   const handleAnswerChange = (questionId, value) => {
+    console.log(`[ANSWER_CHANGE] Q${questionId} = "${value}"`);
     setAnswers(prev => ({ ...prev, [questionId]: value }));
+  };
+  
+  // Helper to safely render any value (prevent React error #31)
+  const safeRenderValue = (value, questionType = null) => {
+    if (value === null || value === undefined) return '-';
+    if (typeof value === 'object') {
+      // If it's an array, join with commas
+      if (Array.isArray(value)) {
+        return value.map(v => safeRenderValue(v)).join(', ');
+      }
+      // If it's a matching question answer (object with pairs)
+      // Display as "pair1 → answer1; pair2 → answer2"
+      if (questionType === 'matching' || Object.keys(value).every(k => !isNaN(k))) {
+        const pairs = Object.entries(value)
+          .map(([idx, val]) => `Cặp ${parseInt(idx) + 1}: ${val}`)
+          .join('; ');
+        return pairs || JSON.stringify(value);
+      }
+      // Otherwise stringify it
+      return JSON.stringify(value);
+    }
+    return String(value);
+  };
+  
+  // Helper to handle matching questions safely
+  const handleMatchingChange = (questionId, pairIndex, value) => {
+    setAnswers(prev => {
+      const currentMatching = typeof prev[questionId] === 'object' && prev[questionId] !== null 
+        ? prev[questionId] 
+        : {};
+      
+      const newMatching = { ...currentMatching, [pairIndex]: value };
+      return { ...prev, [questionId]: newMatching };
+    });
   };
 
   const handleSaveDraft = async () => {
@@ -165,12 +200,17 @@ export default function DoExercise() {
   const handleSubmit = async () => {
     if (!confirm('Bạn có chắc muốn nộp bài?')) return;
     
+    console.log('[SUBMIT] Answers before submit:', answers);
+    console.log('[SUBMIT] Writing answers:', writingAnswers);
+    console.log('[SUBMIT] Speaking answers keys:', Object.keys(speakingAnswers));
+    
     setIsSubmitting(true);
     try {
       // Prepare submission data
       const formData = new FormData();
       
-      // Add answers if exists
+      // Keep uniqueQuestionId format (listening_1, reading_1) for backend
+      // Backend will handle these prefixed keys
       if (answers && Object.keys(answers).length > 0) {
         formData.append('answers', JSON.stringify(answers));
       }
@@ -643,8 +683,12 @@ export default function DoExercise() {
             {listeningQuestions.length > 0 && (
               <div className="questions-container">
                 <p className="section-instruction">Nghe đoạn audio và trả lời các câu hỏi sau:</p>
-                {listeningQuestions.map((q, idx) => (
-                  <div key={q.id} className="question-card">
+                {listeningQuestions.map((q, idx) => {
+                  // Create unique ID for this question within listening section
+                  const uniqueQuestionId = `listening_${q.id}`;
+                  
+                  return (
+                  <div key={idx} className="question-card">
                     <div className="question-header">
                       <span className="question-number">Câu {idx + 1}</span>
                       <span className="question-points">{q.points || 0.5} điểm</span>
@@ -660,10 +704,10 @@ export default function DoExercise() {
                             <label key={optIdx} className="option-label">
                               <input
                                 type="radio"
-                                name={`q${q.id}`}
+                                name={uniqueQuestionId}
                                 value={optionLetter[0]}
-                                checked={answers[q.id] === optionLetter[0]}
-                                onChange={(e) => handleAnswerChange(q.id, e.target.value)}
+                                checked={answers[uniqueQuestionId] === optionLetter[0]}
+                                onChange={(e) => handleAnswerChange(uniqueQuestionId, e.target.value)}
                               />
                               <span>{optionLetter} {optionText}</span>
                             </label>
@@ -677,8 +721,8 @@ export default function DoExercise() {
                         <input
                           type="text"
                           placeholder="Nhập câu trả lời..."
-                          value={answers[q.id] || ''}
-                          onChange={(e) => handleAnswerChange(q.id, e.target.value)}
+                          value={answers[uniqueQuestionId] || ''}
+                          onChange={(e) => handleAnswerChange(uniqueQuestionId, e.target.value)}
                           className="text-input"
                         />
                       </div>
@@ -689,20 +733,20 @@ export default function DoExercise() {
                         <label className="option-label">
                           <input
                             type="radio"
-                            name={`q${q.id}`}
+                            name={uniqueQuestionId}
                             value="True"
-                            checked={answers[q.id] === 'True'}
-                            onChange={(e) => handleAnswerChange(q.id, e.target.value)}
+                            checked={answers[uniqueQuestionId] === 'True'}
+                            onChange={(e) => handleAnswerChange(uniqueQuestionId, e.target.value)}
                           />
                           <span>✓ True (Đúng)</span>
                         </label>
                         <label className="option-label">
                           <input
                             type="radio"
-                            name={`q${q.id}`}
+                            name={uniqueQuestionId}
                             value="False"
-                            checked={answers[q.id] === 'False'}
-                            onChange={(e) => handleAnswerChange(q.id, e.target.value)}
+                            checked={answers[uniqueQuestionId] === 'False'}
+                            onChange={(e) => handleAnswerChange(uniqueQuestionId, e.target.value)}
                           />
                           <span>✗ False (Sai)</span>
                         </label>
@@ -712,30 +756,33 @@ export default function DoExercise() {
                     {q.type === 'matching' && q.pairs && (
                       <div className="matching-container">
                         <p className="matching-instruction">Ghép các cặp sau cho đúng:</p>
-                        {q.pairs.map((pair, pairIdx) => (
-                          <div key={pairIdx} className="matching-pair">
-                            <div className="match-left">{pair.left}</div>
-                            <div className="match-arrow">→</div>
-                            <select
-                              className="match-select"
-                              value={answers[q.id]?.[pairIdx] || ''}
-                              onChange={(e) => {
-                                const newMatching = answers[q.id] || {};
-                                newMatching[pairIdx] = e.target.value;
-                                handleAnswerChange(q.id, { ...newMatching });
-                              }}
-                            >
-                              <option value="">-- Chọn --</option>
-                              {q.pairs.map((p, i) => (
-                                <option key={i} value={p.right}>{p.right}</option>
-                              ))}
-                            </select>
-                          </div>
-                        ))}
+                        {q.pairs.map((pair, pairIdx) => {
+                          const currentMatching = typeof answers[uniqueQuestionId] === 'object' && answers[uniqueQuestionId] !== null 
+                            ? answers[uniqueQuestionId] 
+                            : {};
+                          
+                          return (
+                            <div key={pairIdx} className="matching-pair">
+                              <div className="match-left">{pair.left}</div>
+                              <div className="match-arrow">→</div>
+                              <select
+                                className="match-select"
+                                value={currentMatching[pairIdx] || ''}
+                                onChange={(e) => handleMatchingChange(uniqueQuestionId, pairIdx, e.target.value)}
+                              >
+                                <option value="">-- Chọn --</option>
+                                {q.pairs.map((p, i) => (
+                                  <option key={i} value={p.right}>{p.right}</option>
+                                ))}
+                              </select>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -759,8 +806,12 @@ export default function DoExercise() {
             {readingQuestions.length > 0 && (
               <div className="questions-container">
                 <p className="section-instruction">Đọc đoạn văn trên và trả lời các câu hỏi sau:</p>
-                {readingQuestions.map((q, idx) => (
-                  <div key={q.id} className="question-card">
+                {readingQuestions.map((q, idx) => {
+                  // Create unique ID for this question within reading section
+                  const uniqueQuestionId = `reading_${q.id}`;
+                  
+                  return (
+                  <div key={idx} className="question-card">
                     <div className="question-header">
                       <span className="question-number">Câu {idx + 1}</span>
                       <span className="question-points">{q.points || 0.5} điểm</span>
@@ -776,10 +827,10 @@ export default function DoExercise() {
                             <label key={optIdx} className="option-label">
                               <input
                                 type="radio"
-                                name={`q${q.id}`}
+                                name={uniqueQuestionId}
                                 value={optionLetter[0]}
-                                checked={answers[q.id] === optionLetter[0]}
-                                onChange={(e) => handleAnswerChange(q.id, e.target.value)}
+                                checked={answers[uniqueQuestionId] === optionLetter[0]}
+                                onChange={(e) => handleAnswerChange(uniqueQuestionId, e.target.value)}
                               />
                               <span>{optionLetter} {optionText}</span>
                             </label>
@@ -793,8 +844,8 @@ export default function DoExercise() {
                         <input
                           type="text"
                           placeholder="Nhập câu trả lời..."
-                          value={answers[q.id] || ''}
-                          onChange={(e) => handleAnswerChange(q.id, e.target.value)}
+                          value={answers[uniqueQuestionId] || ''}
+                          onChange={(e) => handleAnswerChange(uniqueQuestionId, e.target.value)}
                           className="text-input"
                         />
                       </div>
@@ -805,20 +856,20 @@ export default function DoExercise() {
                         <label className="option-label">
                           <input
                             type="radio"
-                            name={`q${q.id}`}
+                            name={uniqueQuestionId}
                             value="True"
-                            checked={answers[q.id] === 'True'}
-                            onChange={(e) => handleAnswerChange(q.id, e.target.value)}
+                            checked={answers[uniqueQuestionId] === 'True'}
+                            onChange={(e) => handleAnswerChange(uniqueQuestionId, e.target.value)}
                           />
                           <span>✓ True (Đúng)</span>
                         </label>
                         <label className="option-label">
                           <input
                             type="radio"
-                            name={`q${q.id}`}
+                            name={uniqueQuestionId}
                             value="False"
-                            checked={answers[q.id] === 'False'}
-                            onChange={(e) => handleAnswerChange(q.id, e.target.value)}
+                            checked={answers[uniqueQuestionId] === 'False'}
+                            onChange={(e) => handleAnswerChange(uniqueQuestionId, e.target.value)}
                           />
                           <span>✗ False (Sai)</span>
                         </label>
@@ -828,30 +879,33 @@ export default function DoExercise() {
                     {q.type === 'matching' && q.pairs && (
                       <div className="matching-container">
                         <p className="matching-instruction">Ghép các cặp sau cho đúng:</p>
-                        {q.pairs.map((pair, pairIdx) => (
-                          <div key={pairIdx} className="matching-pair">
-                            <div className="match-left">{pair.left}</div>
-                            <div className="match-arrow">→</div>
-                            <select
-                              className="match-select"
-                              value={answers[q.id]?.[pairIdx] || ''}
-                              onChange={(e) => {
-                                const newMatching = answers[q.id] || {};
-                                newMatching[pairIdx] = e.target.value;
-                                handleAnswerChange(q.id, { ...newMatching });
-                              }}
-                            >
-                              <option value="">-- Chọn --</option>
-                              {q.pairs.map((p, i) => (
-                                <option key={i} value={p.right}>{p.right}</option>
-                              ))}
-                            </select>
-                          </div>
-                        ))}
+                        {q.pairs.map((pair, pairIdx) => {
+                          const currentMatching = typeof answers[uniqueQuestionId] === 'object' && answers[uniqueQuestionId] !== null 
+                            ? answers[uniqueQuestionId] 
+                            : {};
+                          
+                          return (
+                            <div key={pairIdx} className="matching-pair">
+                              <div className="match-left">{pair.left}</div>
+                              <div className="match-arrow">→</div>
+                              <select
+                                className="match-select"
+                                value={currentMatching[pairIdx] || ''}
+                                onChange={(e) => handleMatchingChange(uniqueQuestionId, pairIdx, e.target.value)}
+                              >
+                                <option value="">-- Chọn --</option>
+                                {q.pairs.map((p, i) => (
+                                  <option key={i} value={p.right}>{p.right}</option>
+                                ))}
+                              </select>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -1033,7 +1087,7 @@ export default function DoExercise() {
                       <label key={i} className="option-label">
                         <input
                           type="radio"
-                          name={`q${q.id}`}
+                          name={uniqueQuestionId}
                           value={opt[0]}
                           checked={answers[q.id] === opt[0]}
                           onChange={(e) => handleAnswerChange(q.id, e.target.value)}
@@ -1059,7 +1113,7 @@ export default function DoExercise() {
                     <label className="tf-option">
                       <input
                         type="radio"
-                        name={`q${q.id}`}
+                        name={uniqueQuestionId}
                         value="true"
                         checked={answers[q.id] === 'true'}
                         onChange={(e) => handleAnswerChange(q.id, e.target.value)}
@@ -1070,7 +1124,7 @@ export default function DoExercise() {
                     <label className="tf-option">
                       <input
                         type="radio"
-                        name={`q${q.id}`}
+                        name={uniqueQuestionId}
                         value="false"
                         checked={answers[q.id] === 'false'}
                         onChange={(e) => handleAnswerChange(q.id, e.target.value)}
@@ -1194,7 +1248,7 @@ export default function DoExercise() {
                         <label key={i} className="option-label">
                           <input
                             type="radio"
-                            name={`q${q.id}`}
+                            name={uniqueQuestionId}
                             value={opt[0]}
                             checked={answers[q.id] === opt[0]}
                             onChange={(e) => handleAnswerChange(q.id, e.target.value)}
@@ -1393,7 +1447,7 @@ export default function DoExercise() {
                 <h4>✍️ Writing assessment</h4>
                 <ul>
                   {Object.entries(submission.rubrics_scores.writing_assessment).map(([k, v]) => (
-                    <li key={k}><strong>{k}:</strong> {String(v)}</li>
+                    <li key={k}><strong>{k}:</strong> {safeRenderValue(v)}</li>
                   ))}
                 </ul>
                 {submission.rubrics_scores.word_count != null && (
@@ -1424,7 +1478,7 @@ export default function DoExercise() {
                 <h4>🗣️ Speaking assessment</h4>
                 <ul>
                   {Object.entries(submission.rubrics_scores.speaking_assessment).map(([k, v]) => (
-                    <li key={k}><strong>{k}:</strong> {String(v)}</li>
+                    <li key={k}><strong>{k}:</strong> {safeRenderValue(v)}</li>
                   ))}
                 </ul>
                 {submission.rubrics_scores.recognized_text && (
@@ -1448,7 +1502,7 @@ export default function DoExercise() {
                     <li key={qid}>
                       <strong>Câu {qid}:</strong> {res.correct ? 'Đúng' : 'Sai'}
                       {res.student_answer != null && (
-                        <> — Trả lời: {String(res.student_answer)}{res.correct_answer != null ? ` (Đúng: ${String(res.correct_answer)})` : ''}</>
+                        <> — Trả lời: {safeRenderValue(res.student_answer)}{res.correct_answer != null ? ` (Đúng: ${safeRenderValue(res.correct_answer)})` : ''}</>
                       )}
                       {res.earned != null && res.points != null && (
                         <> — Điểm: {res.earned}/{res.points}</>
@@ -1484,11 +1538,56 @@ export default function DoExercise() {
             <div className="submission-answers">
               <h4>Câu trả lời:</h4>
               <ul>
-                {Object.entries(submission.answers).map(([qId, answer]) => (
-                  <li key={qId}>
-                    <strong>Câu {qId}:</strong> {answer}
-                  </li>
-                ))}
+                {Object.entries(submission.answers).map(([qId, answer]) => {
+                  // Try to find the question in exercise content to get pairs info
+                  let questionData = null;
+                  const exerciseContent = exercise.content || {};
+                  
+                  // For comprehensive test, check all sections
+                  if (exerciseContent.type === 'comprehensive_test') {
+                    const allQuestions = [
+                      ...(exerciseContent.listening?.questions || []),
+                      ...(exerciseContent.reading?.questions || [])
+                    ];
+                    questionData = allQuestions.find(q => String(q.id) === String(qId));
+                  } else {
+                    // For single skill exercises
+                    const questions = exerciseContent.questions || [];
+                    questionData = questions.find(q => String(q.id) === String(qId));
+                  }
+                  
+                  // Check if answer is a matching question (object with numeric keys)
+                  const isMatchingAnswer = typeof answer === 'object' && 
+                    answer !== null && 
+                    !Array.isArray(answer) &&
+                    Object.keys(answer).every(k => !isNaN(k));
+                  
+                  return (
+                    <li key={qId}>
+                      <strong>Câu {qId}:</strong>{' '}
+                      {isMatchingAnswer && questionData?.pairs ? (
+                        <ul style={{ marginTop: '5px', paddingLeft: '20px' }}>
+                          {Object.entries(answer).map(([idx, selectedRight]) => {
+                            const pair = questionData.pairs[parseInt(idx)];
+                            return (
+                              <li key={idx}>
+                                {pair?.left || `Item ${parseInt(idx) + 1}`} → {selectedRight}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      ) : isMatchingAnswer ? (
+                        <ul style={{ marginTop: '5px', paddingLeft: '20px' }}>
+                          {Object.entries(answer).map(([idx, val]) => (
+                            <li key={idx}>Cặp {parseInt(idx) + 1} → {val}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        safeRenderValue(answer)
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           )}
@@ -1567,4 +1666,5 @@ export default function DoExercise() {
     </div>
   );
 }
+
 
