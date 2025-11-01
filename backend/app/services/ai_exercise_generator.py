@@ -6,6 +6,7 @@ from openai import OpenAI
 import os
 import json
 import uuid
+import time
 from typing import Dict, List, Optional
 import azure.cognitiveservices.speech as speechsdk
 
@@ -68,6 +69,7 @@ class AIExerciseGenerator:
         if not self.api_key:
             raise ValueError("OPENAI_API_KEY not found in environment variables")
         self.client = OpenAI(api_key=self.api_key)
+        self.model = os.getenv("OPENAI_MODEL", "gpt-4o")  # Default to gpt-4o if not set
         
         # Azure Speech Config
         self.speech_key = os.getenv("AZURE_SPEECH_KEY")
@@ -318,44 +320,69 @@ Chỉ trả về JSON, không có text khác."""
 
         try:
             # Calculate max tokens based on number of questions
-            # Reduce token count: Base 1500 + 200 per question per skill = up to 5000 tokens
-            max_tokens = min(1500 + (questions_per_skill * 200), 5000)
+            # Increased significantly for longer transcripts: Base 3000 + 400 per question per skill
+            # With 10 questions per skill: 3000 + 4000 = 7000 tokens (within GPT-4 limit)
+            max_tokens = min(3000 + (questions_per_skill * 400), 8000)
             print(f"[AI Generate] Full Exam - Grade {grade}, Semester {semester}, {questions_per_skill} Q/skill")
-            print(f"[AI Generate] Using max_tokens={max_tokens}, timeout=300s")
+            print(f"[AI Generate] Using model={self.model}, max_tokens={max_tokens}, timeout=300s")
             
-            # Try GPT-4 first, fallback to GPT-3.5-turbo if quota exceeded
+            # Determine if model supports max_tokens or max_completion_tokens
+            # GPT-4o and newer models use max_completion_tokens
+            use_max_completion_tokens = any(x in self.model.lower() for x in ['gpt-4o', 'gpt-5', 'o1'])
+            
+            # Some models (like gpt-5-nano, o1) only support temperature=1
+            temperature = 1 if any(x in self.model.lower() for x in ['gpt-5', 'o1']) else 0.7
+            
+            # Some models (like o1) don't support system messages
+            use_system_message = not any(x in self.model.lower() for x in ['o1', 'gpt-5'])
+            
+            # Prepare messages
+            if use_system_message:
+                messages = [
+                    {"role": "system", "content": "You are an expert English teacher in Vietnam, following the 2018 curriculum. Generate well-structured exams with complete JSON format. Ensure all JSON is valid with proper commas and quotes."},
+                    {"role": "user", "content": prompt}
+                ]
+            else:
+                # Merge system message into user prompt for models that don't support it
+                combined_prompt = "You are an expert English teacher in Vietnam, following the 2018 curriculum. Generate well-structured exams with complete JSON format. Ensure all JSON is valid with proper commas and quotes.\n\n" + prompt
+                messages = [{"role": "user", "content": combined_prompt}]
+            
+            # Prepare common parameters
+            common_params = {
+                "model": self.model,
+                "messages": messages,
+                "temperature": temperature,
+                "timeout": 300  # 5 minutes timeout
+            }
+            
+            # Add the appropriate token parameter
+            if use_max_completion_tokens:
+                common_params["max_completion_tokens"] = max_tokens
+            else:
+                common_params["max_tokens"] = max_tokens
+            
+            # Try configured model first
             try:
-                model = "gpt-4"
-                print(f"[AI Generate] Attempting with {model}")
-                response = self.client.chat.completions.create(
-                    model=model,
-                    messages=[
-                        {"role": "system", "content": "You are an expert English teacher in Vietnam, following the 2018 curriculum. Generate concise and well-structured exams."},
-                        {"role": "user", "content": prompt}
-                    ],
-                    temperature=0.7,
-                    max_tokens=max_tokens,
-                    timeout=300  # 5 minutes timeout
-                )
+                print(f"[AI Generate] Attempting with {self.model} (using {'max_completion_tokens' if use_max_completion_tokens else 'max_tokens'})")
+                response = self.client.chat.completions.create(**common_params)
             except Exception as e:
                 if "429" in str(e) or "quota" in str(e).lower():
-                    print(f"[AI Generate] GPT-4 quota exceeded, trying GPT-3.5-turbo...")
-                    model = "gpt-3.5-turbo"
-                    response = self.client.chat.completions.create(
-                        model=model,
-                        messages=[
-                            {"role": "system", "content": "You are an expert English teacher in Vietnam, following the 2018 curriculum. Generate concise and well-structured exams."},
-                            {"role": "user", "content": prompt}
-                        ],
-                        temperature=0.7,
-                        max_tokens=max_tokens,
-                        timeout=300
-                    )
+                    print(f"[AI Generate] {self.model} quota exceeded, trying gpt-3.5-turbo as fallback...")
+                    fallback_model = "gpt-3.5-turbo"
+                    fallback_params = common_params.copy()
+                    fallback_params["model"] = fallback_model
+                    # gpt-3.5-turbo uses max_tokens
+                    if "max_completion_tokens" in fallback_params:
+                        fallback_params["max_tokens"] = fallback_params.pop("max_completion_tokens")
+                    response = self.client.chat.completions.create(**fallback_params)
                 else:
                     raise
             
             # Extract JSON from response
             content = response.choices[0].message.content.strip()
+            
+            # Log raw response for debugging
+            print(f"[AI Generate] Raw response length: {len(content)} chars")
             
             # Remove markdown code blocks if present
             if content.startswith("```json"):
@@ -366,8 +393,51 @@ Chỉ trả về JSON, không có text khác."""
                 content = content[:-3]
             content = content.strip()
             
-            # Parse JSON
-            result = json.loads(content)
+            # Parse JSON with better error handling
+            try:
+                result = json.loads(content)
+            except json.JSONDecodeError as json_err:
+                print(f"[AI Generate] ❌ JSON Parse Error: {json_err}")
+                print(f"[AI Generate] Error at position {json_err.pos}")
+                print(f"[AI Generate] Context around error:")
+                start = max(0, json_err.pos - 150)
+                end = min(len(content), json_err.pos + 150)
+                print(f"...{content[start:end]}...")
+                
+                # Try to fix common JSON issues
+                print("[AI Generate] Attempting to fix common JSON errors...")
+                
+                # Fix common issues:
+                # 1. Unescaped quotes and newlines in strings
+                # 2. Trailing commas
+                # 3. Missing commas
+                import re
+                
+                content_fixed = content
+                
+                # Replace literal newlines within strings with \n
+                content_fixed = re.sub(r'(?<!\\)\n(?=[^}{\[\]]*["}])', r'\\n', content_fixed)
+                
+                # Fix unescaped quotes (but be careful not to break valid JSON)
+                # Remove any trailing commas before closing brackets/braces
+                content_fixed = re.sub(r',(\s*[}\]])', r'\1', content_fixed)
+                
+                try:
+                    result = json.loads(content_fixed)
+                    print("[AI Generate] ✅ Fixed JSON successfully after error recovery")
+                except Exception as fix_err:
+                    print(f"[AI Generate] ❌ Could not auto-fix JSON: {fix_err}")
+                    # Save problematic content to file for debugging
+                    error_file = f"/app/logs/json_error_{int(time.time())}.txt"
+                    try:
+                        with open(error_file, 'w', encoding='utf-8') as f:
+                            f.write(f"Original error: {json_err}\n\n")
+                            f.write(f"Content:\n{content}\n\n")
+                            f.write(f"Fixed attempt:\n{content_fixed}")
+                        print(f"[AI Generate] Error details saved to {error_file}")
+                    except:
+                        pass
+                    raise json_err
             
             # Transform comprehensive test structure
             # GPT returns: {"questions": [{"section": "listening", ...}, {"section": "reading", ...}]}
@@ -513,7 +583,7 @@ Trả về JSON:
         
         try:
             response = self.client.chat.completions.create(
-                model="gpt-4",
+                model=self.model,
                 messages=[
                     {"role": "system", "content": "You are an expert English teacher in Vietnam, following the 2018 curriculum."},
                     {"role": "user", "content": prompt}
@@ -653,7 +723,7 @@ Trả về JSON:
         
         try:
             response = self.client.chat.completions.create(
-                model="gpt-4",
+                model=self.model,
                 messages=[
                     {"role": "system", "content": "You are an expert English teacher in Vietnam."},
                     {"role": "user", "content": prompt}
