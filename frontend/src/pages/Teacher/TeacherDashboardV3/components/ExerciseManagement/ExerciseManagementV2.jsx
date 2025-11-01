@@ -8,6 +8,7 @@ import ExerciseListTable from './ExerciseListTable';
 import Toast from '../../../../../components/Toast/Toast';
 import useToast from '../../../../../hooks/useToast';
 import logger from '../../../../../utils/logger';
+import useDebounce from '../../../../../hooks/useDebounce';
 
 export default function ExerciseManagementV2() {
   const { toast, showSuccess, showError, showWarning, hideToast } = useToast();
@@ -22,6 +23,9 @@ export default function ExerciseManagementV2() {
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('cards'); // 'cards' | 'table'
+
+  // Debounced search term (300ms delay)
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   useEffect(() => {
     fetchClasses();
@@ -190,11 +194,11 @@ export default function ExerciseManagementV2() {
     return colors[skill] || 'bg-gray-100 text-gray-800';
   };
 
-  // Filter logic
+  // Filter logic with debounced search
   const filteredExercises = exercises.filter(exercise => {
-    const matchesSearch = !searchTerm || 
-      exercise.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      exercise.class.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = !debouncedSearchTerm || 
+      exercise.title.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      exercise.class.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
     const matchesType = !filterType || exercise.type === filterType;
     const matchesClass = !filterClass || exercise.class === filterClass;
     const matchesStatus = !filterStatus || exercise.status === filterStatus;

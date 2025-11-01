@@ -13,6 +13,7 @@ import './QuestionBankV2.css';
 import Toast from '../../../../components/Toast/Toast';
 import useToast from '../../../../hooks/useToast';
 import logger from '../../../../utils/logger';
+import useDebounce from '../../../../hooks/useDebounce';
 
 export default function QuestionBankV2() {
   const { toast, showSuccess, showError, showWarning, hideToast } = useToast();
@@ -30,6 +31,9 @@ export default function QuestionBankV2() {
   const [filterType, setFilterType] = useState('');
   const [filterDifficulty, setFilterDifficulty] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Debounced search term (delays filtering until user stops typing)
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
   
   // Loading and animation states
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
@@ -148,17 +152,18 @@ export default function QuestionBankV2() {
   }, [bulkActionMode, questions, showAddModal, editingQuestion]);
 
   // Memoized filter logic for better performance
+  // Using debounced search term to reduce re-renders while typing
   const filteredQuestions = useMemo(() => {
     return questions.filter(q => {
       const matchesSkill = !filterSkill || q.skill_type === filterSkill;
       const matchesType = !filterType || q.question_type === filterType;
       const matchesDifficulty = !filterDifficulty || q.difficulty === filterDifficulty;
-      const matchesSearch = !searchTerm || 
-        q.question_text.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (q.topic && q.topic.toLowerCase().includes(searchTerm.toLowerCase()));
+      const matchesSearch = !debouncedSearchTerm || 
+        q.question_text.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        (q.topic && q.topic.toLowerCase().includes(debouncedSearchTerm.toLowerCase()));
       return matchesSkill && matchesType && matchesDifficulty && matchesSearch;
     });
-  }, [questions, filterSkill, filterType, filterDifficulty, searchTerm]);
+  }, [questions, filterSkill, filterType, filterDifficulty, debouncedSearchTerm]);
   
   // Memoized stats for better performance
   const stats = useMemo(() => ({
