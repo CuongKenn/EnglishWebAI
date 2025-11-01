@@ -109,7 +109,17 @@ class AIGradingService:
     
     async def grade_true_false(self, question: Dict, student_answer: str) -> Dict:
         """Grade true/false question"""
-        correct = str(question.get("correct_answer", "")).strip().lower()
+        correct_raw = question.get("correct_answer", "")
+        
+        # Debug: log raw values
+        print(f"[GRADE_TF] ===== START =====")
+        print(f"[GRADE_TF] Question ID: {question.get('id')}")
+        print(f"[GRADE_TF] Correct answer RAW: '{correct_raw}' (type: {type(correct_raw)})")
+        print(f"[GRADE_TF] Student answer RAW: '{student_answer}' (type: {type(student_answer)})")
+        
+        # Convert to string and normalize
+        correct = str(correct_raw).strip().lower()
+        print(f"[GRADE_TF] Correct answer normalized: '{correct}'")
         
         # Handle None/empty values
         if student_answer is None or student_answer == "":
@@ -121,6 +131,7 @@ class AIGradingService:
             }
         
         student = str(student_answer).strip().lower()
+        print(f"[GRADE_TF] Student answer normalized: '{student}'")
         
         # Normalize true values
         true_values = ['true', '1', 'yes', 'đúng', 't', 'y']
@@ -134,6 +145,7 @@ class AIGradingService:
             student_normalized = 'false'
         else:
             # Invalid answer
+            print(f"[GRADE_TF] ERROR: Invalid student answer '{student}' not in accepted values")
             return {
                 "is_correct": False,
                 "points_earned": 0,
@@ -147,7 +159,9 @@ class AIGradingService:
         is_correct = student_normalized == correct_normalized
         points_earned = question.get("points", 0.25) if is_correct else 0
         
-        print(f"[GRADE_TF] Q{question.get('id')}: Student='{student}' ({student_normalized}) vs Correct='{correct}' ({correct_normalized}) => {is_correct}")
+        print(f"[GRADE_TF] Student normalized: '{student_normalized}' vs Correct normalized: '{correct_normalized}'")
+        print(f"[GRADE_TF] Result: {is_correct} - Points: {points_earned}/{question.get('points', 0.25)}")
+        print(f"[GRADE_TF] ===== END =====")
         
         return {
             "is_correct": is_correct,
