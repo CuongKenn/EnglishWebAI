@@ -157,15 +157,19 @@ class AIGradingService:
         }
     
     async def grade_matching(self, question: Dict, student_answer: Dict) -> Dict:
-        """Grade matching question"""
+        """Grade matching question - supports both index-based and content-based keys"""
         correct_pairs = question.get("correct_answer", {})
+        pairs = question.get("pairs", [])  # Get pairs array for index-based matching
         
+        print(f"[GRADE_MATCHING] ===== START =====")
         print(f"[GRADE_MATCHING] Question ID: {question.get('id')}")
-        print(f"[GRADE_MATCHING] Correct pairs: {correct_pairs}")
-        print(f"[GRADE_MATCHING] Student answer: {student_answer}")
+        print(f"[GRADE_MATCHING] Correct pairs: {correct_pairs} (type: {type(correct_pairs)})")
+        print(f"[GRADE_MATCHING] Pairs array: {pairs}")
+        print(f"[GRADE_MATCHING] Student answer: {student_answer} (type: {type(student_answer)})")
         
         # Handle None/empty values
         if not student_answer or not isinstance(student_answer, dict):
+            print(f"[GRADE_MATCHING] ERROR: Invalid student answer - not dict or empty")
             return {
                 "is_correct": False,
                 "points_earned": 0,
@@ -174,31 +178,80 @@ class AIGradingService:
             }
         
         correct_count = 0
-        total_pairs = len(correct_pairs)
+        total_pairs = 0
         
-        if total_pairs == 0:
-            return {
-                "is_correct": False,
-                "points_earned": 0,
-                "max_points": question.get("points", 0.25),
-                "feedback": "Câu hỏi không có đáp án đúng"
-            }
+        # Determine matching format: index-based (0,1,2...) or content-based (left values)
+        # Check if correct_answer uses numeric string keys or if pairs array exists
+        is_index_based = False
+        if pairs and len(pairs) > 0:
+            # If pairs array exists, use index-based matching
+            is_index_based = True
+            total_pairs = len(pairs)
+            print(f"[GRADE_MATCHING] Using INDEX-BASED matching with {total_pairs} pairs")
+            
+            for idx, pair in enumerate(pairs):
+                if not isinstance(pair, dict) or 'left' not in pair or 'right' not in pair:
+                    print(f"[GRADE_MATCHING] WARNING: Invalid pair format at index {idx}: {pair}")
+                    continue
+                
+                correct_right = pair['right']
+                
+                # Try multiple key formats for student answer
+                student_right = None
+                for key_format in [idx, str(idx), int(idx) if isinstance(idx, str) and idx.isdigit() else None]:
+                    if key_format is not None and key_format in student_answer:
+                        student_right = student_answer[key_format]
+                        break
+                
+                # Normalize and compare
+                student_right_norm = str(student_right).strip() if student_right else ""
+                correct_right_norm = str(correct_right).strip()
+                is_match = student_right_norm == correct_right_norm
+                
+                print(f"[GRADE_MATCHING] Pair {idx} '{pair['left']}' → student: '{student_right_norm}' vs correct: '{correct_right_norm}' => {is_match}")
+                
+                if is_match:
+                    correct_count += 1
         
-        for left, right in correct_pairs.items():
-            student_right = student_answer.get(left)
-            # Normalize both for comparison
-            student_right_norm = str(student_right).strip() if student_right else ""
-            right_norm = str(right).strip() if right else ""
-            is_match = student_right_norm == right_norm
-            print(f"[GRADE_MATCHING] Checking '{left}': student='{student_right_norm}' vs correct='{right_norm}' => {is_match}")
-            if is_match:
-                correct_count += 1
+        else:
+            # Fallback to content-based matching (old format)
+            total_pairs = len(correct_pairs)
+            print(f"[GRADE_MATCHING] Using CONTENT-BASED matching with {total_pairs} pairs")
+            
+            if total_pairs == 0:
+                print(f"[GRADE_MATCHING] ERROR: No correct pairs defined in question")
+                return {
+                    "is_correct": False,
+                    "points_earned": 0,
+                    "max_points": question.get("points", 0.25),
+                    "feedback": "Câu hỏi không có đáp án đúng"
+                }
+            
+            print(f"[GRADE_MATCHING] Correct answer keys: {list(correct_pairs.keys())}")
+            print(f"[GRADE_MATCHING] Student answer keys: {list(student_answer.keys())}")
+            
+            for left, right in correct_pairs.items():
+                student_right = student_answer.get(left)
+                # Also try string/int conversion of key
+                if student_right is None and isinstance(left, int):
+                    student_right = student_answer.get(str(left))
+                elif student_right is None and isinstance(left, str) and left.isdigit():
+                    student_right = student_answer.get(int(left))
+                
+                # Normalize both for comparison
+                student_right_norm = str(student_right).strip() if student_right else ""
+                right_norm = str(right).strip() if right else ""
+                is_match = student_right_norm == right_norm
+                print(f"[GRADE_MATCHING] Checking '{left}': student='{student_right_norm}' vs correct='{right_norm}' => {is_match}")
+                if is_match:
+                    correct_count += 1
         
         score_percentage = (correct_count / total_pairs * 100) if total_pairs > 0 else 0
         max_points = question.get("points", 0.25)
-        points_earned = max_points * (correct_count / total_pairs)  # Fixed: use direct ratio instead of percentage/100
+        points_earned = max_points * (correct_count / total_pairs) if total_pairs > 0 else 0
         
         print(f"[GRADE_MATCHING] Result: {correct_count}/{total_pairs} correct, {points_earned}/{max_points} points")
+        print(f"[GRADE_MATCHING] ===== END =====")
         
         return {
             "is_correct": correct_count == total_pairs,
