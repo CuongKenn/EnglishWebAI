@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   BookOpen, Users, TrendingUp, Plus, Eye, Edit, Trash2,
   Search, Upload, X, ChevronRight, Award, Clock, Filter,
@@ -89,16 +89,16 @@ const CoursesManagement = () => {
     return courses.filter(c => c.name?.toLowerCase().includes(query));
   }, [courses, searchQuery]);
 
-  // Stats
-  const stats = {
+  // Stats - memoized computation
+  const stats = useMemo(() => ({
     total: courses.length,
     active: courses.filter(c => c.status !== 'locked').length,
     completed: courses.filter(c => c.status === 'completed').length,
     totalStudents: courses.reduce((sum, c) => sum + (c.totalUnits || 0), 0),
-  };
+  }), [courses]);
 
   // Reset form
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setFormData({
       title: '',
       skill: 'listening',
@@ -111,10 +111,10 @@ const CoursesManagement = () => {
       thumbnailPreview: null,
     });
     setMessage(null);
-  };
+  }, []);
 
   // Handle thumbnail upload
-  const handleThumbnailChange = (e) => {
+  const handleThumbnailChange = useCallback((e) => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 2 * 1024 * 1024) {
@@ -123,15 +123,15 @@ const CoursesManagement = () => {
       }
       const reader = new FileReader();
       reader.onloadend = () => {
-        setFormData({
-          ...formData,
+        setFormData(prev => ({
+          ...prev,
           thumbnailFile: file,
           thumbnailPreview: reader.result,
-        });
+        }));
       };
       reader.readAsDataURL(file);
     }
-  };
+  }, []);
 
   // Create course
   const handleCreateCourse = async (e) => {
