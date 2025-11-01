@@ -15,63 +15,29 @@ import csv
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.models.user import User, UserRole
-from app.models.weekly_assessment import WeeklyAssessment
+from app.models.weekly_assessment import WeeklyAssessment, WeeklySubmission
 from app.models.classroom import Classroom
+from app.models.enrollment import Enrollment
 from app.models.submission import Submission
 from app.models.exercise import Exercise
 from app.services.openai_service import openai_service
+from app.services.ai_grading_service import AIGradingService
 
 router = APIRouter(prefix="/api/v1/weekly-assessments", tags=["Weekly Assessments"])
 
 
-# ============= Schemas =============
-class WeeklyAssessmentCreate(BaseModel):
-    class_id: int
-    week_number: int
-    skill_type: str  # reading, writing, listening, speaking
-    title: str
-    description: Optional[str] = None
-    content: Optional[dict] = None
-    rubrics: Optional[dict] = None
-    max_score: Optional[float] = None
-    duration: Optional[int] = None
-
-
-class WeeklyAssessmentGenerate(BaseModel):
-    class_id: int
-    week_number: int
-    skill_type: str
-    grade_level: int
-    unit: Optional[str] = None
-    difficulty_level: str = "medium"
-
-
-class WeeklyAssessmentResponse(BaseModel):
-    id: int
-    class_id: int
-    teacher_id: int
-    week_number: int
-    skill_type: str
-    title: str
-    description: Optional[str]
-    content: Optional[dict]
-    rubrics: Optional[dict]
-    max_score: Optional[float]
-    duration: Optional[int]
-    ai_generated: bool
-    is_active: bool
-    created_at: datetime
-
-    class Config:
-        from_attributes = True
-
-
-class ErrorAnalysisExportRequest(BaseModel):
-    class_id: int
-    student_id: Optional[int] = None
-    skill_type: Optional[str] = None
-    week_number: Optional[int] = None
-    format: str = "csv"  # csv, json, excel
+# Import schemas from schemas module
+from app.schemas.weekly_assessment import (
+    WeeklyAssessmentCreate,
+    WeeklyAssessmentGenerate,
+    WeeklyAssessmentResponse,
+    WeeklySubmissionCreate,
+    WeeklySubmissionUpdate,
+    WeeklySubmissionSubmit,
+    WeeklySubmissionGrade,
+    WeeklySubmissionResponse,
+    ErrorAnalysisExportRequest
+)
 
 
 # ============= Helper Functions =============
@@ -453,4 +419,263 @@ async def get_class_assessment_summary(
         "total_assessments": len(assessments),
         "weeks": summary
     }
+
+
+# ============= Student Submission Endpoints =============
+@router.post("/submissions/start", response_model=WeeklySubmissionResponse)
+async def start_weekly_submission(
+    assessment_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Start a weekly assessment (create submission)"""
+    if current_user.role != UserRole.USER:
+        raise HTTPException(status_code=403, detail="Chỉ học sinh mới có thể làm bài")
+    
+    assessment = db.query(WeeklyAssessment).filter(WeeklyAssessment.id == assessment_id).first()
+    
+    if not assessment:
+        raise HTTPException(status_code=404, detail="Không tìm thấy phiếu đánh giá")
+    
+    # Check if student is enrolled
+    enrollment = db.query(Enrollment).filter(
+        Enrollment.class_id == assessment.class_id,
+        Enrollment.user_id == current_user.id
+    ).first()
+    
+    if not enrollment:
+        raise HTTPException(status_code=403, detail="Bạn không thuộc lớp này")
+    
+    # Check if already started
+    existing = db.query(WeeklySubmission).filter(
+        WeeklySubmission.assessment_id == assessment_id,
+        WeeklySubmission.student_id == current_user.id
+    ).first()
+    
+    if existing:
+        return existing
+    
+    # Create new submission
+    submission = WeeklySubmission(
+        assessment_id=assessment_id,
+        student_id=current_user.id,
+        answers={},
+        status="in_progress"
+    )
+    
+    db.add(submission)
+    db.commit()
+    db.refresh(submission)
+    
+    return submission
+
+
+@router.put("/submissions/{submission_id}", response_model=WeeklySubmissionResponse)
+async def update_weekly_submission(
+    submission_id: int,
+    update_data: WeeklySubmissionUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Update weekly submission (save answers)"""
+    submission = db.query(WeeklySubmission).filter(
+        WeeklySubmission.id == submission_id
+    ).first()
+    
+    if not submission:
+        raise HTTPException(status_code=404, detail="Không tìm thấy bài làm")
+    
+    if submission.student_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Không có quyền chỉnh sửa")
+    
+    if submission.status == "submitted":
+        raise HTTPException(status_code=400, detail="Bài đã nộp, không thể chỉnh sửa")
+    
+    # Update answers
+    submission.answers = update_data.answers
+    submission.status = update_data.status or "in_progress"
+    
+    db.commit()
+    db.refresh(submission)
+    
+    return submission
+
+
+@router.post("/submissions/{submission_id}/submit", response_model=WeeklySubmissionResponse)
+async def submit_weekly_assessment(
+    submission_id: int,
+    submit_data: WeeklySubmissionSubmit,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Submit weekly assessment for grading"""
+    submission = db.query(WeeklySubmission).filter(
+        WeeklySubmission.id == submission_id
+    ).first()
+    
+    if not submission:
+        raise HTTPException(status_code=404, detail="Không tìm thấy bài làm")
+    
+    if submission.student_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Không có quyền nộp bài")
+    
+    if submission.status == "submitted":
+        raise HTTPException(status_code=400, detail="Bài đã được nộp")
+    
+    # Get assessment details
+    assessment = db.query(WeeklyAssessment).filter(
+        WeeklyAssessment.id == submission.assessment_id
+    ).first()
+    
+    if not assessment:
+        raise HTTPException(status_code=404, detail="Không tìm thấy phiếu đánh giá")
+    
+    # Update submission
+    submission.answers = submit_data.answers
+    submission.status = "submitted"
+    submission.submitted_at = datetime.utcnow()
+    
+    # Auto-grade if possible
+    try:
+        await _auto_grade_weekly_submission(submission, assessment, db)
+    except Exception as e:
+        print(f"[SUBMIT_WEEKLY] Auto-grade error: {e}")
+    
+    db.commit()
+    db.refresh(submission)
+    
+    return submission
+
+
+@router.get("/submissions/my/{assessment_id}", response_model=WeeklySubmissionResponse)
+async def get_my_weekly_submission(
+    assessment_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get student's own submission for a weekly assessment"""
+    submission = db.query(WeeklySubmission).filter(
+        WeeklySubmission.assessment_id == assessment_id,
+        WeeklySubmission.student_id == current_user.id
+    ).first()
+    
+    if not submission:
+        raise HTTPException(status_code=404, detail="Chưa có bài làm")
+    
+    return submission
+
+
+@router.get("/submissions/assessment/{assessment_id}", response_model=List[WeeklySubmissionResponse])
+async def get_assessment_submissions(
+    assessment_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get all submissions for an assessment (teacher only)"""
+    assessment = db.query(WeeklyAssessment).filter(
+        WeeklyAssessment.id == assessment_id
+    ).first()
+    
+    if not assessment:
+        raise HTTPException(status_code=404, detail="Không tìm thấy phiếu đánh giá")
+    
+    _ensure_teacher_access(db, current_user, assessment.class_id)
+    
+    submissions = db.query(WeeklySubmission).filter(
+        WeeklySubmission.assessment_id == assessment_id
+    ).order_by(WeeklySubmission.submitted_at.desc()).all()
+    
+    return submissions
+
+
+@router.post("/submissions/{submission_id}/grade", response_model=WeeklySubmissionResponse)
+async def grade_weekly_submission(
+    submission_id: int,
+    grade_data: WeeklySubmissionGrade,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Grade weekly submission (teacher only)"""
+    submission = db.query(WeeklySubmission).filter(
+        WeeklySubmission.id == submission_id
+    ).first()
+    
+    if not submission:
+        raise HTTPException(status_code=404, detail="Không tìm thấy bài làm")
+    
+    assessment = db.query(WeeklyAssessment).filter(
+        WeeklyAssessment.id == submission.assessment_id
+    ).first()
+    
+    _ensure_teacher_access(db, current_user, assessment.class_id)
+    
+    # Update grade
+    submission.score = grade_data.score
+    submission.rubrics_scores = grade_data.rubrics_scores
+    submission.feedback = grade_data.feedback
+    submission.status = "graded"
+    submission.graded_at = datetime.utcnow()
+    
+    db.commit()
+    db.refresh(submission)
+    
+    return submission
+
+
+async def _auto_grade_weekly_submission(submission: WeeklySubmission, assessment: WeeklyAssessment, db: Session):
+    """Auto-grade weekly submission using AI"""
+    if not assessment.content:
+        return
+    
+    ai_grading = AIGradingService()
+    questions = assessment.content.get('questions', [])
+    student_answers = submission.answers or {}
+    
+    total_score = 0.0
+    max_score = assessment.max_score or 10.0
+    graded_results = {}
+    
+    for question in questions:
+        q_id = str(question.get('id', ''))
+        q_type = question.get('type', '')
+        q_points = float(question.get('points', 1.0))
+        correct_answer = question.get('correct_answer')
+        student_answer = student_answers.get(q_id, '')
+        
+        result = {'question_id': q_id, 'type': q_type, 'points': q_points}
+        
+        try:
+            if q_type == 'multiple_choice':
+                grade_result = await ai_grading.grade_multiple_choice(question, student_answer)
+            elif q_type == 'fill_blank':
+                grade_result = await ai_grading.grade_fill_blank(question, student_answer)
+            elif q_type == 'true_false':
+                grade_result = await ai_grading.grade_true_false(question, student_answer)
+            elif q_type == 'matching':
+                if isinstance(student_answer, str):
+                    try:
+                        student_answer = json.loads(student_answer) if student_answer else {}
+                    except:
+                        student_answer = {}
+                grade_result = await ai_grading.grade_matching(question, student_answer)
+            else:
+                grade_result = {'is_correct': False, 'points_earned': 0, 'feedback': 'Unknown question type'}
+            
+            result.update(grade_result)
+            total_score += grade_result.get('points_earned', 0)
+            
+        except Exception as e:
+            print(f"[AUTO_GRADE_WEEKLY] Error grading Q{q_id}: {e}")
+            result['error'] = str(e)
+        
+        graded_results[q_id] = result
+    
+    # Update submission with results
+    submission.ai_score = round(total_score, 2)
+    submission.rubrics_scores = {
+        'auto_grade_results': graded_results,
+        'total_auto_score': round(total_score, 2),
+        'max_possible_score': max_score
+    }
+    submission.status = "graded"  # Mark as graded if all auto-graded
 

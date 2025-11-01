@@ -32,7 +32,8 @@ from app.models.question_bank import QuestionBankItem
 from app.models.question_bank_test import QuestionBankTest
 from app.models.lesson_plan import LessonPlan
 from app.models.worksheet import Worksheet
-from app.models.weekly_assessment import WeeklyAssessment
+from app.models.weekly_assessment import WeeklyAssessment, WeeklySubmission
+from app.models.enhanced_weekly_assessment import EnhancedWeeklyAssessment, EnhancedWeeklySubmission
 from app.models.exam_assessment import ExamAssessment, ExamSubmission
 
 __all__ = [
@@ -72,6 +73,9 @@ __all__ = [
     "LessonPlan",
     "Worksheet",
     "WeeklyAssessment",
+    "WeeklySubmission",
+    "EnhancedWeeklyAssessment",
+    "EnhancedWeeklySubmission",
     "ExamAssessment",
     "ExamSubmission",
 ]
