@@ -257,10 +257,32 @@ SubmissionGrading/
   - Created 4 basic components (150 lines)
   - Build tested and passing
   
+- ✅ Phase 2 Completed (Commit da15f3f)
+  - Created 5 skill-specific form components
+  - ListeningForm.jsx (4.3KB) - audio upload, transcript
+  - ReadingForm.jsx (4.1KB) - passage text/upload
+  - WritingForm.jsx (3.5KB) - prompt, instructions, word limits
+  - SpeakingForm.jsx (3.0KB) - prompt, time settings
+  - MidtermFinalForm.jsx (3.8KB) - comprehensive wrapper
+  - Total: ~600 lines extracted
+  - All components React.memo optimized
+  - Build tested and passing
+
+- ⏳ Phase 3 In Progress:
+  - QuestionList & QuestionEditor components
+  - AIGenerationPanel component
+  - ImportPanel component
+  
 - ⏳ Remaining Work:
-  - CreateExerciseModal: Skill forms, complex components, hooks, integration
+  - CreateExerciseModal: Complex components, hooks, integration
   - DoExercise: Full refactoring (2013 lines)
   - SubmissionGradingPage: Full refactoring (1804 lines)
+
+**Total Extracted So Far:**
+- Constants & Utils: ~380 lines
+- Basic Components (4): ~150 lines  
+- Skill Forms (5): ~600 lines
+- **Total: ~1,130 lines extracted from CreateExerciseModalComplete**
 
 ---
 
