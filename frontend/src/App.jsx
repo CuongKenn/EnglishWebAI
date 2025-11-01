@@ -3,6 +3,7 @@
 import React, { useState } from 'react'; // 1. Import useState
 import { Routes, Route, useNavigate, Navigate } from 'react-router-dom';
 import { ToastProvider } from './components/ui/Toast'; // Import Toast Provider
+import RouteErrorBoundary from './components/ErrorBoundary/RouteErrorBoundary'; // Import Route Error Boundary
 
 // Import Layout và các trang
 import Layout from './components/Layout/Layout';
@@ -215,7 +216,9 @@ function App() {
         path="/exercise/:exerciseId" 
         element={
           <ProtectedRoute isLoggedIn={isLoggedIn}>
-            <DoExercise />
+            <RouteErrorBoundary routeName="Exercise">
+              <DoExercise />
+            </RouteErrorBoundary>
           </ProtectedRoute>
         } 
       />
@@ -223,7 +226,9 @@ function App() {
         path="/exam/:examId" 
         element={
           <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
-            <TakeExam />
+            <RouteErrorBoundary routeName="Exam">
+              <TakeExam />
+            </RouteErrorBoundary>
           </Layout>
         } 
       />
@@ -356,7 +361,9 @@ function App() {
         path="/admin-dashboard/*"
         element={
           <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="admin">
-            <AdminDashboardV2 onLogout={handleLogout} />
+            <RouteErrorBoundary routeName="Admin Dashboard">
+              <AdminDashboardV2 onLogout={handleLogout} />
+            </RouteErrorBoundary>
           </ProtectedRoute>
         }
       />
@@ -366,7 +373,9 @@ function App() {
         path="/teacher-dashboard/*"
         element={
           <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="teacher">
-            <TeacherDashboardV3 onLogout={handleLogout} />
+            <RouteErrorBoundary routeName="Teacher Dashboard">
+              <TeacherDashboardV3 onLogout={handleLogout} />
+            </RouteErrorBoundary>
           </ProtectedRoute>
         }
       />
@@ -410,7 +419,9 @@ function App() {
         path="/parent-dashboard"
         element={
           <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="parent">
-            <ParentDashboardV2 />
+            <RouteErrorBoundary routeName="Parent Dashboard">
+              <ParentDashboardV2 />
+            </RouteErrorBoundary>
           </ProtectedRoute>
         }
       />
