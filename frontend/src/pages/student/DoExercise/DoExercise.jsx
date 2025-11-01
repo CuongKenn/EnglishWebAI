@@ -336,8 +336,9 @@ export default function DoExercise() {
           .join('; ');
         return pairs || JSON.stringify(value);
       }
-      // Otherwise stringify it
-      return JSON.stringify(value);
+      // If it's a complex nested object, render it as structured data
+      // Don't show raw JSON - it's confusing for users
+      return '[Dữ liệu phức tạp]';
     }
     return String(value);
   };
@@ -1687,7 +1688,56 @@ export default function DoExercise() {
           <div className="feedback-card">
             <h3>🤖 Phản hồi AI</h3>
             <div className="feedback-content">
-              {submission.ai_feedback}
+              {(() => {
+                // Try to parse if it's JSON, otherwise display as-is
+                try {
+                  const parsed = typeof submission.ai_feedback === 'string' && 
+                                 submission.ai_feedback.trim().startsWith('{') 
+                                 ? JSON.parse(submission.ai_feedback) 
+                                 : submission.ai_feedback;
+                  
+                  if (typeof parsed === 'object' && parsed !== null) {
+                    // Display structured feedback
+                    return (
+                      <div className="structured-feedback">
+                        {Object.entries(parsed).map(([key, value]) => {
+                          if (key === 'listening' && typeof value === 'object') {
+                            return (
+                              <div key={key} className="feedback-section">
+                                <h4>🎧 Listening</h4>
+                                {value.questions && Array.isArray(value.questions) && (
+                                  <div className="questions-list">
+                                    {value.questions.map((q, idx) => (
+                                      <div key={idx} className="question-result">
+                                        <div className="question-header">
+                                          <span className="question-id">Câu {q.question_id || idx + 1}</span>
+                                          <span className={`question-status ${q.is_correct ? 'correct' : 'incorrect'}`}>
+                                            {q.is_correct ? '✓ Đúng' : '✗ Sai'}
+                                          </span>
+                                          <span className="question-points">
+                                            {q.points_earned?.toFixed(2) || 0}/{q.max_points?.toFixed(2) || 0} điểm
+                                          </span>
+                                        </div>
+                                        {q.feedback && (
+                                          <div className="question-feedback">{q.feedback}</div>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          }
+                          return null;
+                        })}
+                      </div>
+                    );
+                  }
+                  return parsed;
+                } catch {
+                  return submission.ai_feedback;
+                }
+              })()}
             </div>
           </div>
         )}
