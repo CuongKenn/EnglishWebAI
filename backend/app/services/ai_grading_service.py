@@ -58,6 +58,9 @@ class AIGradingService:
     
     async def grade_fill_blank(self, question: Dict, student_answer: str) -> Dict:
         """Grade fill in the blank using code-based string matching (no AI)."""
+        from difflib import SequenceMatcher
+        import string
+        
         correct_answer = question.get("correct_answer", "")
 
         def _normalize(text: str) -> str:
@@ -65,6 +68,30 @@ class AIGradingService:
             if text is None:
                 return ""
             return " ".join(str(text).strip().lower().split())
+        
+        def _normalize_advanced(text: str) -> str:
+            """Advanced normalize: remove articles, punctuation, trim, lowercase"""
+            if text is None:
+                return ""
+            
+            # Remove punctuation
+            text = text.translate(str.maketrans('', '', string.punctuation))
+            
+            # Lowercase and split into words
+            words = text.lower().split()
+            
+            # Remove common English articles
+            articles = {'a', 'an', 'the'}
+            words = [w for w in words if w not in articles]
+            
+            return " ".join(words)
+        
+        def is_fuzzy_match(s1: str, s2: str, threshold: float = 0.9) -> bool:
+            """Check if two strings are similar enough (allows 1-2 typos)"""
+            if not s1 or not s2:
+                return False
+            ratio = SequenceMatcher(None, s1, s2).ratio()
+            return ratio >= threshold
 
         # Handle None/empty values
         if student_answer is None or student_answer == "":
@@ -78,8 +105,9 @@ class AIGradingService:
         student_norm = _normalize(student_answer)
         correct_norm = _normalize(correct_answer)
 
-        # Check exact match first
+        # Check exact match first (with basic normalize)
         is_correct = (student_norm == correct_norm)
+        feedback_type = "exact"  # Track match type for feedback
         
         # If not exact match, check if correct_answer contains multiple acceptable answers separated by | or /
         if not is_correct and ('|' in correct_answer or '/' in correct_answer):
@@ -95,16 +123,72 @@ class AIGradingService:
             for acceptable in acceptable_answers:
                 if _normalize(acceptable) == student_norm:
                     is_correct = True
+                    feedback_type = "exact"
                     break
+        
+        # If still not correct, try advanced normalize (strip articles & punctuation)
+        if not is_correct:
+            student_advanced = _normalize_advanced(student_answer)
+            correct_advanced = _normalize_advanced(correct_answer)
+            
+            if student_advanced == correct_advanced:
+                is_correct = True
+                feedback_type = "advanced"
+            # Also check against multiple acceptable answers
+            elif '|' in correct_answer or '/' in correct_answer:
+                separators = ['|', '/']
+                acceptable_answers = [correct_answer]
+                for sep in separators:
+                    if sep in correct_answer:
+                        acceptable_answers = [ans.strip() for ans in correct_answer.split(sep)]
+                        break
+                
+                for acceptable in acceptable_answers:
+                    if _normalize_advanced(acceptable) == student_advanced:
+                        is_correct = True
+                        feedback_type = "advanced"
+                        break
+        
+        # If still not correct, try fuzzy matching (allows typos)
+        if not is_correct:
+            # Try fuzzy match with main correct answer
+            if is_fuzzy_match(student_norm, correct_norm, threshold=0.9):
+                is_correct = True
+                feedback_type = "fuzzy"
+            # Also try fuzzy match with acceptable answers if they exist
+            elif '|' in correct_answer or '/' in correct_answer:
+                separators = ['|', '/']
+                acceptable_answers = [correct_answer]
+                for sep in separators:
+                    if sep in correct_answer:
+                        acceptable_answers = [ans.strip() for ans in correct_answer.split(sep)]
+                        break
+                
+                for acceptable in acceptable_answers:
+                    if is_fuzzy_match(student_norm, _normalize(acceptable), threshold=0.9):
+                        is_correct = True
+                        feedback_type = "fuzzy"
+                        break
 
         max_points = question.get("points", 0.25)
         points_earned = max_points if is_correct else 0
+        
+        # Generate feedback based on match type
+        if is_correct:
+            if feedback_type == "fuzzy":
+                feedback = "Gần đúng! Có thể có lỗi chính tả nhỏ."
+            elif feedback_type == "advanced":
+                feedback = "Chính xác! (Bỏ qua dấu câu và mạo từ)"
+            else:
+                feedback = "Chính xác!"
+        else:
+            feedback = f"Sai. Đáp án đúng: {correct_answer}"
 
         return {
             "is_correct": is_correct,
             "points_earned": points_earned,
             "max_points": max_points,
-            "feedback": "Chính xác!" if is_correct else f"Sai. Đáp án đúng: {correct_answer}"
+            "feedback": feedback
         }
     
     async def grade_true_false(self, question: Dict, student_answer: str) -> Dict:
@@ -175,6 +259,13 @@ class AIGradingService:
         correct_pairs = question.get("correct_answer", {})
         pairs = question.get("pairs", [])  # Get pairs array for index-based matching
         
+        # Normalize function for case-insensitive matching
+        def normalize(text):
+            """Normalize text: lowercase, trim, collapse multiple spaces"""
+            if text is None:
+                return ""
+            return " ".join(str(text).strip().lower().split())
+        
         print(f"[GRADE_MATCHING] ===== START =====")
         print(f"[GRADE_MATCHING] Question ID: {question.get('id')}")
         print(f"[GRADE_MATCHING] Correct pairs: {correct_pairs} (type: {type(correct_pairs)})")
@@ -217,9 +308,9 @@ class AIGradingService:
                         student_right = student_answer[key_format]
                         break
                 
-                # Normalize and compare
-                student_right_norm = str(student_right).strip() if student_right else ""
-                correct_right_norm = str(correct_right).strip()
+                # Normalize and compare (case-insensitive, trim spaces)
+                student_right_norm = normalize(student_right) if student_right else ""
+                correct_right_norm = normalize(correct_right)
                 is_match = student_right_norm == correct_right_norm
                 
                 print(f"[GRADE_MATCHING] Pair {idx} '{pair['left']}' → student: '{student_right_norm}' vs correct: '{correct_right_norm}' => {is_match}")
@@ -252,13 +343,26 @@ class AIGradingService:
                 elif student_right is None and isinstance(left, str) and left.isdigit():
                     student_right = student_answer.get(int(left))
                 
-                # Normalize both for comparison
-                student_right_norm = str(student_right).strip() if student_right else ""
-                right_norm = str(right).strip() if right else ""
+                # Normalize both for comparison (case-insensitive, trim spaces)
+                student_right_norm = normalize(student_right) if student_right else ""
+                right_norm = normalize(right) if right else ""
                 is_match = student_right_norm == right_norm
                 print(f"[GRADE_MATCHING] Checking '{left}': student='{student_right_norm}' vs correct='{right_norm}' => {is_match}")
                 if is_match:
                     correct_count += 1
+        
+        # Validate for duplicate answers (same right value used multiple times)
+        right_values = [v for v in student_answer.values() if v is not None and str(v).strip() != ""]
+        normalized_right_values = [normalize(v) for v in right_values]
+        unique_normalized = set(normalized_right_values)
+        
+        duplicate_warning = ""
+        if len(normalized_right_values) != len(unique_normalized):
+            duplicate_count = len(normalized_right_values) - len(unique_normalized)
+            duplicate_warning = f" ⚠️ Phát hiện {duplicate_count} câu trả lời trùng lặp."
+            print(f"[GRADE_MATCHING] WARNING: Duplicate answers detected - {duplicate_count} duplicates")
+            print(f"[GRADE_MATCHING] All answers: {normalized_right_values}")
+            print(f"[GRADE_MATCHING] Unique answers: {unique_normalized}")
         
         score_percentage = (correct_count / total_pairs * 100) if total_pairs > 0 else 0
         max_points = question.get("points", 0.25)
@@ -271,7 +375,7 @@ class AIGradingService:
             "is_correct": correct_count == total_pairs,
             "points_earned": round(points_earned, 2),
             "max_points": max_points,
-            "feedback": f"Ghép đúng {correct_count}/{total_pairs} cặp ({score_percentage:.0f}%)"
+            "feedback": f"Ghép đúng {correct_count}/{total_pairs} cặp ({score_percentage:.0f}%){duplicate_warning}"
         }
     
     async def grade_writing(self, question: Dict, student_text: str, prompt: str) -> Dict:
