@@ -179,7 +179,9 @@ function App() {
         path="/ai-practice" 
         element={
           <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
-            <AIPractice />
+            <RouteErrorBoundary routeName="AI Practice">
+              <AIPractice />
+            </RouteErrorBoundary>
           </Layout>
         } 
       />
@@ -187,7 +189,9 @@ function App() {
         path="/ai-writing" 
         element={
           <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
-            <WritingAI />
+            <RouteErrorBoundary routeName="AI Writing">
+              <WritingAI />
+            </RouteErrorBoundary>
           </Layout>
         } 
       />
@@ -195,7 +199,9 @@ function App() {
         path="/ai-reading" 
         element={
           <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
-            <ReadingAI />
+            <RouteErrorBoundary routeName="AI Reading">
+              <ReadingAI />
+            </RouteErrorBoundary>
           </Layout>
         } 
       />
@@ -302,7 +308,9 @@ function App() {
         element={
           <ProtectedRoute isLoggedIn={isLoggedIn}>
             <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
-              <CourseContentPage />
+              <RouteErrorBoundary routeName="Course Content">
+                <CourseContentPage />
+              </RouteErrorBoundary>
             </Layout>
           </ProtectedRoute>
         }
@@ -312,7 +320,9 @@ function App() {
         path="/reading-exercise/:courseId/:lessonId"
         element={
           <ProtectedRoute isLoggedIn={isLoggedIn}>
-            <ReadingExercise />
+            <RouteErrorBoundary routeName="Reading Exercise">
+              <ReadingExercise />
+            </RouteErrorBoundary>
           </ProtectedRoute>
         }
       />
@@ -321,7 +331,9 @@ function App() {
         path="/writing-exercise/:courseId/:lessonId"
         element={
           <ProtectedRoute isLoggedIn={isLoggedIn}>
-            <WritingExercise />
+            <RouteErrorBoundary routeName="Writing Exercise">
+              <WritingExercise />
+            </RouteErrorBoundary>
           </ProtectedRoute>
         }
       />
@@ -331,7 +343,9 @@ function App() {
         element={
           <ProtectedRoute isLoggedIn={isLoggedIn}>
             <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
-              <SpeakingExercise />
+              <RouteErrorBoundary routeName="Speaking Exercise">
+                <SpeakingExercise />
+              </RouteErrorBoundary>
             </Layout>
           </ProtectedRoute>
         }
@@ -341,7 +355,9 @@ function App() {
         path="/listening-exercise/:courseId/:lessonId"
         element={
           <ProtectedRoute isLoggedIn={isLoggedIn}>
-            <ListeningExercise />
+            <RouteErrorBoundary routeName="Listening Exercise">
+              <ListeningExercise />
+            </RouteErrorBoundary>
           </ProtectedRoute>
         }
       />
@@ -351,7 +367,9 @@ function App() {
         element={
           <ProtectedRoute isLoggedIn={isLoggedIn}>
             <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
-              <CourseLessons />
+              <RouteErrorBoundary routeName="Course Lessons">
+                <CourseLessons />
+              </RouteErrorBoundary>
             </Layout>
           </ProtectedRoute>
         }
@@ -388,7 +406,9 @@ function App() {
         path="/teacher-grading/submissions/:submissionId"
         element={
           <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="teacher">
-            <SubmissionGradingPage />
+            <RouteErrorBoundary routeName="Submission Grading">
+              <SubmissionGradingPage />
+            </RouteErrorBoundary>
           </ProtectedRoute>
         }
       />
@@ -411,7 +431,9 @@ function App() {
         element={
           <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="teacher">
             <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
-              <TeacherMaterials />
+              <RouteErrorBoundary routeName="Teacher Materials">
+                <TeacherMaterials />
+              </RouteErrorBoundary>
             </Layout>
           </ProtectedRoute>
         }
@@ -434,7 +456,9 @@ function App() {
         path="/track-progress"
         element={
           <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="parent">
-            <TrackProgressPage />
+            <RouteErrorBoundary routeName="Track Progress">
+              <TrackProgressPage />
+            </RouteErrorBoundary>
           </ProtectedRoute>
         }
       />
@@ -444,7 +468,9 @@ function App() {
         path="/notifications"
         element={
           <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="parent">
-            <NotificationsPage />
+            <RouteErrorBoundary routeName="Notifications">
+              <NotificationsPage />
+            </RouteErrorBoundary>
           </ProtectedRoute>
         }
       />
@@ -454,7 +480,9 @@ function App() {
         path="/teacher-communication"
         element={
           <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="parent">
-            <TeacherCommunication />
+            <RouteErrorBoundary routeName="Teacher Communication">
+              <TeacherCommunication />
+            </RouteErrorBoundary>
           </ProtectedRoute>
         }
       />
