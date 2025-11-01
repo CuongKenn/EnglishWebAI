@@ -228,6 +228,31 @@ async def delete_weekly_assessment(
 
 
 # ============= Error Analysis Export Endpoints =============
+@router.get("/error-analysis/export")
+async def export_error_analysis_get(
+    class_id: int,
+    format: str = "csv",
+    student_id: Optional[int] = None,
+    skill_type: Optional[str] = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Export error analysis with AI feedback and suggestions (GET method)
+    Supports CSV, JSON, and Excel formats
+    """
+    # Create request object from query params
+    export_request = ErrorAnalysisExportRequest(
+        class_id=class_id,
+        format=format,
+        student_id=student_id,
+        skill_type=skill_type
+    )
+    
+    # Call the POST handler
+    return await export_error_analysis(export_request, current_user, db)
+
+
 @router.post("/export/error-analysis")
 async def export_error_analysis(
     export_request: ErrorAnalysisExportRequest,
