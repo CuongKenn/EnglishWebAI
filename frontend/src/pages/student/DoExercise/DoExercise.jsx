@@ -1706,10 +1706,33 @@ export default function DoExercise() {
             <h3>📝 Nhận xét tổng quan</h3>
             <div className="feedback-content">
               {(() => {
-                // Display ai_feedback as formatted text with line breaks
-                if (typeof submission.ai_feedback === 'string') {
+                // First, try to parse if it's a JSON string
+                let feedbackData = submission.ai_feedback;
+                if (typeof feedbackData === 'string') {
+                  try {
+                    // Try to parse as JSON
+                    feedbackData = JSON.parse(feedbackData);
+                  } catch (e) {
+                    // If JSON parse fails, might be Python dict string format (single quotes)
+                    // Try converting Python dict string to JSON format
+                    try {
+                      // Replace single quotes with double quotes for JSON compatibility
+                      const jsonStr = feedbackData
+                        .replace(/'/g, '"')
+                        .replace(/None/g, 'null')
+                        .replace(/True/g, 'true')
+                        .replace(/False/g, 'false');
+                      feedbackData = JSON.parse(jsonStr);
+                    } catch (e2) {
+                      // Still not valid, treat as regular string
+                    }
+                  }
+                }
+                
+                // If it's still a string (plain text feedback), display with line breaks
+                if (typeof feedbackData === 'string') {
                   // Split by double newlines to create sections
-                  const sections = submission.ai_feedback.split('\n\n').filter(s => s.trim());
+                  const sections = feedbackData.split('\n\n').filter(s => s.trim());
                   
                   return (
                     <div className="formatted-feedback">
@@ -1731,8 +1754,33 @@ export default function DoExercise() {
                   );
                 }
                 
-                // Fallback for other types
-                return submission.ai_feedback;
+                // Handle object type (parsed JSON or direct object)
+                if (typeof feedbackData === 'object' && feedbackData !== null) {
+                  // If it has sections property
+                  if (feedbackData.sections && Array.isArray(feedbackData.sections)) {
+                    return (
+                      <div className="formatted-feedback">
+                        {feedbackData.sections.map((section, idx) => (
+                          <div key={idx} className="feedback-section with-icon">
+                            <div className="feedback-line"><strong>{section.title}</strong></div>
+                            {section.content.split('\n').map((line, lineIdx) => (
+                              <div key={lineIdx} className="feedback-line">
+                                {line}
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  }
+                  
+                  // If it's a comprehensive feedback structure with nested objects, don't display raw
+                  // This includes structures like {listening: {...}, reading: {...}, writing: {...}}
+                  return <p>Nhận xét chi tiết có trong phần đánh giá từng kỹ năng bên dưới</p>;
+                }
+                
+                // Fallback
+                return <p>Chưa có nhận xét chi tiết</p>;
               })()}
             </div>
           </div>
