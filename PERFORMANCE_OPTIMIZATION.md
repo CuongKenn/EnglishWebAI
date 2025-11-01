@@ -47,6 +47,13 @@
 - ✅ Prevents filter operations on every keystroke
 - ✅ Expected: ~50-60% reduction in filter operations, smoother UX
 
+### 9. Timing Constants (Partial Progress)
+- ✅ Expanded `UI_CONFIG` with 10+ timing constants
+- ✅ Constants added: NOTIFICATION_DURATION (3000ms), COPIED_INDICATOR_DURATION (2000ms), RIPPLE_DURATION (600ms), FOCUS_DELAY (100ms), TIMER_INTERVAL (1000ms)
+- ✅ Applied to: `ShareModal.jsx` (2 setTimeout replacements)
+- ⏳ **Remaining work:** 20+ files with hardcoded setTimeout values need constant replacement
+- 📄 Files identified: ListeningExercise.jsx, WritingExercise.jsx, DoExercise.jsx, Login.jsx, Register.jsx, Profile.jsx, Admin/Settings.jsx, AISettings.jsx
+
 ---
 
 ## 🔧 Cần implement (To Do)
