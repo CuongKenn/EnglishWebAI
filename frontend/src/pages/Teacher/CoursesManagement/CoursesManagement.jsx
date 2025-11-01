@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-  BookOpen, Users, TrendingUp, Plus, Eye, Edit, Trash2,
-  Search, Upload, X, ChevronRight, Award, Clock, Filter,
-  FileText, CheckCircle, AlertCircle, Loader
+  BookOpen, Plus, X, CheckCircle, AlertCircle, Loader
 } from 'lucide-react';
 import './CoursesManagement.css';
 
@@ -10,28 +8,32 @@ import { coursesAPI, questionBankAPI } from '../../../services/api';
 import Toast from '../../../components/Toast/Toast';
 import useToast from '../../../hooks/useToast';
 
-
-const SKILLS = [
-  { value: 'listening', label: 'Listening', emoji: '🎧', color: '#10b981' },
-  { value: 'speaking', label: 'Speaking', emoji: '🗣️', color: '#8b5cf6' },
-  { value: 'reading', label: 'Reading', emoji: '📖', color: '#3b82f6' },
-  { value: 'writing', label: 'Writing', emoji: '✍️', color: '#f97316' },
-];
-
-const LEVELS = [
-  { value: 'Beginner', label: 'BEGINNER' },
-  { value: 'Elementary', label: 'ELEMENTARY' },
-  { value: 'Intermediate', label: 'INTERMEDIATE' },
-  { value: 'Upper-Intermediate', label: 'UPPER-INTERMEDIATE' },
-  { value: 'Advanced', label: 'ADVANCED' },
-];
-
-const GRADES = Array.from({ length: 12 }, (_, i) => i + 1);
+// Import modular components
+import { CourseStats, CourseFilters, CourseCard } from './components';
+import { useCourseManagement } from './hooks/useCourseManagement';
+import { calculateCourseStats, filterCoursesBySearch } from './utils/courseUtils';
+import { SKILLS, LEVELS, GRADES } from './constants';
 
 const CoursesManagement = () => {
   const { toast, showWarning, hideToast } = useToast();
-  const [courses, setCourses] = useState([]);
-  const [loading, setLoading] = useState(false);
+  
+  // Use custom hook for course management
+  const {
+    courses,
+    loading,
+    formData,
+    formLoading,
+    message,
+    loadCourses,
+    resetForm,
+    handleThumbnailChange,
+    createCourse,
+    updateCourse,
+    deleteCourse,
+    setFormData,
+    setMessage,
+  } = useCourseManagement();
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSkill, setSelectedSkill] = useState('all');
   const [selectedGrade, setSelectedGrade] = useState('all');
@@ -44,182 +46,69 @@ const CoursesManagement = () => {
   
   // Selected course
   const [selectedCourse, setSelectedCourse] = useState(null);
+
+  // Load courses on filter change
+  useEffect(() => {
+    const params = {};
+    if (selectedSkill !== 'all') params.skill = selectedSkill;
+    if (selectedGrade !== 'all') params.grade = Number(selectedGrade);
+    loadCourses(params);
+  }, [selectedSkill, selectedGrade, loadCourses]);
+
+  // Filter courses by search - using utility function
+  const filteredCourses = useMemo(() => 
+    filterCoursesBySearch(courses, searchQuery),
+    [courses, searchQuery]
+  );
+
+  // Stats - using utility function
+  const stats = useMemo(() => 
+    calculateCourseStats(courses),
+    [courses]
+  );
   
-  // Form data
-  const [formData, setFormData] = useState({
-    title: '',
-    skill: 'listening',
-    level: 'Intermediate',
-    grade: 10,
-    description: '',
-    lessonsCount: 20,
-    durationHours: 40,
-    thumbnailFile: null,
-    thumbnailPreview: null,
-  });
-
-  const [message, setMessage] = useState(null);
-  const [formLoading, setFormLoading] = useState(false);
-
-  // Load courses
-  const loadCourses = async () => {
-    setLoading(true);
-    try {
+  // Create course handler
+  const handleCreateCourse = useCallback(async (e) => {
+    e.preventDefault();
+    const success = await createCourse();
+    if (success) {
+      setIsCreateOpen(false);
       const params = {};
       if (selectedSkill !== 'all') params.skill = selectedSkill;
       if (selectedGrade !== 'all') params.grade = Number(selectedGrade);
-      const data = await coursesAPI.getCourses(params);
-      setCourses(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error('Error loading courses:', error);
-      setMessage({ type: 'error', text: 'Không thể tải danh sách khóa học' });
-    } finally {
-      setLoading(false);
+      await loadCourses(params);
     }
-  };
+  }, [createCourse, selectedSkill, selectedGrade, loadCourses]);
 
-  useEffect(() => {
-    loadCourses();
-  }, [selectedSkill, selectedGrade]);
-
-  // Filter courses by search
-  const filteredCourses = useMemo(() => {
-    if (!searchQuery.trim()) return courses;
-    const query = searchQuery.toLowerCase();
-    return courses.filter(c => c.name?.toLowerCase().includes(query));
-  }, [courses, searchQuery]);
-
-  // Stats - memoized computation
-  const stats = useMemo(() => ({
-    total: courses.length,
-    active: courses.filter(c => c.status !== 'locked').length,
-    completed: courses.filter(c => c.status === 'completed').length,
-    totalStudents: courses.reduce((sum, c) => sum + (c.totalUnits || 0), 0),
-  }), [courses]);
-
-  // Reset form
-  const resetForm = useCallback(() => {
-    setFormData({
-      title: '',
-      skill: 'listening',
-      level: 'Intermediate',
-      grade: 10,
-      description: '',
-      lessonsCount: 20,
-      durationHours: 40,
-      thumbnailFile: null,
-      thumbnailPreview: null,
-    });
-    setMessage(null);
-  }, []);
-
-  // Handle thumbnail upload
-  const handleThumbnailChange = useCallback((e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        setMessage({ type: 'error', text: 'Ảnh không được vượt quá 2MB' });
-        return;
-      }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData(prev => ({
-          ...prev,
-          thumbnailFile: file,
-          thumbnailPreview: reader.result,
-        }));
-      };
-      reader.readAsDataURL(file);
-    }
-  }, []);
-
-  // Create course
-  const handleCreateCourse = async (e) => {
-    e.preventDefault();
-    setFormLoading(true);
-    setMessage(null);
-
-    try {
-      // TODO: Upload thumbnail first when backend is ready
-      // const thumbnailUrl = formData.thumbnailFile 
-      //   ? await coursesManageAPI.uploadThumbnail(formData.thumbnailFile)
-      //   : null;
-
-      const payload = {
-        title: formData.title,
-        description: formData.description || undefined,
-        grade: Number(formData.grade),
-        skill: formData.skill,
-        level: formData.level,
-        is_active: true,
-        // thumbnail_url: thumbnailUrl, // TODO: Add when backend ready
-        // duration_hours: Number(formData.durationHours), // TODO: Add when backend ready
-      };
-
-      await coursesAPI.createCourse(payload);
-      setMessage({ type: 'success', text: 'Tạo khóa học thành công!' });
-      resetForm();
-      setIsCreateOpen(false);
-      await loadCourses();
-    } catch (error) {
-      console.error('Create course error:', error);
-      const errorMsg = error?.response?.data?.detail || error?.detail || error?.message || 'Tạo khóa học thất bại';
-      setMessage({ type: 'error', text: errorMsg });
-    } finally {
-      setFormLoading(false);
-    }
-  };
-
-  // Update course
-  const handleUpdateCourse = async (e) => {
+  // Update course handler
+  const handleUpdateCourse = useCallback(async (e) => {
     e.preventDefault();
     if (!selectedCourse) return;
     
-    setFormLoading(true);
-    setMessage(null);
-
-    try {
-      // TODO: Upload new thumbnail if changed
-      const payload = {
-        title: formData.title,
-        description: formData.description || undefined,
-        grade: Number(formData.grade),
-        skill: formData.skill,
-        level: formData.level,
-      };
-
-      await coursesAPI.updateCourse(selectedCourse.id, payload);
-      setMessage({ type: 'success', text: 'Cập nhật khóa học thành công!' });
+    const success = await updateCourse(selectedCourse.id);
+    if (success) {
       setIsEditOpen(false);
-      await loadCourses();
-    } catch (error) {
-      console.error('Update course error:', error);
-      const errorMsg = error?.response?.data?.detail || error?.detail || error?.message || 'Cập nhật thất bại';
-      setMessage({ type: 'error', text: errorMsg });
-    } finally {
-      setFormLoading(false);
+      const params = {};
+      if (selectedSkill !== 'all') params.skill = selectedSkill;
+      if (selectedGrade !== 'all') params.grade = Number(selectedGrade);
+      await loadCourses(params);
     }
-  };
+  }, [updateCourse, selectedCourse, selectedSkill, selectedGrade, loadCourses]);
 
-  // Delete course
-  const handleDeleteCourse = async () => {
+  // Delete course handler
+  const handleDeleteCourse = useCallback(async () => {
     if (!selectedCourse) return;
     
-    setFormLoading(true);
-    try {
-      await coursesAPI.deleteCourse(selectedCourse.id);
-      setMessage({ type: 'success', text: 'Xóa khóa học thành công!' });
+    const success = await deleteCourse(selectedCourse.id);
+    if (success) {
       setIsDeleteConfirmOpen(false);
       setSelectedCourse(null);
-      await loadCourses();
-    } catch (error) {
-      console.error('Delete course error:', error);
-      const errorMsg = error?.response?.data?.detail || error?.detail || error?.message || 'Xóa khóa học thất bại';
-      setMessage({ type: 'error', text: errorMsg });
-    } finally {
-      setFormLoading(false);
+      const params = {};
+      if (selectedSkill !== 'all') params.skill = selectedSkill;
+      if (selectedGrade !== 'all') params.grade = Number(selectedGrade);
+      await loadCourses(params);
     }
-  };
+  }, [deleteCourse, selectedCourse, selectedSkill, selectedGrade, loadCourses]);
 
   // Open edit modal
   const openEditModal = (course) => {
@@ -250,18 +139,6 @@ const CoursesManagement = () => {
     setIsDeleteConfirmOpen(true);
   };
 
-  // Get skill color
-  const getSkillColor = (skill) => {
-    const skillObj = SKILLS.find(s => s.value === skill);
-    return skillObj?.color || '#64748b';
-  };
-
-  // Get skill emoji
-  const getSkillEmoji = (skill) => {
-    const skillObj = SKILLS.find(s => s.value === skill);
-    return skillObj?.emoji || '📚';
-  };
-
   return (
     <div className="courses-management">
       {/* Header */}
@@ -276,79 +153,20 @@ const CoursesManagement = () => {
         </button>
       </div>
 
-      {/* Stats */}
-      <div className="cm-stats">
-        <div className="cm-stat-card" style={{ borderLeftColor: '#3b82f6' }}>
-          <div className="cm-stat-icon" style={{ backgroundColor: '#dbeafe' }}>
-            <BookOpen size={24} color="#3b82f6" />
-          </div>
-          <div className="cm-stat-content">
-            <div className="cm-stat-label">Tổng khóa học</div>
-            <div className="cm-stat-value">{stats.total}</div>
-          </div>
-        </div>
-        <div className="cm-stat-card" style={{ borderLeftColor: '#10b981' }}>
-          <div className="cm-stat-icon" style={{ backgroundColor: '#d1fae5' }}>
-            <CheckCircle size={24} color="#10b981" />
-          </div>
-          <div className="cm-stat-content">
-            <div className="cm-stat-label">Đã hoàn thành</div>
-            <div className="cm-stat-value">{stats.completed}</div>
-          </div>
-        </div>
-        <div className="cm-stat-card" style={{ borderLeftColor: '#f59e0b' }}>
-          <div className="cm-stat-icon" style={{ backgroundColor: '#fef3c7' }}>
-            <TrendingUp size={24} color="#f59e0b" />
-          </div>
-          <div className="cm-stat-content">
-            <div className="cm-stat-label">Đang hoạt động</div>
-            <div className="cm-stat-value">{stats.active}</div>
-          </div>
-        </div>
-        <div className="cm-stat-card" style={{ borderLeftColor: '#8b5cf6' }}>
-          <div className="cm-stat-icon" style={{ backgroundColor: '#ede9fe' }}>
-            <Users size={24} color="#8b5cf6" />
-          </div>
-          <div className="cm-stat-content">
-            <div className="cm-stat-label">Tổng bài học</div>
-            <div className="cm-stat-value">{stats.totalStudents}</div>
-          </div>
-        </div>
-      </div>
+      {/* Stats - Using modular component */}
+      <CourseStats stats={stats} />
 
-      {/* Filters */}
-      <div className="cm-filters">
-        <div className="cm-search-box">
-          <Search size={20} className="cm-search-icon" />
-          <input
-            type="text"
-            placeholder="Tìm kiếm khóa học..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="cm-search-input"
-          />
-        </div>
-        <select
-          value={selectedSkill}
-          onChange={(e) => setSelectedSkill(e.target.value)}
-          className="cm-filter-select"
-        >
-          <option value="all">Tất cả kỹ năng</option>
-          {SKILLS.map(skill => (
-            <option key={skill.value} value={skill.value}>{skill.emoji} {skill.label}</option>
-          ))}
-        </select>
-        <select
-          value={selectedGrade}
-          onChange={(e) => setSelectedGrade(e.target.value)}
-          className="cm-filter-select"
-        >
-          <option value="all">Tất cả lớp</option>
-          {GRADES.map(grade => (
-            <option key={grade} value={grade}>Lớp {grade}</option>
-          ))}
-        </select>
-      </div>
+      {/* Filters - Using modular component */}
+      <CourseFilters
+        searchQuery={searchQuery}
+        onSearchChange={(e) => setSearchQuery(e.target.value)}
+        selectedSkill={selectedSkill}
+        onSkillChange={(e) => setSelectedSkill(e.target.value)}
+        selectedGrade={selectedGrade}
+        onGradeChange={(e) => setSelectedGrade(e.target.value)}
+        skills={SKILLS}
+        grades={GRADES}
+      />
 
       {/* Message */}
       {message && (
@@ -380,61 +198,13 @@ const CoursesManagement = () => {
       ) : (
         <div className="cm-grid">
           {filteredCourses.map((course) => (
-            <div key={course.id} className="cm-course-card">
-              <div
-                className="cm-course-header"
-                style={{
-                  background: `linear-gradient(135deg, ${getSkillColor(course.category)}15 0%, ${getSkillColor(course.category)}30 100%)`,
-                }}
-              >
-                <div className="cm-course-emoji">{getSkillEmoji(course.category)}</div>
-                <div className="cm-course-badge" style={{ backgroundColor: getSkillColor(course.category) }}>
-                  {course.level || 'INTERMEDIATE'}
-                </div>
-              </div>
-              
-              <div className="cm-course-body">
-                <h3 className="cm-course-title">{course.name}</h3>
-                <div className="cm-course-meta">
-                  <span className="cm-course-meta-item">
-                    <BookOpen size={14} />
-                    {course.totalUnits} bài học
-                  </span>
-                  <span className="cm-course-meta-item">
-                    <Award size={14} />
-                    {course.totalCups} cúp
-                  </span>
-                </div>
-                <div className="cm-course-info">
-                  <span className="cm-course-skill">{course.category}</span>
-                  <span className="cm-course-grade">{course.gradeLabel}</span>
-                </div>
-                
-                <div className="cm-course-actions">
-                  <button
-                    className="cm-btn-icon"
-                    onClick={() => openDetailModal(course)}
-                    title="Xem chi tiết"
-                  >
-                    <Eye size={18} />
-                  </button>
-                  <button
-                    className="cm-btn-icon"
-                    onClick={() => openEditModal(course)}
-                    title="Chỉnh sửa"
-                  >
-                    <Edit size={18} />
-                  </button>
-                  <button
-                    className="cm-btn-icon cm-btn-danger"
-                    onClick={() => openDeleteConfirm(course)}
-                    title="Xóa"
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </div>
-              </div>
-            </div>
+            <CourseCard
+              key={course.id}
+              course={course}
+              onView={openDetailModal}
+              onEdit={openEditModal}
+              onDelete={openDeleteConfirm}
+            />
           ))}
         </div>
       )}
