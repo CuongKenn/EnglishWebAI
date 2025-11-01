@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, and_
 from typing import List, Optional
 from datetime import datetime
+import logging
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.models.user import User, UserRole
@@ -18,6 +19,7 @@ from app.services.notification_service import NotificationService
 from pydantic import BaseModel
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 # ============= Schemas =============
@@ -247,7 +249,7 @@ async def update_teacher_feedback(
             NotificationService.notify_parents_on_low_score(db, submission)
     except Exception as e:
         # Log error nhưng không làm fail request
-        print(f"Error creating notification: {e}")
+        logger.error(f"Error creating notification: {e}")
     
     return {"message": "Feedback updated successfully", "submission": submission}
 

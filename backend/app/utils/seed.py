@@ -16,14 +16,14 @@ def seed_users(db: Session, force: bool = False):
     # Check if users already exist
     existing_user = db.query(User).first()
     if existing_user and not force:
-        print("⚠️  Database already has users. Use --force to reset and seed.")
+        logger.info("⚠️  Database already has users. Use --force to reset and seed.")
         return
     
     # If force, delete all existing users
     if force:
         db.query(User).delete()
         db.commit()
-        print("🗑️  Cleared existing users.")
+        logger.info("🗑️  Cleared existing users.")
     
     users_data = [
         {
@@ -136,17 +136,17 @@ def seed_users(db: Session, force: bool = False):
     
     try:
         db.commit()
-        print(f"✅ Successfully seeded {len(created_users)} users:")
+        logger.info(f"✅ Successfully seeded {len(created_users)} users:")
         for user in created_users:
-            print(f"   - {user.username} ({user.role.value}) - {user.email}")
-        print("\n📝 Default passwords:")
-        print("   - admin/superadmin: Admin123! / Super123!")
-        print("   - students (user role): User123!")
-        print("   - parents: Parent123!")
-        print("   - teachers: Teacher123!")
+            logger.info(f"   - {user.username} ({user.role.value}) - {user.email}")
+        logger.info("\n📝 Default passwords:")
+        logger.info("   - admin/superadmin: Admin123! / Super123!")
+        logger.info("   - students (user role): User123!")
+        logger.info("   - parents: Parent123!")
+        logger.info("   - teachers: Teacher123!")
     except Exception as e:
         db.rollback()
-        print(f"❌ Error seeding users: {str(e)}")
+        logger.info(f"❌ Error seeding users: {str(e)}")
         raise
 
 def seed_discussions(db: Session, force: bool = False):
@@ -155,7 +155,7 @@ def seed_discussions(db: Session, force: bool = False):
     # Check if discussions already exist
     existing_discussion = db.query(DiscussionThread).first()
     if existing_discussion and not force:
-        print("⚠️  Database already has discussions. Use --force to reset and seed.")
+        logger.info("⚠️  Database already has discussions. Use --force to reset and seed.")
         return
     
     # If force, delete all existing discussions
@@ -163,14 +163,14 @@ def seed_discussions(db: Session, force: bool = False):
         db.query(DiscussionPost).delete()
         db.query(DiscussionThread).delete()
         db.commit()
-        print("🗑️  Cleared existing discussions.")
+        logger.info("🗑️  Cleared existing discussions.")
     
     # Get users for assigning as authors
     students = db.query(User).filter(User.role == UserRole.USER).all()
     teachers = db.query(User).filter(User.role == UserRole.TEACHER).all()
     
     if not students or not teachers:
-        print("⚠️  Need users to seed discussions. Run seed_users first.")
+        logger.info("⚠️  Need users to seed discussions. Run seed_users first.")
         return
     
     # Get a classroom if exists
@@ -277,18 +277,18 @@ def seed_discussions(db: Session, force: bool = False):
             created_threads.append(thread)
         
         db.commit()
-        print(f"✅ Successfully seeded {len(created_threads)} discussion threads with posts")
+        logger.info(f"✅ Successfully seeded {len(created_threads)} discussion threads with posts")
         for thread in created_threads:
             post_count = db.query(DiscussionPost).filter(DiscussionPost.thread_id == thread.id).count()
-            print(f"   - '{thread.title}' ({post_count} posts)")
+            logger.info(f"   - '{thread.title}' ({post_count} posts)")
     except Exception as e:
         db.rollback()
-        print(f"❌ Error seeding discussions: {str(e)}")
+        logger.info(f"❌ Error seeding discussions: {str(e)}")
         raise
 
 def seed_all(force: bool = False):
     """Run all seed functions"""
-    print("🌱 Starting database seeding...")
+    logger.info("🌱 Starting database seeding...")
     db = SessionLocal()
     try:
         seed_users(db, force=force)
@@ -297,11 +297,11 @@ def seed_all(force: bool = False):
             seed_courses(db)
             seed_course_units_questions(db)
         except Exception as e:
-            print(f"⚠️  Seed courses failed: {e}")
+            logger.info(f"⚠️  Seed courses failed: {e}")
         seed_discussions(db, force=force)
-        print("\n✅ Database seeding completed!")
+        logger.info("\n✅ Database seeding completed!")
     except Exception as e:
-        print(f"\n❌ Seeding failed: {str(e)}")
+        logger.info(f"\n❌ Seeding failed: {str(e)}")
     finally:
         db.close()
 
@@ -310,10 +310,10 @@ def seed_courses(db: Session) -> None:
     """Create a minimal public catalog: 4 skills x 12 grades with sample exercises, if none exists."""
     existing = db.query(Course).count()
     if existing > 0:
-        print(f"📚 Courses already exist: {existing}. Skipping seed.")
+        logger.info(f"📚 Courses already exist: {existing}. Skipping seed.")
         return
 
-    print("📚 Seeding public course catalog (4 skills x 12 grades)...")
+    logger.info("📚 Seeding public course catalog (4 skills x 12 grades)...")
     skills = ["listening", "speaking", "reading", "writing"]
     # Pick any teacher as creator if available
     teacher = db.query(User).filter(User.role == UserRole.TEACHER).first()
@@ -358,7 +358,7 @@ def seed_courses(db: Session) -> None:
                 db.add(e)
                 ex_created += 1
     db.commit()
-    print(f"✅ Seeded {created} courses with {ex_created} exercises")
+    logger.info(f"✅ Seeded {created} courses with {ex_created} exercises")
 
 
 def seed_course_units_questions(db: Session) -> None:
@@ -439,7 +439,7 @@ def seed_course_units_questions(db: Session) -> None:
                 db.add(q)
                 total_questions += 1
     db.commit()
-    print(f"✅ Seeded {total_units} units and {total_questions} questions for {len(courses)} courses")
+    logger.info(f"✅ Seeded {total_units} units and {total_questions} questions for {len(courses)} courses")
 
 
 def json_dumps(obj):
@@ -448,3 +448,4 @@ def json_dumps(obj):
 
 if __name__ == "__main__":
     seed_all()
+

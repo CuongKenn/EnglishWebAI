@@ -6,8 +6,11 @@ from openai import OpenAI
 from app.core.config import settings
 import os
 import json
+import logging
 from typing import Dict, List, Optional
 import azure.cognitiveservices.speech as speechsdk
+
+logger = logging.getLogger(__name__)
 
 
 class AIGradingService:
@@ -47,7 +50,7 @@ class AIGradingService:
         is_correct = student_normalized == correct_normalized
         points_earned = question.get("points", 0.25) if is_correct else 0
         
-        print(f"[GRADE_MC] Q{question.get('id')}: Student='{student_normalized}' vs Correct='{correct_normalized}' => {is_correct}")
+        logger.debug(f"[GRADE_MC] Q{question.get('id')}: Student='{student_normalized}' vs Correct='{correct_normalized}' => {is_correct}")
         
         return {
             "is_correct": is_correct,
@@ -196,14 +199,14 @@ class AIGradingService:
         correct_raw = question.get("correct_answer", "")
         
         # Debug: log raw values
-        print(f"[GRADE_TF] ===== START =====")
-        print(f"[GRADE_TF] Question ID: {question.get('id')}")
-        print(f"[GRADE_TF] Correct answer RAW: '{correct_raw}' (type: {type(correct_raw)})")
-        print(f"[GRADE_TF] Student answer RAW: '{student_answer}' (type: {type(student_answer)})")
+        logger.debug(f"[GRADE_TF] ===== START =====")
+        logger.debug(f"[GRADE_TF] Question ID: {question.get('id')}")
+        logger.debug(f"[GRADE_TF] Correct answer RAW: '{correct_raw}' (type: {type(correct_raw)})")
+        logger.debug(f"[GRADE_TF] Student answer RAW: '{student_answer}' (type: {type(student_answer)})")
         
         # Convert to string and normalize
         correct = str(correct_raw).strip().lower()
-        print(f"[GRADE_TF] Correct answer normalized: '{correct}'")
+        logger.debug(f"[GRADE_TF] Correct answer normalized: '{correct}'")
         
         # Handle None/empty values
         if student_answer is None or student_answer == "":
@@ -215,7 +218,7 @@ class AIGradingService:
             }
         
         student = str(student_answer).strip().lower()
-        print(f"[GRADE_TF] Student answer normalized: '{student}'")
+        logger.debug(f"[GRADE_TF] Student answer normalized: '{student}'")
         
         # Normalize true values
         true_values = ['true', '1', 'yes', 'đúng', 't', 'y']
@@ -229,7 +232,7 @@ class AIGradingService:
             student_normalized = 'false'
         else:
             # Invalid answer
-            print(f"[GRADE_TF] ERROR: Invalid student answer '{student}' not in accepted values")
+            logger.debug(f"[GRADE_TF] ERROR: Invalid student answer '{student}' not in accepted values")
             return {
                 "is_correct": False,
                 "points_earned": 0,
@@ -243,9 +246,9 @@ class AIGradingService:
         is_correct = student_normalized == correct_normalized
         points_earned = question.get("points", 0.25) if is_correct else 0
         
-        print(f"[GRADE_TF] Student normalized: '{student_normalized}' vs Correct normalized: '{correct_normalized}'")
-        print(f"[GRADE_TF] Result: {is_correct} - Points: {points_earned}/{question.get('points', 0.25)}")
-        print(f"[GRADE_TF] ===== END =====")
+        logger.debug(f"[GRADE_TF] Student normalized: '{student_normalized}' vs Correct normalized: '{correct_normalized}'")
+        logger.debug(f"[GRADE_TF] Result: {is_correct} - Points: {points_earned}/{question.get('points', 0.25)}")
+        logger.debug(f"[GRADE_TF] ===== END =====")
         
         return {
             "is_correct": is_correct,
@@ -266,15 +269,15 @@ class AIGradingService:
                 return ""
             return " ".join(str(text).strip().lower().split())
         
-        print(f"[GRADE_MATCHING] ===== START =====")
-        print(f"[GRADE_MATCHING] Question ID: {question.get('id')}")
-        print(f"[GRADE_MATCHING] Correct pairs: {correct_pairs} (type: {type(correct_pairs)})")
-        print(f"[GRADE_MATCHING] Pairs array: {pairs}")
-        print(f"[GRADE_MATCHING] Student answer: {student_answer} (type: {type(student_answer)})")
+        logger.debug(f"[GRADE_MATCHING] ===== START =====")
+        logger.debug(f"[GRADE_MATCHING] Question ID: {question.get('id')}")
+        logger.debug(f"[GRADE_MATCHING] Correct pairs: {correct_pairs} (type: {type(correct_pairs)})")
+        logger.debug(f"[GRADE_MATCHING] Pairs array: {pairs}")
+        logger.debug(f"[GRADE_MATCHING] Student answer: {student_answer} (type: {type(student_answer)})")
         
         # Handle None/empty values
         if not student_answer or not isinstance(student_answer, dict):
-            print(f"[GRADE_MATCHING] ERROR: Invalid student answer - not dict or empty")
+            logger.debug(f"[GRADE_MATCHING] ERROR: Invalid student answer - not dict or empty")
             return {
                 "is_correct": False,
                 "points_earned": 0,
@@ -292,11 +295,11 @@ class AIGradingService:
             # If pairs array exists, use index-based matching
             is_index_based = True
             total_pairs = len(pairs)
-            print(f"[GRADE_MATCHING] Using INDEX-BASED matching with {total_pairs} pairs")
+            logger.debug(f"[GRADE_MATCHING] Using INDEX-BASED matching with {total_pairs} pairs")
             
             for idx, pair in enumerate(pairs):
                 if not isinstance(pair, dict) or 'left' not in pair or 'right' not in pair:
-                    print(f"[GRADE_MATCHING] WARNING: Invalid pair format at index {idx}: {pair}")
+                    logger.debug(f"[GRADE_MATCHING] WARNING: Invalid pair format at index {idx}: {pair}")
                     continue
                 
                 correct_right = pair['right']
@@ -313,7 +316,7 @@ class AIGradingService:
                 correct_right_norm = normalize(correct_right)
                 is_match = student_right_norm == correct_right_norm
                 
-                print(f"[GRADE_MATCHING] Pair {idx} '{pair['left']}' → student: '{student_right_norm}' vs correct: '{correct_right_norm}' => {is_match}")
+                logger.debug(f"[GRADE_MATCHING] Pair {idx} '{pair['left']}' → student: '{student_right_norm}' vs correct: '{correct_right_norm}' => {is_match}")
                 
                 if is_match:
                     correct_count += 1
@@ -321,10 +324,10 @@ class AIGradingService:
         else:
             # Fallback to content-based matching (old format)
             total_pairs = len(correct_pairs)
-            print(f"[GRADE_MATCHING] Using CONTENT-BASED matching with {total_pairs} pairs")
+            logger.debug(f"[GRADE_MATCHING] Using CONTENT-BASED matching with {total_pairs} pairs")
             
             if total_pairs == 0:
-                print(f"[GRADE_MATCHING] ERROR: No correct pairs defined in question")
+                logger.debug(f"[GRADE_MATCHING] ERROR: No correct pairs defined in question")
                 return {
                     "is_correct": False,
                     "points_earned": 0,
@@ -332,8 +335,8 @@ class AIGradingService:
                     "feedback": "Câu hỏi không có đáp án đúng"
                 }
             
-            print(f"[GRADE_MATCHING] Correct answer keys: {list(correct_pairs.keys())}")
-            print(f"[GRADE_MATCHING] Student answer keys: {list(student_answer.keys())}")
+            logger.debug(f"[GRADE_MATCHING] Correct answer keys: {list(correct_pairs.keys())}")
+            logger.debug(f"[GRADE_MATCHING] Student answer keys: {list(student_answer.keys())}")
             
             for left, right in correct_pairs.items():
                 student_right = student_answer.get(left)
@@ -347,7 +350,7 @@ class AIGradingService:
                 student_right_norm = normalize(student_right) if student_right else ""
                 right_norm = normalize(right) if right else ""
                 is_match = student_right_norm == right_norm
-                print(f"[GRADE_MATCHING] Checking '{left}': student='{student_right_norm}' vs correct='{right_norm}' => {is_match}")
+                logger.debug(f"[GRADE_MATCHING] Checking '{left}': student='{student_right_norm}' vs correct='{right_norm}' => {is_match}")
                 if is_match:
                     correct_count += 1
         
@@ -360,16 +363,16 @@ class AIGradingService:
         if len(normalized_right_values) != len(unique_normalized):
             duplicate_count = len(normalized_right_values) - len(unique_normalized)
             duplicate_warning = f" ⚠️ Phát hiện {duplicate_count} câu trả lời trùng lặp."
-            print(f"[GRADE_MATCHING] WARNING: Duplicate answers detected - {duplicate_count} duplicates")
-            print(f"[GRADE_MATCHING] All answers: {normalized_right_values}")
-            print(f"[GRADE_MATCHING] Unique answers: {unique_normalized}")
+            logger.debug(f"[GRADE_MATCHING] WARNING: Duplicate answers detected - {duplicate_count} duplicates")
+            logger.debug(f"[GRADE_MATCHING] All answers: {normalized_right_values}")
+            logger.debug(f"[GRADE_MATCHING] Unique answers: {unique_normalized}")
         
         score_percentage = (correct_count / total_pairs * 100) if total_pairs > 0 else 0
         max_points = question.get("points", 0.25)
         points_earned = max_points * (correct_count / total_pairs) if total_pairs > 0 else 0
         
-        print(f"[GRADE_MATCHING] Result: {correct_count}/{total_pairs} correct, {points_earned}/{max_points} points")
-        print(f"[GRADE_MATCHING] ===== END =====")
+        logger.debug(f"[GRADE_MATCHING] Result: {correct_count}/{total_pairs} correct, {points_earned}/{max_points} points")
+        logger.debug(f"[GRADE_MATCHING] ===== END =====")
         
         return {
             "is_correct": correct_count == total_pairs,
@@ -441,7 +444,7 @@ Respond with JSON:
             
             # Check if content is None or empty
             if not content or content.strip() == "":
-                print(f"[GRADE_WRITING] Empty response from OpenAI")
+                logger.debug(f"[GRADE_WRITING] Empty response from OpenAI")
                 return {
                     "points_earned": 0,
                     "max_points": max_points,
@@ -464,7 +467,7 @@ Respond with JSON:
             
             # Validate JSON before parsing
             if not content:
-                print(f"[GRADE_WRITING] Content is empty after cleanup")
+                logger.debug(f"[GRADE_WRITING] Content is empty after cleanup")
                 return {
                     "points_earned": 0,
                     "max_points": max_points,
@@ -487,8 +490,8 @@ Respond with JSON:
             }
             
         except json.JSONDecodeError as je:
-            print(f"Error grading writing - JSON decode error: {je}")
-            print(f"Raw content that failed to parse: {content if 'content' in locals() else 'N/A'}")
+            logger.info(f"Error grading writing - JSON decode error: {je}")
+            logger.info(f"Raw content that failed to parse: {content if 'content' in locals() else 'N/A'}")
             return {
                 "points_earned": 0,
                 "max_points": max_points,
@@ -498,7 +501,7 @@ Respond with JSON:
                 "error": f"JSON decode error: {str(je)}"
             }
         except Exception as e:
-            print(f"Error grading writing: {e}")
+            logger.info(f"Error grading writing: {e}")
             import traceback
             traceback.print_exc()
             return {
@@ -541,9 +544,9 @@ Respond with JSON:
                         '-c:a', 'pcm_s16le',
                         wav_path
                     ], check=True, capture_output=True)
-                    print(f"[grade_speaking_pronunciation] Audio converted to WAV: {wav_path}")
+                    logger.debug(f"[GRADE_speaking_pronunciation] Audio converted to WAV: {wav_path}")
                 except subprocess.CalledProcessError as conv_err:
-                    print(f"[grade_speaking_pronunciation] ffmpeg conversion failed: {conv_err}")
+                    logger.debug(f"[GRADE_speaking_pronunciation] ffmpeg conversion failed: {conv_err}")
                     return {
                         "pronunciation_score": 0,
                         "accuracy_score": 0,
@@ -612,7 +615,7 @@ Respond with JSON:
                 }
                 
         except Exception as e:
-            print(f"Error in pronunciation assessment: {e}")
+            logger.info(f"Error in pronunciation assessment: {e}")
             import traceback
             traceback.print_exc()
             return {
@@ -694,7 +697,7 @@ Trả về JSON với format:
             
             # Check if content is None or empty
             if not content or content.strip() == "":
-                print(f"[GRADE_SPEAKING] Empty response from OpenAI")
+                logger.debug(f"[GRADE_SPEAKING] Empty response from OpenAI")
                 return {
                     "content_score": 0,
                     "content_feedback": "Lỗi: API không trả về kết quả",
@@ -721,7 +724,7 @@ Trả về JSON với format:
             
             # Validate JSON before parsing
             if not content:
-                print(f"[GRADE_SPEAKING] Content is empty after cleanup")
+                logger.debug(f"[GRADE_SPEAKING] Content is empty after cleanup")
                 return {
                     "content_score": 0,
                     "content_feedback": "Lỗi: Không thể phân tích kết quả",
@@ -736,7 +739,7 @@ Trả về JSON với format:
                 }
             
             # Debug: print raw content
-            print(f"[GRADE_SPEAKING] Raw API response (first 200 chars): {content[:200]}")
+            logger.debug(f"[GRADE_SPEAKING] Raw API response (first 200 chars): {content[:200]}")
             
             result = json.loads(content)
             
@@ -753,8 +756,8 @@ Trả về JSON với format:
             }
             
         except json.JSONDecodeError as je:
-            print(f"Error grading speaking content - JSON decode error: {je}")
-            print(f"Raw content that failed to parse: {content if 'content' in locals() else 'N/A'}")
+            logger.info(f"Error grading speaking content - JSON decode error: {je}")
+            logger.info(f"Raw content that failed to parse: {content if 'content' in locals() else 'N/A'}")
             return {
                 "content_score": 0,
                 "content_feedback": "Lỗi khi phân tích kết quả từ AI",
@@ -768,7 +771,7 @@ Trả về JSON với format:
                 "error": f"JSON decode error: {str(je)}"
             }
         except Exception as e:
-            print(f"Error grading speaking content: {e}")
+            logger.info(f"Error grading speaking content: {e}")
             import traceback
             traceback.print_exc()
             return {
@@ -803,18 +806,18 @@ Trả về JSON với format:
             "max_score": 10
         }
         
-        print(f"[GRADE_COMPREHENSIVE] Exercise content keys: {exercise_content.keys()}")
-        print(f"[GRADE_COMPREHENSIVE] Student answers keys: {student_answers.keys()}")
+        logger.debug(f"[GRADE_COMPREHENSIVE] Exercise content keys: {exercise_content.keys()}")
+        logger.debug(f"[GRADE_COMPREHENSIVE] Student answers keys: {student_answers.keys()}")
         
         # Grade Listening questions
         # Check both locations: content.listening.questions AND content.questions with skill="listening"
         listening_questions = []
         if "listening" in exercise_content and "questions" in exercise_content["listening"]:
             listening_questions = exercise_content["listening"]["questions"]
-            print(f"[GRADE_COMPREHENSIVE] Found {len(listening_questions)} listening questions in content.listening.questions")
+            logger.debug(f"[GRADE_COMPREHENSIVE] Found {len(listening_questions)} listening questions in content.listening.questions")
         else:
             listening_questions = [q for q in exercise_content.get("questions", []) if q.get("skill") == "listening"]
-            print(f"[GRADE_COMPREHENSIVE] Found {len(listening_questions)} listening questions in content.questions")
+            logger.debug(f"[GRADE_COMPREHENSIVE] Found {len(listening_questions)} listening questions in content.questions")
         
         for q in listening_questions:
             # Try multiple key formats: "listening_X", "X", X (int)
@@ -844,17 +847,17 @@ Trả về JSON với format:
             })
             results["listening"]["total_points"] += grade_result.get("points_earned", 0)
         
-        print(f"[GRADE_COMPREHENSIVE] Listening graded: {results['listening']['total_points']}/2.5")
+        logger.debug(f"[GRADE_COMPREHENSIVE] Listening graded: {results['listening']['total_points']}/2.5")
         
         # Grade Reading questions
         # Check both locations: content.reading.questions AND content.questions with skill="reading"
         reading_questions = []
         if "reading" in exercise_content and "questions" in exercise_content["reading"]:
             reading_questions = exercise_content["reading"]["questions"]
-            print(f"[GRADE_COMPREHENSIVE] Found {len(reading_questions)} reading questions in content.reading.questions")
+            logger.debug(f"[GRADE_COMPREHENSIVE] Found {len(reading_questions)} reading questions in content.reading.questions")
         else:
             reading_questions = [q for q in exercise_content.get("questions", []) if q.get("skill") == "reading"]
-            print(f"[GRADE_COMPREHENSIVE] Found {len(reading_questions)} reading questions in content.questions")
+            logger.debug(f"[GRADE_COMPREHENSIVE] Found {len(reading_questions)} reading questions in content.questions")
         
         for q in reading_questions:
             # Try multiple key formats: "reading_X", "X", X (int)
@@ -879,11 +882,11 @@ Trả về JSON với format:
                         else:
                             student_ans = {}
                     except json.JSONDecodeError as e:
-                        print(f"Error grading fill blank: {e}")
-                        print(f"Failed to parse matching answer: '{student_ans}'")
+                        logger.info(f"Error grading fill blank: {e}")
+                        logger.info(f"Failed to parse matching answer: '{student_ans}'")
                         student_ans = {}
                     except Exception as e:
-                        print(f"Error grading fill blank: {e}")
+                        logger.info(f"Error grading fill blank: {e}")
                         student_ans = {}
                 grade_result = await self.grade_matching(q, student_ans)
             else:
@@ -898,7 +901,7 @@ Trả về JSON với format:
             })
             results["reading"]["total_points"] += grade_result.get("points_earned", 0)
         
-        print(f"[GRADE_COMPREHENSIVE] Reading graded: {results['reading']['total_points']}/2.5")
+        logger.debug(f"[GRADE_COMPREHENSIVE] Reading graded: {results['reading']['total_points']}/2.5")
         
         # Grade Writing
         writing_text = student_answers.get("writing_main", "")

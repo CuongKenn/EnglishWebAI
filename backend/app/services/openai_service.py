@@ -4,13 +4,28 @@ Handles interactions with OpenAI API (ChatGPT) for AI conversation
 """
 
 import openai
+import logging
+
+logger = logging.getLogger(__name__)
 import asyncio
+import logging
+
+logger = logging.getLogger(__name__)
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 from typing import List, Dict
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 from app.core.config import settings
 
 
+import logging
+
+logger = logging.getLogger(__name__)
 class OpenAIService:
     """Service for handling OpenAI (ChatGPT) conversations"""
     
@@ -27,10 +42,10 @@ class OpenAIService:
                 self.client = openai
                 self.model = model_name
             except Exception as e:
-                print(f"Warning: Failed to initialize OpenAI: {str(e)}")
+                logger.info(f"Warning: Failed to initialize OpenAI: {str(e)}")
                 self.client = None
         else:
-            print("Warning: OPENAI_API_KEY not configured")
+            logger.info("Warning: OPENAI_API_KEY not configured")
     
     def generate_content(self, prompt: str) -> str:
         """
@@ -55,7 +70,7 @@ class OpenAIService:
             )
             return response.choices[0].message.content
         except Exception as e:
-            print(f"Error generating content: {str(e)}")
+            logger.info(f"Error generating content: {str(e)}")
             raise
     
     async def generate_text(self, prompt: str) -> str:
@@ -127,7 +142,7 @@ class OpenAIService:
             
         except Exception as e:
             # Log error and return a friendly message
-            print(f"OpenAI API Error: {str(e)}")
+            logger.info(f"OpenAI API Error: {str(e)}")
             return "I'm sorry, I'm having trouble responding right now. Please try again in a moment."
     
     async def get_conversation_suggestions(self, topic: str = None) -> List[str]:
@@ -161,7 +176,7 @@ class OpenAIService:
             return suggestions[:5]  # Return max 5 suggestions
             
         except Exception as e:
-            print(f"Error generating suggestions: {str(e)}")
+            logger.info(f"Error generating suggestions: {str(e)}")
             return [
                 "What did you do today?",
                 "What are your hobbies?",
@@ -226,6 +241,9 @@ class OpenAIService:
             
             # Try to parse JSON from response
             import json
+import logging
+
+logger = logging.getLogger(__name__)
             # Remove markdown code blocks if present
             if "```json" in result_text:
                 result_text = result_text.split("```json")[1].split("```")[0].strip()
@@ -236,7 +254,7 @@ class OpenAIService:
             return feedback
             
         except Exception as e:
-            print(f"Error checking writing: {str(e)}")
+            logger.info(f"Error checking writing: {str(e)}")
             # Return fallback response
             return {
                 "overall_score": 70,
@@ -317,6 +335,9 @@ Level: {level}"""
             
             # Try to parse JSON from response
             import json
+import logging
+
+logger = logging.getLogger(__name__)
             # Remove markdown code blocks if present
             if "```json" in result_text:
                 result_text = result_text.split("```json")[1].split("```")[0].strip()
@@ -327,7 +348,7 @@ Level: {level}"""
             return topic_data
             
         except Exception as e:
-            print(f"Error generating topic: {str(e)}")
+            logger.info(f"Error generating topic: {str(e)}")
             # Return fallback topic based on type and level
             fallback_topics = {
                 "essay": {
@@ -417,6 +438,9 @@ Rules:
             
             text = response.choices[0].message.content.strip()
             import json
+import logging
+
+logger = logging.getLogger(__name__)
             if "```json" in text:
                 text = text.split("```json")[1].split("```")[0].strip()
             elif "```" in text:
@@ -424,7 +448,7 @@ Rules:
             data = json.loads(text)
             return data
         except Exception as e:
-            print(f"Error generating listening segment: {e}")
+            logger.info(f"Error generating listening segment: {e}")
             # Fallback minimal
             return {
                 "title": "Daily Routine",
@@ -471,6 +495,9 @@ Keep prompts realistic for intermediate learners.
             
             text = response.choices[0].message.content.strip()
             import json
+import logging
+
+logger = logging.getLogger(__name__)
             if "```json" in text:
                 text = text.split("```json")[1].split("```")[0].strip()
             elif "```" in text:
@@ -478,7 +505,7 @@ Keep prompts realistic for intermediate learners.
             data = json.loads(text)
             return data
         except Exception as e:
-            print(f"Error generating speaking tasks: {e}")
+            logger.info(f"Error generating speaking tasks: {e}")
             return {
                 "tasks": [
                     {
@@ -604,17 +631,20 @@ IMPORTANT:
             
             result_text = response.choices[0].message.content.strip()
             
-            print(f"[AI Reading] Raw response from OpenAI (first 500 chars): {result_text[:500]}")
+            logger.info(f"[AI Reading] Raw response from OpenAI (first 500 chars): {result_text[:500]}")
             
             # Parse JSON from response
             import json
+import logging
+
+logger = logging.getLogger(__name__)
             # Remove markdown code blocks if present
             if "```json" in result_text:
                 result_text = result_text.split("```json")[1].split("```")[0].strip()
             elif "```" in result_text:
                 result_text = result_text.split("```")[1].split("```")[0].strip()
             
-            print(f"[AI Reading] Cleaned JSON (first 300 chars): {result_text[:300]}")
+            logger.info(f"[AI Reading] Cleaned JSON (first 300 chars): {result_text[:300]}")
             
             reading_data = json.loads(result_text)
             
@@ -633,15 +663,18 @@ IMPORTANT:
             reading_data["level"] = level
             reading_data["reading_type"] = reading_type
             
-            print(f"[AI Reading] Successfully generated passage with {len(reading_data['questions'])} questions")
+            logger.info(f"[AI Reading] Successfully generated passage with {len(reading_data['questions'])} questions")
             
             return reading_data
             
         except Exception as e:
-            print(f"Error generating reading passage: {str(e)}")
+            logger.info(f"Error generating reading passage: {str(e)}")
             import traceback
+import logging
+
+logger = logging.getLogger(__name__)
             traceback.print_exc()
-            print(f"[AI Reading] Using fallback passage for level: {level}")
+            logger.info(f"[AI Reading] Using fallback passage for level: {level}")
             # Return fallback passage based on level
             fallback_passages = {
                 "beginner": {
@@ -992,7 +1025,7 @@ IMPORTANT:
             }
             
         except Exception as e:
-            print(f"Error checking reading answers: {str(e)}")
+            logger.info(f"Error checking reading answers: {str(e)}")
             return {
                 "score": 0,
                 "total_questions": len(questions),
@@ -1140,8 +1173,8 @@ Return your response in JSON format:
             }
             
         except json.JSONDecodeError as e:
-            print(f"Error parsing OpenAI JSON response: {str(e)}")
-            print(f"Raw response: {result_text[:500]}")
+            logger.info(f"Error parsing OpenAI JSON response: {str(e)}")
+            logger.info(f"Raw response: {result_text[:500]}")
             # Fallback: basic scoring
             word_count = len(writing_text.split())
             basic_score = min(max_score, (word_count / 100) * max_score * 0.7)
@@ -1161,7 +1194,7 @@ Return your response in JSON format:
             }
             
         except Exception as e:
-            print(f"Error grading writing: {str(e)}")
+            logger.info(f"Error grading writing: {str(e)}")
             return {
                 "score": 0,
                 "max_score": max_score,
@@ -1355,6 +1388,9 @@ QUAN TRỌNG:
             
             # Parse JSON
             import json
+import logging
+
+logger = logging.getLogger(__name__)
             if "```json" in result_text:
                 result_text = result_text.split("```json")[1].split("```")[0].strip()
             elif "```" in result_text:
@@ -1365,7 +1401,7 @@ QUAN TRỌNG:
             return lesson_plan_data
             
         except Exception as e:
-            print(f"Error generating lesson plan: {str(e)}")
+            logger.info(f"Error generating lesson plan: {str(e)}")
             # Return fallback lesson plan structure
             return {
                 "title": f"{unit} - {lesson_number}",
@@ -1647,6 +1683,9 @@ YÊU CẦU:
             
             # Parse JSON
             import json
+import logging
+
+logger = logging.getLogger(__name__)
             if "```json" in result_text:
                 result_text = result_text.split("```json")[1].split("```")[0].strip()
             elif "```" in result_text:
@@ -1657,7 +1696,7 @@ YÊU CẦU:
             return worksheet_data
             
         except Exception as e:
-            print(f"Error generating worksheet: {str(e)}")
+            logger.info(f"Error generating worksheet: {str(e)}")
             # Return fallback worksheet
             return {
                 "title": f"{unit} - {worksheet_type.title()} Exercise",
@@ -1685,4 +1724,5 @@ YÊU CẦU:
 
 # Create a singleton instance
 openai_service = OpenAIService()
+
 

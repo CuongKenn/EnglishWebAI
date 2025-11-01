@@ -4,7 +4,13 @@ API endpoints for managing exam assessments (midterm/final exams)
 imported from Word documents
 """
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
+import logging
+
+logger = logging.getLogger(__name__)
 from fastapi.responses import JSONResponse
+import logging
+
+logger = logging.getLogger(__name__)
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
@@ -201,9 +207,9 @@ async def _auto_grade_exam_submission(submission: ExamSubmission, db: Session):
                             total_score += result['earned']
                             auto_graded_count += 1
                             
-                            print(f"[AUTO-GRADE-EXAM] Writing Q{q_id} graded: {result['earned']}/{q_points}")
+                            logger.info(f"[AUTO-GRADE-EXAM] Writing Q{q_id} graded: {result['earned']}/{q_points}")
                         except Exception as e:
-                            print(f"[AUTO-GRADE-EXAM] Error grading writing Q{q_id}: {e}")
+                            logger.info(f"[AUTO-GRADE-EXAM] Error grading writing Q{q_id}: {e}")
                             result['status'] = 'grading_error'
                             result['error'] = str(e)
                     
@@ -230,14 +236,14 @@ async def _auto_grade_exam_submission(submission: ExamSubmission, db: Session):
                                 # Relative path, prepend media/
                                 audio_path = f'media/{audio_path}'
                             
-                            print(f"[AUTO-GRADE-EXAM] Checking audio path: {audio_path}")
+                            logger.info(f"[AUTO-GRADE-EXAM] Checking audio path: {audio_path}")
                             
                             if os.path.exists(audio_path):
                                 reference_text = question.get('reference_text', '') or question.get('question_text', '')
                                 question_text = question.get('question_text', '')
                                 
                                 # Step 1: Azure pronunciation assessment
-                                print(f"[AUTO-GRADE-EXAM] Grading speaking Q{q_id} with Azure...")
+                                logger.info(f"[AUTO-GRADE-EXAM] Grading speaking Q{q_id} with Azure...")
                                 pronunciation_result = await ai_grading_service.grade_speaking_pronunciation(
                                     audio_path,
                                     reference_text
@@ -247,8 +253,8 @@ async def _auto_grade_exam_submission(submission: ExamSubmission, db: Session):
                                 recognized_text = pronunciation_result.get("recognized_text", "")
                                 
                                 if recognized_text and pronunciation_result.get("success"):
-                                    print(f"[AUTO-GRADE-EXAM] Recognized text: {recognized_text}")
-                                    print(f"[AUTO-GRADE-EXAM] Grading speaking content Q{q_id} with ChatGPT...")
+                                    logger.info(f"[AUTO-GRADE-EXAM] Recognized text: {recognized_text}")
+                                    logger.info(f"[AUTO-GRADE-EXAM] Grading speaking content Q{q_id} with ChatGPT...")
                                     rubric = question.get('rubric', {})
                                     
                                     content_result = await ai_grading_service.grade_speaking_content(
@@ -294,17 +300,17 @@ async def _auto_grade_exam_submission(submission: ExamSubmission, db: Session):
                                     total_score += result['earned']
                                     auto_graded_count += 1
                                     
-                                    print(f"[AUTO-GRADE-EXAM] Speaking Q{q_id} graded: {result['earned']}/{q_points}")
+                                    logger.info(f"[AUTO-GRADE-EXAM] Speaking Q{q_id} graded: {result['earned']}/{q_points}")
                                 else:
                                     result['status'] = 'recognition_failed'
                                     result['error'] = pronunciation_result.get('error', 'Không thể nhận diện giọng nói')
-                                    print(f"[AUTO-GRADE-EXAM] Speaking Q{q_id} recognition failed: {result['error']}")
+                                    logger.info(f"[AUTO-GRADE-EXAM] Speaking Q{q_id} recognition failed: {result['error']}")
                             else:
                                 result['status'] = 'audio_not_found'
                                 result['error'] = f'File audio không tồn tại: {audio_path}'
-                                print(f"[AUTO-GRADE-EXAM] Audio file not found: {audio_path}")
+                                logger.info(f"[AUTO-GRADE-EXAM] Audio file not found: {audio_path}")
                         except Exception as e:
-                            print(f"[AUTO-GRADE-EXAM] Error grading speaking Q{q_id}: {e}")
+                            logger.info(f"[AUTO-GRADE-EXAM] Error grading speaking Q{q_id}: {e}")
                             import traceback
                             traceback.print_exc()
                             result['status'] = 'grading_error'
@@ -330,7 +336,7 @@ async def _auto_grade_exam_submission(submission: ExamSubmission, db: Session):
     else:
         submission.status = "pending_review"  # Still needs teacher review
     
-    print(f"[_auto_grade_exam_submission] Exam submission {submission.id}: {auto_graded_count}/{total_questions} auto-graded, score={total_score}/{total_possible}")
+    logger.info(f"[_auto_grade_exam_submission] Exam submission {submission.id}: {auto_graded_count}/{total_questions} auto-graded, score={total_score}/{total_possible}")
 
 
 
@@ -386,16 +392,16 @@ async def upload_exam_from_word(
             f.write(file_content)
         
         # Extract content from Word file
-        print(f"[upload_exam] Extracting content from {file.filename}...")
+        logger.info(f"[upload_exam] Extracting content from {file.filename}...")
         extracted_content = docx_service.extract_content(file_content, save_images=True)
         
-        print(f"[upload_exam] Extracted {len(extracted_content['paragraphs'])} paragraphs, {len(extracted_content['images'])} images")
+        logger.info(f"[upload_exam] Extracted {len(extracted_content['paragraphs'])} paragraphs, {len(extracted_content['images'])} images")
         
         # Create prompt for OpenAI
         prompt = docx_service.create_exam_prompt(extracted_content, exam_type)
         
         # Parse with OpenAI
-        print("[upload_exam] Sending to OpenAI for parsing...")
+        logger.info("[upload_exam] Sending to OpenAI for parsing...")
         response = openai_service.generate_content(prompt)
         
         # Parse JSON response
@@ -407,7 +413,7 @@ async def upload_exam_from_word(
         
         parsed_content = json.loads(response_text)
         
-        print(f"[upload_exam] Parsed exam: {parsed_content.get('exam_title')}")
+        logger.info(f"[upload_exam] Parsed exam: {parsed_content.get('exam_title')}")
         
         # Map image paths to relative URLs
         if extracted_content['images']:
@@ -463,7 +469,7 @@ async def upload_exam_from_word(
         db.commit()
         db.refresh(exam)
         
-        print(f"[upload_exam] Created exam assessment ID: {exam.id}")
+        logger.info(f"[upload_exam] Created exam assessment ID: {exam.id}")
         
         return ExamImportResponse(
             success=True,
@@ -473,13 +479,13 @@ async def upload_exam_from_word(
         )
         
     except json.JSONDecodeError as e:
-        print(f"[upload_exam] JSON parse error: {e}")
+        logger.info(f"[upload_exam] JSON parse error: {e}")
         raise HTTPException(
             status_code=500,
             detail=f"Lỗi phân tích nội dung từ AI: {str(e)}"
         )
     except Exception as e:
-        print(f"[upload_exam] Error: {e}")
+        logger.info(f"[upload_exam] Error: {e}")
         import traceback
         traceback.print_exc()
         raise HTTPException(
@@ -703,7 +709,7 @@ async def submit_exam(
     try:
         await _auto_grade_exam_submission(submission, db)
     except Exception as e:
-        print(f"[submit_exam] Auto-grade error: {e}")
+        logger.info(f"[submit_exam] Auto-grade error: {e}")
         import traceback
         traceback.print_exc()
         # Continue even if auto-grade fails
@@ -715,7 +721,7 @@ async def submit_exam(
     try:
         NotificationService.notify_parents_on_exam_submission(db, submission)
     except Exception as e:
-        print(f"[SUBMIT-EXAM] Error creating notification: {e}")
+        logger.info(f"[SUBMIT-EXAM] Error creating notification: {e}")
     
     return submission
 
@@ -804,7 +810,7 @@ async def auto_grade_exam_submission(
             }
         })
     except Exception as e:
-        print(f"[AUTO-GRADE-EXAM] Error: {e}")
+        logger.info(f"[AUTO-GRADE-EXAM] Error: {e}")
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Lỗi chấm tự động: {str(e)}")
@@ -847,7 +853,7 @@ async def grade_exam_submission(
         if submission.score and submission.score < 5.0:
             NotificationService.notify_parents_on_exam_low_score(db, submission)
     except Exception as e:
-        print(f"[EXAM-GRADE] Error creating notification: {e}")
+        logger.info(f"[EXAM-GRADE] Error creating notification: {e}")
     
     return submission
 
@@ -912,4 +918,5 @@ async def get_class_exam_submissions(
     db.refresh(submission)
     
     return submission
+
 

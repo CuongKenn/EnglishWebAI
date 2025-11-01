@@ -3,10 +3,25 @@ AI Exercise Generator Service
 Generates exercises based on Vietnam's 2018 Foreign Language Curriculum
 """
 from openai import OpenAI
+import logging
+
+logger = logging.getLogger(__name__)
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 import uuid
+import logging
+
+logger = logging.getLogger(__name__)
 import time
+import logging
+
+logger = logging.getLogger(__name__)
 from typing import Dict, List, Optional
 import azure.cognitiveservices.speech as speechsdk
 
@@ -86,7 +101,7 @@ class AIExerciseGenerator:
         Returns the file path of the generated audio
         """
         if not self.speech_key:
-            print("Azure Speech Key not found, skipping audio generation")
+            logger.info("Azure Speech Key not found, skipping audio generation")
             return ""
         
         try:
@@ -123,15 +138,15 @@ class AIExerciseGenerator:
             result = speech_synthesizer.speak_text_async(text).get()
             
             if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
-                print(f"✅ Audio generated successfully: {audio_path}")
+                logger.info(f"✅ Audio generated successfully: {audio_path}")
                 # Return URL path for frontend
                 return f"/api/v1/media/files/audio/{filename}"
             else:
-                print(f"❌ Speech synthesis failed: {result.reason}")
+                logger.info(f"❌ Speech synthesis failed: {result.reason}")
                 return ""
                 
         except Exception as e:
-            print(f"Error generating audio: {e}")
+            logger.info(f"Error generating audio: {e}")
             return ""
     
     async def generate_full_exam(
@@ -324,8 +339,8 @@ Chỉ trả về JSON, không có text khác."""
             # Increased significantly for longer transcripts: Base 3000 + 400 per question per skill
             # With 10 questions per skill: 3000 + 4000 = 7000 tokens (within GPT-4 limit)
             max_tokens = min(3000 + (questions_per_skill * 400), 8000)
-            print(f"[AI Generate] Full Exam - Grade {grade}, Semester {semester}, {questions_per_skill} Q/skill")
-            print(f"[AI Generate] Using model={self.model}, max_tokens={max_tokens}, timeout=300s")
+            logger.info(f"[AI Generate] Full Exam - Grade {grade}, Semester {semester}, {questions_per_skill} Q/skill")
+            logger.info(f"[AI Generate] Using model={self.model}, max_tokens={max_tokens}, timeout=300s")
             
             # Determine if model supports max_tokens or max_completion_tokens
             # GPT-4o and newer models use max_completion_tokens
@@ -364,11 +379,11 @@ Chỉ trả về JSON, không có text khác."""
             
             # Try configured model first
             try:
-                print(f"[AI Generate] Attempting with {self.model} (using {'max_completion_tokens' if use_max_completion_tokens else 'max_tokens'})")
+                logger.info(f"[AI Generate] Attempting with {self.model} (using {'max_completion_tokens' if use_max_completion_tokens else 'max_tokens'})")
                 response = self.client.chat.completions.create(**common_params)
             except Exception as e:
                 if "429" in str(e) or "quota" in str(e).lower():
-                    print(f"[AI Generate] {self.model} quota exceeded, trying fallback model...")
+                    logger.info(f"[AI Generate] {self.model} quota exceeded, trying fallback model...")
                     fallback_model = self.fallback_model
                     fallback_params = common_params.copy()
                     fallback_params["model"] = fallback_model
@@ -383,7 +398,7 @@ Chỉ trả về JSON, không có text khác."""
             content = response.choices[0].message.content.strip()
             
             # Log raw response for debugging
-            print(f"[AI Generate] Raw response length: {len(content)} chars")
+            logger.info(f"[AI Generate] Raw response length: {len(content)} chars")
             
             # Remove markdown code blocks if present
             if content.startswith("```json"):
@@ -398,15 +413,15 @@ Chỉ trả về JSON, không có text khác."""
             try:
                 result = json.loads(content)
             except json.JSONDecodeError as json_err:
-                print(f"[AI Generate] ❌ JSON Parse Error: {json_err}")
-                print(f"[AI Generate] Error at position {json_err.pos}")
-                print(f"[AI Generate] Context around error:")
+                logger.info(f"[AI Generate] ❌ JSON Parse Error: {json_err}")
+                logger.info(f"[AI Generate] Error at position {json_err.pos}")
+                logger.info(f"[AI Generate] Context around error:")
                 start = max(0, json_err.pos - 150)
                 end = min(len(content), json_err.pos + 150)
-                print(f"...{content[start:end]}...")
+                logger.info(f"...{content[start:end]}...")
                 
                 # Try to fix common JSON issues
-                print("[AI Generate] Attempting to fix common JSON errors...")
+                logger.info("[AI Generate] Attempting to fix common JSON errors...")
                 
                 # Fix common issues:
                 # 1. Unescaped quotes and newlines in strings
@@ -414,6 +429,9 @@ Chỉ trả về JSON, không có text khác."""
                 # 3. Missing commas
                 import re
                 
+import logging
+
+logger = logging.getLogger(__name__)
                 content_fixed = content
                 
                 # Replace literal newlines within strings with \n
@@ -425,9 +443,9 @@ Chỉ trả về JSON, không có text khác."""
                 
                 try:
                     result = json.loads(content_fixed)
-                    print("[AI Generate] ✅ Fixed JSON successfully after error recovery")
+                    logger.info("[AI Generate] ✅ Fixed JSON successfully after error recovery")
                 except Exception as fix_err:
-                    print(f"[AI Generate] ❌ Could not auto-fix JSON: {fix_err}")
+                    logger.info(f"[AI Generate] ❌ Could not auto-fix JSON: {fix_err}")
                     # Save problematic content to file for debugging
                     error_file = f"/app/logs/json_error_{int(time.time())}.txt"
                     try:
@@ -435,7 +453,7 @@ Chỉ trả về JSON, không có text khác."""
                             f.write(f"Original error: {json_err}\n\n")
                             f.write(f"Content:\n{content}\n\n")
                             f.write(f"Fixed attempt:\n{content_fixed}")
-                        print(f"[AI Generate] Error details saved to {error_file}")
+                        logger.info(f"[AI Generate] Error details saved to {error_file}")
                     except:
                         pass
                     raise json_err
@@ -460,16 +478,16 @@ Chỉ trả về JSON, không có text khác."""
             
             # Generate audio for listening section
             if result.get("listening") and result["listening"].get("script"):
-                print("🎧 Generating audio for listening section...")
+                logger.info("🎧 Generating audio for listening section...")
                 audio_url = await self._generate_audio_from_text(result["listening"]["script"])
                 if audio_url:
                     result["listening"]["audio_url"] = audio_url
-                    print(f"✅ Audio URL: {audio_url}")
+                    logger.info(f"✅ Audio URL: {audio_url}")
             
             return result
             
         except Exception as e:
-            print(f"Error generating full exam: {e}")
+            logger.info(f"Error generating full exam: {e}")
             raise
     
     async def generate_skill_exercise(
@@ -609,7 +627,7 @@ Trả về JSON:
             return exercise_data
             
         except Exception as e:
-            print(f"Error generating full exam: {str(e)}")
+            logger.info(f"Error generating full exam: {str(e)}")
             raise
     
     async def generate_skill_exercise(
@@ -748,15 +766,16 @@ Trả về JSON:
             
             # Generate audio for listening exercise
             if skill == "listening" and exercise_data.get("listening", {}).get("script"):
-                print("🎧 Generating audio for listening exercise...")
+                logger.info("🎧 Generating audio for listening exercise...")
                 script = exercise_data["listening"]["script"]
                 audio_url = await self._generate_audio_from_text(script)
                 if audio_url:
                     exercise_data["listening"]["audio_url"] = audio_url
-                    print(f"✅ Audio URL: {audio_url}")
+                    logger.info(f"✅ Audio URL: {audio_url}")
             
             return exercise_data
             
         except Exception as e:
-            print(f"Error generating {skill} exercise: {str(e)}")
+            logger.info(f"Error generating {skill} exercise: {str(e)}")
             raise
+

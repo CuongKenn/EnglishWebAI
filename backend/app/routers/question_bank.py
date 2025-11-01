@@ -381,7 +381,7 @@ def bulk_delete_questions(
 async def upload_audio(file: UploadFile = File(...), current_user: User = Depends(get_current_user)):
     """Upload audio file for listening questions"""
     try:
-        print(f"[UPLOAD AUDIO] START - Filename: {file.filename}, ContentType: {file.content_type}, Size: {file.size if hasattr(file, 'size') else 'unknown'}")
+        logger.info(f"[UPLOAD AUDIO] START - Filename: {file.filename}, ContentType: {file.content_type}, Size: {file.size if hasattr(file, 'size') else 'unknown'}")
         
         allowed = {
             "audio/mpeg", "audio/wav", "audio/x-wav", "audio/mp3", 
@@ -395,10 +395,10 @@ async def upload_audio(file: UploadFile = File(...), current_user: User = Depend
         allowed_extensions = {".mp3", ".wav", ".m4a", ".aac", ".webm", ".ogg", ".mp4", ".flac"}
         has_valid_extension = any(filename_lower.endswith(ext) for ext in allowed_extensions)
         
-        print(f"[UPLOAD AUDIO] Validation - has_valid_extension: {has_valid_extension}, content_type_allowed: {file.content_type in allowed}")
+        logger.info(f"[UPLOAD AUDIO] Validation - has_valid_extension: {has_valid_extension}, content_type_allowed: {file.content_type in allowed}")
         
         if file.content_type not in allowed and not has_valid_extension:
-            print(f"[UPLOAD AUDIO] REJECTED - Invalid file type")
+            logger.info(f"[UPLOAD AUDIO] REJECTED - Invalid file type")
             raise HTTPException(
                 status_code=400, 
                 detail=f"Unsupported audio type: {file.content_type}. Please upload .mp3, .wav, .m4a, .aac, .webm, .ogg, or .flac files."
@@ -407,23 +407,23 @@ async def upload_audio(file: UploadFile = File(...), current_user: User = Depend
         # Read file content
         content = await file.read()
         if not content:
-            print(f"[UPLOAD AUDIO] REJECTED - File is empty")
+            logger.info(f"[UPLOAD AUDIO] REJECTED - File is empty")
             raise HTTPException(status_code=400, detail="File is empty")
         
         # Check file size (max 100MB)
         file_size_mb = len(content) / 1024 / 1024
-        print(f"[UPLOAD AUDIO] File size: {file_size_mb:.2f} MB")
+        logger.info(f"[UPLOAD AUDIO] File size: {file_size_mb:.2f} MB")
         if file_size_mb > 100:
-            print(f"[UPLOAD AUDIO] REJECTED - File too large")
+            logger.info(f"[UPLOAD AUDIO] REJECTED - File too large")
             raise HTTPException(status_code=400, detail=f"File too large ({file_size_mb:.1f}MB). Maximum size is 100MB.")
         
         # Save file
         try:
             save_dir = os.path.join(_media_dir(), "audio")
-            print(f"[UPLOAD AUDIO] Creating directory: {save_dir}")
+            logger.info(f"[UPLOAD AUDIO] Creating directory: {save_dir}")
             os.makedirs(save_dir, exist_ok=True)
         except Exception as e:
-            print(f"[UPLOAD AUDIO] Failed to create directory: {e}")
+            logger.info(f"[UPLOAD AUDIO] Failed to create directory: {e}")
             raise HTTPException(status_code=500, detail=f"Failed to create upload directory: {str(e)}")
         
         # Sanitize filename
@@ -433,24 +433,24 @@ async def upload_audio(file: UploadFile = File(...), current_user: User = Depend
             filename = f"{current_user.id}_{timestamp}_{safe_filename}"
             path = os.path.join(save_dir, filename)
             
-            print(f"[UPLOAD AUDIO] Saving to: {path}")
+            logger.info(f"[UPLOAD AUDIO] Saving to: {path}")
             
             with open(path, "wb") as f:
                 f.write(content)
             
-            print(f"[UPLOAD AUDIO] File saved successfully")
+            logger.info(f"[UPLOAD AUDIO] File saved successfully")
         except Exception as e:
-            print(f"[UPLOAD AUDIO] Failed to save file: {e}")
+            logger.info(f"[UPLOAD AUDIO] Failed to save file: {e}")
             raise HTTPException(status_code=500, detail=f"Failed to save audio file: {str(e)}")
         
         sanitized_filename = filename.rstrip("'\"")
         url = f"/media/question_bank/audio/{sanitized_filename}"
-        print(f"[UPLOAD AUDIO] Success: {url}")
+        logger.info(f"[UPLOAD AUDIO] Success: {url}")
         return {"url": url}
     except HTTPException:
         raise
     except Exception as e:
-        print(f"[UPLOAD AUDIO] Error: {e}")
+        logger.info(f"[UPLOAD AUDIO] Error: {e}")
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to upload audio file: {str(e)}")
@@ -484,7 +484,7 @@ async def parse_docx(file: UploadFile = File(...), current_user: User = Depends(
         if not full_text:
             raise HTTPException(status_code=400, detail="No text found in document")
         
-        print(f"[PARSE DOCX] Successfully parsed {len(text_parts)} paragraphs, {len(full_text)} characters")
+        logger.info(f"[PARSE DOCX] Successfully parsed {len(text_parts)} paragraphs, {len(full_text)} characters")
         
         return {
             "text": full_text,
@@ -494,7 +494,7 @@ async def parse_docx(file: UploadFile = File(...), current_user: User = Depends(
     except HTTPException:
         raise
     except Exception as e:
-        print(f"[PARSE DOCX] Error: {e}")
+        logger.info(f"[PARSE DOCX] Error: {e}")
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to parse document: {str(e)}")
@@ -540,12 +540,12 @@ async def upload_passage(file: UploadFile = File(...), current_user: User = Depe
             f.write(content)
         
         url = f"/media/question_bank/passage/{filename}"
-        print(f"[UPLOAD PASSAGE] Success: {url}")
+        logger.info(f"[UPLOAD PASSAGE] Success: {url}")
         return {"url": url}
     except HTTPException:
         raise
     except Exception as e:
-        print(f"[UPLOAD PASSAGE] Error: {e}")
+        logger.info(f"[UPLOAD PASSAGE] Error: {e}")
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to upload passage file: {str(e)}")
@@ -775,11 +775,11 @@ async def generate_test(
     total = max(1, min(50, config.totalQuestions))
     sd = config.skillDistribution or {"listening": 25, "speaking": 25, "reading": 25, "writing": 25}
     
-    print(f"[DEBUG] ===== AI Test Generation Started =====")
-    print(f"[DEBUG] Total questions: {total}")
-    print(f"[DEBUG] Skill distribution received: {sd}")
-    print(f"[DEBUG] Avoid duplicates: {config.avoidDuplicates}")
-    print(f"[DEBUG] AI only: {config.aiOnly}")
+    logger.info(f"[DEBUG] ===== AI Test Generation Started =====")
+    logger.info(f"[DEBUG] Total questions: {total}")
+    logger.info(f"[DEBUG] Skill distribution received: {sd}")
+    logger.info(f"[DEBUG] Avoid duplicates: {config.avoidDuplicates}")
+    logger.info(f"[DEBUG] AI only: {config.aiOnly}")
 
     # Compute target counts per skill
     skill_targets = {}
@@ -793,8 +793,8 @@ async def generate_test(
         # add/rem to reading by default
         skill_targets["reading"] = max(0, (skill_targets.get("reading", 0) or 0) + (total - assigned))
     
-    print(f"[DEBUG] Skill targets calculated: {skill_targets}")
-    print(f"[DEBUG] Total assigned: {sum(skill_targets.values())}")
+    logger.info(f"[DEBUG] Skill targets calculated: {skill_targets}")
+    logger.info(f"[DEBUG] Total assigned: {sum(skill_targets.values())}")
 
     out_questions: List[GeneratedTestQuestion] = []
 
@@ -921,7 +921,7 @@ async def generate_test(
 
     # Reading: generate a passage + questions; slice to target count
     reading_target = skill_targets.get("reading", 0)
-    print(f"[DEBUG] Reading target: {reading_target} questions")
+    logger.info(f"[DEBUG] Reading target: {reading_target} questions")
     if reading_target > 0:
         try:
             # Keep calling AI until enough unique reading questions
@@ -932,27 +932,27 @@ async def generate_test(
             max_attempts = max(5, min(reading_target // 2 + 3, 20))  # Scale with target, cap at 20
             # Dynamic timeout: more time for larger targets
             timeout_seconds = min(20 + (reading_target // 5) * 5, 40)  # 20-40 seconds
-            print(f"[DEBUG] Max attempts: {max_attempts}, Timeout: {timeout_seconds}s")
+            logger.info(f"[DEBUG] Max attempts: {max_attempts}, Timeout: {timeout_seconds}s")
             
             while len([x for x in out_questions if x.skill_type == "reading"]) < reading_target and attempts < max_attempts:
                 attempts += 1
-                print(f"[DEBUG] Reading attempt {attempts}/{max_attempts}")
+                logger.info(f"[DEBUG] Reading attempt {attempts}/{max_attempts}")
                 reading = await asyncio.wait_for(openai_service.generate_reading_passage(), timeout=timeout_seconds)
                 # Skip duplicate passages
                 if is_dup_passage(reading.get("passage")):
-                    print(f"[DEBUG] Skipped duplicate passage")
+                    logger.info(f"[DEBUG] Skipped duplicate passage")
                     continue
                 
                 successful_attempts += 1
                 # Add questions, filtering duplicates by text
                 rq = reading.get("questions", [])
-                print(f"[DEBUG] AI generated {len(rq)} reading questions")
+                logger.info(f"[DEBUG] AI generated {len(rq)} reading questions")
                 questions_added = 0
                 for q in rq:
                     if len([x for x in out_questions if x.skill_type == "reading"]) >= reading_target:
                         break
                     if is_dup_question(q.get("question", "")):
-                        print(f"[DEBUG] Skipped duplicate question")
+                        logger.info(f"[DEBUG] Skipped duplicate question")
                         continue
                     out_questions.append(GeneratedTestQuestion(
                         question_text=q.get("question", ""),
@@ -971,13 +971,13 @@ async def generate_test(
                         passage_text=reading.get("passage"),
                     ))
                     questions_added += 1
-                print(f"[DEBUG] Added {questions_added} reading questions to test")
+                logger.info(f"[DEBUG] Added {questions_added} reading questions to test")
             
-            print(f"[DEBUG] Total reading questions generated: {len([x for x in out_questions if x.skill_type == 'reading'])}")
+            logger.info(f"[DEBUG] Total reading questions generated: {len([x for x in out_questions if x.skill_type == 'reading'])}")
             # Ensure variety: at least one MC
             _ensure_multiple_choice([x for x in out_questions if x.skill_type == "reading"])
         except Exception as e:
-            print(f"[ERROR] Generate reading failed: {e}")
+            logger.info(f"[ERROR] Generate reading failed: {e}")
             import traceback
             traceback.print_exc()
             if not config.aiOnly:
@@ -986,7 +986,7 @@ async def generate_test(
             # Ensure at least some reading questions if target > 0
             current_reading = [q for q in out_questions if q.skill_type == "reading"]
             deficit = max(0, reading_target - len(current_reading))
-            print(f"[DEBUG] Reading deficit: {deficit} questions")
+            logger.info(f"[DEBUG] Reading deficit: {deficit} questions")
             if deficit > 0:
                 # Fallback static passage to guarantee presence
                 passage = (
@@ -1036,18 +1036,18 @@ async def generate_test(
 
     # Listening: create transcript + MC/fill questions via OpenAI
     listening_target = skill_targets.get("listening", 0)
-    print(f"[DEBUG] Listening target: {listening_target} questions")
+    logger.info(f"[DEBUG] Listening target: {listening_target} questions")
     if listening_target > 0:
         try:
             attempts = 0
             # Dynamic max_attempts: AI generates multiple questions per segment
             max_attempts = max(5, min(listening_target // 2 + 3, 20))
             timeout_seconds = min(20 + (listening_target // 5) * 5, 40)
-            print(f"[DEBUG] Max attempts: {max_attempts}, Timeout: {timeout_seconds}s")
+            logger.info(f"[DEBUG] Max attempts: {max_attempts}, Timeout: {timeout_seconds}s")
             
             while len([x for x in out_questions if x.skill_type == "listening"]) < listening_target and attempts < max_attempts:
                 attempts += 1
-                print(f"[DEBUG] Listening attempt {attempts}/{max_attempts}")
+                logger.info(f"[DEBUG] Listening attempt {attempts}/{max_attempts}")
                 data = await asyncio.wait_for(openai_service.generate_listening_segment(num_questions=listening_target), timeout=timeout_seconds)
                 if is_dup_transcript(data.get("transcript")):
                     continue
@@ -1075,9 +1075,9 @@ async def generate_test(
                     ))
             # Ensure variety: at least one MC
             _ensure_multiple_choice([x for x in out_questions if x.skill_type == "listening"])
-            print(f"[DEBUG] Total listening questions generated: {len([x for x in out_questions if x.skill_type == 'listening'])}")
+            logger.info(f"[DEBUG] Total listening questions generated: {len([x for x in out_questions if x.skill_type == 'listening'])}")
         except Exception as e:
-            print(f"[ERROR] Generate listening failed: {e}")
+            logger.info(f"[ERROR] Generate listening failed: {e}")
             import traceback
             traceback.print_exc()
             if not config.aiOnly:
@@ -1086,7 +1086,7 @@ async def generate_test(
             # Ensure at least some listening questions if target > 0
             current_listening = [q for q in out_questions if q.skill_type == "listening"]
             deficit = max(0, listening_target - len(current_listening))
-            print(f"[DEBUG] Listening deficit: {deficit} questions")
+            logger.info(f"[DEBUG] Listening deficit: {deficit} questions")
             if deficit > 0:
                 # Fallback: basic listening questions with transcript
                 fallback_transcript = "Hello, my name is Sarah. I work as a teacher at an international school. Every morning, I wake up at 6 AM and prepare for my classes. I love teaching because I enjoy helping students learn new things."
@@ -1112,11 +1112,11 @@ async def generate_test(
 
     # Speaking: generate tasks/prompts
     speaking_target = skill_targets.get("speaking", 0)
-    print(f"[DEBUG] Speaking target: {speaking_target} questions")
+    logger.info(f"[DEBUG] Speaking target: {speaking_target} questions")
     if speaking_target > 0:
         try:
             timeout_seconds = min(12 + (speaking_target // 3) * 3, 30)
-            print(f"[DEBUG] Generating speaking tasks... Timeout: {timeout_seconds}s")
+            logger.info(f"[DEBUG] Generating speaking tasks... Timeout: {timeout_seconds}s")
             sp = await asyncio.wait_for(openai_service.generate_speaking_tasks(count=speaking_target), timeout=timeout_seconds)
             for t in sp.get("tasks", [])[:speaking_target]:
                 if is_dup_question(t.get("prompt", "")):
@@ -1132,9 +1132,9 @@ async def generate_test(
                     tags=["speaking"],
                     points=3,
                 ))
-            print(f"[DEBUG] Total speaking questions generated: {len([x for x in out_questions if x.skill_type == 'speaking'])}")
+            logger.info(f"[DEBUG] Total speaking questions generated: {len([x for x in out_questions if x.skill_type == 'speaking'])}")
         except Exception as e:
-            print(f"[ERROR] Generate speaking failed: {e}")
+            logger.info(f"[ERROR] Generate speaking failed: {e}")
             import traceback
             traceback.print_exc()
             if not config.aiOnly:
@@ -1143,7 +1143,7 @@ async def generate_test(
             # Ensure at least some speaking questions if target > 0
             current_speaking = [q for q in out_questions if q.skill_type == "speaking"]
             deficit = max(0, speaking_target - len(current_speaking))
-            print(f"[DEBUG] Speaking deficit: {deficit} questions")
+            logger.info(f"[DEBUG] Speaking deficit: {deficit} questions")
             if deficit > 0:
                 # Fallback: basic speaking prompts
                 fallback_prompts = [
@@ -1168,14 +1168,14 @@ async def generate_test(
 
     # Writing: generate prompts
     writing_target = skill_targets.get("writing", 0)
-    print(f"[DEBUG] Writing target: {writing_target} questions")
+    logger.info(f"[DEBUG] Writing target: {writing_target} questions")
     if writing_target > 0:
         try:
-            print(f"[DEBUG] Generating writing prompts...")
+            logger.info(f"[DEBUG] Generating writing prompts...")
             timeout_seconds = min(12 + (writing_target // 3) * 3, 30)
             # Generate all requested writing questions (no limit)
             for i in range(writing_target):
-                print(f"[DEBUG] Writing prompt {i+1}/{writing_target}, Timeout: {timeout_seconds}s")
+                logger.info(f"[DEBUG] Writing prompt {i+1}/{writing_target}, Timeout: {timeout_seconds}s")
                 wt = await asyncio.wait_for(openai_service.generate_writing_topic("essay", "intermediate"), timeout=timeout_seconds)
                 if is_dup_question(wt.get("prompt", "")):
                     continue
@@ -1191,7 +1191,7 @@ async def generate_test(
                     points=4,
                 ))
         except Exception as e:
-            print("Generate writing failed:", e)
+            logger.info("Generate writing failed:", e)
             if not config.aiOnly:
                 out_questions.extend(fallback_from_bank("writing", writing_target))
         finally:
@@ -1225,12 +1225,12 @@ async def generate_test(
         # Try extra AI calls ignoring duplication rules to fill remaining
         try:
             remaining = total - len(out_questions)
-            print(f"[DEBUG] Need {remaining} more questions to reach target {total}")
+            logger.info(f"[DEBUG] Need {remaining} more questions to reach target {total}")
             attempts = 0
             max_fill_attempts = min(3, (remaining // 3) + 1)
             while remaining > 0 and attempts < max_fill_attempts:
                 attempts += 1
-                print(f"[DEBUG] Fill attempt {attempts}/{max_fill_attempts}")
+                logger.info(f"[DEBUG] Fill attempt {attempts}/{max_fill_attempts}")
                 # Prefer reading passages to create self-contained questions
                 reading = await asyncio.wait_for(openai_service.generate_reading_passage(), timeout=20)
                 rq = reading.get("questions", [])
@@ -1258,7 +1258,7 @@ async def generate_test(
             pass
     # If still short, fill proportionally by skill deficit (not randomly!)
     if len(out_questions) < total:
-        print(f"[DEBUG] Total short by {total - len(out_questions)} questions. Filling by skill deficit...")
+        logger.info(f"[DEBUG] Total short by {total - len(out_questions)} questions. Filling by skill deficit...")
         
         # Calculate deficit per skill
         skill_deficits = {}
@@ -1268,14 +1268,14 @@ async def generate_test(
             deficit = max(0, target - current)
             if deficit > 0:
                 skill_deficits[skill] = deficit
-                print(f"[DEBUG] {skill} deficit: {deficit} questions")
+                logger.info(f"[DEBUG] {skill} deficit: {deficit} questions")
         
         # Fill from bank proportionally by deficit
         if not config.aiOnly and skill_deficits:
             for skill, deficit in sorted(skill_deficits.items(), key=lambda x: -x[1]):  # Largest deficit first
                 extra = fallback_from_bank(skill, deficit)
                 if extra:
-                    print(f"[DEBUG] Filled {len(extra)} {skill} questions from bank")
+                    logger.info(f"[DEBUG] Filled {len(extra)} {skill} questions from bank")
                     out_questions.extend(extra)
         
         # As a final guard, if still short, duplicate proportionally by deficit
@@ -1322,7 +1322,7 @@ async def generate_test(
                         passage_text=getattr(base, "passage_text", None),
                     ))
                     skill_deficits[target_skill] -= 1
-                    print(f"[DEBUG] Duplicated {target_skill} question (deficit now: {skill_deficits[target_skill]})")
+                    logger.info(f"[DEBUG] Duplicated {target_skill} question (deficit now: {skill_deficits[target_skill]})")
                 else:
                     # No questions of this skill exist, remove from deficit list
                     del skill_deficits[target_skill]
@@ -1392,7 +1392,7 @@ async def generate_test(
     total_points = sum([q.points for q in out_questions])
     
     # Log final results
-    print(f"[DEBUG] ===== Generation Complete =====")
+    logger.info(f"[DEBUG] ===== Generation Complete =====")
     skill_counts = {}
     for skill in ["listening", "speaking", "reading", "writing"]:
         count = len([q for q in out_questions if q.skill_type == skill])
@@ -1400,16 +1400,16 @@ async def generate_test(
         target = skill_targets.get(skill, 0)
         delta = count - target
         status = "✓" if abs(delta) <= 1 else "⚠"
-        print(f"[DEBUG] {status} {skill.capitalize()}: {count} questions (target: {target}, delta: {delta:+d})")
-    print(f"[DEBUG] Total questions: {len(out_questions)} (target: {total})")
-    print(f"[DEBUG] Total points: {total_points}")
+        logger.info(f"[DEBUG] {status} {skill.capitalize()}: {count} questions (target: {target}, delta: {delta:+d})")
+    logger.info(f"[DEBUG] Total questions: {len(out_questions)} (target: {total})")
+    logger.info(f"[DEBUG] Total points: {total_points}")
     
     # Force rebalance if severely imbalanced
     for skill in ["reading", "writing", "speaking"]:  # Don't touch listening first
         target = skill_targets.get(skill, 0)
         current = len([q for q in out_questions if q.skill_type == skill])
         if target > 0 and current < target - 2:  # More than 2 questions short
-            print(f"[WARNING] {skill} severely short: {current}/{target}. Attempting rebalance...")
+            logger.info(f"[WARNING] {skill} severely short: {current}/{target}. Attempting rebalance...")
             # Find over-allocated skills to steal from
             for donor_skill in ["listening", "speaking", "reading", "writing"]:
                 if donor_skill == skill:
@@ -1419,7 +1419,7 @@ async def generate_test(
                 if donor_current > donor_target + 2:  # More than 2 questions over
                     # Steal questions from donor
                     steal_count = min(target - current, donor_current - donor_target)
-                    print(f"[REBALANCE] Stealing {steal_count} questions from {donor_skill} to {skill}")
+                    logger.info(f"[REBALANCE] Stealing {steal_count} questions from {donor_skill} to {skill}")
                     stolen = 0
                     for i, q in enumerate(out_questions):
                         if q.skill_type == donor_skill and stolen < steal_count:
@@ -1758,7 +1758,7 @@ async def save_from_test_to_bank(
             db.flush()
             saved_ids.append(item.id)
         except Exception as e:
-            print("Skip saving a question due to error:", e)
+            logger.info("Skip saving a question due to error:", e)
             continue
     db.commit()
     return {"saved": len(saved_ids), "ids": saved_ids}
@@ -1904,3 +1904,4 @@ async def delete_testset(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Failed to delete test set: {e}")
+

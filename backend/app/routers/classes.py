@@ -1,5 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
+import logging
+
+logger = logging.getLogger(__name__)
 from fastapi.responses import StreamingResponse
+import logging
+
+logger = logging.getLogger(__name__)
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List, Optional
@@ -234,7 +240,7 @@ async def get_classes_teaching(
         return out
     except Exception as e:
         # Log để debug lỗi 500 thay vì trả text/plain chung chung
-        print("[ERROR] /classes/teaching:", repr(e))
+        logger.info("[ERROR] /classes/teaching:", repr(e))
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/{class_id}", response_model=ClassroomResponse)
@@ -1008,10 +1014,10 @@ async def import_excel_to_class(
     - Ngày sinh: Ngày sinh (tùy chọn)
     """
     try:
-        print(f"🔍 DEBUG: Received file: {file.filename}")
-        print(f"🔍 DEBUG: Default password: {default_password}")
-        print(f"🔍 DEBUG: Class ID: {class_id}")
-        print(f"🔍 DEBUG: User: {current_user.username}")
+        logger.info(f"🔍 DEBUG: Received file: {file.filename}")
+        logger.info(f"🔍 DEBUG: Default password: {default_password}")
+        logger.info(f"🔍 DEBUG: Class ID: {class_id}")
+        logger.info(f"🔍 DEBUG: User: {current_user.username}")
         
         # Validate file type - accept .xls, .xlsx, .csv
         if not file.filename.lower().endswith(('.xlsx', '.xls', '.csv')):
@@ -1020,15 +1026,15 @@ async def import_excel_to_class(
                 detail=f"File phải có định dạng Excel (.xlsx, .xls) hoặc CSV (.csv). File nhận được: {file.filename}"
             )
         
-        print(f"✅ File type OK: {file.filename}")
+        logger.info(f"✅ File type OK: {file.filename}")
         
         # Parse Excel file
-        print(f"📄 Parsing Excel file...")
+        logger.info(f"📄 Parsing Excel file...")
         students = ExcelImportService.parse_excel_file(file)
-        print(f"✅ Parsed {len(students)} students")
+        logger.info(f"✅ Parsed {len(students)} students")
         
         # Import students to class
-        print(f"➕ Importing students to class {class_id}...")
+        logger.info(f"➕ Importing students to class {class_id}...")
         result = ExcelImportService.import_students_to_class(
             db=db,
             class_id=class_id,
@@ -1036,12 +1042,12 @@ async def import_excel_to_class(
             current_user=current_user,
             default_password=default_password
         )
-        print(f"✅ Import complete: {result.success_count} success, {result.failed_count} failed")
+        logger.info(f"✅ Import complete: {result.success_count} success, {result.failed_count} failed")
         
     except HTTPException:
         raise
     except Exception as e:
-        print(f"❌ ERROR in import_excel_to_class: {type(e).__name__}: {str(e)}")
+        logger.info(f"❌ ERROR in import_excel_to_class: {type(e).__name__}: {str(e)}")
         import traceback
         traceback.print_exc()
         raise HTTPException(
@@ -1143,3 +1149,4 @@ async def preview_excel_import_to_class(
             })
     
     return analysis
+

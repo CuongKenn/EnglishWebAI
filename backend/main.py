@@ -24,14 +24,22 @@ from app.models import User
 # Import all models to ensure they're registered with SQLAlchemy metadata
 from app.models import *
 import os
+import logging
+
+# Setup logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 # Create all tables from models (PostgreSQL handles IF NOT EXISTS internally)
 # This ensures all tables exist regardless of migration state
 try:
     Base.metadata.create_all(bind=engine, checkfirst=True)
-    print("[SUCCESS] All database tables created/verified")
+    logger.info("All database tables created/verified")
 except Exception as e:
-    print(f"[WARNING] Could not create all tables: {e}")
+    logger.warning(f"Could not create all tables: {e}")
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -111,15 +119,15 @@ except Exception:
 @app.on_event("startup")
 async def startup_event():
     """Run on application startup"""
-    print("[STARTUP] Starting EnglishWebAI Backend...")
+    logger.info("Starting EnglishWebAI Backend...")
     
     # Auto-migrate lightweight schema (SQLite add columns if missing)
     try:
         from app.utils.db_migrations import ensure_schema
         ensure_schema()
-        print("[SUCCESS] Schema ensured (light migration)")
+        logger.info("Schema ensured (light migration)")
     except Exception as e:
-        print(f"[WARNING] Schema ensure failed: {e}")
+        logger.warning(f"Schema ensure failed: {e}")
 
     # Auto-seed database if empty
     from app.utils.seed import seed_users
@@ -129,16 +137,16 @@ async def startup_event():
     try:
         user_count = db.query(User).count()
         if user_count == 0:
-            print("[INFO] Database is empty. Running auto-seed...")
+            logger.info("Database is empty. Running auto-seed...")
             seed_users(db, force=False)
-            print("[SUCCESS] Auto-seed completed!")
+            logger.info("Auto-seed completed!")
         else:
-            print(f"[INFO] Database already has {user_count} users. Skipping auto-seed.")
+            logger.info(f"Database already has {user_count} users. Skipping auto-seed.")
 
         # Initialize default system configurations
         from app.services.system_config_service import SystemConfigService
         SystemConfigService.initialize_default_configs(db)
-        print("[SUCCESS] System configurations initialized!")
+        logger.info("System configurations initialized!")
 
         # Seed public courses if none exist
         try:
@@ -146,10 +154,10 @@ async def startup_event():
             seed_courses(db)
             seed_course_units_questions(db)
         except Exception as se:
-            print(f"[WARNING] Course seeding skipped: {se}")
+            logger.warning(f"Course seeding skipped: {se}")
         
     except Exception as e:
-        print(f"[ERROR] Startup error: {str(e)}")
+        logger.error(f"Startup error: {str(e)}")
     finally:
         db.close()
     
@@ -175,18 +183,18 @@ async def startup_event():
                         await asyncio.sleep(1)
                         
                 except Exception as e:
-                    print(f"[GRADING WORKER ERROR] {e}")
+                    logger.error(f"Grading worker error: {e}")
                     await asyncio.sleep(30)  # Wait longer on error
                 finally:
                     db.close()
                     
             except Exception as e:
-                print(f"[GRADING WORKER CRITICAL ERROR] {e}")
+                logger.critical(f"Grading worker critical error: {e}")
                 await asyncio.sleep(60)
     
     # Start worker task in background
     asyncio.create_task(run_grading_worker())
-    print("[SUCCESS] Grading queue worker started!")
+    logger.info("Grading queue worker started!")
 
 @app.get("/")
 async def root():
