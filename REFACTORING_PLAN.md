@@ -289,9 +289,16 @@ SubmissionGrading/
   - 85% reduction from original 1999 lines
   - Build tested and passing
   
+- 🔄 DoExercise.jsx (Partially Started - Commit 38d734b):
+  - useFullscreen hook extracted (~120 lines)
+  - REFACTORING_STATUS.md created with plan
+  - Remaining: 5 hooks + 6 components
+  - Status: Requires dedicated 6-8 hour session
+  - Reason: High complexity (audio recording, multiple question types, timer)
+  
 - ⏳ Remaining Work:
-  - DoExercise: Full refactoring (2013 lines)
-  - SubmissionGradingPage: Full refactoring (1804 lines)
+  - DoExercise: Complete extraction (5 hooks, 6 components)
+  - SubmissionGradingPage: Full refactoring (1830 lines)
 
 **CreateExerciseModal COMPLETE:**
 - Original: CreateExerciseModalComplete.jsx - 1999 lines
@@ -300,9 +307,19 @@ SubmissionGrading/
   - 12 components (QuestionList, AIGenerationPanel, ImportPanel, skill forms, basic components)
   - 4 custom hooks (useExerciseCreation, useQuestionManagement, useAIGeneration, useFileImport)
   - Constants & utils (380 lines)
-- Build status: All passing ✅ (26 commits on optimize-production-code)
+- Build status: All passing ✅ (28 commits on optimize-production-code)
 - Maintainability: ✅ Each component <400 lines
 - Testability: ✅ Isolated business logic in hooks
+
+**Overall Progress:**
+- ✅ CoursesManagement: 1480 → 1252 lines (228 lines reduced)
+- ✅ CreateExerciseModal: 1999 → 300 lines (1699 lines reduced, 2480 lines modularized)
+- 🔄 DoExercise: Partial (useFullscreen extracted)
+- ⏳ SubmissionGradingPage: Not started
+
+**Total Lines Refactored:** ~3,500 lines
+**Total Commits:** 28 on optimize-production-code branch
+**Build Status:** All passing ✅
 
 ---
 
