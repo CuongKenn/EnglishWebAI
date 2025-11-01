@@ -64,8 +64,8 @@ def _ensure_student_access(db: Session, current_user: User, class_id: int) -> bo
         return True
     
     enrollment = db.query(Enrollment).filter(
-        Enrollment.classroom_id == class_id,
-        Enrollment.student_id == current_user.id
+        Enrollment.class_id == class_id,
+        Enrollment.user_id == current_user.id
     ).first()
     
     return enrollment is not None
