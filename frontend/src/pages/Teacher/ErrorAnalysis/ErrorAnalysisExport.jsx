@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react';
 import { FileBarChart, Download, Filter, AlertCircle, CheckCircle, TrendingDown, FileText, Users, Calendar, Award } from 'lucide-react';
 import { Card } from '../../../components/ui/card';
 import { apiV1 } from '../../../services/api';
+import { useToast } from '../../../components/ui/Toast';
 import './ErrorAnalysisExport.css';
 
 export default function ErrorAnalysisExport() {
+  const toast = useToast();
   const [classes, setClasses] = useState([]);
   const [selectedClass, setSelectedClass] = useState('');
   const [weekNumber, setWeekNumber] = useState('');
@@ -31,7 +33,7 @@ export default function ErrorAnalysisExport() {
 
   const handleExport = async () => {
     if (!selectedClass) {
-      alert('Vui lòng chọn lớp học!');
+      toast.warning('Vui lòng chọn lớp học!');
       return;
     }
 
@@ -67,9 +69,10 @@ export default function ErrorAnalysisExport() {
       link.click();
       link.remove();
 
-      alert('✅ Đã tải xuống báo cáo phân tích lỗi thành công!');
+      toast.success('Đã tải xuống báo cáo phân tích lỗi thành công!');
     } catch (err) {
       setError(err.response?.data?.detail || err.message || 'Lỗi khi xuất báo cáo');
+      toast.error(err.response?.data?.detail || 'Lỗi khi xuất báo cáo');
       console.error('Failed to export error analysis:', err);
     } finally {
       setLoading(false);

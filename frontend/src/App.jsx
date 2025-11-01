@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react'; // 1. Import useState
 import { Routes, Route, useNavigate, Navigate } from 'react-router-dom';
+import { ToastProvider } from './components/ui/Toast'; // Import Toast Provider
 
 // Import Layout và các trang
 import Layout from './components/Layout/Layout';
@@ -480,7 +481,7 @@ function App() {
         }
       />
       </Routes>
-    </>
+    </ToastProvider>
   );
 }
 

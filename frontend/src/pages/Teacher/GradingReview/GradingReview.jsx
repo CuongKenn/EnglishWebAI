@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiV1 } from '../../../services/api';
 import { CheckCircle, XCircle, Clock, AlertCircle, Eye, Edit2 } from 'lucide-react';
+import { useToast } from '../../../components/ui/Toast';
 import './GradingReview.css';
 
 const GradingReview = () => {
   const navigate = useNavigate();
+  const toast = useToast();
   const [pendingSubmissions, setPendingSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedSubmission, setSelectedSubmission] = useState(null);
@@ -60,7 +62,7 @@ const GradingReview = () => {
       });
     } catch (error) {
       console.error('Error fetching submission details:', error);
-      alert('Không thể tải chi tiết bài nộp');
+      toast.error('Không thể tải chi tiết bài nộp');
     }
   };
 
@@ -68,20 +70,20 @@ const GradingReview = () => {
     if (!selectedSubmission) return;
 
     if (!reviewData.approved && !reviewData.final_score) {
-      alert('Vui lòng nhập điểm mới nếu không đồng ý với điểm AI');
+      toast.warning('Vui lòng nhập điểm mới nếu không đồng ý với điểm AI');
       return;
     }
 
     try {
       await apiV1.post(`/teacher/${selectedSubmission.id}/review`, reviewData);
-      alert('Đã duyệt bài thành công!');
+      toast.success('Đã duyệt bài thành công!');
       setSelectedSubmission(null);
       setReviewMode(false);
       fetchPendingSubmissions();
       fetchStats();
     } catch (error) {
       console.error('Error reviewing submission:', error);
-      alert('Lỗi khi duyệt bài: ' + (error.response?.data?.detail || error.message));
+      toast.error('Lỗi khi duyệt bài: ' + (error.response?.data?.detail || error.message));
     }
   };
 
