@@ -194,6 +194,16 @@ export default function DoExercise() {
   
   const exitFullscreen = () => {
     try {
+      // Check if document is actually in fullscreen mode
+      const isInFullscreen = document.fullscreenElement || 
+                            document.webkitFullscreenElement || 
+                            document.msFullscreenElement;
+      
+      if (!isInFullscreen) {
+        setIsFullscreen(false);
+        return;
+      }
+      
       if (document.exitFullscreen) {
         document.exitFullscreen();
       } else if (document.webkitExitFullscreen) { /* Safari */
@@ -204,6 +214,7 @@ export default function DoExercise() {
       setIsFullscreen(false);
     } catch (error) {
       console.warn('Cannot exit fullscreen:', error);
+      setIsFullscreen(false);
     }
   };
 
