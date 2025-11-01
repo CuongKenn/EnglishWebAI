@@ -57,6 +57,9 @@ import TeacherCommunication from './pages/Parent/TeacherCommunication/TeacherCom
 // Import Welcome Notification
 import WelcomeNotification from './components/WelcomeNotification/WelcomeNotification';
 
+// Import 404 Page
+import NotFound from './pages/NotFound/NotFound';
+
 // Import Profile
 import Profile from './components/Profile/Profile';
 
@@ -491,6 +494,9 @@ function App() {
           </ProtectedRoute>
         }
       />
+      
+      {/* 404 Not Found - Must be last route */}
+      <Route path="*" element={<NotFound />} />
       </Routes>
     </ToastProvider>
   );
