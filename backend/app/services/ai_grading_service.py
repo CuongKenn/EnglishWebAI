@@ -941,19 +941,80 @@ Trả về JSON với format:
                     "overall_comment": "Không thể nhận diện giọng nói"
                 }
             
-            # Combine scores: 50% pronunciation, 50% content
-            pronunciation_score = pronunciation_result.get("pronunciation_score", 0) / 100 * 1.25
-            content_score = content_result.get("content_score", 0)
-            total_speaking_score = pronunciation_score + content_score
+            # IMPROVED SCORING ALGORITHM - More balanced and accurate
+            # Components (each 0-100 scale from Azure):
+            pronunciation_score = pronunciation_result.get("pronunciation_score", 0)
+            fluency_score = pronunciation_result.get("fluency_score", 0)
+            completeness_score = pronunciation_result.get("completeness_score", 0)
+            accuracy_score = pronunciation_result.get("accuracy_score", 0)
+            
+            # Calculate pronunciation component (40% of total = 1.0/2.5 points)
+            # Weighted average of Azure metrics (focus on pronunciation & fluency)
+            pronunciation_component = (
+                pronunciation_score * 0.5 +  # Main pronunciation
+                fluency_score * 0.35 +       # Natural flow
+                accuracy_score * 0.15        # Recognition accuracy
+            ) / 100 * 1.0
+            
+            # Calculate content component (45% of total = 1.125/2.5 points)
+            # Based on ChatGPT content grading (scale down from max 2.5)
+            content_component = content_result.get("content_score", 0) * 0.45
+            
+            # Calculate completeness component (15% of total = 0.375/2.5 points)
+            # How much student actually said vs what was expected
+            completeness_component = completeness_score / 100 * 0.375
+            
+            # Total speaking score
+            total_speaking_score = (
+                pronunciation_component +
+                content_component +
+                completeness_component
+            )
+            
+            # Generate detailed feedback text
+            feedback_text_parts = []
+            
+            # Pronunciation feedback
+            if pronunciation_score >= 80:
+                feedback_text_parts.append(f"✅ Phát âm rất tốt ({pronunciation_score:.0f}/100)")
+            elif pronunciation_score >= 60:
+                feedback_text_parts.append(f"⚠️ Phát âm cần cải thiện ({pronunciation_score:.0f}/100)")
+            else:
+                feedback_text_parts.append(f"❌ Phát âm cần luyện tập nhiều hơn ({pronunciation_score:.0f}/100)")
+            
+            # Fluency feedback
+            if fluency_score >= 80:
+                feedback_text_parts.append(f"✅ Nói trôi chảy ({fluency_score:.0f}/100)")
+            elif fluency_score >= 60:
+                feedback_text_parts.append(f"⚠️ Cần nói tự nhiên hơn ({fluency_score:.0f}/100)")
+            else:
+                feedback_text_parts.append(f"❌ Cần luyện độ trôi chảy ({fluency_score:.0f}/100)")
+            
+            # Completeness feedback
+            if completeness_score >= 80:
+                feedback_text_parts.append(f"✅ Hoàn thành đầy đủ ({completeness_score:.0f}/100)")
+            elif completeness_score >= 60:
+                feedback_text_parts.append(f"⚠️ Thiếu một số phần ({completeness_score:.0f}/100)")
+            else:
+                feedback_text_parts.append(f"❌ Nội dung chưa đầy đủ ({completeness_score:.0f}/100)")
+            
+            pronunciation_feedback = " | ".join(feedback_text_parts)
             
             results["speaking"] = {
                 "points_earned": round(min(total_speaking_score, 2.5), 2),
                 "max_points": 2.5,
                 "pronunciation": pronunciation_result,
                 "content": content_result,
+                "scoring_breakdown": {
+                    "pronunciation_component": round(pronunciation_component, 2),
+                    "content_component": round(content_component, 2),
+                    "completeness_component": round(completeness_component, 2),
+                    "weights": "40% pronunciation, 45% content, 15% completeness"
+                },
                 "feedback": {
-                    "pronunciation": f"Phát âm: {pronunciation_result.get('pronunciation_score', 0)}/100",
-                    "content": content_result.get("overall_comment", "")
+                    "pronunciation": pronunciation_feedback,
+                    "content": content_result.get("overall_comment", ""),
+                    "recognized_text": recognized_text
                 },
                 "needs_review": True
             }

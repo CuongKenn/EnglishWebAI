@@ -205,7 +205,30 @@ class GradingQueueService:
                 speaking_feedback = result['speaking'].get('feedback', {})
                 pronunciation_text = speaking_feedback.get('pronunciation', '')
                 content_text = speaking_feedback.get('content', '')
-                feedback_parts.append(f"🗣️ Speaking: {result['speaking']['points_earned']:.1f}/2.5đ\n{pronunciation_text}\n{content_text[:200]}")
+                recognized_text = speaking_feedback.get('recognized_text', '')
+                
+                # Get scoring breakdown if available
+                breakdown = result['speaking'].get('scoring_breakdown', {})
+                if breakdown:
+                    breakdown_text = f"\n💡 Chi tiết điểm: Phát âm {breakdown.get('pronunciation_component', 0):.2f}đ, Nội dung {breakdown.get('content_component', 0):.2f}đ, Hoàn thành {breakdown.get('completeness_component', 0):.2f}đ"
+                else:
+                    breakdown_text = ""
+                
+                speaking_parts = [
+                    f"🗣️ Speaking: {result['speaking']['points_earned']:.1f}/2.5đ",
+                    pronunciation_text,
+                ]
+                
+                if recognized_text:
+                    speaking_parts.append(f"📝 Văn bản nhận dạng: \"{recognized_text}\"")
+                
+                if breakdown_text:
+                    speaking_parts.append(breakdown_text)
+                
+                if content_text:
+                    speaking_parts.append(f"\n{content_text[:300]}")
+                
+                feedback_parts.append("\n".join(speaking_parts))
             
             # Combine all feedback
             if feedback_parts:
