@@ -31,7 +31,8 @@ const Header = ({ userRole = 'student', isLoggedIn = false, onLogout }) => {
           { path: '/exercises', label: 'Làm bài tập' },
           { path: '/results', label: 'Xem lại kết quả' },
           { path: '/discussion', label: 'Thảo luận/Hỏi đáp' },
-          { path: '/progress', label: 'Theo dõi tiến độ học tập cá nhân' }
+          { path: '/progress', label: 'Theo dõi tiến độ học tập cá nhân' },
+          { path: '/about', label: 'Giới thiệu' }
         ];
       case 'teacher':
         return [
@@ -41,19 +42,22 @@ const Header = ({ userRole = 'student', isLoggedIn = false, onLogout }) => {
           { path: '/assign-exercises', label: 'Giao bài tập và kiểm tra' },
           { path: '/grading', label: 'Chấm điểm và phản hồi' },
           { path: '/statistics', label: 'Thống kê và báo cáo' },
-          { path: '/online-teaching', label: 'Tích hợp dạy học trực tuyến' }
+          { path: '/online-teaching', label: 'Tích hợp dạy học trực tuyến' },
+          { path: '/about', label: 'Giới thiệu' }
         ];
       case 'parent':
         return [
           { path: '/track-progress', label: 'Theo dõi kết quả học tập' },
           { path: '/notifications', label: 'Nhận thông báo' },
-          { path: '/teacher-communication', label: 'Trao đổi với giáo viên' }
+          { path: '/teacher-communication', label: 'Trao đổi với giáo viên' },
+          { path: '/about', label: 'Giới thiệu' }
         ];
       case 'admin':
         return [
           { path: '/manage-accounts', label: 'Quản lý tài khoản giáo viên và học sinh' },
           { path: '/manage-classes-admin', label: 'Quản lý lớp học và phân công giảng dạy' },
-          { path: '/overview-stats', label: 'Xem thống kê tổng quan' }
+          { path: '/overview-stats', label: 'Xem thống kê tổng quan' },
+          { path: '/about', label: 'Giới thiệu' }
         ];
       default:
         return [];

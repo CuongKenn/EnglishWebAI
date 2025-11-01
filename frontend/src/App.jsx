@@ -66,6 +66,7 @@ import Profile from './components/Profile/Profile';
 // Import Other Pages
 import ReportCard from './pages/ReportCard/ReportCard';
 import InviteFriends from './pages/InviteFriends/InviteFriends';
+import AboutUs from './pages/AboutUs/AboutUs';
 
 // Import services
 import authService from './services/authService';
@@ -160,6 +161,14 @@ function App() {
         element={
           <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
             <Lessons />
+          </Layout>
+        }
+      />
+      <Route
+        path="/about"
+        element={
+          <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+            <AboutUs />
           </Layout>
         }
       />
