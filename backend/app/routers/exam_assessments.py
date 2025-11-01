@@ -136,8 +136,10 @@ async def _auto_grade_exam_submission(submission: ExamSubmission, db: Session):
                     auto_graded_count += 1
                     
                 elif q_type == 'fill_blank':
-                    # Simple string comparison (case-insensitive)
-                    is_correct = str(student_answer).strip().lower() == str(correct_answer).strip().lower()
+                    # Normalized string comparison (trim, lowercase, collapse spaces)
+                    def _norm(x):
+                        return " ".join(str(x if x is not None else "").strip().lower().split())
+                    is_correct = _norm(student_answer) == _norm(correct_answer)
                     result['correct'] = is_correct
                     result['earned'] = q_points if is_correct else 0.0
                     total_score += result['earned']

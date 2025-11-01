@@ -70,7 +70,8 @@ class AIExerciseGenerator:
             raise ValueError("OPENAI_API_KEY not found in environment variables")
         self.client = OpenAI(api_key=self.api_key)
         self.model = os.getenv("OPENAI_MODEL", "gpt-4o")  # Default to gpt-4o if not set
-        
+        self.fallback_model = os.getenv("OPENAI_FALLBACK_MODEL", self.model)
+
         # Azure Speech Config
         self.speech_key = os.getenv("AZURE_SPEECH_KEY")
         self.speech_region = os.getenv("AZURE_SPEECH_REGION", "eastasia")
@@ -367,8 +368,8 @@ Chỉ trả về JSON, không có text khác."""
                 response = self.client.chat.completions.create(**common_params)
             except Exception as e:
                 if "429" in str(e) or "quota" in str(e).lower():
-                    print(f"[AI Generate] {self.model} quota exceeded, trying gpt-3.5-turbo as fallback...")
-                    fallback_model = "gpt-3.5-turbo"
+                    print(f"[AI Generate] {self.model} quota exceeded, trying fallback model...")
+                    fallback_model = self.fallback_model
                     fallback_params = common_params.copy()
                     fallback_params["model"] = fallback_model
                     # gpt-3.5-turbo uses max_tokens

@@ -54,7 +54,7 @@ class ExcelImportService:
             client = OpenAI(api_key=settings.OPENAI_API_KEY)
             
             response = client.chat.completions.create(
-                model="gpt-5-nano",
+                model=settings.OPENAI_MODEL,
                 messages=[
                     {
                         "role": "user", 

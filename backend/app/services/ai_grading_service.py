@@ -3,6 +3,7 @@ AI Grading Service
 Auto-grade student submissions using AI (ChatGPT + Azure Speech)
 """
 from openai import OpenAI
+from app.core.config import settings
 import os
 import json
 from typing import Dict, List, Optional
@@ -12,11 +13,12 @@ import azure.cognitiveservices.speech as speechsdk
 class AIGradingService:
     def __init__(self):
         self.openai_key = os.getenv("OPENAI_API_KEY")
-        if not self.openai_key:
-            raise ValueError("OPENAI_API_KEY not found")
-        self.client = OpenAI(api_key=self.openai_key)
-        
-        # Azure Speech for pronunciation assessment
+        # OpenAI client (optional). Only required for writing/speaking content grading.
+        self.client = OpenAI(api_key=self.openai_key) if self.openai_key else None
+        # OpenAI model from environment/config
+        self.model = settings.OPENAI_MODEL
+
+        # Azure Speech for pronunciation assessment (optional)
         self.speech_key = os.getenv("AZURE_SPEECH_KEY")
         self.speech_region = os.getenv("AZURE_SPEECH_REGION", "eastasia")
     
@@ -41,71 +43,28 @@ class AIGradingService:
         }
     
     async def grade_fill_blank(self, question: Dict, student_answer: str) -> Dict:
-        """Grade fill in the blank using AI to check semantic similarity"""
+        """Grade fill in the blank using code-based string matching (no AI)."""
         correct_answer = question.get("correct_answer", "")
-        
-        try:
-            prompt = f"""You are grading a fill-in-the-blank English question.
 
-Question: {question.get('question', '')}
-Correct answer: {correct_answer}
-Student's answer: {student_answer}
+        def _normalize(text: str) -> str:
+            # Trim, lowercase, and collapse multiple spaces
+            if text is None:
+                return ""
+            return " ".join(str(text).strip().lower().split())
 
-Is the student's answer correct or semantically similar enough?
-Consider:
-- Exact match
-- Synonyms
-- Different word forms (e.g., "run" vs "running")
-- Minor spelling errors
+        student_norm = _normalize(student_answer)
+        correct_norm = _normalize(correct_answer)
 
-Respond with JSON:
-{{
-    "is_correct": true/false,
-    "score_percentage": 0-100,
-    "feedback": "Brief explanation in Vietnamese"
-}}"""
+        is_correct = (student_norm == correct_norm)
+        max_points = question.get("points", 0.25)
+        points_earned = max_points if is_correct else 0
 
-            response = self.client.chat.completions.create(
-                model="gpt-4",
-                messages=[
-                    {"role": "system", "content": "You are an English teacher grading student answers."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.3,
-                max_tokens=200
-            )
-            
-            content = response.choices[0].message.content.strip()
-            if content.startswith("```json"):
-                content = content[7:]
-            if content.startswith("```"):
-                content = content[3:]
-            if content.endswith("```"):
-                content = content[:-3]
-            content = content.strip()
-            
-            result = json.loads(content)
-            
-            max_points = question.get("points", 0.25)
-            points_earned = max_points * (result.get("score_percentage", 0) / 100)
-            
-            return {
-                "is_correct": result.get("is_correct", False),
-                "points_earned": round(points_earned, 2),
-                "max_points": max_points,
-                "feedback": result.get("feedback", "")
-            }
-            
-        except Exception as e:
-            print(f"Error grading fill blank: {e}")
-            # Fallback: exact match
-            is_correct = student_answer.strip().lower() == correct_answer.strip().lower()
-            return {
-                "is_correct": is_correct,
-                "points_earned": question.get("points", 0.25) if is_correct else 0,
-                "max_points": question.get("points", 0.25),
-                "feedback": "Chính xác!" if is_correct else f"Sai. Đáp án đúng: {correct_answer}"
-            }
+        return {
+            "is_correct": is_correct,
+            "points_earned": points_earned,
+            "max_points": max_points,
+            "feedback": "Chính xác!" if is_correct else f"Sai. Đáp án đúng: {correct_answer}"
+        }
     
     async def grade_true_false(self, question: Dict, student_answer: str) -> Dict:
         """Grade true/false question"""
@@ -193,7 +152,7 @@ Respond with JSON:
 }}"""
 
             response = self.client.chat.completions.create(
-                model="gpt-4",
+                model=self.model,
                 messages=[
                     {"role": "system", "content": "You are an experienced English teacher grading essays."},
                     {"role": "user", "content": prompt_text}
@@ -389,7 +348,7 @@ Trả về JSON với format:
 }}"""
 
             response = self.client.chat.completions.create(
-                model="gpt-4",
+                model=self.model,
                 messages=[
                     {"role": "system", "content": "Bạn là giáo viên tiếng Anh giàu kinh nghiệm, nhiệt tình và tận tâm. Bạn luôn đưa ra nhận xét chi tiết, cụ thể và xây dựng để giúp học sinh tiến bộ."},
                     {"role": "user", "content": prompt}

@@ -110,7 +110,7 @@ async def _auto_grade_submission(submission: Submission, exercise: Exercise, db:
     """
     Tự động chấm điểm using AI Grading Service:
     - Comprehensive test: Full AI grading (all 4 skills)
-    - Trắc nghiệm (multiple_choice, true_false, fill_blank): AI semantic checking
+    - Trắc nghiệm (multiple_choice, true_false, fill_blank): so khớp chuỗi (không dùng AI)
     - Writing: ChatGPT AI (chấm tự động, teacher có thể confirm)
     - Speaking: Azure Speech + ChatGPT (chấm tự động, teacher có thể confirm)
     """
@@ -329,50 +329,22 @@ async def _auto_grade_submission(submission: Submission, exercise: Exercise, db:
             }
         
         elif q_type == 'fill_blank':
-            # Use AI for semantic similarity checking (not just exact match)
-            try:
-                from app.services.ai_grading_service import AIGradingService
-                grading_service = AIGradingService()
-                
-                fill_result = await grading_service.grade_fill_blank(
-                    student_answer=str(student_answer),
-                    correct_answer=str(correct_answer),
-                    max_points=q_points
-                )
-                
-                earned_points = fill_result['points_earned']
-                is_correct = fill_result['is_correct']
-                total_score += earned_points
-                auto_graded_count += 1
-                
-                question_results[q_id] = {
-                    'type': q_type,
-                    'points': q_points,
-                    'earned': earned_points,
-                    'correct': is_correct,
-                    'student_answer': student_answer,
-                    'correct_answer': correct_answer,
-                    'ai_feedback': fill_result.get('feedback', ''),
-                    'semantic_match': fill_result.get('is_semantically_similar', False)
-                }
-            except Exception as e:
-                print(f"[AUTO-GRADE] Fill blank AI error: {str(e)}")
-                # Fallback to exact match
-                student_ans_normalized = str(student_answer).strip().lower()
-                correct_ans_normalized = str(correct_answer).strip().lower()
-                is_correct = (student_ans_normalized == correct_ans_normalized)
-                earned_points = q_points if is_correct else 0.0
-                total_score += earned_points
-                auto_graded_count += 1
-                
-                question_results[q_id] = {
-                    'type': q_type,
-                    'points': q_points,
-                    'earned': earned_points,
-                    'correct': is_correct,
-                    'student_answer': student_answer,
-                    'correct_answer': correct_answer
-                }
+            # So khớp chuỗi (cắt khoảng trắng, chuyển thường, gom khoảng trắng dư)
+            def _norm(x):
+                return " ".join(str(x if x is not None else "").strip().lower().split())
+            is_correct = _norm(student_answer) == _norm(correct_answer)
+            earned_points = q_points if is_correct else 0.0
+            total_score += earned_points
+            auto_graded_count += 1
+            
+            question_results[q_id] = {
+                'type': q_type,
+                'points': q_points,
+                'earned': earned_points,
+                'correct': is_correct,
+                'student_answer': student_answer,
+                'correct_answer': correct_answer
+            }
         
         elif q_type == 'matching':
             # Matching questions - grade with AI for partial credit
