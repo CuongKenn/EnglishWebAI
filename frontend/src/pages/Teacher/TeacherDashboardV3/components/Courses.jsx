@@ -1,15 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '../../../../components/ui/card';
 import { Button } from '../../../../components/ui/button';
 import { Input } from '../../../../components/ui/input';
 import { Badge } from '../../../../components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../../../../components/ui/dialog';
-import { Plus, Search, Upload, BookOpen, Users, Clock, Edit, Trash2, Eye, PlayCircle } from 'lucide-react';
+import { Plus, Search, Upload, BookOpen, Users, Clock, Edit, Trash2, Eye, PlayCircle, Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../../components/ui/tabs';
 import { Label } from '../../../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
 import { Textarea } from '../../../../components/ui/textarea';
 import { Progress } from '../../../../components/ui/progress';
+import { coursesManageAPI } from '../../../../services/coursesAPI';
 
 const Courses = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -20,7 +21,11 @@ const Courses = () => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isAddLessonOpen, setIsAddLessonOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [lessons, setLessons] = useState([]);
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [editFormData, setEditFormData] = useState({
     title: '',
     skill: '',
@@ -31,118 +36,128 @@ const Courses = () => {
     duration: 0
   });
 
-  const courses = [
-    {
-      id: '1',
-      title: 'Speaking Cơ Bản Plus',
-      level: 'PRE-INTERMEDIATE',
-      skill: 'speaking',
-      grade: 10,
-      lessons: 24,
-      students: 32,
-      status: 'active',
-      progress: 65,
-      thumbnail: '🗣️',
-      description: 'Khóa học phát triển kỹ năng nói tiếng Anh cơ bản với các chủ đề thực tế'
-    },
-    {
-      id: '2',
-      title: 'Writing Cơ Bản Plus 2',
-      level: 'PRE-INTERMEDIATE',
-      skill: 'writing',
-      grade: 10,
-      lessons: 20,
-      students: 30,
-      status: 'active',
-      progress: 45,
-      thumbnail: '✍️',
-      description: 'Nâng cao kỹ năng viết tiếng Anh học thuật và giao tiếp'
-    },
-    {
-      id: '3',
-      title: 'Reading Cơ Bản',
-      level: 'PRE-INTERMEDIATE',
-      skill: 'reading',
-      grade: 11,
-      lessons: 18,
-      students: 28,
-      status: 'active',
-      progress: 80,
-      thumbnail: '📖',
-      description: 'Phát triển khả năng đọc hiểu với các văn bản đa dạng'
-    },
-    {
-      id: '4',
-      title: 'Từ Vựng Cơ Bản Plus',
-      level: 'PRE-INTERMEDIATE',
-      skill: 'vocabulary',
-      grade: 10,
-      lessons: 30,
-      students: 35,
-      status: 'active',
-      progress: 30,
-      thumbnail: '📚',
-      description: 'Mở rộng vốn từ vựng tiếng Anh theo chủ đề'
-    },
-    {
-      id: '5',
-      title: 'Listening Nâng Cao',
-      level: 'INTERMEDIATE',
-      skill: 'listening',
-      grade: 11,
-      lessons: 22,
-      students: 25,
-      status: 'draft',
-      progress: 0,
-      thumbnail: '🎧',
-      description: 'Luyện nghe tiếng Anh với nhiều giọng nói và tốc độ khác nhau'
-    },
-    {
-      id: '6',
-      title: 'Grammar Foundation',
-      level: 'BEGINNER',
-      skill: 'grammar',
-      grade: 10,
-      lessons: 25,
-      students: 40,
-      status: 'completed',
-      progress: 100,
-      thumbnail: '📝',
-      description: 'Nền tảng ngữ pháp tiếng Anh cơ bản'
+  // Fetch courses from backend
+  useEffect(() => {
+    loadCourses();
+  }, [selectedGrade, selectedSkill]);
+
+  const loadCourses = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const params = {};
+      if (selectedGrade !== 'all') params.grade = selectedGrade;
+      if (selectedSkill !== 'all') params.skill = selectedSkill;
+      
+      const data = await coursesManageAPI.getCourses(params);
+      console.log('Courses loaded:', data);
+      setCourses(data || []);
+    } catch (err) {
+      console.error('Error loading courses:', err);
+      setError(err?.detail || err?.message || 'Không thể tải khóa học');
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  // Handle delete course
+  const handleDeleteCourse = async () => {
+    if (!selectedCourse) return;
+    
+    try {
+      await coursesManageAPI.deleteCourse(selectedCourse.id);
+      setIsDeleteOpen(false);
+      setSelectedCourse(null);
+      // Reload courses
+      await loadCourses();
+      alert('Đã xóa khóa học thành công!');
+    } catch (err) {
+      console.error('Error deleting course:', err);
+      alert(err?.detail || 'Không thể xóa khóa học. Bạn có thể không có quyền xóa khóa học này.');
+    }
+  };
+
+  // Handle update course
+  const handleUpdateCourse = async () => {
+    if (!selectedCourse) return;
+    
+    try {
+      await coursesManageAPI.updateCourse(selectedCourse.id, {
+        title: editFormData.title,
+        skill: editFormData.skill,
+        level: editFormData.level,
+        grade: parseInt(editFormData.grade),
+        description: editFormData.description
+      });
+      setIsEditOpen(false);
+      setSelectedCourse(null);
+      await loadCourses();
+      alert('Đã cập nhật khóa học thành công!');
+    } catch (err) {
+      console.error('Error updating course:', err);
+      alert(err?.detail || 'Không thể cập nhật khóa học. Bạn có thể không có quyền sửa khóa học này.');
+    }
+  };
+
+  // Get skill emoji
+  const getSkillEmoji = (skill) => {
+    const emojiMap = {
+      'speaking': '🗣️',
+      'writing': '✍️',
+      'reading': '📖',
+      'listening': '🎧',
+      'vocabulary': '📚',
+      'grammar': '📝'
+    };
+    return emojiMap[skill] || '📚';
+  };
+
+  // Get skill color
+  const getSkillColor = (skill) => {
+    const colorMap = {
+      'speaking': 'bg-purple-100 text-purple-700',
+      'writing': 'bg-orange-100 text-orange-700',
+      'reading': 'bg-blue-100 text-blue-700',
+      'listening': 'bg-green-100 text-green-700',
+      'vocabulary': 'bg-yellow-100 text-yellow-700',
+      'grammar': 'bg-pink-100 text-pink-700'
+    };
+    return colorMap[skill] || 'bg-gray-100 text-gray-700';
+  };
 
   const skills = [
     { id: 'all', label: 'Tất cả', count: courses.length },
-    { id: 'vocabulary', label: 'Từ vựng', count: courses.filter(c => c.skill === 'vocabulary').length },
-    { id: 'grammar', label: 'Ngữ pháp', count: courses.filter(c => c.skill === 'grammar').length },
-    { id: 'reading', label: 'Đọc', count: courses.filter(c => c.skill === 'reading').length },
-    { id: 'writing', label: 'Viết', count: courses.filter(c => c.skill === 'writing').length },
-    { id: 'listening', label: 'Nghe', count: courses.filter(c => c.skill === 'listening').length },
-    { id: 'speaking', label: 'Nói', count: courses.filter(c => c.skill === 'speaking').length }
+    { id: 'vocabulary', label: 'Từ vựng', count: courses.filter(c => c.category === 'vocabulary').length },
+    { id: 'grammar', label: 'Ngữ pháp', count: courses.filter(c => c.category === 'grammar').length },
+    { id: 'reading', label: 'Đọc', count: courses.filter(c => c.category === 'reading').length },
+    { id: 'writing', label: 'Viết', count: courses.filter(c => c.category === 'writing').length },
+    { id: 'listening', label: 'Nghe', count: courses.filter(c => c.category === 'listening').length },
+    { id: 'speaking', label: 'Nói', count: courses.filter(c => c.category === 'speaking').length }
   ];
 
   const filteredCourses = courses.filter(c => {
-    const matchSearch = c.title.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchGrade = selectedGrade === 'all' || c.grade.toString() === selectedGrade;
-    const matchSkill = selectedSkill === 'all' || c.skill === selectedSkill;
+    const matchSearch = c.name?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchGrade = selectedGrade === 'all' || c.gradeLabel?.includes(selectedGrade);
+    const matchSkill = selectedSkill === 'all' || c.category === selectedSkill;
     return matchSearch && matchGrade && matchSkill;
   });
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'active': return 'bg-blue-100 text-blue-700';
-      case 'draft': return 'bg-gray-100 text-gray-700';
+      case 'in-progress': return 'bg-blue-100 text-blue-700';
+      case 'not-started': return 'bg-gray-100 text-gray-700';
       case 'completed': return 'bg-green-100 text-green-700';
+      case 'locked': return 'bg-red-100 text-red-700';
       default: return 'bg-gray-100 text-gray-700';
     }
   };
 
   const getStatusText = (status) => {
     switch (status) {
-      case 'active': return 'Đang học';
-      case 'draft': return 'Chưa học';
+      case 'in-progress': return 'Đang học';
+      case 'not-started': return 'Chưa học';
       case 'completed': return 'Đã hoàn thành';
+      case 'locked': return 'Bị khóa';
       default: return status;
     }
   };
@@ -185,7 +200,7 @@ const Courses = () => {
             </div>
             <div>
               <p className="text-gray-600 text-sm">Đang học</p>
-              <p className="text-2xl font-bold text-gray-900">{courses.filter(c => c.status === 'active').length}</p>
+              <p className="text-2xl font-bold text-gray-900">{courses.filter(c => c.status === 'in-progress').length}</p>
             </div>
           </div>
         </Card>
@@ -332,90 +347,130 @@ const Courses = () => {
       </Tabs>
 
       {/* Courses Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filteredCourses.map((course) => (
-          <Card key={course.id} className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
-            <div className="relative">
-              <div className={`h-40 flex items-center justify-center text-6xl ${
-                course.skill === 'speaking' ? 'bg-purple-100' :
-                course.skill === 'writing' ? 'bg-orange-100' :
-                course.skill === 'reading' ? 'bg-blue-100' :
-                course.skill === 'listening' ? 'bg-green-100' :
-                course.skill === 'vocabulary' ? 'bg-yellow-100' : 'bg-pink-100'
-              }`}>
-                {course.thumbnail}
-              </div>
-              <Badge className="absolute top-3 right-3 bg-orange-500 text-white">
-                {course.level}
-              </Badge>
-            </div>
-            <div className="p-4">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-1">{course.title}</h3>
-              <div className="flex items-center gap-2 mb-3">
-                <Badge className={getStatusColor(course.status)}>
-                  {getStatusText(course.status)}
-                </Badge>
-                <span className="text-xs text-gray-500">Lớp {course.grade}</span>
-              </div>
-              <div className="flex items-center justify-between text-xs text-gray-600 mb-3">
-                <span className="flex items-center gap-1">
-                  <BookOpen className="w-3 h-3" />
-                  {course.lessons} bài học
-                </span>
-                <span className="flex items-center gap-1">
-                  <Users className="w-3 h-3" />
-                  {course.students} HS
-                </span>
-              </div>
-              {course.status === 'active' && (
-                <div>
-                  <div className="flex items-center justify-between text-xs mb-1">
-                    <span className="text-gray-600">Tiến độ</span>
-                    <span className="text-gray-900">{course.progress}%</span>
+      {loading ? (
+        <div className="flex justify-center items-center py-20">
+          <Loader2 className="w-10 h-10 animate-spin text-blue-500" />
+          <span className="ml-3 text-gray-600">Đang tải khóa học...</span>
+        </div>
+      ) : error ? (
+        <div className="text-center py-20">
+          <p className="text-red-500 mb-4">{error}</p>
+          <Button onClick={loadCourses} variant="outline">Thử lại</Button>
+        </div>
+      ) : filteredCourses.length === 0 ? (
+        <div className="text-center py-20 text-gray-500">
+          Không có khóa học nào
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {filteredCourses.map((course) => {
+            const progress = course.totalUnits > 0 
+              ? Math.round((course.completedUnits / course.totalUnits) * 100) 
+              : 0;
+            
+            return (
+              <Card key={course.id} className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
+                <div className="relative">
+                  <div className={`h-40 flex items-center justify-center text-6xl ${
+                    course.category === 'speaking' ? 'bg-purple-100' :
+                    course.category === 'writing' ? 'bg-orange-100' :
+                    course.category === 'reading' ? 'bg-blue-100' :
+                    course.category === 'listening' ? 'bg-green-100' :
+                    course.category === 'vocabulary' ? 'bg-yellow-100' : 'bg-pink-100'
+                  }`}>
+                    {getSkillEmoji(course.category)}
                   </div>
-                  <Progress value={course.progress} className="h-2" />
+                  <Badge className="absolute top-3 right-3 bg-orange-500 text-white">
+                    {course.level}
+                  </Badge>
                 </div>
-              )}
-              <div className="flex gap-2 mt-4">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => {
-                    setSelectedCourse(course);
-                    setIsDetailOpen(true);
-                  }}
-                >
-                  <Eye className="w-4 h-4" />
-                </Button>
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  className="flex-1"
-                  onClick={() => {
-                    setSelectedCourse(course);
-                    setEditFormData({
-                      title: course.title,
-                      skill: course.skill,
-                      level: course.level,
-                      grade: course.grade.toString(),
-                      description: course.description,
-                      lessons: course.lessons,
-                      duration: 0
-                    });
-                    setIsEditOpen(true);
-                  }}
-                >
-                  <Edit className="w-4 h-4" />
-                </Button>
-                <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700">
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          </Card>
-        ))}
-      </div>
+                <div className="p-4">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-1">{course.name}</h3>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Badge className={getStatusColor(course.status)}>
+                      {getStatusText(course.status)}
+                    </Badge>
+                    <span className="text-xs text-gray-500">{course.gradeLabel}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-gray-600 mb-3">
+                    <span className="flex items-center gap-1">
+                      <BookOpen className="w-3 h-3" />
+                      {course.totalUnits || 0} bài học
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      {course.completedUnits || 0} hoàn thành
+                    </span>
+                  </div>
+                  {course.status === 'in-progress' && (
+                    <div>
+                      <div className="flex items-center justify-between text-xs mb-1">
+                        <span className="text-gray-600">Tiến độ</span>
+                        <span className="text-gray-900">{progress}%</span>
+                      </div>
+                      <Progress value={progress} className="h-2" />
+                    </div>
+                  )}
+                  <div className="flex gap-2 mt-4">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1"
+                      onClick={async () => {
+                        try {
+                          const fullCourse = await coursesManageAPI.getCourse(course.id);
+                          setSelectedCourse(fullCourse);
+                          setIsDetailOpen(true);
+                        } catch (err) {
+                          console.error('Error loading course details:', err);
+                          alert('Không thể tải chi tiết khóa học');
+                        }
+                      }}
+                    >
+                      <Eye className="w-4 h-4" />
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="flex-1"
+                      onClick={async () => {
+                        try {
+                          const fullCourse = await coursesManageAPI.getCourse(course.id);
+                          setSelectedCourse(fullCourse);
+                          setEditFormData({
+                            title: fullCourse.title,
+                            skill: fullCourse.skill,
+                            level: fullCourse.level,
+                            grade: fullCourse.grade?.toString() || '',
+                            description: fullCourse.description || ''
+                          });
+                          setIsEditOpen(true);
+                        } catch (err) {
+                          console.error('Error loading course for edit:', err);
+                          alert(err?.detail || 'Không thể tải khóa học để chỉnh sửa');
+                        }
+                      }}
+                    >
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="text-red-600 hover:text-red-700"
+                      onClick={() => {
+                        setSelectedCourse(course);
+                        setIsDeleteOpen(true);
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      )}
 
       {/* Edit Course Dialog */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
@@ -490,41 +545,9 @@ const Courses = () => {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Số bài học</Label>
-                <Input 
-                  type="number" 
-                  value={editFormData.lessons}
-                  onChange={(e) => setEditFormData({...editFormData, lessons: parseInt(e.target.value) || 0})}
-                />
-              </div>
-              <div>
-                <Label>Thời lượng (giờ)</Label>
-                <Input 
-                  type="number" 
-                  value={editFormData.duration}
-                  onChange={(e) => setEditFormData({...editFormData, duration: parseInt(e.target.value) || 0})}
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label>Upload thumbnail mới (tùy chọn)</Label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-purple-400 transition-colors cursor-pointer">
-                <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                <p className="text-sm text-gray-600">Kéo thả ảnh hoặc click để chọn</p>
-                <p className="text-xs text-gray-500">PNG, JPG (tối đa 2MB)</p>
-              </div>
-            </div>
-
             <div className="flex gap-2 justify-end pt-4 border-t">
               <Button variant="outline" onClick={() => setIsEditOpen(false)}>Hủy</Button>
-              <Button onClick={() => {
-                // TODO: Handle update course
-                console.log('Updating course:', editFormData);
-                setIsEditOpen(false);
-              }}>
+              <Button onClick={handleUpdateCourse}>
                 Lưu thay đổi
               </Button>
             </div>
@@ -605,66 +628,91 @@ const Courses = () => {
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{selectedCourse?.title}</DialogTitle>
+            <DialogTitle>{selectedCourse?.title || 'Chi tiết khóa học'}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded">
-              <div>
-                <p className="text-xs text-gray-500">Kỹ năng</p>
-                <p className="text-sm text-gray-900 capitalize">{selectedCourse?.skill}</p>
+          {selectedCourse ? (
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-3 gap-4 p-4 bg-gray-50 rounded">
+                <div>
+                  <p className="text-xs text-gray-500">Kỹ năng</p>
+                  <p className="text-sm text-gray-900 capitalize">{selectedCourse?.skill}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Cấp độ</p>
+                  <p className="text-sm text-gray-900">{selectedCourse?.level}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Khối lớp</p>
+                  <p className="text-sm text-gray-900">Lớp {selectedCourse?.grade}</p>
+                </div>
               </div>
               <div>
-                <p className="text-xs text-gray-500">Cấp độ</p>
-                <p className="text-sm text-gray-900">{selectedCourse?.level}</p>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Mô tả</h3>
+                <p className="text-gray-600 text-sm">{selectedCourse?.description || 'Chưa có mô tả'}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-500">Số bài học</p>
-                <p className="text-sm text-gray-900">{selectedCourse?.lessons} bài</p>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Thông tin khác</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-gray-500">Trạng thái:</span>
+                    <Badge className={selectedCourse?.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}>
+                      {selectedCourse?.is_active ? 'Đang hoạt động' : 'Bị khóa'}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-gray-500">Ngày tạo:</span>
+                    <span className="text-gray-900">
+                      {selectedCourse?.created_at ? new Date(selectedCourse.created_at).toLocaleDateString('vi-VN') : 'N/A'}
+                    </span>
+                  </div>
+                </div>
               </div>
-              <div>
-                <p className="text-xs text-gray-500">Học sinh</p>
-                <p className="text-sm text-gray-900">{selectedCourse?.students} người</p>
-              </div>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Mô tả</h3>
-              <p className="text-gray-600 text-sm">{selectedCourse?.description}</p>
-            </div>
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-lg font-semibold text-gray-900">Danh sách bài học</h3>
-                <Button size="sm" onClick={() => {
+              <div className="flex gap-2 justify-end border-t pt-4">
+                <Button variant="outline" onClick={() => setIsDetailOpen(false)}>Đóng</Button>
+                <Button onClick={() => {
+                  setEditFormData({
+                    title: selectedCourse.title,
+                    skill: selectedCourse.skill,
+                    level: selectedCourse.level,
+                    grade: selectedCourse.grade?.toString() || '',
+                    description: selectedCourse.description || ''
+                  });
                   setIsDetailOpen(false);
-                  setIsAddLessonOpen(true);
+                  setIsEditOpen(true);
                 }}>
-                  <Plus className="w-4 h-4 mr-1" />
-                  Thêm bài học
+                  Chỉnh sửa khóa học
                 </Button>
               </div>
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {Array.from({ length: Math.min(selectedCourse?.lessons || 0, 10) }, (_, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 border rounded hover:bg-gray-50">
-                    <div className="flex items-center gap-3 flex-1">
-                      <span className="text-gray-400 font-medium text-sm">{i + 1}</span>
-                      <div>
-                        <p className="text-sm text-gray-900 font-medium">Unit {Math.floor(i / 3) + 1} - Lesson {(i % 3) + 1}</p>
-                        <p className="text-xs text-gray-500">30 phút • 5 bài tập</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline">Chưa học</Badge>
-                      <Button size="sm" variant="ghost">
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
             </div>
-            <div className="flex gap-2 justify-end border-t pt-4">
-              <Button variant="outline" onClick={() => setIsDetailOpen(false)}>Đóng</Button>
-              <Button>Chỉnh sửa khóa học</Button>
+          ) : (
+            <div className="py-8 text-center text-gray-500">
+              Đang tải thông tin khóa học...
             </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Xác nhận xóa khóa học</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p>Bạn có chắc chắn muốn xóa khóa học <strong>{selectedCourse?.name || selectedCourse?.title}</strong>?</p>
+            <p className="text-sm text-gray-500 mt-2">Hành động này không thể hoàn tác.</p>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>
+              Hủy
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleDeleteCourse}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Xóa
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

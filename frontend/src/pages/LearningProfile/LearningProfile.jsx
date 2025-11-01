@@ -281,7 +281,16 @@ const LearningProfile = () => {
       // Try to get grade from first class
       const firstClass = userClasses[0];
       if (firstClass.grade) {
-        return `Lớp ${firstClass.grade}`;
+        // Check if grade already contains "Lớp"
+        const grade = String(firstClass.grade);
+        return grade.toLowerCase().includes('lớp') ? grade : `Lớp ${grade}`;
+      }
+      // Fallback: try to extract from class name
+      if (firstClass.name) {
+        const match = firstClass.name.match(/(\d+[A-Za-z]*\d*)/);
+        if (match) {
+          return `Lớp ${match[1]}`;
+        }
       }
     }
     return 'Học sinh';

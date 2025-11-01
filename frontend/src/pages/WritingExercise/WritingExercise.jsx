@@ -13,11 +13,14 @@ import {
   FileText,
   Save,
   AlertCircle,
-  X
+  X,
+  Loader,
+  XCircle
 } from 'lucide-react';
 import './WritingExercise.css';
 import { coursesAPI } from '../../services/api';
 import { aiAPI } from '../../services/api';
+import { getWritingPrompt } from '../../api/courseContent';
 import Toast from '../../components/Toast/Toast';
 import useToast from '../../hooks/useToast';
 
@@ -49,15 +52,64 @@ const WritingExercise = () => {
   // Load real data from server
   useEffect(() => {
     const loadData = async () => {
+      if (!lessonId) return;
+      
       try {
         setLoading(true);
         setError(null);
 
-        // Load course data
+        // Try to load from new API first
+        try {
+          const promptData = await getWritingPrompt(lessonId);
+          
+          // Parse hints if it's a string
+          let hints = promptData.hints;
+          if (typeof hints === 'string') {
+            try {
+              hints = JSON.parse(hints);
+            } catch (e) {
+              hints = [];
+            }
+          }
+          
+          // Transform to component format
+          setWritingData({
+            id: promptData.id,
+            title: promptData.title,
+            courseTitle: 'Writing',
+            difficulty: promptData.difficulty || 'Intermediate',
+            estimatedTime: promptData.time_limit || 30,
+            wordLimit: promptData.max_words || 350,
+            minWords: promptData.min_words || 100,
+            currentQuestion: 1,
+            totalQuestions: 1,
+            question: {
+              id: promptData.id,
+              type: promptData.type || 'essay',
+              instruction: promptData.instruction,
+              prompt: promptData.prompt,
+              additionalInstruction: promptData.additional_instruction || '',
+              wordLimit: promptData.max_words || 350,
+              gradingCriteria: promptData.rubrics?.map(r => `${r.category} (${r.max_points} điểm)`) || [
+                'Nội dung và ý tưởng (40%)',
+                'Tổ chức và cấu trúc (25%)',
+                'Sử dụng ngôn ngữ (25%)',
+                'Cơ học viết (10%)'
+              ],
+              hints: hints || [],
+              sampleAnswer: promptData.sample_answer
+            }
+          });
+          
+          return; // Success, exit
+        } catch (apiErr) {
+          // If new API fails (404), fallback to old method silently
+        }
+
+        // Fallback: Load từ old CourseQuestions API
         const course = await coursesAPI.getCourse(courseId);
         setCourseData(course);
 
-        // Load units
         const units = await coursesAPI.getUnits(courseId);
         const unit = units.find(u => u.id === parseInt(lessonId));
         if (!unit) {
@@ -65,11 +117,9 @@ const WritingExercise = () => {
         }
         setUnitData(unit);
 
-        // Load questions
         const qs = await coursesAPI.getQuestions(parseInt(lessonId));
         setQuestions(qs || []);
 
-        // Build writingData structure
         const firstQuestion = qs && qs.length > 0 ? qs[0] : null;
         setWritingData({
           id: lessonId,
@@ -104,9 +154,7 @@ const WritingExercise = () => {
       }
     };
 
-    if (courseId && lessonId) {
-      loadData();
-    }
+    loadData();
   }, [courseId, lessonId]);
 
   // Timer effect

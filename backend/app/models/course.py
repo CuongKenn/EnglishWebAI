@@ -11,7 +11,7 @@ class Course(Base):
     title = Column(String, nullable=False, index=True)
     description = Column(Text, nullable=True)
     grade = Column(Integer, nullable=False)  # 1..12
-    skill = Column(String, nullable=False)   # listening|speaking|reading|writing
+    skill = Column(String, nullable=False)   # listening|speaking|reading|writing|vocabulary|grammar
     # Back-compat: some DBs already have a NOT NULL 'category' column
     # Keep it in the model and mirror the same value as 'skill'
     category = Column(String, nullable=True)
@@ -86,6 +86,12 @@ class CourseUnit(Base):
     unit_type = Column(String, nullable=False, default="lesson", server_default="lesson")  # lesson|quiz|practice
     max_cups = Column(Integer, nullable=False, default=2, server_default="2")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Rich content relationships
+    reading_passages = relationship("ReadingPassage", back_populates="unit", cascade="all, delete-orphan")
+    writing_prompts = relationship("WritingPrompt", back_populates="unit", cascade="all, delete-orphan")
+    listening_audios = relationship("ListeningAudio", back_populates="unit", cascade="all, delete-orphan")
+    speaking_prompts = relationship("SpeakingPrompt", back_populates="unit", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         return f"<CourseUnit(id={self.id}, course_id={self.course_id}, title={self.title})>"

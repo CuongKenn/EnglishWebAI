@@ -22,6 +22,12 @@ from app.models.notification import Notification
 from app.models.message import Message
 from app.models.system_config import SystemConfig
 from app.models.course import Course, CourseExercise, CourseSubmission, CourseUnit, CourseQuestion
+from app.models.course_content import (
+    ReadingPassage, ReadingParagraph, ReadingQuestion,
+    WritingPrompt, WritingRubric,
+    ListeningAudio, ListeningQuestion,
+    SpeakingPrompt, SpeakingCriteria
+)
 from app.models.question_bank import QuestionBankItem
 from app.models.question_bank_test import QuestionBankTest
 from app.models.lesson_plan import LessonPlan
@@ -53,6 +59,15 @@ __all__ = [
     "CourseSubmission",
     "CourseUnit",
     "CourseQuestion",
+    "ReadingPassage",
+    "ReadingParagraph",
+    "ReadingQuestion",
+    "WritingPrompt",
+    "WritingRubric",
+    "ListeningAudio",
+    "ListeningQuestion",
+    "SpeakingPrompt",
+    "SpeakingCriteria",
     "QuestionBankItem",
     "LessonPlan",
     "Worksheet",
