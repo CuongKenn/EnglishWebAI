@@ -8,6 +8,12 @@ Create Date: 2024-10-29
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import sqlite
+import sys
+import os
+
+# Add parent directory to path to import migration_utils
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+from migration_utils import table_exists
 
 # revision identifiers
 revision = '010'
@@ -17,8 +23,9 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Create weekly_assessments table
-    op.create_table(
+    # Create weekly_assessments table if not exists
+    if not table_exists('weekly_assessments'):
+        op.create_table(
         'weekly_assessments',
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('class_id', sa.Integer(), nullable=False),
@@ -40,10 +47,10 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(['teacher_id'], ['users.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['worksheet_id'], ['worksheets.id'], ondelete='SET NULL'),
         sa.PrimaryKeyConstraint('id')
-    )
-    op.create_index('ix_weekly_assessments_class_id', 'weekly_assessments', ['class_id'])
-    op.create_index('ix_weekly_assessments_teacher_id', 'weekly_assessments', ['teacher_id'])
-    op.create_index('ix_weekly_assessments_week_skill', 'weekly_assessments', ['class_id', 'week_number', 'skill_type'])
+        )
+        op.create_index('ix_weekly_assessments_class_id', 'weekly_assessments', ['class_id'])
+        op.create_index('ix_weekly_assessments_teacher_id', 'weekly_assessments', ['teacher_id'])
+        op.create_index('ix_weekly_assessments_week_skill', 'weekly_assessments', ['class_id', 'week_number', 'skill_type'])
 
 
 def downgrade() -> None:

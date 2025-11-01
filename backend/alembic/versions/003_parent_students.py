@@ -7,7 +7,12 @@ Create Date: 2025-10-24
 """
 from alembic import op
 import sqlalchemy as sa
+import sys
+import os
 
+# Add parent directory to path to import migration_utils
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+from migration_utils import table_exists
 
 # revision identifiers, used by Alembic.
 revision = '003'
@@ -17,8 +22,9 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Create parent_students table
-    op.create_table(
+    # Create parent_students table if not exists
+    if not table_exists('parent_students'):
+        op.create_table(
         'parent_students',
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('parent_id', sa.Integer(), nullable=False),
@@ -30,10 +36,10 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(['student_id'], ['users.id'], ondelete='CASCADE'),
         sa.PrimaryKeyConstraint('id'),
         sa.UniqueConstraint('parent_id', 'student_id', name='uq_parent_student')
-    )
-    op.create_index(op.f('ix_parent_students_id'), 'parent_students', ['id'], unique=False)
-    op.create_index(op.f('ix_parent_students_parent_id'), 'parent_students', ['parent_id'], unique=False)
-    op.create_index(op.f('ix_parent_students_student_id'), 'parent_students', ['student_id'], unique=False)
+        )
+        op.create_index(op.f('ix_parent_students_id'), 'parent_students', ['id'], unique=False)
+        op.create_index(op.f('ix_parent_students_parent_id'), 'parent_students', ['parent_id'], unique=False)
+        op.create_index(op.f('ix_parent_students_student_id'), 'parent_students', ['student_id'], unique=False)
 
 
 def downgrade() -> None:

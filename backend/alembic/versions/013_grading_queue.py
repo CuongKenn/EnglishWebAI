@@ -8,6 +8,12 @@ Create Date: 2025-11-01
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
+import sys
+import os
+
+# Add parent directory to path to import migration_utils
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+from migration_utils import table_exists, column_exists
 
 # revision identifiers, used by Alembic.
 revision = '013'
@@ -17,8 +23,9 @@ depends_on = None
 
 
 def upgrade():
-    # Create grading_queue table
-    op.create_table(
+    # Create grading_queue table if not exists
+    if not table_exists('grading_queue'):
+        op.create_table(
         'grading_queue',
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('submission_id', sa.Integer(), nullable=False),
@@ -40,23 +47,29 @@ def upgrade():
         sa.ForeignKeyConstraint(['class_id'], ['classes.id'], ondelete='SET NULL'),
         sa.PrimaryKeyConstraint('id'),
         sa.UniqueConstraint('submission_id')
-    )
+        )
+        
+        # Create indexes for grading_queue
+        op.create_index('idx_queue_next_pending', 'grading_queue', ['status', 'priority', 'created_at'])
+        op.create_index('idx_queue_student', 'grading_queue', ['student_id', 'status'])
+        op.create_index('idx_queue_exercise', 'grading_queue', ['exercise_id', 'status'])
+        op.create_index(op.f('ix_grading_queue_id'), 'grading_queue', ['id'])
+        op.create_index(op.f('ix_grading_queue_status'), 'grading_queue', ['status'])
+        op.create_index(op.f('ix_grading_queue_priority'), 'grading_queue', ['priority'])
     
-    # Create indexes for grading_queue
-    op.create_index('idx_queue_next_pending', 'grading_queue', ['status', 'priority', 'created_at'])
-    op.create_index('idx_queue_student', 'grading_queue', ['student_id', 'status'])
-    op.create_index('idx_queue_exercise', 'grading_queue', ['exercise_id', 'status'])
-    op.create_index(op.f('ix_grading_queue_id'), 'grading_queue', ['id'])
-    op.create_index(op.f('ix_grading_queue_status'), 'grading_queue', ['status'])
-    op.create_index(op.f('ix_grading_queue_priority'), 'grading_queue', ['priority'])
-    
-    # Add new columns to exercise_submissions table
-    op.add_column('exercise_submissions', sa.Column('grading_status', sa.String(length=50), nullable=False, server_default='pending'))
-    op.add_column('exercise_submissions', sa.Column('teacher_reviewed', sa.Boolean(), nullable=False, server_default='false'))
-    op.add_column('exercise_submissions', sa.Column('teacher_reviewed_at', sa.DateTime(timezone=True), nullable=True))
-    op.add_column('exercise_submissions', sa.Column('teacher_reviewed_by', sa.Integer(), nullable=True))
-    op.add_column('exercise_submissions', sa.Column('teacher_notes', sa.Text(), nullable=True))
-    op.add_column('exercise_submissions', sa.Column('original_ai_score', sa.Float(), nullable=True))
+    # Add new columns to exercise_submissions table if they don't exist
+    if not column_exists('exercise_submissions', 'grading_status'):
+        op.add_column('exercise_submissions', sa.Column('grading_status', sa.String(length=50), nullable=False, server_default='pending'))
+    if not column_exists('exercise_submissions', 'teacher_reviewed'):
+        op.add_column('exercise_submissions', sa.Column('teacher_reviewed', sa.Boolean(), nullable=False, server_default='false'))
+    if not column_exists('exercise_submissions', 'teacher_reviewed_at'):
+        op.add_column('exercise_submissions', sa.Column('teacher_reviewed_at', sa.DateTime(timezone=True), nullable=True))
+    if not column_exists('exercise_submissions', 'teacher_reviewed_by'):
+        op.add_column('exercise_submissions', sa.Column('teacher_reviewed_by', sa.Integer(), nullable=True))
+    if not column_exists('exercise_submissions', 'teacher_notes'):
+        op.add_column('exercise_submissions', sa.Column('teacher_notes', sa.Text(), nullable=True))
+    if not column_exists('exercise_submissions', 'original_ai_score'):
+        op.add_column('exercise_submissions', sa.Column('original_ai_score', sa.Float(), nullable=True))
     
     # Add foreign key for teacher_reviewed_by
     op.create_foreign_key(

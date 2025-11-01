@@ -6,10 +6,14 @@ Create Date: 2024-01-01 00:00:00.000000
 
 """
 from typing import Sequence, Union
-
 from alembic import op
 import sqlalchemy as sa
+import sys
+import os
 
+# Add parent directory to path to import migration_utils
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+from migration_utils import table_exists
 
 # revision identifiers, used by Alembic.
 revision: str = '006'
@@ -19,8 +23,9 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Create messages table
-    op.create_table(
+    # Create messages table if not exists
+    if not table_exists('messages'):
+        op.create_table(
         'messages',
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('sender_id', sa.Integer(), nullable=False),
@@ -32,11 +37,11 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint('id'),
         sa.ForeignKeyConstraint(['sender_id'], ['users.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['receiver_id'], ['users.id'], ondelete='CASCADE')
-    )
-    
-    # Create indexes for faster queries
-    op.create_index('ix_messages_sender_id', 'messages', ['sender_id'])
-    op.create_index('ix_messages_receiver_id', 'messages', ['receiver_id'])
+        )
+        
+        # Create indexes for faster queries
+        op.create_index('ix_messages_sender_id', 'messages', ['sender_id'])
+        op.create_index('ix_messages_receiver_id', 'messages', ['receiver_id'])
 
 
 def downgrade() -> None:

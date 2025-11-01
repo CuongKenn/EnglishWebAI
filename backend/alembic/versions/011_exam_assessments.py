@@ -8,6 +8,12 @@ Create Date: 2025-10-30
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
+import sys
+import os
+
+# Add parent directory to path to import migration_utils
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+from migration_utils import table_exists
 
 # revision identifiers, used by Alembic.
 revision = '011b'
@@ -17,8 +23,9 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Create exam_assessments table
-    op.create_table(
+    # Create exam_assessments table if not exists
+    if not table_exists('exam_assessments'):
+        op.create_table(
         'exam_assessments',
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('class_id', sa.Integer(), nullable=False),
@@ -44,12 +51,13 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(['teacher_id'], ['users.id'], ondelete='CASCADE'),
         sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_exam_assessments_id'), 'exam_assessments', ['id'], unique=False)
-    op.create_index(op.f('ix_exam_assessments_class_id'), 'exam_assessments', ['class_id'], unique=False)
-    op.create_index(op.f('ix_exam_assessments_teacher_id'), 'exam_assessments', ['teacher_id'], unique=False)
+        op.create_index(op.f('ix_exam_assessments_id'), 'exam_assessments', ['id'], unique=False)
+        op.create_index(op.f('ix_exam_assessments_class_id'), 'exam_assessments', ['class_id'], unique=False)
+        op.create_index(op.f('ix_exam_assessments_teacher_id'), 'exam_assessments', ['teacher_id'], unique=False)
 
-    # Create exam_submissions table
-    op.create_table(
+    # Create exam_submissions table if not exists
+    if not table_exists('exam_submissions'):
+        op.create_table(
         'exam_submissions',
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('exam_id', sa.Integer(), nullable=False),
@@ -68,10 +76,11 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(['exam_id'], ['exam_assessments.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['student_id'], ['users.id'], ondelete='CASCADE'),
         sa.PrimaryKeyConstraint('id')
-    )
-    op.create_index(op.f('ix_exam_submissions_id'), 'exam_submissions', ['id'], unique=False)
-    op.create_index(op.f('ix_exam_submissions_exam_id'), 'exam_submissions', ['exam_id'], unique=False)
-    op.create_index(op.f('ix_exam_submissions_student_id'), 'exam_submissions', ['student_id'], unique=False)
+        )
+        op.create_index(op.f('ix_exam_submissions_id'), 'exam_submissions', ['id'], unique=False)
+        op.create_index(op.f('ix_exam_submissions_exam_id'), 'exam_submissions', ['exam_id'], unique=False)
+        op.create_index(op.f('ix_exam_submissions_student_id'), 'exam_submissions', ['student_id'], unique=False)
+
 
 
 def downgrade() -> None:

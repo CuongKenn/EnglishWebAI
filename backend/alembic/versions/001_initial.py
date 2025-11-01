@@ -6,9 +6,14 @@ Create Date: 2025-10-23 12:00:00.000000
 
 """
 from typing import Sequence, Union
-
 from alembic import op
 import sqlalchemy as sa
+import sys
+import os
+
+# Add parent directory to path to import migration_utils
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+from migration_utils import table_exists, enum_type_exists
 
 
 # revision identifiers, used by Alembic.
@@ -19,28 +24,12 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Create ENUM type if not exists (handle existing database)
-    from sqlalchemy import text
-    conn = op.get_bind()
-    
-    # Check if enum already exists
-    result = conn.execute(text(
-        "SELECT 1 FROM pg_type WHERE typname = 'userrole'"
-    ))
-    enum_exists = result.fetchone() is not None
-    
-    if not enum_exists:
-        # Create enum type
+    # Create ENUM type if not exists
+    if not enum_type_exists('userrole'):
         op.execute("CREATE TYPE userrole AS ENUM ('user', 'parent', 'teacher', 'admin', 'superadmin')")
     
-    # Check if table already exists
-    result = conn.execute(text(
-        "SELECT 1 FROM information_schema.tables WHERE table_name = 'users'"
-    ))
-    table_exists = result.fetchone() is not None
-    
-    if not table_exists:
-        # Create users table
+    # Create users table if not exists
+    if not table_exists('users'):
         op.create_table(
             'users',
             sa.Column('id', sa.Integer(), nullable=False),
