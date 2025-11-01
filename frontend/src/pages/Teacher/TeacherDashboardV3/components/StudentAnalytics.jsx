@@ -37,7 +37,10 @@ const StudentAnalytics = () => {
   const fetchAnalytics = async (classId) => {
     try {
       const response = await apiV1.get(`/teacher/classes/${classId}/analytics/students`);
-      setAnalytics(response.data);
+      console.log('[StudentAnalytics] API Response:', response.data);
+      // API returns paginated response with 'students' field
+      const studentsData = response.data.students || response.data;
+      setAnalytics(Array.isArray(studentsData) ? studentsData : []);
     } catch (error) {
       console.error('Error:', error);
     }
@@ -140,17 +143,24 @@ const StudentAnalytics = () => {
 
               <div>
                 <p className="text-sm font-medium text-gray-700 mb-3">Điểm theo kỹ năng</p>
-                <div className="space-y-2">
-                  {Object.entries(student.skill_scores).map(([skill, score]) => (
-                    <div key={skill} className="flex items-center gap-3">
-                      <div className="w-20 text-xs text-gray-600 capitalize">{skill}</div>
-                      <div className="flex-1 h-2 bg-gray-200 rounded">
-                        <div className="h-2 rounded bg-gradient-to-r from-purple-500 to-indigo-500" style={{ width: `${Math.min(100, score)}%` }} />
-                      </div>
-                      <div className="w-10 text-right text-xs font-semibold text-purple-600">{score.toFixed(1)}</div>
+                {(() => {
+                  console.log('[StudentAnalytics] Student skill_scores:', student.student_name, student.skill_scores);
+                  return Object.keys(student.skill_scores || {}).length > 0 ? (
+                    <div className="space-y-2">
+                      {Object.entries(student.skill_scores).map(([skill, score]) => (
+                        <div key={skill} className="flex items-center gap-3">
+                          <div className="w-20 text-xs text-gray-600 capitalize">{skill}</div>
+                          <div className="flex-1 h-2 bg-gray-200 rounded">
+                            <div className="h-2 rounded bg-gradient-to-r from-purple-500 to-indigo-500" style={{ width: `${Math.min(100, score)}%` }} />
+                          </div>
+                          <div className="w-10 text-right text-xs font-semibold text-purple-600">{score.toFixed(1)}</div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  ) : (
+                    <p className="text-xs text-gray-500 italic">Chưa có dữ liệu kỹ năng</p>
+                  );
+                })()}
               </div>
             </Card>
           ))

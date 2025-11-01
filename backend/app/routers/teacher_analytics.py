@@ -107,19 +107,18 @@ def calculate_score_percentage(score: float, max_score: float) -> float:
 
 
 def get_graded_submissions(submissions: List[Submission]) -> List[Submission]:
-    """Filter for graded submissions with valid scores"""
+    """Filter for graded submissions with valid scores (teacher OR AI graded)"""
     return [
         s for s in submissions
-        if s.score is not None 
-        and s.graded_at is not None 
+        if (s.score is not None or s.ai_score is not None)
         and s.exercise 
         and s.exercise.max_score 
         and s.exercise.max_score > 0
     ]
 
 
-def calculate_skill_scores_batch(submissions: List[Submission]) -> Dict[str, Dict]:
-    """Calculate skill scores efficiently"""
+def calculate_skill_scores_batch(submissions: List[Submission]) -> Dict[str, float]:
+    """Calculate skill scores efficiently (prioritize teacher score, fallback to AI score)"""
     skills = {
         'reading': {'total': 0.0, 'count': 0},
         'writing': {'total': 0.0, 'count': 0},
@@ -134,8 +133,13 @@ def calculate_skill_scores_batch(submissions: List[Submission]) -> Dict[str, Dic
         skill = sub.exercise.skill_type
         if skill not in skills:
             continue
+        
+        # Use teacher score if available, otherwise use AI score
+        final_score = sub.score if sub.score is not None else sub.ai_score
+        if final_score is None:
+            continue
             
-        score_pct = calculate_score_percentage(sub.score, sub.exercise.max_score)
+        score_pct = calculate_score_percentage(final_score, sub.exercise.max_score)
         skills[skill]['total'] += score_pct
         skills[skill]['count'] += 1
     
@@ -155,7 +159,7 @@ def _to_utc_naive(dt: Optional[datetime]) -> Optional[datetime]:
 
 
 def calculate_trend(submissions: List[Submission]) -> str:
-    """Calculate trend from recent submissions"""
+    """Calculate trend from recent submissions (use teacher score or AI score)"""
     if len(submissions) < 3:
         return 'stable'
     
@@ -168,8 +172,11 @@ def calculate_trend(submissions: List[Submission]) -> str:
     scores = []
     for s in sorted_subs:
         if s.exercise and s.exercise.max_score and s.exercise.max_score > 0:
-            pct = (s.score / s.exercise.max_score) * 100
-            scores.append(pct)
+            # Use teacher score if available, otherwise use AI score
+            final_score = s.score if s.score is not None else s.ai_score
+            if final_score is not None:
+                pct = (final_score / s.exercise.max_score) * 100
+                scores.append(pct)
     
     if len(scores) < 3:
         return 'stable'
@@ -837,20 +844,38 @@ async def get_student_analytics(
         student_subs = student_submissions_map.get(student.id, [])
         total_subs = len(student_subs)
         
+        logger.info(f"[ANALYTICS] Processing student {student.full_name}: total_subs={total_subs}")
+        
         graded_subs = get_graded_submissions(student_subs)
         graded_count = len(graded_subs)
+        
+        logger.info(f"[ANALYTICS] Student {student.full_name}: graded_count={graded_count}")
+        
+        # Debug: check if exercise is loaded
+        if graded_subs:
+            logger.info(f"[SKILL_DEBUG] Student {student.full_name}: {len(graded_subs)} graded subs")
+            for gs in graded_subs[:2]:  # Check first 2
+                has_ex = gs.exercise is not None
+                skill = gs.exercise.skill_type if gs.exercise else 'NO_EXERCISE'
+                logger.info(f"  - Sub {gs.id}: has_exercise={has_ex}, skill={skill}")
         
         # Calculate average
         avg_score = 0.0
         if graded_subs:
             total = sum(
-                calculate_score_percentage(s.score, s.exercise.max_score)
+                calculate_score_percentage(
+                    s.score if s.score is not None else s.ai_score,
+                    s.exercise.max_score
+                )
                 for s in graded_subs
             )
             avg_score = round(total / len(graded_subs), 1)
         
         # Calculate skill scores
         skill_scores = calculate_skill_scores_batch(graded_subs)
+        
+        # Log for debugging
+        logger.info(f"Student {student.full_name}: graded_subs={len(graded_subs)}, skill_scores={skill_scores}")
         
         # Calculate trend
         trend = calculate_trend(graded_subs)
