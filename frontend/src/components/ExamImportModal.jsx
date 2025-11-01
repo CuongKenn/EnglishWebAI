@@ -5,6 +5,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, FileText, Upload, AlertCircle } from 'lucide-react';
 import examService from '../services/examService';
+import { classesAPI } from '../services/api';
 import './ExamImportModal.css';
 
 const ExamImportModal = ({ classId: initialClassId, onClose, onSuccess }) => {
@@ -24,12 +25,7 @@ const ExamImportModal = ({ classId: initialClassId, onClose, onSuccess }) => {
   useEffect(() => {
     const loadClasses = async () => {
       try {
-        const response = await fetch('/api/v1/classes/teaching', {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-        const data = await response.json();
+        const data = await classesAPI.getTeachingClasses();
         setClasses(data);
         if (data.length > 0 && !classId) {
           setClassId(data[0].id);

@@ -176,6 +176,46 @@ const examService = {
       throw error;
     }
   },
+
+  /**
+   * Generate full comprehensive exam with AI
+   * @param {Object} params - Generation parameters
+   * @param {string} params.exam_type - 'midterm' or 'final'
+   * @param {string} params.grade - Grade level (e.g., '10', '11', '12')
+   * @param {string} params.semester - Semester ('1' or '2')
+   * @param {string} params.difficulty - Difficulty level: 'easy', 'medium', 'hard', 'mixed'
+   * @param {number} params.questions_per_skill - Number of questions per skill (default 10)
+   * @param {string} params.additional_notes - Extra instructions for AI
+   * @returns {Promise<Object>} Generated exam content with 4 skills
+   */
+  generateFullExam: async (params) => {
+    try {
+      // Calculate dynamic timeout based on questions per skill
+      // Full exam with 4 skills needs more time: base 2 min + 30s per question per skill
+      const questionsPerSkill = params.questions_per_skill || 10;
+      const totalQuestions = questionsPerSkill * 4; // 4 skills
+      const timeoutMs = Math.max(120000, Math.min(totalQuestions * 15000, 600000)); // 2-10 minutes
+      
+      console.log(`[AI Generate] Timeout: ${timeoutMs/1000}s for ${totalQuestions} questions (${questionsPerSkill} per skill)`);
+      
+      const response = await api.post('/api/v1/exercises/generate-ai', {
+        test_type: params.exam_type,
+        grade: params.grade,
+        semester: params.semester,
+        difficulty: params.difficulty || 'mixed',
+        questions_per_skill: questionsPerSkill,
+        additional_notes: params.additional_notes || '',
+      }, {
+        timeout: timeoutMs
+      });
+      
+      // Return the exercise data from response
+      return response.data.exercise || response.data;
+    } catch (error) {
+      console.error('Generate full exam error:', error);
+      throw error;
+    }
+  },
 };
 
 export default examService;

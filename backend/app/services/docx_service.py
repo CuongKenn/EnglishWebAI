@@ -318,6 +318,7 @@ YÊU CẦU PHÂN TÍCH:
 2. Với mỗi phần, xác định các Task và loại câu hỏi
 3. Trích xuất đầy đủ nội dung câu hỏi, đáp án (nếu có)
 4. Xác định vị trí hình ảnh (nếu có) trong từng câu hỏi
+5. **QUAN TRỌNG**: Nếu đề thi không có phần Speaking rõ ràng, hãy tạo một phần Speaking mặc định với prompt phù hợp với cấp độ
 
 FORMAT JSON OUTPUT:
 {
@@ -329,6 +330,7 @@ FORMAT JSON OUTPUT:
         {
             "section_name": "I. LISTENING",
             "section_points": 2.5,
+            "audio_required": true,
             "tasks": [
                 {
                     "task_number": 1,
@@ -344,7 +346,8 @@ FORMAT JSON OUTPUT:
                             "question_type": "matching",
                             "options": ["A", "B", "C", "D"],
                             "correct_answer": "C",
-                            "points": 0
+                            "points": 0,
+                            "is_example": true
                         },
                         {
                             "question_id": "1",
@@ -371,12 +374,33 @@ FORMAT JSON OUTPUT:
         {
             "section_name": "III. WRITING",
             "section_points": 2.5,
-            "tasks": [...]
+            "tasks": [
+                {
+                    "task_number": 1,
+                    "task_title": "Write an essay about...",
+                    "task_type": "essay",
+                    "prompt": "Write a paragraph (50-70 words) about your favorite hobby.",
+                    "min_words": 50,
+                    "max_words": 70,
+                    "points": 2.5
+                }
+            ]
         },
         {
             "section_name": "IV. SPEAKING",
             "section_points": 2.5,
-            "tasks": [...]
+            "audio_required": true,
+            "tasks": [
+                {
+                    "task_number": 1,
+                    "task_title": "Speaking Task",
+                    "task_type": "speaking",
+                    "prompt": "Talk about your favorite subject at school. You should say: What subject is it? Why do you like it? What do you learn in this subject?",
+                    "reference_text": "I like English the most. It is interesting and useful for my future.",
+                    "duration": 60,
+                    "points": 2.5
+                }
+            ]
         }
     ],
     "answer_key": {
@@ -387,10 +411,12 @@ FORMAT JSON OUTPUT:
 
 CHÚ Ý:
 - Giữ nguyên số thứ tự câu hỏi và ví dụ như trong đề gốc
-- Đánh dấu rõ câu nào là example (không tính điểm)
+- Đánh dấu rõ câu nào là example (không tính điểm) với is_example: true
 - Với câu hỏi có hình ảnh, đánh dấu has_images = true và liệt kê vị trí hình
-- Phân loại đúng question_type: matching, multiple_choice, checkbox, fill_blank, short_answer, essay
+- Phân loại đúng question_type: matching, multiple_choice, checkbox, fill_blank, short_answer, essay, speaking
 - Tính toán đúng điểm số cho từng câu
+- **BẮT BUỘC**: Phải có đầy đủ 4 sections (Listening, Reading, Writing, Speaking). Nếu đề thi thiếu phần nào, hãy tạo một task mặc định phù hợp với cấp độ
+- Với Speaking section: tạo prompt yêu cầu học sinh nói về một chủ đề quen thuộc (family, hobbies, school, daily routine, etc.)
 
 RESPONSE:
 Chỉ trả về JSON, không thêm giải thích.

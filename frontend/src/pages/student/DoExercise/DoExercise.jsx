@@ -6,8 +6,11 @@ import {
 } from 'lucide-react';
 import './DoExercise.css';
 import { apiV1 } from '../../../services/api';
+import Toast from '../../../components/Toast/Toast';
+import useToast from '../../../hooks/useToast';
 
 export default function DoExercise() {
+  const { toast, showSuccess, showError, showWarning, hideToast } = useToast();
   const { exerciseId } = useParams();
   const navigate = useNavigate();
   
@@ -132,7 +135,42 @@ export default function DoExercise() {
   };
 
   const handleAnswerChange = (questionId, value) => {
+    console.log(`[ANSWER_CHANGE] Q${questionId} = "${value}"`);
     setAnswers(prev => ({ ...prev, [questionId]: value }));
+  };
+  
+  // Helper to safely render any value (prevent React error #31)
+  const safeRenderValue = (value, questionType = null) => {
+    if (value === null || value === undefined) return '-';
+    if (typeof value === 'object') {
+      // If it's an array, join with commas
+      if (Array.isArray(value)) {
+        return value.map(v => safeRenderValue(v)).join(', ');
+      }
+      // If it's a matching question answer (object with pairs)
+      // Display as "pair1 → answer1; pair2 → answer2"
+      if (questionType === 'matching' || Object.keys(value).every(k => !isNaN(k))) {
+        const pairs = Object.entries(value)
+          .map(([idx, val]) => `Cặp ${parseInt(idx) + 1}: ${val}`)
+          .join('; ');
+        return pairs || JSON.stringify(value);
+      }
+      // Otherwise stringify it
+      return JSON.stringify(value);
+    }
+    return String(value);
+  };
+  
+  // Helper to handle matching questions safely
+  const handleMatchingChange = (questionId, pairIndex, value) => {
+    setAnswers(prev => {
+      const currentMatching = typeof prev[questionId] === 'object' && prev[questionId] !== null 
+        ? prev[questionId] 
+        : {};
+      
+      const newMatching = { ...currentMatching, [pairIndex]: value };
+      return { ...prev, [questionId]: newMatching };
+    });
   };
 
   const handleSaveDraft = async () => {
@@ -142,10 +180,10 @@ export default function DoExercise() {
         content_text: exercise.skill_type === 'writing' ? content : null,
         content_url: exercise.skill_type === 'speaking' ? recordedAudio?.url || null : null
       });
-      alert('Đã lưu nháp!');
+      showSuccess('Đã lưu nháp!');
     } catch (error) {
       console.error('Error saving draft:', error);
-      alert('Lỗi khi lưu nháp!');
+      showError('Lỗi khi lưu nháp!');
     }
   };
 
@@ -162,12 +200,17 @@ export default function DoExercise() {
   const handleSubmit = async () => {
     if (!confirm('Bạn có chắc muốn nộp bài?')) return;
     
+    console.log('[SUBMIT] Answers before submit:', answers);
+    console.log('[SUBMIT] Writing answers:', writingAnswers);
+    console.log('[SUBMIT] Speaking answers keys:', Object.keys(speakingAnswers));
+    
     setIsSubmitting(true);
     try {
       // Prepare submission data
       const formData = new FormData();
       
-      // Add answers if exists
+      // Keep uniqueQuestionId format (listening_1, reading_1) for backend
+      // Backend will handle these prefixed keys
       if (answers && Object.keys(answers).length > 0) {
         formData.append('answers', JSON.stringify(answers));
       }
@@ -192,11 +235,40 @@ export default function DoExercise() {
       if (!exercise.skill_type && exercise.content?.type === 'comprehensive_test') {
         // Map writing answers
         const mergedAnswers = { ...(answers || {}) };
+        
+        // Add writing_main answer
+        if (writingAnswers['writing_main']) {
+          mergedAnswers['writing_main'] = writingAnswers['writing_main'];
+        }
+        
+        // Add other writing answers
         Object.entries(writingAnswers).forEach(([qid, txt]) => {
-          mergedAnswers[qid] = txt;
+          if (qid !== 'writing_main') {
+            mergedAnswers[qid] = txt;
+          }
         });
-        // Use first speaking answer as content_url (backend supports one file). Also store marker in answers map
-        const speakingQIds = Object.keys(speakingAnswers).filter((id) => speakingAnswers[id]?.blob);
+        
+        // Handle speaking_main audio
+        if (speakingAnswers['speaking_main']?.blob) {
+          try {
+            const audioData = speakingAnswers['speaking_main'];
+            const extension = getAudioExtension(audioData.mimeType);
+            const audioFile = new File(
+              [audioData.blob],
+              `speaking_main_${Date.now()}.${extension}`,
+              { type: audioData.mimeType || 'audio/webm' }
+            );
+            formData.append('audio_file', audioFile);
+            mergedAnswers['speaking_main'] = '[speaking-audio-attached]';
+          } catch (e) {
+            console.warn('Failed to attach speaking_main audio:', e);
+          }
+        }
+        
+        // Handle other speaking answers
+        const speakingQIds = Object.keys(speakingAnswers).filter(
+          (id) => id !== 'speaking_main' && speakingAnswers[id]?.blob
+        );
         if (speakingQIds.length > 0) {
           const firstQId = speakingQIds[0];
           const audioData = speakingAnswers[firstQId];
@@ -213,6 +285,7 @@ export default function DoExercise() {
             console.warn('Failed to attach speaking audio:', e);
           }
         }
+        
         if (Object.keys(mergedAnswers).length > 0) {
           // Replace answers payload
           formData.set('answers', JSON.stringify(mergedAnswers));
@@ -229,10 +302,10 @@ export default function DoExercise() {
         setSubmission(sub);
         setViewMode('result');
       }
-      alert('Nộp bài thành công! Hệ thống đã chấm tự động nếu có thể.');
+      showSuccess('Nộp bài thành công! Hệ thống đã chấm tự động nếu có thể.');
     } catch (error) {
       console.error('Error submitting:', error);
-      alert('Lỗi khi nộp bài: ' + (error.response?.data?.detail || error.message));
+      showError('Lỗi khi nộp bài: ' + (error.response?.data?.detail || error.message));
     } finally {
       setIsSubmitting(false);
     }
@@ -258,7 +331,7 @@ export default function DoExercise() {
         if (!isLocal) {
           const message = 'Trình duyệt yêu cầu kết nối an toàn (https hoặc localhost) để ghi âm.';
           setRecordingError(message);
-          alert(message);
+          showWarning(message);
           console.error('[startRecording] BLOCKED: not secure context and not local');
           return;
         }
@@ -268,7 +341,7 @@ export default function DoExercise() {
       if (!navigator.mediaDevices?.getUserMedia) {
         const message = 'Trình duyệt của bạn không hỗ trợ ghi âm (getUserMedia).';
         setRecordingError(message);
-        alert(message);
+        showWarning(message);
         console.error('[startRecording] BLOCKED: getUserMedia not supported');
         return;
       }
@@ -277,7 +350,7 @@ export default function DoExercise() {
       if (typeof window.MediaRecorder === 'undefined') {
         const message = 'Trình duyệt của bạn chưa hỗ trợ MediaRecorder. Vui lòng dùng Chrome, Edge hoặc Firefox phiên bản mới.';
         setRecordingError(message);
-        alert(message);
+        showWarning(message);
         console.error('[startRecording] BLOCKED: MediaRecorder not defined');
         return;
       }
@@ -397,7 +470,7 @@ export default function DoExercise() {
         ? 'Bạn đã từ chối quyền truy cập micro. Hãy bật lại quyền trong cài đặt trình duyệt và thử lại.'
         : 'Không thể truy cập microphone!';
       setRecordingError(message);
-      alert(message);
+      showError(message);
       try {
         mediaRecorderRef.current?.stream?.getTracks().forEach(track => track.stop());
       } catch (cleanupError) {
@@ -563,152 +636,417 @@ export default function DoExercise() {
     // COMPREHENSIVE TEST (Mid-term/Final)
   if (!skill_type && exerciseContent.type === 'comprehensive_test') {
       console.log('[COMPREHENSIVE TEST] exerciseContent:', exerciseContent);
-      const questions = exerciseContent.questions || [];
-      console.log('[COMPREHENSIVE TEST] questions:', questions);
+      
+      const listening = exerciseContent.listening || {};
+      const reading = exerciseContent.reading || {};
+      const writing = exerciseContent.writing || {};
+      const speaking = exerciseContent.speaking || {};
+      
+      console.log('[COMPREHENSIVE TEST] sections:', { listening, reading, writing, speaking });
+      
+      // Get questions from each section
+      const listeningQuestions = listening.questions || [];
+      const readingQuestions = reading.questions || [];
       
       return (
         <div className="comprehensive-test-exercise">
-          <div className="test-instructions">
-            <h3>📝 Đề thi</h3>
-            <p>Trả lời tất cả {questions.length} câu hỏi dưới đây</p>
+          <div className="test-header">
+            <h3>📝 Đề thi {exercise.type === 'midterm' ? 'Giữa kỳ' : 'Cuối kỳ'}</h3>
+            <p className="test-subtitle">Tổng điểm: 10 điểm (4 phần x 2.5 điểm)</p>
           </div>
           
-          {questions.map((q, idx) => (
-            <div key={q.id} className="question-card">
-              <div className="question-header">
-                <span className="question-number">Câu {idx + 1}</span>
-                <span className="question-points">{q.points || 1} điểm</span>
+          {/* PART 1: LISTENING (2.5 điểm) */}
+          <div className="test-section">
+            <div className="section-header">
+              <h4>🎧 PHẦN 1: NGHE HIỂU (2.5 điểm)</h4>
+            </div>
+            
+            {/* Audio Player */}
+            {listening.audio_url && (
+              <div className="audio-section">
+                <div className="audio-player-custom">
+                  <Volume2 size={32} />
+                  <audio controls src={listening.audio_url} className="audio-element">
+                    Your browser does not support audio.
+                  </audio>
+                </div>
+                {listening.show_transcript && listening.transcript && (
+                  <details className="transcript-section">
+                    <summary>📄 Transcript</summary>
+                    <p style={{ whiteSpace: 'pre-wrap' }}>{listening.transcript}</p>
+                  </details>
+                )}
               </div>
-              <div className="question-text">{q.question}</div>
-              
-              {q.type === 'multiple_choice' && (
-                <div className="options-list">
-                  {q.options && q.options.map((opt, optIdx) => (
-                    <label key={optIdx} className="option-item">
-                      <input
-                        type="radio"
-                        name={`question-${q.id}`}
-                        value={String.fromCharCode(65 + optIdx)}
-                        checked={answers[q.id] === String.fromCharCode(65 + optIdx)}
-                        onChange={(e) => handleAnswerChange(q.id, e.target.value)}
-                      />
-                      <span>{String.fromCharCode(65 + optIdx)}. {opt}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-              
-              {q.type === 'fill_blank' && (
-                <input
-                  type="text"
-                  className="answer-input"
-                  placeholder="Nhập câu trả lời..."
-                  value={answers[q.id] || ''}
-                  onChange={(e) => handleAnswerChange(q.id, e.target.value)}
-                />
-              )}
-              
-              {q.type === 'true_false' && (
-                <div className="true-false-options">
-                  <label className="option-item">
-                    <input
-                      type="radio"
-                      name={`question-${q.id}`}
-                      value="True"
-                      checked={answers[q.id] === 'True'}
-                      onChange={(e) => handleAnswerChange(q.id, e.target.value)}
-                    />
-                    <span>✓ Đúng</span>
-                  </label>
-                  <label className="option-item">
-                    <input
-                      type="radio"
-                      name={`question-${q.id}`}
-                      value="False"
-                      checked={answers[q.id] === 'False'}
-                      onChange={(e) => handleAnswerChange(q.id, e.target.value)}
-                    />
-                    <span>✗ Sai</span>
-                  </label>
-                </div>
-              )}
-              
-              {q.type === 'short_answer' && (
-                <textarea
-                  className="answer-textarea"
-                  placeholder="Nhập câu trả lời của bạn..."
-                  rows="4"
-                  value={answers[q.id] || ''}
-                  onChange={(e) => handleAnswerChange(q.id, e.target.value)}
-                />
-              )}
+            )}
+            
+            {/* Listening Questions */}
+            {listeningQuestions.length > 0 && (
+              <div className="questions-container">
+                <p className="section-instruction">Nghe đoạn audio và trả lời các câu hỏi sau:</p>
+                {listeningQuestions.map((q, idx) => {
+                  // Create unique ID for this question within listening section
+                  const uniqueQuestionId = `listening_${q.id}`;
+                  
+                  return (
+                  <div key={idx} className="question-card">
+                    <div className="question-header">
+                      <span className="question-number">Câu {idx + 1}</span>
+                      <span className="question-points">{q.points || 0.5} điểm</span>
+                    </div>
+                    <p className="question-text">{q.question}</p>
 
-              {/* Speaking question in comprehensive test */}
-              {q.type === 'speaking' && (
-                <div className="ct-speaking">
-                  {!isRecording && !speakingAnswers[q.id] && (
-                    <button className="btn-start-recording" onClick={() => startRecording(q.id)}>
-                      <Mic size={18} /> Bắt đầu ghi âm
+                    {q.type === 'multiple_choice' && (
+                      <div className="options-list">
+                        {q.options && q.options.map((opt, optIdx) => {
+                          const optionLetter = opt.match(/^[A-D]\./)?.[0] || `${String.fromCharCode(65 + optIdx)}.`;
+                          const optionText = opt.replace(/^[A-D]\.\s*/, '');
+                          return (
+                            <label key={optIdx} className="option-label">
+                              <input
+                                type="radio"
+                                name={uniqueQuestionId}
+                                value={optionLetter[0]}
+                                checked={answers[uniqueQuestionId] === optionLetter[0]}
+                                onChange={(e) => handleAnswerChange(uniqueQuestionId, e.target.value)}
+                              />
+                              <span>{optionLetter} {optionText}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
+                    
+                    {q.type === 'fill_blank' && (
+                      <div className="fill-blank-input">
+                        <input
+                          type="text"
+                          placeholder="Nhập câu trả lời..."
+                          value={answers[uniqueQuestionId] || ''}
+                          onChange={(e) => handleAnswerChange(uniqueQuestionId, e.target.value)}
+                          className="text-input"
+                        />
+                      </div>
+                    )}
+                    
+                    {q.type === 'true_false' && (
+                      <div className="options-list">
+                        <label className="option-label">
+                          <input
+                            type="radio"
+                            name={uniqueQuestionId}
+                            value="True"
+                            checked={answers[uniqueQuestionId] === 'True'}
+                            onChange={(e) => handleAnswerChange(uniqueQuestionId, e.target.value)}
+                          />
+                          <span>✓ True (Đúng)</span>
+                        </label>
+                        <label className="option-label">
+                          <input
+                            type="radio"
+                            name={uniqueQuestionId}
+                            value="False"
+                            checked={answers[uniqueQuestionId] === 'False'}
+                            onChange={(e) => handleAnswerChange(uniqueQuestionId, e.target.value)}
+                          />
+                          <span>✗ False (Sai)</span>
+                        </label>
+                      </div>
+                    )}
+                    
+                    {q.type === 'matching' && q.pairs && (
+                      <div className="matching-container">
+                        <p className="matching-instruction">Ghép các cặp sau cho đúng:</p>
+                        {q.pairs.map((pair, pairIdx) => {
+                          const currentMatching = typeof answers[uniqueQuestionId] === 'object' && answers[uniqueQuestionId] !== null 
+                            ? answers[uniqueQuestionId] 
+                            : {};
+                          
+                          return (
+                            <div key={pairIdx} className="matching-pair">
+                              <div className="match-left">{pair.left}</div>
+                              <div className="match-arrow">→</div>
+                              <select
+                                className="match-select"
+                                value={currentMatching[pairIdx] || ''}
+                                onChange={(e) => handleMatchingChange(uniqueQuestionId, pairIdx, e.target.value)}
+                              >
+                                <option value="">-- Chọn --</option>
+                                {q.pairs.map((p, i) => (
+                                  <option key={i} value={p.right}>{p.right}</option>
+                                ))}
+                              </select>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+          
+          {/* PART 2: READING (2.5 điểm) */}
+          <div className="test-section">
+            <div className="section-header">
+              <h4>📖 PHẦN 2: ĐỌC HIỂU (2.5 điểm)</h4>
+            </div>
+            
+            {/* Reading Passage */}
+            {reading.passage && (
+              <div className="reading-passage">
+                <div className="passage-content">
+                  <p style={{ whiteSpace: 'pre-wrap' }}>{reading.passage}</p>
+                </div>
+              </div>
+            )}
+            
+            {/* Reading Questions */}
+            {readingQuestions.length > 0 && (
+              <div className="questions-container">
+                <p className="section-instruction">Đọc đoạn văn trên và trả lời các câu hỏi sau:</p>
+                {readingQuestions.map((q, idx) => {
+                  // Create unique ID for this question within reading section
+                  const uniqueQuestionId = `reading_${q.id}`;
+                  
+                  return (
+                  <div key={idx} className="question-card">
+                    <div className="question-header">
+                      <span className="question-number">Câu {idx + 1}</span>
+                      <span className="question-points">{q.points || 0.5} điểm</span>
+                    </div>
+                    <p className="question-text">{q.question}</p>
+
+                    {q.type === 'multiple_choice' && (
+                      <div className="options-list">
+                        {q.options && q.options.map((opt, optIdx) => {
+                          const optionLetter = opt.match(/^[A-D]\./)?.[0] || `${String.fromCharCode(65 + optIdx)}.`;
+                          const optionText = opt.replace(/^[A-D]\.\s*/, '');
+                          return (
+                            <label key={optIdx} className="option-label">
+                              <input
+                                type="radio"
+                                name={uniqueQuestionId}
+                                value={optionLetter[0]}
+                                checked={answers[uniqueQuestionId] === optionLetter[0]}
+                                onChange={(e) => handleAnswerChange(uniqueQuestionId, e.target.value)}
+                              />
+                              <span>{optionLetter} {optionText}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
+                    
+                    {q.type === 'fill_blank' && (
+                      <div className="fill-blank-input">
+                        <input
+                          type="text"
+                          placeholder="Nhập câu trả lời..."
+                          value={answers[uniqueQuestionId] || ''}
+                          onChange={(e) => handleAnswerChange(uniqueQuestionId, e.target.value)}
+                          className="text-input"
+                        />
+                      </div>
+                    )}
+                    
+                    {q.type === 'true_false' && (
+                      <div className="options-list">
+                        <label className="option-label">
+                          <input
+                            type="radio"
+                            name={uniqueQuestionId}
+                            value="True"
+                            checked={answers[uniqueQuestionId] === 'True'}
+                            onChange={(e) => handleAnswerChange(uniqueQuestionId, e.target.value)}
+                          />
+                          <span>✓ True (Đúng)</span>
+                        </label>
+                        <label className="option-label">
+                          <input
+                            type="radio"
+                            name={uniqueQuestionId}
+                            value="False"
+                            checked={answers[uniqueQuestionId] === 'False'}
+                            onChange={(e) => handleAnswerChange(uniqueQuestionId, e.target.value)}
+                          />
+                          <span>✗ False (Sai)</span>
+                        </label>
+                      </div>
+                    )}
+                    
+                    {q.type === 'matching' && q.pairs && (
+                      <div className="matching-container">
+                        <p className="matching-instruction">Ghép các cặp sau cho đúng:</p>
+                        {q.pairs.map((pair, pairIdx) => {
+                          const currentMatching = typeof answers[uniqueQuestionId] === 'object' && answers[uniqueQuestionId] !== null 
+                            ? answers[uniqueQuestionId] 
+                            : {};
+                          
+                          return (
+                            <div key={pairIdx} className="matching-pair">
+                              <div className="match-left">{pair.left}</div>
+                              <div className="match-arrow">→</div>
+                              <select
+                                className="match-select"
+                                value={currentMatching[pairIdx] || ''}
+                                onChange={(e) => handleMatchingChange(uniqueQuestionId, pairIdx, e.target.value)}
+                              >
+                                <option value="">-- Chọn --</option>
+                                {q.pairs.map((p, i) => (
+                                  <option key={i} value={p.right}>{p.right}</option>
+                                ))}
+                              </select>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+          
+          {/* PART 3: WRITING (2.5 điểm) */}
+          <div className="test-section">
+            <div className="section-header">
+              <h4>✍️ PHẦN 3: VIẾT (2.5 điểm)</h4>
+            </div>
+            
+            <div className="writing-section">
+              {/* Writing Prompt */}
+              {writing.prompt && (
+                <div className="prompt-box">
+                  <h5>Đề bài:</h5>
+                  <p style={{ whiteSpace: 'pre-wrap' }}>{writing.prompt}</p>
+                </div>
+              )}
+              
+              {/* Writing Instructions */}
+              {writing.instructions && writing.instructions.length > 0 && (
+                <div className="instructions-box">
+                  <h5>Hướng dẫn:</h5>
+                  <ul>
+                    {writing.instructions.map((inst, i) => (
+                      <li key={i}>{inst}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              
+              {/* Writing Word Count Info */}
+              {(writing.min_words || writing.max_words) && (
+                <p className="word-requirement">
+                  Yêu cầu: {writing.min_words || 0} - {writing.max_words || 0} từ
+                </p>
+              )}
+              
+              {/* Writing Textarea */}
+              <textarea
+                className="writing-textarea"
+                rows={12}
+                placeholder="Nhập bài viết của bạn..."
+                value={writingAnswers['writing_main'] || ''}
+                onChange={(e) => {
+                  const txt = e.target.value;
+                  setWritingAnswers(prev => ({ ...prev, writing_main: txt }));
+                  const words = txt.trim().split(/\s+/).filter(Boolean);
+                  setWritingCounts(prev => ({ ...prev, writing_main: words.length }));
+                }}
+              />
+              <div className="word-counter">
+                Số từ hiện tại: {writingCounts['writing_main'] || 0}
+              </div>
+            </div>
+          </div>
+          
+          {/* PART 4: SPEAKING (2.5 điểm) */}
+          <div className="test-section">
+            <div className="section-header">
+              <h4>🗣️ PHẦN 4: NÓI (2.5 điểm)</h4>
+            </div>
+            
+            <div className="speaking-section">
+              {/* Speaking Prompt */}
+              {speaking.prompt && (
+                <div className="prompt-box">
+                  <h5>Đề bài:</h5>
+                  <p style={{ whiteSpace: 'pre-wrap' }}>{speaking.prompt}</p>
+                </div>
+              )}
+              
+              {/* Speaking Instructions */}
+              {speaking.instructions && speaking.instructions.length > 0 && (
+                <div className="instructions-box">
+                  <h5>Hướng dẫn:</h5>
+                  <ul>
+                    {speaking.instructions.map((inst, i) => (
+                      <li key={i}>{inst}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              
+              {/* Speaking Time Info */}
+              {(speaking.prep_time || speaking.speak_time) && (
+                <p className="time-info">
+                  ⏱️ Thời gian chuẩn bị: {speaking.prep_time || 60}s | 
+                  Thời gian nói: {speaking.speak_time || 120}s
+                </p>
+              )}
+              
+              {/* Recording Area */}
+              <div className="recording-area">
+                {!isRecording && !speakingAnswers['speaking_main'] && (
+                  <button className="btn-start-recording" onClick={() => startRecording('speaking_main')}>
+                    <Mic size={24} />
+                    Bắt đầu ghi âm
+                  </button>
+                )}
+
+                {isRecording && activeSpeakingQ === 'speaking_main' && (
+                  <div className="recording-active">
+                    <div className="pulse-dot"></div>
+                    <p>Đang ghi âm...</p>
+                    <button className="btn-stop-recording" onClick={stopRecording}>
+                      <Pause size={24} />
+                      Dừng
                     </button>
-                  )}
+                  </div>
+                )}
 
-                  {isRecording && activeSpeakingQ === q.id && (
-                    <div className="recording-active">
-                      <div className="pulse-dot"></div>
-                      <p>Đang ghi âm...</p>
-                      <button className="btn-stop-recording" onClick={stopRecording}>
-                        <Pause size={18} /> Dừng
+                {speakingAnswers['speaking_main']?.url && (
+                  <div className="recorded-section">
+                    <audio controls src={speakingAnswers['speaking_main'].url} className="recorded-audio" />
+                    <div className="recorded-actions">
+                      <button className="btn-re-record" onClick={() => reRecord('speaking_main')}>
+                        <RotateCcw size={18} />
+                        Ghi lại
                       </button>
                     </div>
-                  )}
-
-                  {speakingAnswers[q.id]?.url && (
-                    <div className="recorded-section">
-                      <audio controls src={speakingAnswers[q.id].url} />
-                      <div className="recorded-actions">
-                        <button className="btn-re-record" onClick={() => reRecord(q.id)}>
-                          <RotateCcw size={16} /> Ghi lại
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {recordingError && (
-                    <p className="recording-error-message">{recordingError}</p>
-                  )}
-
-                  <div className="upload-fallback">
-                    <span>Hoặc tải file âm thanh:</span>
-                    <input
-                      type="file"
-                      accept="audio/*"
-                      ref={(el) => { questionFileInputRefs.current[q.id] = el; }}
-                      onChange={(e) => handleAudioFileSelect(e, q.id)}
-                    />
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Writing question in comprehensive test */}
-              {q.type === 'writing' && (
-                <div className="ct-writing">
-                  <textarea
-                    className="answer-textarea"
-                    rows={8}
-                    placeholder="Nhập bài viết của bạn..."
-                    value={writingAnswers[q.id] || ''}
-                    onChange={(e) => {
-                      const txt = e.target.value;
-                      setWritingAnswers(prev => ({ ...prev, [q.id]: txt }));
-                      const words = txt.trim().split(/\s+/).filter(Boolean);
-                      setWritingCounts(prev => ({ ...prev, [q.id]: words.length }));
-                    }}
+                {recordingError && (
+                  <p className="recording-error-message">{recordingError}</p>
+                )}
+                
+                <div className="upload-fallback">
+                  <span>Hoặc tải file âm thanh:</span>
+                  <input
+                    type="file"
+                    accept="audio/*"
+                    ref={(el) => { questionFileInputRefs.current['speaking_main'] = el; }}
+                    onChange={(e) => handleAudioFileSelect(e, 'speaking_main')}
+                    style={{ display: 'block', marginTop: '8px' }}
                   />
-                  <div className="word-counter">Số từ: {writingCounts[q.id] || 0}</div>
                 </div>
-              )}
+              </div>
             </div>
-          ))}
+          </div>
         </div>
       );
     }
@@ -749,7 +1087,7 @@ export default function DoExercise() {
                       <label key={i} className="option-label">
                         <input
                           type="radio"
-                          name={`q${q.id}`}
+                          name={uniqueQuestionId}
                           value={opt[0]}
                           checked={answers[q.id] === opt[0]}
                           onChange={(e) => handleAnswerChange(q.id, e.target.value)}
@@ -775,7 +1113,7 @@ export default function DoExercise() {
                     <label className="tf-option">
                       <input
                         type="radio"
-                        name={`q${q.id}`}
+                        name={uniqueQuestionId}
                         value="true"
                         checked={answers[q.id] === 'true'}
                         onChange={(e) => handleAnswerChange(q.id, e.target.value)}
@@ -786,7 +1124,7 @@ export default function DoExercise() {
                     <label className="tf-option">
                       <input
                         type="radio"
-                        name={`q${q.id}`}
+                        name={uniqueQuestionId}
                         value="false"
                         checked={answers[q.id] === 'false'}
                         onChange={(e) => handleAnswerChange(q.id, e.target.value)}
@@ -910,7 +1248,7 @@ export default function DoExercise() {
                         <label key={i} className="option-label">
                           <input
                             type="radio"
-                            name={`q${q.id}`}
+                            name={uniqueQuestionId}
                             value={opt[0]}
                             checked={answers[q.id] === opt[0]}
                             onChange={(e) => handleAnswerChange(q.id, e.target.value)}
@@ -1109,7 +1447,7 @@ export default function DoExercise() {
                 <h4>✍️ Writing assessment</h4>
                 <ul>
                   {Object.entries(submission.rubrics_scores.writing_assessment).map(([k, v]) => (
-                    <li key={k}><strong>{k}:</strong> {String(v)}</li>
+                    <li key={k}><strong>{k}:</strong> {safeRenderValue(v)}</li>
                   ))}
                 </ul>
                 {submission.rubrics_scores.word_count != null && (
@@ -1140,7 +1478,7 @@ export default function DoExercise() {
                 <h4>🗣️ Speaking assessment</h4>
                 <ul>
                   {Object.entries(submission.rubrics_scores.speaking_assessment).map(([k, v]) => (
-                    <li key={k}><strong>{k}:</strong> {String(v)}</li>
+                    <li key={k}><strong>{k}:</strong> {safeRenderValue(v)}</li>
                   ))}
                 </ul>
                 {submission.rubrics_scores.recognized_text && (
@@ -1164,7 +1502,7 @@ export default function DoExercise() {
                     <li key={qid}>
                       <strong>Câu {qid}:</strong> {res.correct ? 'Đúng' : 'Sai'}
                       {res.student_answer != null && (
-                        <> — Trả lời: {String(res.student_answer)}{res.correct_answer != null ? ` (Đúng: ${String(res.correct_answer)})` : ''}</>
+                        <> — Trả lời: {safeRenderValue(res.student_answer)}{res.correct_answer != null ? ` (Đúng: ${safeRenderValue(res.correct_answer)})` : ''}</>
                       )}
                       {res.earned != null && res.points != null && (
                         <> — Điểm: {res.earned}/{res.points}</>
@@ -1200,11 +1538,56 @@ export default function DoExercise() {
             <div className="submission-answers">
               <h4>Câu trả lời:</h4>
               <ul>
-                {Object.entries(submission.answers).map(([qId, answer]) => (
-                  <li key={qId}>
-                    <strong>Câu {qId}:</strong> {answer}
-                  </li>
-                ))}
+                {Object.entries(submission.answers).map(([qId, answer]) => {
+                  // Try to find the question in exercise content to get pairs info
+                  let questionData = null;
+                  const exerciseContent = exercise.content || {};
+                  
+                  // For comprehensive test, check all sections
+                  if (exerciseContent.type === 'comprehensive_test') {
+                    const allQuestions = [
+                      ...(exerciseContent.listening?.questions || []),
+                      ...(exerciseContent.reading?.questions || [])
+                    ];
+                    questionData = allQuestions.find(q => String(q.id) === String(qId));
+                  } else {
+                    // For single skill exercises
+                    const questions = exerciseContent.questions || [];
+                    questionData = questions.find(q => String(q.id) === String(qId));
+                  }
+                  
+                  // Check if answer is a matching question (object with numeric keys)
+                  const isMatchingAnswer = typeof answer === 'object' && 
+                    answer !== null && 
+                    !Array.isArray(answer) &&
+                    Object.keys(answer).every(k => !isNaN(k));
+                  
+                  return (
+                    <li key={qId}>
+                      <strong>Câu {qId}:</strong>{' '}
+                      {isMatchingAnswer && questionData?.pairs ? (
+                        <ul style={{ marginTop: '5px', paddingLeft: '20px' }}>
+                          {Object.entries(answer).map(([idx, selectedRight]) => {
+                            const pair = questionData.pairs[parseInt(idx)];
+                            return (
+                              <li key={idx}>
+                                {pair?.left || `Item ${parseInt(idx) + 1}`} → {selectedRight}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      ) : isMatchingAnswer ? (
+                        <ul style={{ marginTop: '5px', paddingLeft: '20px' }}>
+                          {Object.entries(answer).map(([idx, val]) => (
+                            <li key={idx}>Cặp {parseInt(idx) + 1} → {val}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        safeRenderValue(answer)
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           )}
@@ -1271,7 +1654,17 @@ export default function DoExercise() {
       </div>
         </>
       )}
+      
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={hideToast}
+          duration={toast.duration}
+        />
+      )}
     </div>
   );
 }
+
 

@@ -2,8 +2,11 @@ import React, { useState, useEffect } from 'react';
 import './ClassManagement.css';
 import apiClient from '../../../services/api';
 import AddStudentsModal from '../../../components/AddStudentsModal';
+import Toast from '../../../components/Toast/Toast';
+import useToast from '../../../hooks/useToast';
 
 const ClassManagement = () => {
+  const { toast, showSuccess, showError, hideToast } = useToast();
   const [classes, setClasses] = useState([]);
   const [selectedClass, setSelectedClass] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -77,9 +80,9 @@ const ClassManagement = () => {
         date: attendanceDate,
         records,
       });
-      alert('Đã lưu điểm danh thành công');
+      showSuccess('Đã lưu điểm danh thành công');
     } catch (error) {
-      alert('Lưu điểm danh thất bại');
+      showError('Lưu điểm danh thất bại');
     }
   };
 
@@ -117,12 +120,12 @@ const ClassManagement = () => {
         url: uploadRes.data.public_url
       });
 
-      alert('✅ Đã tải lên học liệu thành công!');
+      showSuccess('Đã tải lên học liệu thành công!');
       setUploadFile(null);
       setMaterialForm({ title: '', description: '', type: 'file' });
       await loadMaterials(selectedClass.id);
     } catch (error) {
-      alert('❌ Lỗi: ' + (error.response?.data?.detail || 'Không thể tải lên file'));
+      showError('Lỗi: ' + (error.response?.data?.detail || 'Không thể tải lên file'));
     } finally {
       setLoading(false);
     }
@@ -516,6 +519,7 @@ const ClassManagement = () => {
           </div>
         </div>
       )}
+<<<<<<< HEAD
 
       {/* Add Students Modal */}
       <AddStudentsModal
@@ -529,6 +533,15 @@ const ClassManagement = () => {
           }
         }}
       />
+      
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={hideToast}
+          duration={toast.duration}
+        />
+      )}
     </div>
   );
 };

@@ -26,8 +26,11 @@ import {
 } from 'lucide-react';
 import apiClient from '../../services/api';
 import './SpeakingExercise.css';
+import Toast from '../../components/Toast/Toast';
+import useToast from '../../hooks/useToast';
 
 const SpeakingExercise = () => {
+  const { toast, showWarning, showError, hideToast } = useToast();
   const { courseId, lessonId } = useParams();
   const navigate = useNavigate();
 
@@ -208,21 +211,21 @@ const SpeakingExercise = () => {
       if (!window.isSecureContext) {
         const message = 'Trình duyệt yêu cầu kết nối an toàn (https hoặc localhost) để ghi âm.';
         setRecordingError(message);
-        alert(message);
+        showWarning(message);
         return;
       }
 
       if (!navigator.mediaDevices?.getUserMedia) {
         const message = 'Trình duyệt của bạn không hỗ trợ ghi âm (getUserMedia).';
         setRecordingError(message);
-        alert(message);
+        showWarning(message);
         return;
       }
 
       if (typeof window.MediaRecorder === 'undefined') {
         const message = 'Trình duyệt của bạn chưa hỗ trợ MediaRecorder. Vui lòng dùng Chrome, Edge hoặc Firefox phiên bản mới.';
         setRecordingError(message);
-        alert(message);
+        showWarning(message);
         return;
       }
 
@@ -287,7 +290,7 @@ const SpeakingExercise = () => {
         ? 'Bạn đã từ chối quyền truy cập micro. Hãy bật lại quyền trong cài đặt trình duyệt và thử lại.'
         : 'Không thể truy cập microphone!';
       setRecordingError(message);
-      alert(message);
+      showError(message);
       try {
         mediaRecorderRef.current?.stream?.getTracks().forEach(track => track.stop());
       } catch (cleanupError) {
@@ -322,7 +325,7 @@ const SpeakingExercise = () => {
   // Submit recording
   const submitRecording = async () => {
     if (!audioBlob) {
-      alert('Vui lòng ghi âm trước khi nộp bài');
+      showWarning('Vui lòng ghi âm trước khi nộp bài');
       return;
     }
 
@@ -747,6 +750,14 @@ const SpeakingExercise = () => {
         </div>
       )}
 
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={hideToast}
+          duration={toast.duration}
+        />
+      )}
     </div>
   );
 };

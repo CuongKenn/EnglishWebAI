@@ -838,7 +838,7 @@ async def import_students_from_csv(
                         email=email,
                         username=email.split('@')[0],  # Use email prefix as username
                         full_name=name or email.split('@')[0],
-                        role=UserRole.STUDENT,
+                        role=UserRole.USER,  # USER = student role
                         phone=phone if phone else None
                     )
                     # Set default password (should be changed on first login)

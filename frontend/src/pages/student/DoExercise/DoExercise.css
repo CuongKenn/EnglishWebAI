@@ -205,13 +205,26 @@
   background: #f9fafb;
 }
 
-.option-label input[type="radio"] {
+.option-label input[type="radio"],
+.option-label input[type="checkbox"] {
   width: 20px;
   height: 20px;
+  min-width: 20px;
+  min-height: 20px;
+  margin: 0;
   cursor: pointer;
+  flex-shrink: 0;
+  accent-color: #667eea;
 }
 
-.option-label input[type="radio"]:checked + span {
+.option-label span {
+  flex: 1;
+  cursor: pointer;
+  user-select: none;
+}
+
+.option-label input[type="radio"]:checked + span,
+.option-label input[type="checkbox"]:checked + span {
   color: #667eea;
   font-weight: 600;
 }
@@ -982,4 +995,323 @@
   box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
 
+/* Comprehensive Test Styles */
+.comprehensive-test-exercise {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.test-header {
+  text-align: center;
+  padding: 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 16px;
+  color: white;
+}
+
+.test-header h3 {
+  font-size: 26px;
+  font-weight: 700;
+  margin: 0 0 8px;
+}
+
+.test-subtitle {
+  font-size: 16px;
+  opacity: 0.95;
+  margin: 0;
+}
+
+.test-section {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  border: 2px solid #e5e7eb;
+}
+
+.section-header {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 3px solid #667eea;
+}
+
+.section-header h4 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-instruction {
+  font-size: 15px;
+  color: #6b7280;
+  margin: 0 0 20px;
+  font-weight: 500;
+}
+
+.reading-passage {
+  background: #f9fafb;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.passage-content {
+  line-height: 1.8;
+  font-size: 16px;
+  color: #374151;
+}
+
+.passage-content p {
+  margin: 0;
+}
+
+.writing-section,
+.speaking-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.prompt-box {
+  background: #f0f9ff;
+  border: 2px solid #bae6fd;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.prompt-box h5 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #0369a1;
+  margin: 0 0 12px;
+}
+
+.prompt-box p {
+  font-size: 15px;
+  color: #0c4a6e;
+  margin: 0;
+  line-height: 1.6;
+}
+
+.instructions-box {
+  background: #fefce8;
+  border: 2px solid #fde047;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.instructions-box h5 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #854d0e;
+  margin: 0 0 12px;
+}
+
+.instructions-box ul {
+  margin: 0;
+  padding-left: 24px;
+  color: #713f12;
+}
+
+.instructions-box li {
+  margin-bottom: 8px;
+  line-height: 1.6;
+}
+
+.word-requirement,
+.time-info {
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 500;
+  padding: 12px;
+  background: #f3f4f6;
+  border-radius: 8px;
+  margin: 0;
+}
+
+.writing-textarea {
+  width: 100%;
+  min-height: 300px;
+  padding: 16px;
+  border: 2px solid #d1d5db;
+  border-radius: 12px;
+  font-size: 15px;
+  font-family: inherit;
+  line-height: 1.8;
+  resize: vertical;
+  transition: border-color 0.3s;
+}
+
+.writing-textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.upload-fallback {
+  margin-top: 16px;
+  padding: 16px;
+  background: #f9fafb;
+  border: 2px dashed #d1d5db;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.upload-fallback span {
+  display: block;
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+
+.upload-fallback input[type="file"] {
+  font-size: 14px;
+}
+
+/* Fill blank input */
+.fill-blank-input {
+  margin-top: 12px;
+}
+
+.fill-blank-input .text-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 15px;
+  font-family: inherit;
+  transition: border-color 0.3s;
+}
+
+.fill-blank-input .text-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* Matching questions */
+.matching-container {
+  margin-top: 16px;
+  padding: 20px;
+  background: linear-gradient(135deg, #f9fafb, #f3f4f6);
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+}
+
+.matching-instruction {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0 0 16px 0;
+  font-style: italic;
+  font-weight: 500;
+}
+
+.matching-pair {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+  padding: 16px;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  transition: all 0.3s;
+}
+
+.matching-pair:hover {
+  border-color: #667eea;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+}
+
+.matching-pair:last-child {
+  margin-bottom: 0;
+}
+
+.match-left {
+  flex: 1;
+  min-width: 150px;
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 15px;
+}
+
+.match-arrow {
+  font-size: 20px;
+  color: #667eea;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.match-select {
+  flex: 1;
+  min-width: 200px;
+  padding: 10px 14px;
+  border: 2px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 15px;
+  font-family: inherit;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23667eea' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 40px;
+}
+
+.match-select:hover {
+  border-color: #a0aec0;
+}
+
+.match-select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.match-select option {
+  padding: 10px;
+  font-size: 15px;
+}
+
+/* Responsive for test sections */
+@media (max-width: 768px) {
+  .test-section {
+    padding: 16px;
+  }
+  
+  .section-header h4 {
+    font-size: 18px;
+  }
+  
+  .writing-textarea {
+    min-height: 250px;
+  }
+  
+  .matching-pair {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  
+  .match-left {
+    text-align: left;
+  }
+  
+  .match-arrow {
+    display: none;
+  }
+  
+  .match-select {
+    min-width: 100%;
+    width: 100%;
+  }
+}
 

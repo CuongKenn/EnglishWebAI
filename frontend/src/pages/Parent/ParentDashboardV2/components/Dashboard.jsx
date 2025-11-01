@@ -10,8 +10,11 @@ import {
 } from 'lucide-react';
 import Modal from './Modal';
 import './Dashboard.css';
+import Toast from '../../../../components/Toast/Toast';
+import useToast from '../../../../hooks/useToast';
 
 const Dashboard = ({ onNavigate }) => {
+  const { toast, showSuccess, showError, showWarning, hideToast } = useToast();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [children, setChildren] = useState([]);
@@ -211,7 +214,7 @@ const Dashboard = ({ onNavigate }) => {
     e.preventDefault();
     
     if (!studentEmail || !studentEmail.trim()) {
-      alert('⚠️ Vui lòng nhập email học sinh!');
+      showWarning('Vui lòng nhập email học sinh!');
       return;
     }
     
@@ -219,7 +222,7 @@ const Dashboard = ({ onNavigate }) => {
       setLinkLoading(true);
       const result = await parentAPI.linkStudent(studentEmail);
       
-      alert(`✅ ${result.message}\n\nEmail: ${result.student_email}\n\nHọc sinh cần xác nhận yêu cầu liên kết trong tài khoản của mình.`);
+      showSuccess(`${result.message}\n\nEmail: ${result.student_email}\n\nHọc sinh cần xác nhận yêu cầu liên kết trong tài khoản của mình.`);
       
       setShowAddChildModal(false);
       setStudentEmail('');
@@ -229,7 +232,7 @@ const Dashboard = ({ onNavigate }) => {
     } catch (error) {
       console.error('Error linking student:', error);
       const errorMsg = error.response?.data?.detail || error.message || 'Không thể gửi yêu cầu liên kết';
-      alert(`❌ ${errorMsg}`);
+      showError(errorMsg);
     } finally {
       setLinkLoading(false);
     }
@@ -1050,6 +1053,15 @@ const Dashboard = ({ onNavigate }) => {
           </button>
         </div>
       </div>
+      
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={hideToast}
+          duration={toast.duration}
+        />
+      )}
     </div>
   );
 };

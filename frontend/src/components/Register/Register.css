@@ -508,7 +508,8 @@
 /* Sign Up Button */
 .sign-up-btn {
   width: 100%;
-  padding: 1rem;
+  padding: 0;
+  height: 54px;
   background: linear-gradient(90deg, #8b5cf6 0%, #3b82f6 100%);
   border: none;
   border-radius: 12px;
@@ -521,15 +522,33 @@
   transition: all 0.3s ease;
   box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
   margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.sign-up-btn:hover {
+.btn-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 100%;
+}
+
+.sign-up-btn:hover:not(:disabled) {
   transform: translateY(-3px);
   box-shadow: 0 12px 35px rgba(139, 92, 246, 0.5);
 }
 
-.sign-up-btn:active {
+.sign-up-btn:active:not(:disabled) {
   transform: translateY(-1px);
+}
+
+/* Loading state */
+.sign-up-btn.loading {
+  cursor: default;
+  pointer-events: none;
+  opacity: 0.95;
 }
 
 .btn-glow {
@@ -544,6 +563,21 @@
 
 .sign-up-btn:hover .btn-glow {
   left: 100%;
+}
+
+/* Loader spinner */
+.btn-loader {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .ripple-effect {
@@ -702,59 +736,336 @@
 }
 
 /* Responsive */
-@media (max-width: 968px) {
+@media (max-width: 1024px) {
   .space-register-container {
     flex-direction: column;
   }
 
   .space-left-section {
-    min-height: 400px;
+    min-height: 350px;
+    padding: 1.5rem;
+  }
+
+  .space-right-section {
+    flex: 1;
+    flex-basis: auto;
+  }
+
+  .adventure-text {
+    bottom: 10%;
+  }
+
+  .adventure-text h1 {
+    font-size: 2.8rem;
+  }
+
+  .large-planet {
+    width: 280px;
+    height: 280px;
+    top: 15%;
+  }
+
+  .form-wrapper {
+    padding: 2.5rem 2rem;
+    max-height: 100vh;
+  }
+}
+
+@media (max-width: 768px) {
+  .space-register-container {
+    flex-direction: column;
+  }
+
+  .space-left-section {
+    min-height: 280px;
+    padding: 1.5rem;
+  }
+
+  .logo-section {
+    margin-bottom: 1.3rem;
+  }
+
+  .logo-icon {
+    width: 44px;
+    height: 44px;
+  }
+
+  .logo-symbol {
+    font-size: 1rem;
+  }
+
+  .logo-text {
+    font-size: 1rem;
+  }
+
+  .adventure-text {
+    bottom: 8%;
+    left: 5%;
+  }
+
+  .adventure-text h1 {
+    font-size: 2rem;
+    line-height: 1.1;
+  }
+
+  .large-planet {
+    width: 200px;
+    height: 200px;
+    top: 22%;
+  }
+
+  .small-planet-1 {
+    width: 85px;
+    height: 85px;
+  }
+
+  .small-planet-2 {
+    width: 60px;
+    height: 60px;
+  }
+
+  .small-planet-3 {
+    width: 48px;
+    height: 48px;
+  }
+
+  .planet-ring {
+    width: 130px;
+    height: 28px;
+    border-width: 5px;
   }
 
   .space-right-section {
     flex: 1;
   }
 
-  .adventure-text h1 {
-    font-size: 2.5rem;
-  }
-
-  .large-planet {
-    width: 250px;
-    height: 250px;
-  }
-
   .form-wrapper {
-    padding: 2rem;
+    padding: 2rem 1.5rem;
+    max-height: none;
+  }
+
+  .form-title {
+    font-size: 1.9rem;
+    margin-bottom: 0.4rem;
+    letter-spacing: 1px;
+  }
+
+  .form-subtitle {
+    font-size: 0.9rem;
+    margin-bottom: 1.8rem;
+  }
+
+  .input-container {
+    margin-bottom: 1rem;
+  }
+
+  .space-input {
+    padding: 0.8rem 0.9rem 0.8rem 2.7rem;
+    font-size: 0.95rem;
+  }
+
+  .sign-up-btn {
+    height: 50px;
+    font-size: 1rem;
+  }
+
+  .social-btn {
+    padding: 0.8rem 1.2rem;
+    font-size: 0.9rem;
+  }
+
+  .divider-section {
+    margin: 1.3rem 0;
+    font-size: 0.85rem;
+  }
+
+  .terms-text {
+    font-size: 0.8rem;
+    margin-bottom: 0.9rem;
+  }
+
+  .signin-link {
+    font-size: 0.85rem;
+    padding-top: 0.9rem;
   }
 }
 
 @media (max-width: 576px) {
   .space-left-section {
-    padding: 1.5rem;
+    min-height: 220px;
+    padding: 1.2rem;
+  }
+
+  .logo-section {
+    margin-bottom: 1rem;
+  }
+
+  .logo-icon {
+    width: 38px;
+    height: 38px;
+  }
+
+  .logo-symbol {
+    font-size: 0.9rem;
+  }
+
+  .logo-text {
+    font-size: 0.9rem;
+  }
+
+  .adventure-text {
+    bottom: 6%;
+    left: 4%;
   }
 
   .adventure-text h1 {
-    font-size: 2rem;
+    font-size: 1.6rem;
+    line-height: 1.15;
   }
 
   .large-planet {
-    width: 200px;
-    height: 200px;
+    width: 160px;
+    height: 160px;
+    top: 28%;
+    left: 8%;
+  }
+
+  .crater-1 {
+    width: 42px;
+    height: 42px;
+  }
+
+  .crater-2 {
+    width: 28px;
+    height: 28px;
+  }
+
+  .crater-3 {
+    width: 20px;
+    height: 20px;
   }
 
   .small-planet-1 {
-    width: 80px;
-    height: 80px;
+    width: 65px;
+    height: 65px;
+    bottom: 32%;
+  }
+
+  .small-planet-2 {
+    width: 50px;
+    height: 50px;
+    top: 24%;
+  }
+
+  .small-planet-3 {
+    width: 40px;
+    height: 40px;
+  }
+
+  .planet-ring {
+    width: 100px;
+    height: 22px;
+    border-width: 3px;
+  }
+
+  /* Hide decorative elements */
+  .particle {
+    display: none;
+  }
+
+  .space-right-section {
+    flex: 1;
+    min-height: auto;
   }
 
   .form-wrapper {
-    padding: 1.5rem;
+    padding: 1.5rem 1.2rem;
+    max-height: none;
+  }
+
+  .form-wrapper::-webkit-scrollbar {
+    width: 4px;
   }
 
   .form-title {
-    font-size: 2rem;
+    font-size: 1.7rem;
+    margin-bottom: 0.3rem;
+    letter-spacing: 0.5px;
   }
 
+  .form-subtitle {
+    font-size: 0.85rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .space-form {
+    margin-bottom: 1.2rem;
+  }
+
+  .input-container {
+    margin-bottom: 0.9rem;
+  }
+
+  .input-icon {
+    left: 0.85rem;
+  }
+
+  .space-input {
+    padding: 0.75rem 0.85rem 0.75rem 2.5rem;
+    font-size: 0.9rem;
+    border-radius: 10px;
+  }
+
+  .password-toggle {
+    right: 0.85rem;
+    padding: 0.4rem;
+  }
+
+  .sign-up-btn {
+    height: 48px;
+    font-size: 0.95rem;
+    border-radius: 10px;
+    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.35);
+  }
+
+  .btn-loader {
+    width: 14px;
+    height: 14px;
+  }
+
+  .divider-section {
+    margin: 1.2rem 0;
+    font-size: 0.8rem;
+  }
+
+  .divider-section::before,
+  .divider-section::after {
+    width: 37%;
+  }
+
+  .social-buttons {
+    margin-bottom: 1.2rem;
+  }
+
+  .social-btn {
+    padding: 0.75rem 1rem;
+    font-size: 0.85rem;
+    border-radius: 10px;
+  }
+
+  .terms-text {
+    font-size: 0.75rem;
+    margin-bottom: 0.8rem;
+    line-height: 1.4;
+  }
+
+  .signin-link {
+    font-size: 0.8rem;
+    padding-top: 0.8rem;
+  }
+
+  .signin-link button {
+    font-size: 0.8rem;
+  }
 }
 

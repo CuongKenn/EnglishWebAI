@@ -5,6 +5,8 @@ import { getCurrentUser } from '../../../services/userService';
 import { apiV1 } from '../../../services/api';
 import Navbar from '../../../components/Navbar/Navbar';
 import authService from '../../../services/authService';
+import { parentAPI } from '../../../services/parentService';
+
 import { 
   FaComments, 
   FaPaperPlane, 
@@ -82,17 +84,10 @@ const TeacherCommunication = () => {
   const loadChildren = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/v1/parent/children', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-        }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setChildren(data);
-        if (data.length > 0) {
-          setSelectedChild(data[0]);
-        }
+      const data = await parentAPI.getChildren();
+      setChildren(data);
+      if (data.length > 0) {
+        setSelectedChild(data[0]);
       }
     } catch (error) {
       console.error('Error loading children:', error);
@@ -104,15 +99,8 @@ const TeacherCommunication = () => {
   const loadTeachersForChild = async (childId) => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/v1/parent/children/${childId}/teachers`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-        }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setTeachers(data);
-      }
+      const data = await parentAPI.getTeachersForChild(childId);
+      setTeachers(data);
     } catch (error) {
       console.error('Error loading teachers for child:', error);
     } finally {

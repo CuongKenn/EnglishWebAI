@@ -400,9 +400,24 @@ const Register = () => {
   </div>
 
               {/* Create Account Button */}
-              <button type="submit" className="sign-up-btn">
-                <span>Create Account</span>
-                <div className="btn-glow"></div>
+              <button
+                type="submit"
+                className={`sign-up-btn ${isRegistering ? 'loading' : ''}`}
+                disabled={isRegistering}
+                aria-busy={isRegistering}
+                aria-live="polite"
+              >
+                <span className="btn-content">
+                  {isRegistering ? (
+                    <>
+                      <span className="btn-loader"></span>
+                      <span>Đang xử lý...</span>
+                    </>
+                  ) : (
+                    'Create Account'
+                  )}
+                </span>
+                {!isRegistering && <div className="btn-glow"></div>}
               </button>
             </form>
 
@@ -449,7 +464,7 @@ const Register = () => {
       />
 
       {/* Toast Notification */}
-      {toast && (
+      {toast.show && (
         <Toast
           message={toast.message}
           type={toast.type}

@@ -1,4 +1,4 @@
-import { BarChart3, BookOpen, Calendar, FileText, GraduationCap, Home, MessageSquare, Notebook, PenTool, Settings as SettingsIcon, TrendingUp, Video, MessageCircle, Brain, Sparkles, Wand2, Upload, Users, ClipboardList, FileBarChart } from 'lucide-react';
+import { BarChart3, BookOpen, Calendar, FileText, GraduationCap, Home, MessageSquare, Notebook, PenTool, Settings as SettingsIcon, TrendingUp, Video, MessageCircle, Brain, Sparkles, Wand2, Upload, Users, ClipboardList, FileBarChart, Award } from 'lucide-react';
 
 const Sidebar = ({ currentPage, onNavigate }) => {
   const menuSections = [
@@ -22,6 +22,7 @@ const Sidebar = ({ currentPage, onNavigate }) => {
       items: [
         { id: 'exercises-tests', label: 'Bài tập & Kiểm tra', icon: Notebook },
         { id: 'grading-feedback', label: 'Chấm điểm & Phản hồi', icon: PenTool },
+        { id: 'exam-grading', label: 'Chấm thi Giữa/Cuối kỳ', icon: Award },
         { id: 'weekly-assessments', label: 'Phiếu đánh giá tuần', icon: ClipboardList },
         { id: 'error-analysis', label: 'Xuất phân tích lỗi', icon: FileBarChart }
       ]

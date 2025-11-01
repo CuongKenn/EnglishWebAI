@@ -25,6 +25,7 @@ import LessonPlans from '../LessonPlans/LessonPlans';
 import Worksheets from '../Worksheets/Worksheets';
 import WeeklyAssessments from '../WeeklyAssessments/WeeklyAssessments';
 import ErrorAnalysisExport from '../ErrorAnalysis/ErrorAnalysisExport';
+import ExamGradingPage from '../ExamGrading/ExamGradingPage';
 import Navbar from '../../../components/Navbar/Navbar';
 import authService from '../../../services/authService';
 import './TeacherDashboardV3.css';
@@ -60,6 +61,8 @@ const TeacherDashboardV3 = ({ onLogout }) => {
         return <ExerciseManagement />;
       case 'grading-feedback':
         return <GradingFeedback />;
+      case 'exam-grading':
+        return <ExamGradingPage />;
       case 'weekly-assessments':
         return <WeeklyAssessments />;
       case 'error-analysis':

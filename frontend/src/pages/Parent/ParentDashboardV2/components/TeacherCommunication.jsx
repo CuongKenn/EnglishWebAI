@@ -4,8 +4,11 @@ import messageService from '../../../../services/messageService';
 import { getCurrentUser } from '../../../../services/userService';
 import { parentAPI } from '../../../../services/parentService';
 import './TeacherCommunication.css';
+import Toast from '../../../../components/Toast/Toast';
+import useToast from '../../../../hooks/useToast';
 
 const TeacherCommunication = () => {
+  const { toast, showWarning, showError, hideToast } = useToast();
   const [selectedChat, setSelectedChat] = useState(null);
   const [messageInput, setMessageInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -52,7 +55,7 @@ const TeacherCommunication = () => {
       const token = localStorage.getItem('access_token');
       if (!token) {
         console.error('No access token found');
-        alert('⚠️ Bạn chưa đăng nhập. Vui lòng đăng nhập!');
+        showWarning('Bạn chưa đăng nhập. Vui lòng đăng nhập!');
         window.location.href = '/login';
         return;
       }
@@ -61,7 +64,7 @@ const TeacherCommunication = () => {
       console.log('Current user:', user);
       
       if (user.role !== 'parent') {
-        alert('⚠️ Chỉ phụ huynh mới có thể truy cập trang này!');
+        showWarning('Chỉ phụ huynh mới có thể truy cập trang này!');
         window.location.href = '/';
         return;
       }
@@ -71,7 +74,7 @@ const TeacherCommunication = () => {
       console.error('Error loading current user:', error);
       
       if (error.response?.status === 401) {
-        alert('⚠️ Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại!');
+        showWarning('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại!');
         localStorage.removeItem('access_token');
         localStorage.removeItem('user');
         window.location.href = '/login';
@@ -109,7 +112,7 @@ const TeacherCommunication = () => {
       
       // Check if it's an auth error
       if (error.response?.status === 401) {
-        alert('⚠️ Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại!');
+        showWarning('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại!');
         localStorage.removeItem('access_token');
         localStorage.removeItem('user');
         window.location.href = '/login';
@@ -134,16 +137,8 @@ const TeacherCommunication = () => {
 
   const loadTeachersForChild = async (childId) => {
     try {
-      const response = await fetch(`/api/v1/parent/children/${childId}/teachers`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setTeachers(data);
-      }
+      const data = await parentAPI.getTeachersForChild(childId);
+      setTeachers(data);
     } catch (error) {
       console.error('Error loading teachers:', error);
     }
@@ -222,7 +217,7 @@ const TeacherCommunication = () => {
       await loadConversations();
     } catch (error) {
       console.error('Error sending message:', error);
-      alert('❌ Không thể gửi tin nhắn. Vui lòng thử lại!');
+      showError('Không thể gửi tin nhắn. Vui lòng thử lại!');
     } finally {
       setSending(false);
     }
@@ -516,6 +511,15 @@ const TeacherCommunication = () => {
           )}
         </div>
       </div>
+      
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={hideToast}
+          duration={toast.duration}
+        />
+      )}
     </div>
   );
 };

@@ -407,8 +407,8 @@ const WritingExercise = () => {
 
             <div className="disclaimer">
               <p>
-                Để đánh giá chính xác kết quả học tập của học viên, Prep không hỗ trợ việc sử dụng trợ giúp từ AI hoặc đạo văn dưới bất kỳ hình thức nào.
-                Nếu phát hiện vi phạm, Prep rất tiếc sẽ không chấm điểm cho bài nộp này.
+                Để đánh giá chính xác kết quả học tập của học viên, hệ thống không hỗ trợ việc sử dụng trợ giúp từ AI hoặc đạo văn dưới bất kỳ hình thức nào.
+                Nếu phát hiện vi phạm, chúng tôi sẽ không chấm điểm cho bài nộp này.
               </p>
             </div>
           </div>
@@ -539,7 +539,7 @@ const WritingExercise = () => {
       )}
 
       {/* Toast Notification */}
-      {toast && (
+      {toast.show && (
         <Toast
           message={toast.message}
           type={toast.type}

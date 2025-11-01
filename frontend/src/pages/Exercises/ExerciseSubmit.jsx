@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { exercisesAPI } from '../../services/api';
 import './ExerciseSubmit.css';
+import Toast from '../../components/Toast/Toast';
+import useToast from '../../hooks/useToast';
 
 const ExerciseSubmit = ({ exercise, onClose, onSubmitted }) => {
+  const { toast, showSuccess, hideToast } = useToast();
   const [content, setContent] = useState('');
   const [file, setFile] = useState(null);
   const [fileUrl, setFileUrl] = useState('');
@@ -131,7 +134,7 @@ const ExerciseSubmit = ({ exercise, onClose, onSubmitted }) => {
       await exercisesAPI.submitExercise(exercise.id, submissionData);
       
       // Success
-      alert(exercise.type === 'quiz' ? 'Đã nộp bài kiểm tra thành công!' : 'Đã nộp bài tập thành công!');
+      showSuccess(exercise.type === 'quiz' ? 'Đã nộp bài kiểm tra thành công!' : 'Đã nộp bài tập thành công!');
       if (onSubmitted) {
         onSubmitted();
       }
@@ -495,6 +498,15 @@ const ExerciseSubmit = ({ exercise, onClose, onSubmitted }) => {
           )}
         </div>
       </div>
+      
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={hideToast}
+          duration={toast.duration}
+        />
+      )}
     </div>
   );
 };

@@ -7,12 +7,14 @@ import './ExerciseManagement.css';
 import QuestionBankSelectorModal from './QuestionBankSelectorModal';
 import { apiV1 } from '../../../../../services/api';
 import examService from '../../../../../services/examService';
+import Toast from '../../../../../components/Toast/Toast';
+import useToast from '../../../../../hooks/useToast';
 
 export default function CreateExerciseModalComplete({ onClose, onCreate }) {
+  const { toast, showSuccess, showWarning, hideToast } = useToast();
   const [testType, setTestType] = useState('skill_exercise');
   const [selectedSkill, setSelectedSkill] = useState('listening');
-  const [creationMethod, setCreationMethod] = useState('manual');
-  const [aiSource, setAiSource] = useState('files');
+  const [inputMethod, setInputMethod] = useState('manual'); // 'manual', 'ai', 'import'
   
   // Classes from API
   const [classes, setClasses] = useState([]);
@@ -24,27 +26,15 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   const [dueDate, setDueDate] = useState('');
   const [maxScore, setMaxScore] = useState(10);
   
-  // Import file
-  const [importFile, setImportFile] = useState('');
-  const importFileInputRef = useRef(null);
-  
-  // Word import (for midterm/final)
-  const [wordFile, setWordFile] = useState(null);
-  const [isUploadingWord, setIsUploadingWord] = useState(false);
-  const [wordUploadError, setWordUploadError] = useState(null);
-  const wordFileInputRef = useRef(null);
-  
   // Listening fields
-  const [audioFile, setAudioFile] = useState(null);
   const [transcript, setTranscript] = useState('');
   const [showTranscript, setShowTranscript] = useState(false);
-  const audioInputRef = useRef(null);
+  const [audioUrl, setAudioUrl] = useState('');
+  const [audioFile, setAudioFile] = useState(null);
   
   // Reading fields
-  const [readingInputMethod, setReadingInputMethod] = useState('text');
   const [passageText, setPassageText] = useState('');
-  const [passageFile, setPassageFile] = useState(null);
-  const passageFileInputRef = useRef(null);
+  const [readingInputMethod, setReadingInputMethod] = useState('text'); // 'text' or 'upload'
   
   // Speaking fields
   const [speakingPrompt, setSpeakingPrompt] = useState('');
@@ -63,14 +53,26 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   const [questions, setQuestions] = useState([]);
   const [showQuestionBankModal, setShowQuestionBankModal] = useState(false);
   
-  // AI fields
+  // Import states
+  const [wordFile, setWordFile] = useState(null);
+  const [importFile, setImportFile] = useState(null);
+  const [passageFile, setPassageFile] = useState(null);
+  const [isUploadingWord, setIsUploadingWord] = useState(false);
+  const [wordUploadError, setWordUploadError] = useState(null);
+  const wordFileInputRef = useRef(null);
+  const importFileInputRef = useRef(null);
+  const audioInputRef = useRef(null);
+  const passageFileInputRef = useRef(null);
+  
+  // AI Generation states
+  const [aiSource, setAiSource] = useState('curriculum'); // 'curriculum', 'files', 'question_bank'
   const [aiFiles, setAiFiles] = useState([]);
   const [aiPrompt, setAiPrompt] = useState('');
-  const aiFilesInputRef = useRef(null);
-  
-  // QB fields
-  const [qbNumQuestions, setQbNumQuestions] = useState(10);
+  const [qbNumQuestions, setQbNumQuestions] = useState(20);
   const [qbDifficulty, setQbDifficulty] = useState('mixed');
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [aiFormData, setAiFormData] = useState({ semester: '1' });
+  const aiFilesInputRef = useRef(null);
   
   // Logic helpers
   const requiresSkill = testType === 'skill_exercise' || testType === 'test_15min';
@@ -96,93 +98,12 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
     fetchClasses();
   }, []);
   
-  // File handlers
-  const handleImportFileUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) setImportFile(file);
-  };
-  
-  const handleWordFileUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (file.name.endsWith('.docx') || file.name.endsWith('.doc')) {
-        setWordFile(file);
-        setWordUploadError(null);
-      } else {
-        setWordUploadError('❌ Chỉ chấp nhận file Word (.docx hoặc .doc)');
-        setWordFile(null);
-      }
+  // Auto-switch to AI mode when selecting midterm/final
+  useEffect(() => {
+    if (testType === 'midterm' || testType === 'final') {
+      setInputMethod('ai');
     }
-  };
-  
-  const handleWordImportSubmit = async () => {
-    if (!wordFile) {
-      setWordUploadError('Vui lòng chọn file Word');
-      return;
-    }
-
-    if (!title.trim()) {
-      setWordUploadError('Vui lòng nhập tiêu đề bài tập');
-      return;
-    }
-    
-    if (!classId) {
-      setWordUploadError('Vui lòng chọn lớp học');
-      return;
-    }
-    
-    try {
-      setIsUploadingWord(true);
-      setWordUploadError(null);
-      
-      // Show user-friendly message for long processing time
-      console.log('⏳ Đang upload và xử lý file Word bằng AI - có thể mất 2-3 phút...');
-      
-      const formData = new FormData();
-      formData.append('file', wordFile);
-      formData.append('exam_title', title.trim());
-      formData.append('class_id', classId);
-      formData.append('exam_type', testType); // midterm or final
-      formData.append('is_published', true); // Auto-publish
-      
-      const response = await examService.uploadExamFromWord(formData);
-      
-      if (response.success) {
-        alert('✅ ' + response.message);
-        onClose();
-        // Refresh parent component
-        if (onCreate) {
-          onCreate({ success: true, exam: response.exam });
-        }
-      } else {
-        setWordUploadError(response.message || 'Có lỗi xảy ra');
-      }
-    } catch (error) {
-      console.error('Word upload error:', error);
-      setWordUploadError(error.response?.data?.detail || 'Lỗi khi upload file Word');
-    } finally {
-      setIsUploadingWord(false);
-    }
-  };
-  
-  const handleAudioUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) setAudioFile(file);
-  };
-  
-  const handlePassageFileUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) setPassageFile(file);
-  };
-  
-  const handleAiFilesUpload = (e) => {
-    const files = Array.from(e.target.files);
-    setAiFiles([...aiFiles, ...files]);
-  };
-  
-  const removeAiFile = (index) => {
-    setAiFiles(aiFiles.filter((_, i) => i !== index));
-  };
+  }, [testType]);
   
   // Question handlers
   const addQuestion = () => {
@@ -246,9 +167,264 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
     setWritingInstructions(writingInstructions.filter((_, i) => i !== index));
   };
   
+  // Audio file upload handler
+  const handleAudioUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file size (max 50MB)
+      if (file.size > 50 * 1024 * 1024) {
+        showWarning('File audio quá lớn! Tối đa 50MB.');
+        return;
+      }
+      setAudioFile(file);
+      // Optionally upload to server immediately or wait until form submit
+    }
+  };
+  
+  // AI file handlers
+  const handleAiFilesUpload = (e) => {
+    const files = Array.from(e.target.files);
+    setAiFiles([...aiFiles, ...files]);
+  };
+  
+  const removeAiFile = (index) => {
+    setAiFiles(aiFiles.filter((_, i) => i !== index));
+  };
+  
+  // Word file upload handler
+  const handleWordFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setWordFile(file);
+    }
+  };
+  
+  // Import file upload handler  
+  const handleImportFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImportFile(file);
+    }
+  };
+  
+  // Passage file upload handler
+  const handlePassageFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        showWarning('File quá lớn! Tối đa 10MB.');
+        return;
+      }
+      setPassageFile(file);
+    }
+  };
+  
+  // Word import submit handler
+  const handleWordImportSubmit = async () => {
+    if (!wordFile || !classId || !title) {
+      showWarning('Vui lòng nhập đầy đủ thông tin!');
+      return;
+    }
+    
+    setIsUploadingWord(true);
+    setWordUploadError(null);
+    
+    try {
+      const formData = new FormData();
+      formData.append('file', wordFile);
+      formData.append('exam_title', title);
+      formData.append('class_id', classId);
+      formData.append('exam_type', testType);
+      formData.append('is_published', 'false');
+      
+      if (dueDate) {
+        formData.append('end_time', dueDate);
+      }
+      
+      console.log('[Word Import] Uploading file:', wordFile.name);
+      
+      // Call API to upload and process Word file
+      const response = await examService.uploadExamFromWord(formData);
+      
+      console.log('[Word Import] Success:', response);
+      
+      showSuccess('✅ Import thành công! Đề thi đã được tạo.');
+      
+      // Close modal and refresh data
+      setTimeout(() => {
+        onClose();
+        if (onCreate) {
+          onCreate(); // Trigger parent refresh
+        }
+      }, 1500);
+      
+    } catch (error) {
+      console.error('[Word Import] Error:', error);
+      
+      // Extract error message
+      let errorMessage = 'Lỗi khi upload file Word!';
+      if (error.response?.data?.detail) {
+        errorMessage = error.response.data.detail;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setWordUploadError(errorMessage);
+      showWarning(errorMessage);
+    } finally {
+      setIsUploadingWord(false);
+    }
+  };
+  
+  // AI Generate function
+  const handleGenerateWithAI = async () => {
+    if (!classId) {
+      showWarning('Vui lòng chọn lớp học!');
+      return;
+    }
+    
+    setIsGeneratingAI(true);
+    
+    try {
+      // Get class info to determine grade and semester
+      const classInfo = classes.find(c => c.id === parseInt(classId));
+      const grade = classInfo?.grade || classInfo?.name?.match(/\d+/)?.[0] || '10';
+      const semester = aiFormData.semester || '1';
+      
+      // Prepare API payload with new parameters
+      const questionsCount = aiFormData.questionsPerSkill && aiFormData.questionsPerSkill !== '' 
+        ? parseInt(aiFormData.questionsPerSkill) 
+        : 10;
+      
+      const payload = {
+        exam_type: testType === 'midterm' ? 'midterm' : 'final',
+        grade: grade,
+        semester: semester,
+        // New parameters
+        difficulty: aiFormData.difficulty || 'mixed',
+        questions_per_skill: isNaN(questionsCount) ? 10 : questionsCount,
+        additional_notes: aiFormData.additionalNotes || ''
+      };
+      
+      console.log('[AI Generate] Payload:', payload);
+      
+      // Call AI generate API
+      const response = await examService.generateFullExam(payload);
+      
+      console.log('[AI Generate] Full Response:', JSON.stringify(response, null, 2));
+      console.log('[AI Generate] Listening:', response?.listening);
+      console.log('[AI Generate] Reading:', response?.reading);
+      console.log('[AI Generate] Writing:', response?.writing);
+      console.log('[AI Generate] Speaking:', response?.speaking);
+      
+      // Populate form with AI generated data
+      // LISTENING Section
+      if (response && response.listening) {
+        const listeningData = response.listening;
+        console.log('[AI Generate] Setting Listening data:', listeningData);
+        
+        // Set script/transcript
+        setTranscript(listeningData.script || listeningData.transcript || '');
+        
+        // Set audio URL if available
+        if (listeningData.audio_url) {
+          setAudioUrl(listeningData.audio_url);
+          console.log('[AI Generate] Audio URL set:', listeningData.audio_url);
+        }
+        
+        // Show transcript by default for teacher preview
+        setShowTranscript(true);
+      }
+      
+      // READING Section
+      if (response && response.reading) {
+        setPassageText(response.reading.passage || '');
+        console.log('[AI Generate] Setting Reading passage');
+      }
+      
+      // WRITING Section
+      if (response && response.writing) {
+        setWritingPrompt(response.writing.prompt || '');
+        if (response.writing.instructions && Array.isArray(response.writing.instructions)) {
+          setWritingInstructions(response.writing.instructions);
+        }
+        if (response.writing.min_words) setMinWords(response.writing.min_words);
+        if (response.writing.max_words) setMaxWords(response.writing.max_words);
+        console.log('[AI Generate] Setting Writing data');
+      }
+      
+      // SPEAKING Section
+      if (response && response.speaking) {
+        console.log('[AI Generate] Speaking section received:', response.speaking);
+        // Try to get prompt from various possible fields
+        const speakingPrompt = response.speaking.prompt || response.speaking.topic || '';
+        console.log('[AI Generate] Extracted speakingPrompt:', speakingPrompt);
+        setSpeakingPrompt(speakingPrompt);
+        
+        if (response.speaking.instructions && Array.isArray(response.speaking.instructions)) {
+          console.log('[AI Generate] Setting speaking instructions:', response.speaking.instructions);
+          setSpeakingInstructions(response.speaking.instructions);
+        } else if (response.speaking.questions && response.speaking.questions.length > 0) {
+          // Fallback: use questions as instructions if no instructions provided
+          const speakingQ = response.speaking.questions.map(q => q.question || q.text || '').filter(q => q);
+          if (speakingQ.length > 0) {
+            console.log('[AI Generate] Using questions as instructions:', speakingQ);
+            setSpeakingInstructions(speakingQ);
+          }
+        }
+        
+        if (response.speaking.prep_time) setPrepTime(response.speaking.prep_time);
+        if (response.speaking.speak_time) setSpeakTime(response.speaking.speak_time);
+        
+        console.log('[AI Generate] Speaking data set successfully');
+      }
+      
+      // Collect all questions from sections
+      const allQuestions = [];
+      
+      if (response.listening && response.listening.questions) {
+        // Tag questions with section for later filtering
+        const listeningQuestions = response.listening.questions.map(q => ({
+          ...q,
+          section: 'listening',
+          skill: 'listening'
+        }));
+        allQuestions.push(...listeningQuestions);
+        console.log(`[AI Generate] Added ${listeningQuestions.length} listening questions`);
+      }
+      
+      if (response.reading && response.reading.questions) {
+        // Tag questions with section for later filtering
+        const readingQuestions = response.reading.questions.map(q => ({
+          ...q,
+          section: 'reading',
+          skill: 'reading'
+        }));
+        allQuestions.push(...readingQuestions);
+        console.log(`[AI Generate] Added ${readingQuestions.length} reading questions`);
+      }
+      
+      setQuestions(allQuestions);
+      console.log(`[AI Generate] Total questions set: ${allQuestions.length}`);
+      
+      // Switch to manual mode to show preview
+      setInputMethod('manual');
+      console.log('[AI Generate] Switched to manual mode for preview');
+      
+      showSuccess('✨ AI đã sinh đề thành công! Vui lòng kiểm tra và chỉnh sửa nếu cần.');
+      
+    } catch (error) {
+      console.error('[AI Generate] Error:', error);
+      showWarning('Lỗi khi sinh đề với AI: ' + (error.response?.data?.detail || error.message));
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  };
+  
   const handleSubmit = () => {
     if (!title) {
-      alert('Vui lòng nhập tiêu đề!');
+      showWarning('Vui lòng nhập tiêu đề!');
       return;
     }
     
@@ -264,19 +440,60 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
       content: {},
     };
     
-    // Add content based on creation method
-    if (creationMethod === 'manual') {
-      if (isMidtermOrFinal) {
-        // Mid-term/Final: Question-based format like other exercises
+    // Add content based on skill type
+    if (isMidtermOrFinal) {
+        // Mid-term/Final: Comprehensive test with all sections
         exercise.content = {
-          type: 'comprehensive_test',
-          questions
+          type: 'comprehensive_test'
         };
+        
+        // Add listening section if has transcript/audio
+        if (transcript || audioUrl) {
+          exercise.content.listening = {
+            script: transcript,
+            audio_url: audioUrl,
+            questions: questions.filter(q => q.section === 'listening' || q.skill === 'listening')
+          };
+        }
+        
+        // Add reading section if has passage
+        if (passageText) {
+          exercise.content.reading = {
+            passage: passageText,
+            word_count: passageText.split(/\s+/).filter(w => w).length,
+            questions: questions.filter(q => q.section === 'reading' || q.skill === 'reading')
+          };
+        }
+        
+        // Add writing section if has prompt
+        if (writingPrompt) {
+          exercise.content.writing = {
+            prompt: writingPrompt,
+            type: writingType,
+            instructions: writingInstructions.filter(i => i),
+            word_limit: { min: minWords, max: maxWords }
+          };
+        }
+        
+        // Add speaking section if has prompt
+        if (speakingPrompt) {
+          exercise.content.speaking = {
+            prompt: speakingPrompt,
+            instructions: speakingInstructions.filter(i => i),
+            preparation_time: prepTime,
+            time_limit: speakTime
+          };
+        }
+        
+        // If no sections, at least include all questions
+        if (!exercise.content.listening && !exercise.content.reading && !exercise.content.writing && !exercise.content.speaking) {
+          exercise.content.questions = questions;
+        }
       } else {
         // Skill-based
         if (selectedSkill === 'listening') {
           exercise.content = {
-            audio_url: audioFile ? URL.createObjectURL(audioFile) : null,
+            audio_url: audioUrl,
             transcript,
             show_transcript: showTranscript,
             questions
@@ -291,7 +508,6 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
         } else if (selectedSkill === 'reading') {
           exercise.content = {
             passage: passageText,
-            passage_url: passageFile ? URL.createObjectURL(passageFile) : null,
             word_count: passageText.split(/\s+/).filter(w => w).length,
             questions
           };
@@ -304,23 +520,6 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
           };
         }
       }
-    } else if (creationMethod === 'import') {
-      exercise.content = {
-        type: 'imported',
-        file_url: importFile ? URL.createObjectURL(importFile) : null,
-        file_name: importFile?.name
-      };
-    } else if (creationMethod === 'ai') {
-      exercise.content = {
-        type: 'ai_generated',
-        ai_source: aiSource,
-        ai_prompt: aiPrompt,
-        ai_config: aiSource === 'question_bank' ? {
-          num_questions: qbNumQuestions,
-          difficulty: qbDifficulty
-        } : null
-      };
-    }
     
     onCreate(exercise);
   };
@@ -425,48 +624,17 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
             </div>
           )}
           
-          {/* Creation Method */}
+          {/* Basic Info */}
           <div className="form-section-ex">
-            <label className="form-label-ex">Phương thức tạo đề</label>
-            <div className="creation-method-tabs">
-              <button 
-                className={`method-tab ${creationMethod === 'manual' ? 'active' : ''}`}
-                onClick={() => setCreationMethod('manual')}
-              >
-                <FileText size={18} />
-                <span>Tự nhập</span>
-              </button>
-              <button 
-                className={`method-tab ${creationMethod === 'import' ? 'active' : ''}`}
-                onClick={() => setCreationMethod('import')}
-              >
-                <Upload size={18} />
-                <span>Import File</span>
-              </button>
-              <button 
-                className={`method-tab ${creationMethod === 'ai' ? 'active' : ''}`}
-                onClick={() => setCreationMethod('ai')}
-              >
-                <Bot size={18} />
-                <span>AI Sinh đề</span>
-              </button>
-            </div>
+            <label className="form-label-ex">Tiêu đề *</label>
+            <input 
+              type="text" 
+              className="form-input-ex" 
+              placeholder="Ví dụ: Bài tập Nghe - Unit 5"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
           </div>
-          
-          {/* Manual Creation */}
-          {creationMethod === 'manual' && (
-            <>
-              {/* Basic Info */}
-              <div className="form-section-ex">
-                <label className="form-label-ex">Tiêu đề *</label>
-                <input 
-                  type="text" 
-                  className="form-input-ex" 
-                  placeholder="Ví dụ: Bài tập Nghe - Unit 5"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                />
-              </div>
               
               <div className="form-row-ex">
                 <div className="form-section-ex">
@@ -509,14 +677,6 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
                   {selectedSkill === 'writing' && renderWritingForm()}
                 </>
               )}
-            </>
-          )}
-          
-          {/* Import Creation */}
-          {creationMethod === 'import' && renderImportForm()}
-          
-          {/* AI Creation */}
-          {creationMethod === 'ai' && renderAIForm()}
         </div>
         
         <div className="modal-footer-ex">
@@ -536,6 +696,15 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
           onSelect={handleQuestionsFromBank}
         />
       )}
+      
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={hideToast}
+          duration={toast.duration}
+        />
+      )}
     </div>
   );
   
@@ -548,13 +717,79 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
         <h4 className="section-title">� Câu hỏi kiểm tra</h4>
         <p className="section-desc">Thêm các câu hỏi cho đề {testType === 'midterm' ? 'giữa kỳ' : 'cuối kỳ'}</p>
         
-        {/* Questions Section */}
-        {renderQuestions()}
-        
-        <div className="info-box-note">
-          <span className="info-icon">💡</span>
-          <p>Bạn có thể tự tạo câu hỏi hoặc chọn từ Ngân hàng câu hỏi. Đề thi nên có đa dạng các loại câu hỏi.</p>
+        {/* Input Method Selection */}
+        <div className="form-section-ex">
+          <div className="input-method-selector">
+            <label className="method-option">
+              <input 
+                type="radio" 
+                name="inputMethod" 
+                value="manual" 
+                checked={inputMethod === 'manual'}
+                onChange={() => setInputMethod('manual')}
+              />
+              <span>✍️ Tạo thủ công</span>
+            </label>
+            <label className="method-option">
+              <input 
+                type="radio" 
+                name="inputMethod" 
+                value="ai" 
+                checked={inputMethod === 'ai'}
+                onChange={() => setInputMethod('ai')}
+              />
+              <span>🤖 AI Sinh đề</span>
+            </label>
+            <label className="method-option">
+              <input 
+                type="radio" 
+                name="inputMethod" 
+                value="import" 
+                checked={inputMethod === 'import'}
+                onChange={() => setInputMethod('import')}
+              />
+              <span>📄 Import từ File</span>
+            </label>
+          </div>
         </div>
+        
+        {/* Render based on selected method */}
+        {inputMethod === 'manual' && (
+          <>
+            <p className="section-desc">Tạo đề thi toàn diện với 4 kỹ năng</p>
+            
+            {/* Listening Section */}
+            <div className="comprehensive-section">
+              <h5 className="section-subtitle">🎧 Phần Nghe (Listening)</h5>
+              {renderListeningForm()}
+            </div>
+            
+            {/* Reading Section */}
+            <div className="comprehensive-section">
+              <h5 className="section-subtitle">📖 Phần Đọc (Reading)</h5>
+              {renderReadingForm()}
+            </div>
+            
+            {/* Writing Section */}
+            <div className="comprehensive-section">
+              <h5 className="section-subtitle">✍️ Phần Viết (Writing)</h5>
+              {renderWritingForm()}
+            </div>
+            
+            {/* Speaking Section */}
+            <div className="comprehensive-section">
+              <h5 className="section-subtitle">🗣️ Phần Nói (Speaking)</h5>
+              {renderSpeakingForm()}
+            </div>
+            
+            <div className="info-box-note">
+              <span className="info-icon">💡</span>
+              <p>Đề thi toàn diện bao gồm cả 4 kỹ năng. Mỗi phần có câu hỏi riêng.</p>
+            </div>
+          </>
+        )}
+        {inputMethod === 'ai' && renderAIForm()}
+        {inputMethod === 'import' && renderImportForm()}
       </div>
     );
   }
@@ -565,40 +800,81 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
       <div className="listening-form-content">
         <h4 className="section-title">🎧 Nội dung bài Nghe</h4>
         
-        {/* Audio Upload */}
+        {/* Audio Upload or AI Generated Audio */}
         <div className="form-section-ex">
           <label className="form-label-ex">File Audio * (.mp3, .wav, .ogg)</label>
-          <div className="file-upload-zone" onClick={() => audioInputRef.current?.click()}>
-            <input 
-              ref={audioInputRef}
-              type="file" 
-              accept="audio/*"
-              onChange={handleAudioUpload}
-              style={{ display: 'none' }}
-            />
-            {!audioFile ? (
-              <>
-                <FileAudio size={40} className="upload-icon" />
-                <p>Click để chọn file audio</p>
-                <span className="upload-hint">Tối đa 50MB</span>
-              </>
-            ) : (
-              <div className="file-preview-box">
-                <FileAudio size={28} />
-                <div className="file-info">
-                  <span className="file-name">{audioFile.name}</span>
-                  <span className="file-size">{(audioFile.size / 1024 / 1024).toFixed(2)} MB</span>
+          
+          {/* Show AI generated audio - ONLY show green box when AI audio exists */}
+          {audioUrl ? (
+            <div className="audio-preview-container">
+              <div className="audio-info-box">
+                <FileAudio size={28} className="audio-icon-success" />
+                <div className="audio-info-text">
+                  <span className="audio-label">🤖 Audio được tạo bởi AI</span>
+                  <span className="audio-url">{audioUrl}</span>
                 </div>
-                <audio controls src={URL.createObjectURL(audioFile)} className="audio-preview" />
                 <button 
-                  onClick={(e) => { e.stopPropagation(); setAudioFile(null); }}
+                  onClick={() => { 
+                    setAudioUrl(''); 
+                    setAudioFile(null);
+                    // Clear the file input
+                    if (audioInputRef.current) {
+                      audioInputRef.current.value = '';
+                    }
+                  }}
                   className="btn-remove-file"
+                  type="button"
+                  title="Xóa audio AI"
                 >
                   <Trash2 size={16} />
                 </button>
               </div>
-            )}
-          </div>
+              <audio controls src={audioUrl} className="audio-player-full" style={{ width: '100%', marginTop: '12px' }} />
+            </div>
+          ) : (
+            /* Upload zone - only show when NO AI audio */
+            <div 
+              className="file-upload-zone" 
+              onClick={() => audioInputRef.current?.click()}
+            >
+              <input 
+                ref={audioInputRef}
+                type="file" 
+                accept="audio/*"
+                onChange={handleAudioUpload}
+                style={{ display: 'none' }}
+              />
+              {!audioFile ? (
+                <>
+                  <FileAudio size={40} className="upload-icon" />
+                  <p>Click để chọn file audio</p>
+                  <span className="upload-hint">Tối đa 50MB</span>
+                </>
+              ) : (
+                <div className="file-preview-box">
+                  <FileAudio size={28} />
+                  <div className="file-info">
+                    <span className="file-name">{audioFile.name}</span>
+                    <span className="file-size">{(audioFile.size / 1024 / 1024).toFixed(2)} MB</span>
+                  </div>
+                  <audio controls src={URL.createObjectURL(audioFile)} className="audio-preview" />
+                  <button 
+                    onClick={(e) => { 
+                      e.stopPropagation(); 
+                      setAudioFile(null); 
+                      setAudioUrl('');
+                      if (audioInputRef.current) {
+                        audioInputRef.current.value = '';
+                      }
+                    }}
+                    className="btn-remove-file"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
         
         {/* Transcript */}
@@ -875,8 +1151,8 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   
   // Import Form
   function renderImportForm() {
-    // Special UI for Midterm/Final - Word Import
-    if (isMidtermOrFinal) {
+    // Word Import Special Case
+    if (testType === 'midterm' || testType === 'final') {
       return (
         <div className="import-form-content word-import-special">
           <div className="word-import-header">
@@ -1101,31 +1377,76 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   
   // AI Form
   function renderAIForm() {
+    // Get grade and semester from selected class
+    const selectedClass = classes.find(c => c.id === parseInt(classId));
+    const grade = selectedClass?.grade || selectedClass?.name?.match(/\d+/)?.[0] || '10';
+    
     return (
       <div className="ai-form-content">
-        <h4 className="section-title">🤖 AI Sinh đề</h4>
+        <div className="ai-form-header">
+          <div className="ai-header-icon">
+            <Bot size={32} />
+          </div>
+          <div className="ai-header-text">
+            <h4>Tạo đề thi bằng AI thông minh</h4>
+            <p>AI sẽ tự động tạo đề thi toàn diện với 4 kỹ năng theo chương trình học</p>
+          </div>
+        </div>
         
+        {/* Basic Information */}
         <div className="form-section-ex">
-          <label className="form-label-ex">Tiêu đề *</label>
+          <label className="form-label-ex">Tiêu đề đề thi *</label>
           <input 
             type="text" 
             className="form-input-ex" 
-            placeholder="Nhập tiêu đề bài tập"
+            placeholder="Ví dụ: Đề kiểm tra giữa kỳ I - Khối 10"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
         </div>
         
+        {/* Class, Grade, Semester Row */}
         <div className="form-row-ex">
           <div className="form-section-ex">
-            <label className="form-label-ex">Lớp học</label>
-            <select className="form-select-ex" value={classId} onChange={(e) => setClassId(e.target.value)}>
-              <option value="">Chọn lớp</option>
+            <label className="form-label-ex">Lớp học <span className="required">*</span></label>
+            <select 
+              className="form-select-ex" 
+              value={classId} 
+              onChange={(e) => setClassId(e.target.value)}
+            >
+              <option value="">-- Chọn lớp --</option>
               {classes.map(cls => (
-                <option key={cls.id} value={cls.id}>{cls.name}</option>
+                <option key={cls.id} value={cls.id}>
+                  {cls.name} {cls.grade && `(Khối ${cls.grade})`}
+                </option>
               ))}
             </select>
           </div>
+          <div className="form-section-ex">
+            <label className="form-label-ex">Khối lớp</label>
+            <input 
+              type="text" 
+              className="form-input-ex"
+              value={grade}
+              disabled
+              style={{ background: '#f3f4f6', cursor: 'not-allowed' }}
+            />
+          </div>
+          <div className="form-section-ex">
+            <label className="form-label-ex">Học kỳ</label>
+            <select 
+              className="form-select-ex"
+              value={aiFormData.semester || '1'}
+              onChange={(e) => setAiFormData({ ...aiFormData, semester: e.target.value })}
+            >
+              <option value="1">Học kỳ I</option>
+              <option value="2">Học kỳ II</option>
+            </select>
+          </div>
+        </div>
+        
+        {/* Due Date and Score */}
+        <div className="form-row-ex">
           <div className="form-section-ex">
             <label className="form-label-ex">Hạn nộp</label>
             <input 
@@ -1135,40 +1456,167 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
               onChange={(e) => setDueDate(e.target.value)}
             />
           </div>
+          <div className="form-section-ex">
+            <label className="form-label-ex">Điểm tối đa</label>
+            <input 
+              type="number" 
+              className="form-input-ex"
+              value={maxScore}
+              onChange={(e) => setMaxScore(Number(e.target.value))}
+              min="1"
+              max="10"
+            />
+          </div>
         </div>
         
         {/* AI Source Selection */}
-        <div className="ai-source-selection">
-          <label className="ai-source-card">
-            <input 
-              type="radio"
-              name="ai-source"
-              value="files"
-              checked={aiSource === 'files'}
-              onChange={(e) => setAiSource(e.target.value)}
-            />
-            <div className="source-content">
-              <FileUp size={32} />
-              <h4>Sinh từ Files</h4>
-              <p>AI phân tích files bạn upload và tạo đề mới</p>
-            </div>
-          </label>
-          
-          <label className="ai-source-card">
-            <input 
-              type="radio"
-              name="ai-source"
-              value="question_bank"
-              checked={aiSource === 'question_bank'}
-              onChange={(e) => setAiSource(e.target.value)}
-            />
-            <div className="source-content">
-              <Database size={32} />
-              <h4>Lấy từ Ngân hàng Câu hỏi</h4>
-              <p>AI chọn câu hỏi phù hợp từ ngân hàng của bạn</p>
-            </div>
-          </label>
+        <div className="form-section-ex">
+          <label className="form-label-ex">Nguồn tạo đề</label>
+          <div className="ai-source-selection">
+            <label className={`ai-source-card ${aiSource === 'curriculum' ? 'active' : ''}`}>
+              <input 
+                type="radio"
+                name="ai-source"
+                value="curriculum"
+                checked={aiSource === 'curriculum'}
+                onChange={(e) => setAiSource(e.target.value)}
+              />
+              <div className="source-icon">
+                <Sparkles size={28} />
+              </div>
+              <div className="source-content">
+                <h4>Chương trình học</h4>
+                <p>Theo SGK Tiếng Anh 2018</p>
+              </div>
+            </label>
+            
+            <label className={`ai-source-card ${aiSource === 'files' ? 'active' : ''}`}>
+              <input 
+                type="radio"
+                name="ai-source"
+                value="files"
+                checked={aiSource === 'files'}
+                onChange={(e) => setAiSource(e.target.value)}
+              />
+              <div className="source-icon">
+                <FileUp size={28} />
+              </div>
+              <div className="source-content">
+                <h4>Upload Files</h4>
+                <p>AI phân tích từ file của bạn</p>
+              </div>
+            </label>
+            
+            <label className={`ai-source-card ${aiSource === 'question_bank' ? 'active' : ''}`}>
+              <input 
+                type="radio"
+                name="ai-source"
+                value="question_bank"
+                checked={aiSource === 'question_bank'}
+                onChange={(e) => setAiSource(e.target.value)}
+              />
+              <div className="source-icon">
+                <Database size={28} />
+              </div>
+              <div className="source-content">
+                <h4>Ngân hàng câu hỏi</h4>
+                <p>Từ câu hỏi có sẵn</p>
+              </div>
+            </label>
+          </div>
         </div>
+        
+        {/* AI from Curriculum */}
+        {aiSource === 'curriculum' && (
+          <div className="ai-curriculum-section">
+            <div className="info-box-highlight">
+              <div className="highlight-icon">
+                <Sparkles size={24} />
+              </div>
+              <div className="highlight-content">
+                <h5>Tự động sinh đề theo chương trình</h5>
+                <p>AI sẽ tạo đề thi toàn diện với 4 kỹ năng dựa trên chương trình Tiếng Anh 2018 cho khối {selectedClass?.grade || selectedClass?.name?.match(/\d+/)?.[0] || '10'}, học kỳ {aiFormData.semester || '1'}:</p>
+                <div className="skill-checklist">
+                  <div className="skill-item">
+                    <div className="skill-icon">🎧</div>
+                    <div>
+                      <strong>Nghe (Listening)</strong>
+                      <p>Audio tự động + câu hỏi trắc nghiệm</p>
+                    </div>
+                  </div>
+                  <div className="skill-item">
+                    <div className="skill-icon">📖</div>
+                    <div>
+                      <strong>Đọc (Reading)</strong>
+                      <p>Bài đọc phù hợp trình độ + câu hỏi</p>
+                    </div>
+                  </div>
+                  <div className="skill-item">
+                    <div className="skill-icon">✍️</div>
+                    <div>
+                      <strong>Viết (Writing)</strong>
+                      <p>Đề bài viết luận theo chủ đề</p>
+                    </div>
+                  </div>
+                  <div className="skill-item">
+                    <div className="skill-icon">🗣️</div>
+                    <div>
+                      <strong>Nói (Speaking)</strong>
+                      <p>Câu hỏi trả lời và thảo luận</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="estimate-time">
+                  <Clock size={16} />
+                  <span>Thời gian tạo đề: Khoảng 3-5 phút</span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Advanced Options */}
+            <div className="advanced-options">
+              <h5 className="options-title">Tùy chỉnh nâng cao (không bắt buộc)</h5>
+              <div className="form-row-ex">
+                <div className="form-section-ex">
+                  <label className="form-label-ex">Độ khó</label>
+                  <select 
+                    className="form-select-ex"
+                    value={aiFormData.difficulty || 'mixed'}
+                    onChange={(e) => setAiFormData({ ...aiFormData, difficulty: e.target.value })}
+                  >
+                    <option value="easy">Dễ</option>
+                    <option value="medium">Trung bình</option>
+                    <option value="hard">Khó</option>
+                    <option value="mixed">Trộn lẫn</option>
+                  </select>
+                </div>
+                <div className="form-section-ex">
+                  <label className="form-label-ex">Số câu hỏi mỗi kỹ năng</label>
+                  <input 
+                    type="number" 
+                    className="form-input-ex"
+                    placeholder="Mặc định: 5-7 câu"
+                    value={aiFormData.questionsPerSkill || ''}
+                    onChange={(e) => setAiFormData({ ...aiFormData, questionsPerSkill: e.target.value })}
+                    min="3"
+                    max="15"
+                  />
+                </div>
+              </div>
+              
+              <div className="form-section-ex">
+                <label className="form-label-ex">Chú thích thêm cho AI (không bắt buộc)</label>
+                <textarea 
+                  className="form-textarea-ex"
+                  rows="3"
+                  placeholder="Ví dụ: Tập trung vào chủ đề môi trường và công nghệ, sử dụng từ vựng học kỳ 1..."
+                  value={aiFormData.additionalNotes || ''}
+                  onChange={(e) => setAiFormData({ ...aiFormData, additionalNotes: e.target.value })}
+                />
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* AI from Files */}
         {aiSource === 'files' && (
@@ -1251,6 +1699,57 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
             </div>
           </div>
         )}
+        
+        {/* Generate Summary & Button */}
+        <div className="ai-generate-section">
+          <div className="generate-summary">
+            <h5>📋 Tóm tắt cấu hình</h5>
+            <div className="summary-items">
+              <div className="summary-item">
+                <span className="label">Lớp:</span>
+                <span className="value">{selectedClass?.name || 'Chưa chọn'}</span>
+              </div>
+              <div className="summary-item">
+                <span className="label">Khối:</span>
+                <span className="value">{grade}</span>
+              </div>
+              <div className="summary-item">
+                <span className="label">Học kỳ:</span>
+                <span className="value">Học kỳ {aiFormData.semester || '1'}</span>
+              </div>
+              <div className="summary-item">
+                <span className="label">Độ khó:</span>
+                <span className="value">
+                  {aiFormData.difficulty === 'easy' ? 'Dễ' : 
+                   aiFormData.difficulty === 'medium' ? 'Trung bình' : 
+                   aiFormData.difficulty === 'hard' ? 'Khó' : 'Trộn lẫn'}
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          <button 
+            className="btn-generate-ai" 
+            onClick={handleGenerateWithAI}
+            disabled={isGeneratingAI || !classId}
+          >
+            {isGeneratingAI ? (
+              <>
+                <div className="spinner-small"></div>
+                Đang sinh đề với AI (3-5 phút)...
+              </>
+            ) : (
+              <>
+                <Bot size={20} />
+                Tạo đề thi bằng AI ngay
+              </>
+            )}
+          </button>
+          
+          {!classId && (
+            <p className="ai-warning">⚠️ Vui lòng chọn lớp học trước khi tạo đề</p>
+          )}
+        </div>
       </div>
     );
   }
@@ -1496,4 +1995,3 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
     );
   }
 }
-
