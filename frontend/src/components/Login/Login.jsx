@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import authService from '../../services/authService';
 import './Login.css';
+import { UI_CONFIG } from '../../config/constants';
 
 const Login = ({ onLogin }) => {
   const [formData, setFormData] = useState({
@@ -18,7 +19,7 @@ const Login = ({ onLogin }) => {
 
   useEffect(() => {
     // Load animation
-    setTimeout(() => setIsLoaded(true), 100);
+    setTimeout(() => setIsLoaded(true), UI_CONFIG.FOCUS_DELAY);
 
     // Generate random stars
     const generatedStars = Array.from({ length: 100 }, () => ({
@@ -139,7 +140,7 @@ const Login = ({ onLogin }) => {
     ripple.classList.add('ripple-effect');
 
     button.appendChild(ripple);
-    setTimeout(() => ripple.remove(), 600);
+    setTimeout(() => ripple.remove(), UI_CONFIG.RIPPLE_DURATION);
   };
 
   const handleSocialLogin = (provider) => {

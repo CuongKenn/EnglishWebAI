@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './Settings.css';
 import { adminAPI } from '../../../services/api';
+import { UI_CONFIG } from '../../../config/constants';
 
 const Settings = () => {
   const [settings, setSettings] = useState({
@@ -84,7 +85,7 @@ const Settings = () => {
       await adminAPI.updateSystemSettings(backendSettings);
       
       setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+      setTimeout(() => setSaved(false), UI_CONFIG.NOTIFICATION_DURATION);
     } catch (e) {
       console.error('Failed to save settings:', e);
       setError('Không thể lưu cấu hình. Vui lòng thử lại.');
@@ -106,7 +107,7 @@ const Settings = () => {
         await loadSettings();
         
         setSaved(true);
-        setTimeout(() => setSaved(false), 3000);
+        setTimeout(() => setSaved(false), UI_CONFIG.NOTIFICATION_DURATION);
       } catch (e) {
         console.error('Failed to reset settings:', e);
         setError('Không thể khôi phục cài đặt mặc định');

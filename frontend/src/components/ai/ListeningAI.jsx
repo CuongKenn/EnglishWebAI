@@ -7,6 +7,7 @@ import { Slider } from "../ui/slider";
 import { Badge } from "../ui/badge";
 import { getListeningLesson, submitListeningAnswers } from "../../services/aiService";
 import { aiUsageAPI } from "../../services/api";
+import { UI_CONFIG } from "../../config/constants";
 
 export function ListeningAI() {
   const [selectedLevel, setSelectedLevel] = useState("intermediate");
@@ -226,7 +227,7 @@ export function ListeningAI() {
           setProgress(progressPercent);
           
           // Continue to next line after a short pause
-          setTimeout(() => speakNextLine(), 300);
+          setTimeout(() => speakNextLine(), UI_CONFIG.DEBOUNCE_DELAY);
         };
         
         utterance.onerror = (event) => {

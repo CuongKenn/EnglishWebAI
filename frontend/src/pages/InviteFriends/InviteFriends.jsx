@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { UserPlus, Copy, Check, Share2 } from 'lucide-react';
 import './InviteFriends.css';
+import { UI_CONFIG } from '../../config/constants';
 
 const InviteFriends = () => {
   const [copied, setCopied] = useState(false);
@@ -10,7 +11,7 @@ const InviteFriends = () => {
   const handleCopy = () => {
     navigator.clipboard.writeText(inviteLink);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setCopied(false), UI_CONFIG.COPIED_INDICATOR_DURATION);
   };
 
   return (

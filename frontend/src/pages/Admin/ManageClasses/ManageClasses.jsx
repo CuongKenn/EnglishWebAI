@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import './ManageClasses.css';
 import apiClient from '../../../services/api';
+import { UI_CONFIG } from '../../../config/constants';
 
 const ManageClasses = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -57,7 +58,7 @@ const ManageClasses = () => {
   }, []);
 
   useEffect(() => {
-    const t = setTimeout(() => loadClasses(), 300);
+    const t = setTimeout(() => loadClasses(), UI_CONFIG.DEBOUNCE_DELAY);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm]);

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Eye, EyeOff, Save, Key, Shield, AlertCircle, CheckCircle2 } from 'lucide-react';
 import aiSettingsService from '../../../services/aiSettingsService';
 import './AISettings.css';
+import { UI_CONFIG } from '../../../config/constants';
 
 const AISettings = () => {
   const [settings, setSettings] = useState(null);
@@ -51,7 +52,7 @@ const AISettings = () => {
   const handleSave = () => {
     aiSettingsService.saveSettings(settings);
     setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    setTimeout(() => setSaved(false), UI_CONFIG.NOTIFICATION_DURATION);
   };
 
   const toggleShowKey = (provider) => {

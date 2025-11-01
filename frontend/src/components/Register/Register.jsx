@@ -5,6 +5,7 @@ import otpService from '../../services/otpService';
 import OTPModal from '../OTPModal/OTPModal';
 import Toast from '../Toast/Toast';
 import './Register.css';
+import { UI_CONFIG } from '../../config/constants';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -28,7 +29,7 @@ const Register = () => {
 
   useEffect(() => {
     // Load animation
-    setTimeout(() => setIsLoaded(true), 100);
+    setTimeout(() => setIsLoaded(true), UI_CONFIG.FOCUS_DELAY);
 
     // Generate random stars
     const generatedStars = Array.from({ length: 100 }, () => ({
@@ -160,7 +161,7 @@ const Register = () => {
     ripple.classList.add('ripple-effect');
     
     button.appendChild(ripple);
-    setTimeout(() => ripple.remove(), 600);
+    setTimeout(() => ripple.remove(), UI_CONFIG.RIPPLE_DURATION);
   };
 
   const handleSocialRegister = (provider) => {

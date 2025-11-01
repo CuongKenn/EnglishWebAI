@@ -20,6 +20,7 @@ import { coursesAPI } from '../../services/api';
 import { aiAPI } from '../../services/api';
 import Toast from '../../components/Toast/Toast';
 import useToast from '../../hooks/useToast';
+import { UI_CONFIG } from '../../config/constants';
 
 const WritingExercise = () => {
   const { courseId, lessonId } = useParams();
@@ -132,9 +133,9 @@ const WritingExercise = () => {
     const autoSave = setTimeout(() => {
       if (userEssay.trim().length > 0) {
         setIsSaved(true);
-        setTimeout(() => setIsSaved(false), 2000);
+        setTimeout(() => setIsSaved(false), UI_CONFIG.SUCCESS_INDICATOR_DURATION);
       }
-    }, 3000);
+    }, UI_CONFIG.NOTIFICATION_DURATION);
 
     return () => clearTimeout(autoSave);
   }, [userEssay]);

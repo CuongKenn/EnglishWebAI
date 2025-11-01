@@ -5,6 +5,7 @@ import { Card } from "../ui/card";
 import { Languages, ArrowRightLeft, Volume2, Copy, Check } from "lucide-react";
 import { aiUsageAPI } from "../../services/api";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { UI_CONFIG } from "../../config/constants";
 
 export function TranslateAI() {
   const [sourceLang, setSourceLang] = useState("vi");
@@ -35,7 +36,7 @@ export function TranslateAI() {
   const handleCopy = () => {
     navigator.clipboard.writeText(translatedText);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setCopied(false), UI_CONFIG.COPIED_INDICATOR_DURATION);
   };
 
   return (

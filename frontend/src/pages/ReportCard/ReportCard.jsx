@@ -11,6 +11,7 @@ import {
   Activity
 } from 'lucide-react';
 import './ReportCard.css';
+import { UI_CONFIG } from '../../config/constants';
 
 const ReportCard = () => {
   const [reportData, setReportData] = useState(null);
@@ -21,7 +22,7 @@ const ReportCard = () => {
     const loadReportData = async () => {
       setLoading(true);
       // Simulate loading delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, UI_CONFIG.TIMER_INTERVAL));
 
       const mockData = {
         studentName: "Nguyễn Văn A",
