@@ -41,6 +41,10 @@ class Settings(BaseSettings):
     AZURE_SPEECH_KEY: str = os.getenv("AZURE_SPEECH_KEY", "")
     AZURE_SPEECH_REGION: str = os.getenv("AZURE_SPEECH_REGION", "eastus")
     
+    # Redis Configuration
+    REDIS_URL: str = os.getenv("REDIS_URL", "redis://redis:6379/0")
+    REDIS_ENABLED: bool = os.getenv("REDIS_ENABLED", "True") == "True"
+    
     class Config:
         env_file = ".env"
         case_sensitive = True

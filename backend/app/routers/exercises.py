@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from fastapi.responses import JSONResponse
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import func, or_, and_
 from typing import List, Optional
 from datetime import datetime
@@ -581,8 +581,15 @@ async def get_exercises(
         logger.debug(f"[GET /exercises/] No enrolled classes found!")
         return []
     
-    # Query exercises từ các lớp đã tham gia
-    query = db.query(Exercise).filter(Exercise.class_id.in_(enrolled_class_ids))
+    # Query exercises từ các lớp đã tham gia với eager loading
+    query = (
+        db.query(Exercise)
+        .options(
+            joinedload(Exercise.classroom),
+            selectinload(Exercise.submissions)
+        )
+        .filter(Exercise.class_id.in_(enrolled_class_ids))
+    )
     
     # Filter by specific class
     if class_id:
@@ -740,7 +747,16 @@ async def get_exercise(
     """
     Lấy thông tin chi tiết của một bài tập
     """
-    exercise = db.query(Exercise).filter(Exercise.id == exercise_id).first()
+    # Eager load relationships to avoid N+1 queries
+    exercise = (
+        db.query(Exercise)
+        .options(
+            joinedload(Exercise.classroom),
+            selectinload(Exercise.submissions)
+        )
+        .filter(Exercise.id == exercise_id)
+        .first()
+    )
     
     if not exercise:
         raise HTTPException(

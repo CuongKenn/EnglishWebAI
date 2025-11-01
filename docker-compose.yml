@@ -21,6 +21,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_started
     command: >
       sh -c "
         echo 'Starting EnglishWebAI Backend...' &&
@@ -71,6 +73,24 @@ services:
       timeout: 5s
       retries: 5
 
+  # Redis cache service
+  redis:
+    image: redis:7-alpine
+    container_name: englishwebai_redis
+    restart: unless-stopped
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    networks:
+      - englishwebai_network
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 networks:
   englishwebai_network:
     driver: bridge
@@ -87,3 +107,5 @@ volumes:
     name: englishwebai_backend_logs
   db_data:
     name: englishwebai_db_data
+  redis_data:
+    name: englishwebai_redis_data

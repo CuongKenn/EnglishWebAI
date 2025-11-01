@@ -16,6 +16,7 @@ from app.models.submission import Submission
 from app.models.classroom import Classroom
 from app.models.enrollment import Enrollment
 from app.services.notification_service import NotificationService
+from app.utils.cache import get_cached_student_analytics, cache_student_analytics, invalidate_cache
 from pydantic import BaseModel
 
 router = APIRouter()
@@ -264,8 +265,17 @@ async def get_student_analytics(
     """
     Get analytics for all students in a class
     Including progress, average scores, skill breakdown
+    With Redis caching for better performance
     """
     _ensure_teacher_access(db, current_user, class_id)
+    
+    # Try to get from cache
+    cached_result = get_cached_student_analytics(class_id)
+    if cached_result:
+        logger.info(f"Returning cached analytics for class {class_id}")
+        return cached_result
+    
+    logger.info(f"Cache miss, computing analytics for class {class_id}")
     
     # Get all students in the class
     enrollments = db.query(Enrollment, User).join(
@@ -342,6 +352,9 @@ async def get_student_analytics(
             "skill_scores": skill_averages,
             "recent_trend": trend
         })
+    
+    # Cache the result for 3 minutes
+    cache_student_analytics(class_id, student_summaries, ttl=180)
     
     return student_summaries
 
