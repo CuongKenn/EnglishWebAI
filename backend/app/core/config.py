@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     
     # AI Configuration - OpenAI (ChatGPT)
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
-    OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+    OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "gpt-5-nano")
     
     # Azure Speech Configuration
     AZURE_SPEECH_KEY: str = os.getenv("AZURE_SPEECH_KEY", "")

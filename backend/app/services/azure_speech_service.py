@@ -36,7 +36,7 @@ class AzureSpeechService:
         self.openai_api_key = settings.OPENAI_API_KEY if hasattr(settings, 'OPENAI_API_KEY') else os.getenv('OPENAI_API_KEY')
         if self.openai_api_key:
             openai.api_key = self.openai_api_key
-            self.openai_model = settings.OPENAI_MODEL if hasattr(settings, 'OPENAI_MODEL') else os.getenv('OPENAI_MODEL', 'gpt-4o-mini')
+            self.openai_model = settings.OPENAI_MODEL if hasattr(settings, 'OPENAI_MODEL') else os.getenv('OPENAI_MODEL', 'gpt-5-nano')
         else:
             self.openai_model = None
             print("WARNING: OPENAI_API_KEY not found. Will use template feedback.")

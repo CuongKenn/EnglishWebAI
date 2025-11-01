@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 
 from app.core.database import get_db
-from app.core.dependencies import get_current_admin_user
+from app.core.dependencies import get_current_admin_user, get_current_user
 from app.models.user import User
 from app.schemas.admin import (
     AdminUserOut, AdminUserCreate, AdminUserUpdate,
@@ -14,8 +14,12 @@ from app.schemas.system_config import (
     SystemConfigOut, SystemConfigCreate, SystemConfigUpdate,
     SystemSettingsOut, SystemSettingsUpdate, SystemConfigBulkUpdate
 )
+from app.schemas.excel_import import (
+    StudentsImportRequest, StudentsImportResponse
+)
 from app.services.admin_service import AdminService
 from app.services.system_config_service import SystemConfigService
+from app.services.excel_import_service import ExcelImportService
 
 
 router = APIRouter()
@@ -248,3 +252,138 @@ def initialize_default_settings(
     """Initialize default system settings"""
     SystemConfigService.initialize_default_configs(db)
     return {"message": "Default settings initialized successfully"}
+
+
+# -------- Excel Import --------
+@router.post("/import/students/excel", response_model=StudentsImportResponse)
+async def import_students_from_excel(
+    file: UploadFile = File(...),
+    default_password: str = "123456",
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_admin_user),
+):
+    """
+    Import học sinh từ file Excel
+    
+    File Excel phải có các cột:
+    - STT: Số thứ tự
+    - Mã học sinh: Mã học sinh (sẽ dùng làm username)
+    - Họ và tên: Họ và tên học sinh
+    - Ngày sinh: Ngày sinh (tùy chọn)
+    
+    Email sẽ được tạo tự động: {mã học sinh}@gmail.com
+    """
+    # Validate file type
+    if not file.filename.endswith(('.xlsx', '.xls')):
+        raise HTTPException(
+            status_code=400,
+            detail="File phải có định dạng Excel (.xlsx hoặc .xls)"
+        )
+    
+    # Parse Excel file
+    students = ExcelImportService.parse_excel_file(file)
+    
+    # Create import request
+    import_request = StudentsImportRequest(
+        students=students,
+        default_password=default_password
+    )
+    
+    # Import students
+    return ExcelImportService.import_students(db, import_request)
+
+
+@router.post("/import/students/preview")
+async def preview_excel_import(
+    file: UploadFile = File(...),
+    _: User = Depends(get_current_admin_user),
+):
+    """
+    Preview file Excel trước khi import để kiểm tra dữ liệu
+    """
+    # Validate file type
+    if not file.filename.endswith(('.xlsx', '.xls')):
+        raise HTTPException(
+            status_code=400,
+            detail="File phải có định dạng Excel (.xlsx hoặc .xls)"
+        )
+    
+    # Parse Excel file
+    students = ExcelImportService.parse_excel_file(file)
+    
+    return {
+        "total_students": len(students),
+        "preview": students[:10],  # Chỉ hiển thị 10 dòng đầu
+        "sample_emails": [f"{s.ma_hoc_sinh}@gmail.com" for s in students[:5]],
+        "all_students": [{"ma_hoc_sinh": s.ma_hoc_sinh, "ho_va_ten": s.ho_va_ten} for s in students]  # Debug: show all
+    }
+
+
+# -------- Teacher Dashboard --------
+@router.get("/teachers/classes", response_model=List[AdminClassOut])
+def get_teacher_classes(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Lấy danh sách lớp học mà teacher này dạy (hoặc tất cả nếu là admin)
+    """
+    from app.models.classroom import Classroom
+    
+    # Kiểm tra user phải là teacher hoặc admin
+    if current_user.role not in ["TEACHER", "ADMIN"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Nếu là admin thì lấy tất cả classes
+    if current_user.role == "ADMIN":
+        classes = db.query(Classroom).all()
+    else:
+        # Nếu là teacher thì chỉ lấy classes mình dạy
+        classes = db.query(Classroom).filter(Classroom.teacher_id == current_user.id).all()
+    
+    return [
+        AdminClassOut(
+            id=cls.id,
+            name=cls.name,
+            subject=cls.subject,
+            grade=cls.grade,
+            teacher_id=cls.teacher_id,
+            teacher_name=cls.teacher.full_name if cls.teacher else None,
+            student_count=len([e for e in cls.enrollments if e.status == "active"]),
+            created_at=cls.created_at
+        )
+        for cls in classes
+    ]
+
+
+@router.post("/debug/excel")
+async def debug_excel_content(
+    file: UploadFile = File(...),
+    _: User = Depends(get_current_admin_user),
+):
+    """
+    Debug endpoint để xem raw content của Excel file
+    """
+    try:
+        import pandas as pd
+        import io
+        
+        contents = file.file.read()
+        
+        # Đọc raw Excel
+        df_raw = pd.read_excel(io.BytesIO(contents), header=None)
+        
+        return {
+            "filename": file.filename,
+            "file_size": len(contents),
+            "shape": df_raw.shape,
+            "columns": list(df_raw.columns),
+            "first_10_rows": df_raw.head(10).to_dict(orient='records'),
+            "all_values": df_raw.values.tolist()[:20]  # First 20 rows as list
+        }
+    except Exception as e:
+        return {
+            "error": str(e),
+            "filename": file.filename,
+            "file_size": len(contents) if 'contents' in locals() else 0
+        }

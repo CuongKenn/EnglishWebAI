@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import './ManageAccounts.css';
 import { adminAPI } from '../../../services/api';
+import ExcelImportModal from '../../../components/ExcelImportModal';
 
 const ManageAccounts = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -8,13 +9,15 @@ const ManageAccounts = () => {
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState('add'); // 'add' or 'edit'
   const [selectedUser, setSelectedUser] = useState(null);
-  const [showImport, setShowImport] = useState(false);
-  const [importFile, setImportFile] = useState(null);
-  const [importResult, setImportResult] = useState(null);
+  const [showExcelImport, setShowExcelImport] = useState(false);
 
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(20);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -47,11 +50,24 @@ const ManageAccounts = () => {
       const params = {
         search: searchTerm || undefined,
         role: filterRole !== 'all' ? filterRole : undefined,
+        skip: 0,
+        limit: 1000 // Load nhiều để không bị giới hạn
       };
+      
+      console.log('📡 Loading users with params:', params);
       const data = await adminAPI.getUsers(params);
+      console.log('✅ Received data:', data);
+      
       setUsers(Array.isArray(data) ? data : []);
+      setCurrentPage(1); // Reset về trang 1 khi reload
+      
+      if (!data || data.length === 0) {
+        console.warn('⚠️ No users returned from API');
+      }
     } catch (e) {
-      setError('Không tải được danh sách người dùng');
+      console.error('❌ Error loading users:', e);
+      setError(`Không tải được danh sách người dùng: ${e.message || 'Unknown error'}`);
+      setUsers([]);
     } finally {
       setLoading(false);
     }
@@ -153,11 +169,23 @@ const ManageAccounts = () => {
   };
 
   const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         user.username?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = filterRole === 'all' || user.role === filterRole;
     return matchesSearch && matchesRole;
   });
+  
+  // Pagination logic
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentUsers = filteredUsers.slice(indexOfFirstItem, indexOfLastItem);
+  
+  const goToPage = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
     <div className="admin-container">
@@ -232,29 +260,79 @@ const ManageAccounts = () => {
                 <option value="teacher">Giáo viên</option>
                 <option value="admin">Quản trị</option>
               </select>
+              {(searchTerm || filterRole !== 'all') && (
+                <button 
+                  className="btn-secondary" 
+                  onClick={() => {
+                    setSearchTerm('');
+                    setFilterRole('all');
+                  }}
+                  title="Xóa bộ lọc"
+                  style={{ marginRight: '10px' }}
+                >
+                  🔄 Reset
+                </button>
+              )}
               <button className="btn-primary" onClick={() => handleOpenModal('add')}>
                 ➕ Thêm tài khoản
               </button>
-              <button className="btn-primary" onClick={() => { setShowImport(true); setImportResult(null); }}>
-                📥 Import CSV
+              <button className="btn-primary" onClick={() => setShowExcelImport(true)}>
+                📊 Import Excel
               </button>
             </div>
           </div>
 
+          {/* Loading & Error States */}
+          {loading && (
+            <div style={{ textAlign: 'center', padding: '40px' }}>
+              <div style={{ fontSize: '24px', marginBottom: '10px' }}>⏳</div>
+              <div style={{ color: '#6b7280' }}>Đang tải dữ liệu...</div>
+            </div>
+          )}
+          
+          {error && (
+            <div style={{ 
+              backgroundColor: '#fee2e2', 
+              border: '1px solid #ef4444',
+              borderRadius: '8px',
+              padding: '16px', 
+              margin: '20px 0',
+              color: '#dc2626'
+            }}>
+              <strong>❌ Lỗi:</strong> {error}
+              <br />
+              <button 
+                onClick={loadUsers}
+                style={{
+                  marginTop: '10px',
+                  padding: '8px 16px',
+                  backgroundColor: '#3b82f6',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer'
+                }}
+              >
+                🔄 Thử lại
+              </button>
+            </div>
+          )}
+
           {/* Table */}
-          <table className="accounts-table">
-            <thead>
-              <tr>
-                <th>Người dùng</th>
-                <th>Vai trò</th>
-                <th>Trạng thái</th>
-                <th>Số lớp</th>
-                <th>Ngày tham gia</th>
-                <th>Hành động</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredUsers.map(user => (
+          {!loading && !error && (
+            <table className="accounts-table">
+              <thead>
+                <tr>
+                  <th>Người dùng</th>
+                  <th>Vai trò</th>
+                  <th>Trạng thái</th>
+                  <th>Số lớp</th>
+                  <th>Ngày tham gia</th>
+                  <th>Hành động</th>
+                </tr>
+              </thead>
+              <tbody>
+                {currentUsers.map(user => (
                 <tr key={user.id}>
                   <td>
                     <div className="user-info">
@@ -298,24 +376,81 @@ const ManageAccounts = () => {
                     </div>
                   </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+                ))}
+              </tbody>
+            </table>
+          )}
 
-          {filteredUsers.length === 0 && (
+          {!loading && !error && filteredUsers.length === 0 && (
             <div style={{ textAlign: 'center', padding: '40px', color: '#9ca3af' }}>
-              Không tìm thấy kết quả nào
+              <div style={{ fontSize: '48px', marginBottom: '16px' }}>📭</div>
+              <div style={{ fontSize: '18px', fontWeight: '500', marginBottom: '8px' }}>
+                Không tìm thấy kết quả nào
+              </div>
+              <div style={{ fontSize: '14px', color: '#6b7280' }}>
+                {searchTerm || filterRole !== 'all' 
+                  ? 'Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm'
+                  : 'Chưa có tài khoản nào trong hệ thống. Hãy thêm tài khoản mới hoặc import từ Excel.'}
+              </div>
             </div>
           )}
 
           {/* Pagination */}
-          <div className="pagination">
-            <button disabled>← Trước</button>
-            <button className="active">1</button>
-            <button>2</button>
-            <button>3</button>
-            <button>Sau →</button>
-          </div>
+          {!loading && !error && filteredUsers.length > 0 && (
+            <div className="pagination">
+              <button 
+                disabled={currentPage === 1}
+                onClick={() => goToPage(currentPage - 1)}
+              >
+                ← Trước
+              </button>
+              
+              {[...Array(totalPages)].map((_, index) => {
+                const pageNumber = index + 1;
+                // Chỉ hiển thị 5 trang gần current page
+                if (
+                  pageNumber === 1 ||
+                  pageNumber === totalPages ||
+                  (pageNumber >= currentPage - 2 && pageNumber <= currentPage + 2)
+                ) {
+                  return (
+                    <button
+                      key={pageNumber}
+                      className={currentPage === pageNumber ? 'active' : ''}
+                      onClick={() => goToPage(pageNumber)}
+                    >
+                      {pageNumber}
+                    </button>
+                  );
+                } else if (
+                  pageNumber === currentPage - 3 ||
+                  pageNumber === currentPage + 3
+                ) {
+                  return <span key={pageNumber}>...</span>;
+                }
+                return null;
+              })}
+              
+              <button 
+                disabled={currentPage === totalPages}
+                onClick={() => goToPage(currentPage + 1)}
+              >
+                Sau →
+              </button>
+            </div>
+          )}
+          
+          {/* Pagination Info */}
+          {!loading && !error && filteredUsers.length > 0 && (
+            <div style={{ 
+              textAlign: 'center', 
+              marginTop: '16px', 
+              color: '#6b7280',
+              fontSize: '14px'
+            }}>
+              Hiển thị {indexOfFirstItem + 1} - {Math.min(indexOfLastItem, filteredUsers.length)} trong tổng {filteredUsers.length} tài khoản
+            </div>
+          )}
         </div>
       </div>
 
@@ -406,67 +541,19 @@ const ManageAccounts = () => {
         </div>
       )}
 
-      {/* Import CSV Modal */}
-      {showImport && (
-        <div className="modal-overlay" onClick={() => setShowImport(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Import tài khoản từ CSV</h2>
-              <button className="close-btn" onClick={() => setShowImport(false)}>×</button>
-            </div>
-            {!importResult ? (
-              <form onSubmit={async (e) => {
-                e.preventDefault();
-                if (!importFile) { alert('Chọn file CSV trước'); return; }
-                try {
-                  const result = await adminAPI.importUsersCSV(importFile);
-                  setImportResult(result);
-                  await loadUsers();
-                } catch (err) {
-                  alert(err?.detail || 'Import thất bại');
-                }
-              }}>
-                <div className="form-group">
-                  <label>Chọn file (.csv hoặc .txt)</label>
-                  <input type="file" accept=".csv,.txt" onChange={(e) => setImportFile(e.target.files?.[0] || null)} />
-                </div>
-                <div style={{ fontSize: 13, color: '#6b7280' }}>
-                  Cột được hỗ trợ: name, email, username (tùy chọn), role, status, password. Role cho phép: user/student, teacher, parent, admin.
-                </div>
-                <div className="modal-actions">
-                  <button type="button" className="btn-secondary" onClick={() => setShowImport(false)}>Hủy</button>
-                  <button type="submit" className="btn-primary">Import</button>
-                </div>
-              </form>
-            ) : (
-              <div>
-                <p><strong>Kết quả:</strong></p>
-                <p>Đã tạo: {importResult.created} | Bỏ qua: {importResult.skipped}</p>
-                {importResult.errors?.length > 0 && (
-                  <div style={{ maxHeight: 200, overflow: 'auto', background: '#f9fafb', padding: 10, borderRadius: 8 }}>
-                    {importResult.errors.map((e, i) => (
-                      <div key={i} style={{ color: '#991b1b' }}>Dòng {e.row}: {e.message}</div>
-                    ))}
-                  </div>
-                )}
-                {importResult.preview?.length > 0 && (
-                  <div style={{ marginTop: 10, fontSize: 13, color: '#374151' }}>
-                    Một số tài khoản:
-                    <ul>
-                      {importResult.preview.map((u) => (
-                        <li key={u.id}>{u.username} - {u.email} ({u.role})</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                <div className="modal-actions">
-                  <button className="btn-primary" onClick={() => setShowImport(false)}>Đóng</button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Excel Import Modal */}
+      <ExcelImportModal
+        isOpen={showExcelImport}
+        onClose={() => {
+          setShowExcelImport(false);
+          // Reload users sau khi đóng modal (dù thành công hay thất bại)
+          loadUsers();
+        }}
+        onSuccess={() => {
+          // Reload users ngay khi import thành công
+          loadUsers();
+        }}
+      />
     </div>
   );
 };

@@ -2219,7 +2219,7 @@ export default function QuestionBankV2() {
           }}
         />
       )}
-      {toast.show && (
+      {toast.show && toast.message && (
         <Toast
           message={toast.message}
           type={toast.type}

@@ -22,7 +22,7 @@ class OpenAIService:
         
         if api_key and api_key.strip():
             try:
-                model_name = settings.OPENAI_MODEL if hasattr(settings, 'OPENAI_MODEL') else os.getenv('OPENAI_MODEL', 'gpt-4o-mini')
+                model_name = settings.OPENAI_MODEL if hasattr(settings, 'OPENAI_MODEL') else os.getenv('OPENAI_MODEL', 'gpt-5-nano')
                 openai.api_key = api_key
                 self.client = openai
                 self.model = model_name

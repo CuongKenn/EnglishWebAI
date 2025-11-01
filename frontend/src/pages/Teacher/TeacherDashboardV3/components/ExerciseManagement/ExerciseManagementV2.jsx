@@ -474,7 +474,7 @@ export default function ExerciseManagementV2() {
           onDelete={() => handleDeleteExercise(selectedExercise.id)}
         />
       )}
-      {toast.show && (
+      {toast.show && toast.message && (
         <Toast
           message={toast.message}
           type={toast.type}

@@ -40,6 +40,12 @@ app = FastAPI(
     openapi_url=f"{settings.API_PREFIX}/openapi.json"
 )
 
+# Health check endpoint for Docker
+@app.get("/health")
+def health_check():
+    """Health check endpoint"""
+    return {"status": "healthy", "service": "english-learning-api"}
+
 # Increase file upload size limit to 50MB
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 import sys

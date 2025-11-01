@@ -212,7 +212,7 @@ export default function ClassManagement() {
 
   const handleImportStudents = async () => {
     if (!importFile || !selectedClass) {
-      showWarning('Vui lòng chọn file CSV!');
+      showWarning('Vui lòng chọn file Excel (.xls, .xlsx hoặc .csv)!');
       return;
     }
 
@@ -222,8 +222,9 @@ export default function ClassManagement() {
     try {
       const formData = new FormData();
       formData.append('file', importFile);
+      formData.append('default_password', '123456'); // Mật khẩu mặc định
       
-      const response = await apiV1.post(`/classes/${selectedClass.id}/students/import`, formData, {
+      const response = await apiV1.post(`/classes/${selectedClass.id}/students/import-excel`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
@@ -233,8 +234,13 @@ export default function ClassManagement() {
       await fetchStudents(selectedClass.id);
       
       // Show success message
-      if (response.data.imported > 0) {
-        showSuccess(`${response.data.message}\n\nThành công: ${response.data.imported}\nThất bại: ${response.data.failed}`);
+      if (response.data.success_count > 0) {
+        const message = `Import thành công!\n\n` +
+          `✅ Đã thêm vào lớp: ${response.data.success_count}\n` +
+          (response.data.created_accounts ? `🆕 Tài khoản mới tạo: ${response.data.created_accounts.length}\n` : '') +
+          (response.data.already_in_class ? `ℹ️ Đã có trong lớp: ${response.data.already_in_class.length}\n` : '') +
+          (response.data.failed_count > 0 ? `❌ Thất bại: ${response.data.failed_count}` : '');
+        showSuccess(message);
       }
       
       // Clear file input
@@ -242,11 +248,12 @@ export default function ClassManagement() {
       
     } catch (error) {
       console.error('Error importing students:', error);
-      showError('Lỗi khi import: ' + (error.response?.data?.detail || error.message));
+      const errorDetail = error.response?.data?.detail || error.message;
+      showError('Lỗi khi import: ' + errorDetail);
       setImportResults({
-        imported: 0,
-        failed: 0,
-        errors: [error.response?.data?.detail || error.message]
+        success_count: 0,
+        failed_count: 0,
+        failed_students: [{ error: errorDetail }]
       });
     } finally {
       setImporting(false);
@@ -300,7 +307,7 @@ export default function ClassManagement() {
     }}>
       <div className="class-modal large-modal" onClick={(e) => e.stopPropagation()} style={{maxWidth: '900px'}}>
         <div className="class-modal-header">
-          <h2>📊 Import Học sinh từ CSV/Excel</h2>
+          <h2>📊 Import Học sinh từ Excel (.xls, .xlsx, .csv)</h2>
           <button className="modal-close-btn" onClick={() => {
             setShowImportModal(false);
             setImportFile(null);
@@ -329,9 +336,9 @@ export default function ClassManagement() {
                 <Download size={28} />
               </div>
               <div>
-                <h4 style={{margin: 0, fontSize: '16px', fontWeight: '600'}}>Bước 1: Tải file mẫu CSV</h4>
+                <h4 style={{margin: 0, fontSize: '16px', fontWeight: '600'}}>Bước 1: Tải file mẫu Excel</h4>
                 <p style={{margin: '5px 0 0 0', fontSize: '13px', opacity: 0.9}}>
-                  Tải xuống file mẫu và điền thông tin học sinh theo đúng định dạng
+                  Tải xuống file mẫu và điền thông tin học sinh (hỗ trợ .xls, .xlsx, .csv)
                 </p>
               </div>
             </div>
@@ -361,7 +368,7 @@ export default function ClassManagement() {
           {/* Step 2: Upload File */}
           <div style={{marginBottom: '25px'}}>
             <h3 style={{marginBottom: '15px', fontSize: '16px', fontWeight: '600', color: '#1f2937'}}>
-              Bước 2: Chọn file CSV đã điền thông tin
+              Bước 2: Chọn file Excel đã điền thông tin
             </h3>
             <div className="upload-area" style={{
               border: '2px dashed #cbd5e1',
@@ -374,7 +381,7 @@ export default function ClassManagement() {
               <input
                 type="file"
                 id="csv-upload"
-                accept=".csv,.txt"
+                accept=".csv,.xls,.xlsx"
                 onChange={(e) => {
                   const file = e.target.files[0];
                   if (file) {
@@ -389,7 +396,7 @@ export default function ClassManagement() {
                 <>
                   <Upload size={48} style={{color: '#94a3b8', margin: '0 auto 15px'}} />
                   <h4 style={{margin: '0 0 8px 0', fontSize: '16px', color: '#1f2937'}}>
-                    Kéo thả file CSV vào đây
+                    Kéo thả file Excel (.xls, .xlsx) hoặc CSV vào đây
                   </h4>
                   <p style={{margin: '0 0 15px 0', fontSize: '14px', color: '#64748b'}}>hoặc</p>
                   <label 
@@ -410,7 +417,7 @@ export default function ClassManagement() {
                     Chọn file từ máy tính
                   </label>
                   <div style={{marginTop: '12px', fontSize: '13px', color: '#64748b'}}>
-                    Hỗ trợ: .csv, .txt (Tối đa 5MB)
+                    Hỗ trợ: .xls, .xlsx, .csv (Tối đa 5MB)
                   </div>
                 </>
               ) : (
@@ -447,8 +454,8 @@ export default function ClassManagement() {
           {importResults && (
             <div style={{
               padding: '20px',
-              background: importResults.imported > 0 ? '#f0fdf4' : '#fef2f2',
-              border: `1px solid ${importResults.imported > 0 ? '#86efac' : '#fecaca'}`,
+              background: importResults.success_count > 0 ? '#f0fdf4' : '#fef2f2',
+              border: `1px solid ${importResults.success_count > 0 ? '#86efac' : '#fecaca'}`,
               borderRadius: '12px',
               marginBottom: '20px'
             }}>
@@ -456,16 +463,24 @@ export default function ClassManagement() {
                 margin: '0 0 12px 0',
                 fontSize: '16px',
                 fontWeight: '600',
-                color: importResults.imported > 0 ? '#166534' : '#991b1b'
+                color: importResults.success_count > 0 ? '#166534' : '#991b1b'
               }}>
-                {importResults.imported > 0 ? '✅ Kết quả Import' : '❌ Import thất bại'}
+                {importResults.success_count > 0 ? '✅ Kết quả Import' : '❌ Import thất bại'}
               </h4>
               <div style={{fontSize: '14px', color: '#1f2937', marginBottom: '12px'}}>
-                <div>✅ Thành công: <strong>{importResults.imported}</strong> học sinh</div>
-                <div>❌ Thất bại: <strong>{importResults.failed}</strong> học sinh</div>
-                <div>📊 Tổng: <strong>{importResults.total}</strong> dòng</div>
+                <div>✅ Đã thêm vào lớp: <strong>{importResults.success_count}</strong> học sinh</div>
+                {importResults.created_accounts && importResults.created_accounts.length > 0 && (
+                  <div>🆕 Tài khoản mới tạo: <strong>{importResults.created_accounts.length}</strong></div>
+                )}
+                {importResults.already_in_class && importResults.already_in_class.length > 0 && (
+                  <div>ℹ️ Đã có trong lớp: <strong>{importResults.already_in_class.length}</strong></div>
+                )}
+                {importResults.failed_count > 0 && (
+                  <div>❌ Thất bại: <strong>{importResults.failed_count}</strong> học sinh</div>
+                )}
+                <div>📊 Tổng: <strong>{importResults.success_count + importResults.failed_count}</strong> dòng</div>
               </div>
-              {importResults.errors && importResults.errors.length > 0 && (
+              {importResults.failed_students && importResults.failed_students.length > 0 && (
                 <div>
                   <div style={{fontSize: '13px', fontWeight: '600', marginBottom: '8px', color: '#dc2626'}}>
                     Lỗi chi tiết:
@@ -479,8 +494,10 @@ export default function ClassManagement() {
                     fontSize: '12px',
                     color: '#64748b'
                   }}>
-                    {importResults.errors.map((err, idx) => (
-                      <div key={idx} style={{marginBottom: '4px'}}>• {err}</div>
+                    {importResults.failed_students.map((student, idx) => (
+                      <div key={idx} style={{marginBottom: '4px'}}>
+                        • {student.ma_hoc_sinh || 'N/A'} - {student.ho_va_ten || 'N/A'}: {student.error}
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -491,12 +508,12 @@ export default function ClassManagement() {
           {/* Format Guide */}
           <div className="format-guide" style={{
             padding: '20px',
-            background: '#f8fafc',
+            background: '#f0fdf4',
             borderRadius: '12px',
-            border: '1px solid #e2e8f0'
+            border: '1px solid #86efac'
           }}>
-            <h4 style={{margin: '0 0 15px 0', fontSize: '15px', fontWeight: '600', color: '#1f2937'}}>
-              📋 Định dạng file CSV:
+            <h4 style={{margin: '0 0 15px 0', fontSize: '15px', fontWeight: '600', color: '#166534'}}>
+              📊 Định dạng file Excel (hỗ trợ .xls và .xlsx):
             </h4>
             <table className="format-table" style={{
               width: '100%',
@@ -504,32 +521,78 @@ export default function ClassManagement() {
               fontSize: '13px'
             }}>
               <thead>
-                <tr style={{background: '#e2e8f0'}}>
-                  <th style={{padding: '10px', textAlign: 'left', borderBottom: '2px solid #cbd5e1'}}>email</th>
-                  <th style={{padding: '10px', textAlign: 'left', borderBottom: '2px solid #cbd5e1'}}>name</th>
-                  <th style={{padding: '10px', textAlign: 'left', borderBottom: '2px solid #cbd5e1'}}>phone</th>
+                <tr style={{background: '#bbf7d0'}}>
+                  <th style={{padding: '10px', textAlign: 'left', borderBottom: '2px solid #86efac'}}>STT</th>
+                  <th style={{padding: '10px', textAlign: 'left', borderBottom: '2px solid #86efac'}}>Mã học sinh</th>
+                  <th style={{padding: '10px', textAlign: 'left', borderBottom: '2px solid #86efac'}}>Họ và tên</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td style={{padding: '10px', borderBottom: '1px solid #e2e8f0'}}>student1@example.com</td>
-                  <td style={{padding: '10px', borderBottom: '1px solid #e2e8f0'}}>Nguyễn Văn A</td>
-                  <td style={{padding: '10px', borderBottom: '1px solid #e2e8f0'}}>0123456789</td>
+                  <td style={{padding: '10px', borderBottom: '1px solid #d1fae5'}}>1</td>
+                  <td style={{padding: '10px', borderBottom: '1px solid #d1fae5'}}>2102150966</td>
+                  <td style={{padding: '10px', borderBottom: '1px solid #d1fae5'}}>Bàn Thảo An</td>
                 </tr>
                 <tr>
-                  <td style={{padding: '10px', borderBottom: '1px solid #e2e8f0'}}>student2@example.com</td>
-                  <td style={{padding: '10px', borderBottom: '1px solid #e2e8f0'}}>Trần Thị B</td>
-                  <td style={{padding: '10px', borderBottom: '1px solid #e2e8f0'}}>0987654321</td>
+                  <td style={{padding: '10px', borderBottom: '1px solid #d1fae5'}}>2</td>
+                  <td style={{padding: '10px', borderBottom: '1px solid #d1fae5'}}>2102150967</td>
+                  <td style={{padding: '10px', borderBottom: '1px solid #d1fae5'}}>Dương Tuệ Anh</td>
+                </tr>
+                <tr>
+                  <td style={{padding: '10px', borderBottom: '1px solid #d1fae5'}}>3</td>
+                  <td style={{padding: '10px', borderBottom: '1px solid #d1fae5'}}>2102150968</td>
+                  <td style={{padding: '10px', borderBottom: '1px solid #d1fae5'}}>Lê Duy Quang Anh</td>
                 </tr>
               </tbody>
             </table>
-            <div style={{marginTop: '12px', fontSize: '12px', color: '#64748b'}}>
-              <strong>Lưu ý:</strong>
+            <div style={{marginTop: '15px', fontSize: '12px', color: '#166534'}}>
+              <strong>✅ Cách hoạt động:</strong>
               <ul style={{margin: '8px 0 0 20px', padding: 0}}>
-                <li>Cột <code>email</code> là bắt buộc</li>
-                <li>Nếu email chưa có tài khoản, hệ thống tự tạo với mật khẩu mặc định: <code>student123</code></li>
-                <li>Học sinh cần đổi mật khẩu khi đăng nhập lần đầu</li>
+                <li>✓ Cột <strong>Mã học sinh</strong> và <strong>Họ và tên</strong> là bắt buộc</li>
+                <li>🔄 Nếu học sinh chưa có tài khoản → Tự động tạo mới</li>
+                <li>📧 Email tự động: <code>[Mã học sinh]@gmail.com</code> (VD: 2102150966@gmail.com)</li>
+                <li>🔐 Mật khẩu mặc định: <code>123456</code> (có thể đổi sau)</li>
+                <li>➕ Tự động thêm vào lớp ngay sau khi import</li>
               </ul>
+            </div>
+            <div style={{marginTop: '15px'}}>
+              <button
+                onClick={() => {
+                  const csvContent = `STT,Mã học sinh,Họ và tên,Ngày sinh
+1,2102150966,Bàn Thảo An,27/01/2015
+2,2102150967,Dương Tuệ Anh,20/08/2015
+3,2102150968,Lê Duy Quang Anh,02/11/2015
+4,2102150969,Lê Ngọc Minh Anh,15/03/2015
+5,2102150970,Nguyễn Diệp Anh,08/06/2015`;
+                  const BOM = '\uFEFF';
+                  const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+                  const link = document.createElement('a');
+                  const url = URL.createObjectURL(blob);
+                  link.setAttribute('href', url);
+                  link.setAttribute('download', 'mau_danh_sach_hoc_sinh.csv');
+                  link.style.visibility = 'hidden';
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                }}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  background: '#16a34a',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px'
+                }}
+              >
+                📥 Tải file mẫu
+              </button>
             </div>
           </div>
         </div>
