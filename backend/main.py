@@ -120,7 +120,11 @@ async def startup_event():
     """Run on application startup"""
     logger.info("Starting EnglishWebAI Backend...")
     
-    # Auto-migrate lightweight schema (SQLite add columns if missing)
+    # Note: Alembic migrations are run by docker-compose.yml before server starts
+    # This ensures database schema is up-to-date before application startup
+    # See docker-compose.yml command: "alembic upgrade head"
+    
+    # Fallback: lightweight schema ensure (for non-Docker environments)
     try:
         from app.utils.db_migrations import ensure_schema
         ensure_schema()

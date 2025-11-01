@@ -395,7 +395,27 @@ def _calculate_class_performance(
     submissions: List[Submission],
     graded_submissions: List[Submission]
 ) -> List[ClassPerformance]:
-    """Calculate performance per class"""
+    """Calculate performance per class - OPTIMIZED with pre-grouped data"""
+    # Pre-group exercises by class_id (avoid repeated filtering)
+    exercises_by_class = {}
+    for ex in exercises:
+        if ex.class_id not in exercises_by_class:
+            exercises_by_class[ex.class_id] = []
+        exercises_by_class[ex.class_id].append(ex.id)
+    
+    # Pre-group submissions by exercise_id for fast lookup
+    submissions_by_exercise = {}
+    for sub in submissions:
+        if sub.exercise_id not in submissions_by_exercise:
+            submissions_by_exercise[sub.exercise_id] = []
+        submissions_by_exercise[sub.exercise_id].append(sub)
+    
+    graded_by_exercise = {}
+    for sub in graded_submissions:
+        if sub.exercise_id not in graded_by_exercise:
+            graded_by_exercise[sub.exercise_id] = []
+        graded_by_exercise[sub.exercise_id].append(sub)
+    
     result = []
     
     for cls in classes:
@@ -405,9 +425,14 @@ def _calculate_class_performance(
             e.user_id for e in cls.enrollments 
             if e.role == "student" and e.status == "active"
         ]
-        cls_exercise_ids = [ex.id for ex in exercises if ex.class_id == cls.id]
-        cls_submissions = [s for s in submissions if s.exercise_id in cls_exercise_ids]
-        cls_graded = [s for s in graded_submissions if s.exercise_id in cls_exercise_ids]
+        cls_exercise_ids = exercises_by_class.get(cls.id, [])
+        
+        # Get submissions for this class (from pre-grouped data)
+        cls_submissions = []
+        cls_graded = []
+        for ex_id in cls_exercise_ids:
+            cls_submissions.extend(submissions_by_exercise.get(ex_id, []))
+            cls_graded.extend(graded_by_exercise.get(ex_id, []))
         
         # Calculate average
         cls_avg = 0.0
@@ -491,42 +516,50 @@ def _calculate_skills_data(graded_submissions: List[Submission]) -> List[SkillSc
 
 
 def _calculate_monthly_progress(graded_submissions: List[Submission]) -> List[MonthlyProgress]:
-    """Calculate monthly progress for last 4 months"""
+    """Calculate monthly progress for last 4 months - OPTIMIZED"""
     now = datetime.utcnow()
     monthly_data = {}
     
+    # Pre-calculate month boundaries
+    month_boundaries = []
     for i in range(4):
         month_start = now - timedelta(days=30 * (i + 1))
         month_end = now - timedelta(days=30 * i)
         month_key = month_start.strftime('T%m')
-        
-        month_subs = []
-        for s in graded_submissions:
-            submitted_at = _to_utc_naive(s.submitted_at)
-            if submitted_at and month_start <= submitted_at <= month_end:
-                month_subs.append(s)
-        
-        month_avg = 0.0
-        if month_subs:
-            total = sum(
-                calculate_score_percentage(s.score, s.exercise.max_score)
-                for s in month_subs
-            )
-            month_avg = total / len(month_subs)
-        
-        monthly_data[month_key] = {
-            'avg': round(month_avg, 1),
-            'count': len(month_subs)
-        }
+        month_boundaries.append({
+            'key': month_key,
+            'start': month_start,
+            'end': month_end,
+            'submissions': [],
+            'total_score': 0.0,
+            'count': 0
+        })
     
-    return [
-        MonthlyProgress(
-            month=month,
-            avg_score=data['avg'],
-            submissions=data['count']
-        )
-        for month, data in sorted(monthly_data.items())
-    ]
+    # Single pass through submissions (instead of nested loop)
+    for sub in graded_submissions:
+        submitted_at = _to_utc_naive(sub.submitted_at)
+        if not submitted_at:
+            continue
+            
+        # Check which month this submission belongs to
+        for month in month_boundaries:
+            if month['start'] <= submitted_at <= month['end']:
+                pct = calculate_score_percentage(sub.score, sub.exercise.max_score)
+                month['total_score'] += pct
+                month['count'] += 1
+                break  # Each submission only belongs to one month
+    
+    # Build result
+    result = []
+    for month in month_boundaries:
+        avg = round(month['total_score'] / month['count'], 1) if month['count'] > 0 else 0.0
+        result.append(MonthlyProgress(
+            month=month['key'],
+            avg_score=avg,
+            submissions=month['count']
+        ))
+    
+    return sorted(result, key=lambda x: x.month)
 
 
 @router.get("/statistics/export")
