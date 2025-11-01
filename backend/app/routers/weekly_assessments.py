@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
 from pydantic import BaseModel
-from io import BytesIO
+from io import BytesIO, StringIO
 import json
 import csv
 
@@ -364,16 +364,13 @@ async def export_error_analysis(
         }
     
     elif export_request.format == "csv":
-        # Create CSV in memory
-        output = BytesIO()
-        
-        # Write UTF-8 BOM for Excel compatibility
-        output.write('\ufeff'.encode('utf-8'))
+        # Create CSV in memory using StringIO
+        output = StringIO()
         
         if error_analysis_data:
             fieldnames = error_analysis_data[0].keys()
             
-            # Create CSV writer with UTF-8 encoding
+            # Create CSV writer
             writer = csv.DictWriter(output, fieldnames=fieldnames, extrasaction='ignore')
             writer.writeheader()
             writer.writerows(error_analysis_data)
@@ -386,7 +383,10 @@ async def export_error_analysis(
             ])
             writer.writeheader()
         
-        output.seek(0)
+        # Get CSV content and encode to bytes with BOM for Excel
+        csv_content = '\ufeff' + output.getvalue()
+        csv_bytes = BytesIO(csv_content.encode('utf-8'))
+        csv_bytes.seek(0)
         
         from urllib.parse import quote
         filename = f"error_analysis_class_{export_request.class_id}.csv"
@@ -398,7 +398,7 @@ async def export_error_analysis(
         }
         
         return StreamingResponse(
-            output,
+            csv_bytes,
             media_type='text/csv',
             headers=headers
         )
