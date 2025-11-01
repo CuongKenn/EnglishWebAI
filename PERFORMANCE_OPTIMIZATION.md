@@ -312,6 +312,39 @@ function SearchBar({ onSearch }) {
 
 ---
 
+### 7. useMemo/useCallback Optimization
+
+**✅ Partially Complete - 1 file optimized:**
+
+#### CoursesManagement.jsx (1480 lines) - commit de576ef:
+- ✅ **stats object**: Wrapped in `useMemo` 
+  - Prevents re-computation of course filtering on every render
+  - Depends on [courses] array
+  
+- ✅ **resetForm function**: Wrapped in `useCallback`
+  - Stable function reference prevents unnecessary re-renders
+  - Empty dependency array (no external dependencies)
+  
+- ✅ **handleThumbnailChange**: Wrapped in `useCallback`
+  - Fixed formData closure issue with functional setState `prev => {...prev}`
+  - Empty dependency array
+
+**Impact**:
+- Reduced stats re-computations from every render → only when courses change
+- Stable function references improve child component performance
+- Fixed closure bugs with proper functional updates
+
+**Remaining Work** (Lower Priority):
+The following large files have many .filter() and .map() operations but are complex to refactor safely:
+- `DoExercise.jsx` (2013 lines, 87KB) - Student exercise interface
+- `SubmissionGradingPage.jsx` (1830 lines, 96KB) - Teacher grading interface
+- `QuestionBankV2.jsx` (2180 lines, 99KB) - Already has useMemo/useCallback
+- `CreateExerciseModalComplete.jsx` (1996 lines, 78KB) - Needs component splitting first
+
+**Recommendation**: Focus on component refactoring (Task 8) before adding more hooks to these large files.
+
+---
+
 ## 📊 Expected Performance Gains
 
 After completing all optimizations:
