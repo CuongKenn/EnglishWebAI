@@ -14,7 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, and_, case
 from typing import List, Optional, Dict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pydantic import BaseModel
 import logging
 from functools import lru_cache
@@ -88,7 +88,7 @@ class StudentAnalytics(BaseModel):
 
 def get_date_range(period: str) -> datetime:
     """Calculate start date based on period"""
-    now = datetime.now()
+    now = datetime.utcnow()
     period_days = {
         'week': 7,
         'month': 30,
@@ -145,13 +145,25 @@ def calculate_skill_scores_batch(submissions: List[Submission]) -> Dict[str, Dic
     }
 
 
+def _to_utc_naive(dt: Optional[datetime]) -> Optional[datetime]:
+    """Normalize datetimes to naive UTC for safe comparisons."""
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        return dt
+    return dt.astimezone(timezone.utc).replace(tzinfo=None)
+
+
 def calculate_trend(submissions: List[Submission]) -> str:
     """Calculate trend from recent submissions"""
     if len(submissions) < 3:
         return 'stable'
     
-    # Sort by date and take last 5
-    sorted_subs = sorted(submissions, key=lambda x: x.submitted_at or datetime.min)[-5:]
+    # Sort by date (normalized) and take last 5
+    sorted_subs = sorted(
+        submissions,
+        key=lambda x: _to_utc_naive(x.submitted_at) or datetime.min
+    )[-5:]
     
     scores = []
     for s in sorted_subs:
@@ -473,7 +485,7 @@ def _calculate_skills_data(graded_submissions: List[Submission]) -> List[SkillSc
 
 def _calculate_monthly_progress(graded_submissions: List[Submission]) -> List[MonthlyProgress]:
     """Calculate monthly progress for last 4 months"""
-    now = datetime.now()
+    now = datetime.utcnow()
     monthly_data = {}
     
     for i in range(4):
@@ -481,10 +493,11 @@ def _calculate_monthly_progress(graded_submissions: List[Submission]) -> List[Mo
         month_end = now - timedelta(days=30 * i)
         month_key = month_start.strftime('T%m')
         
-        month_subs = [
-            s for s in graded_submissions
-            if s.submitted_at and month_start <= s.submitted_at <= month_end
-        ]
+        month_subs = []
+        for s in graded_submissions:
+            submitted_at = _to_utc_naive(s.submitted_at)
+            if submitted_at and month_start <= submitted_at <= month_end:
+                month_subs.append(s)
         
         month_avg = 0.0
         if month_subs:
