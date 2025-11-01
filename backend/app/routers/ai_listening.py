@@ -92,17 +92,21 @@ async def generate_listening_lesson(
 Generate a listening comprehension exercise for English learners at {level} level ({spec['description']}).
 
 Requirements:
-1. Create a realistic dialogue or monologue about one of these topics: {spec['topics']}
-2. The transcript should be appropriate for {level} learners
-3. Duration: approximately {spec['duration']} minutes (300-400 words for beginner, 450-600 for intermediate, 700-900 for advanced)
+1. Create a realistic and engaging dialogue or monologue about one of these topics: {spec['topics']}
+2. The transcript should be appropriate for {level} learners with natural conversational flow
+3. Duration: approximately {spec['duration']} minutes with detailed content
+   - Beginner: 400-500 words (more detailed than basic)
+   - Intermediate: 600-800 words (rich in details, vocabulary, and context)
+   - Advanced: 900-1200 words (comprehensive with complex ideas and nuanced language)
 4. Include EXACTLY {spec['num_questions']} multiple-choice comprehension questions
 5. Each question should have 4 options (A, B, C, D) with only ONE correct answer
-6. Make sure questions test different aspects: main idea, details, inference, vocabulary in context
+6. Make sure questions test different aspects: main idea, specific details, inference, vocabulary in context
+7. Include specific details in the transcript such as names, numbers, dates, locations, and facts that can be tested
 
 Return ONLY valid JSON in this exact format:
 {{
     "title": "Engaging title for the lesson",
-    "transcript": "Full dialogue or monologue text. For dialogues, format as:\\nSpeaker1: Text...\\nSpeaker2: Text...",
+    "transcript": "Full dialogue or monologue text with rich details. For dialogues, format as:\\nSpeaker1: Text...\\nSpeaker2: Text...",
     "duration": "X:XX format",
     "questions": [
         {{
@@ -116,7 +120,8 @@ Return ONLY valid JSON in this exact format:
 
 Important:
 - For 'correct', use index 0-3 (0=A, 1=B, 2=C, 3=D)
-- Make dialogue natural and realistic
+- Make dialogue natural, realistic, and long enough to support all questions
+- Include varied sentence structures and authentic language use
 - Questions should be clear and unambiguous
 - Provide detailed explanation for EACH question:
   * Explain WHY the correct answer is right (reference specific part of transcript)

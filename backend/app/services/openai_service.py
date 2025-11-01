@@ -384,11 +384,11 @@ Level: {level}"""
         try:
             num_questions = max(1, min(10, int(num_questions)))
             prompt = f"""
-You are an English test generator. Create a short listening segment.
+You are an English test generator. Create a listening segment with detailed content.
 Return a valid JSON object ONLY with fields:
 {{
-  "title": "short title",
-  "transcript": "natural English transcript (8-12 sentences)",
+  "title": "descriptive title for the listening topic",
+  "transcript": "natural English transcript with rich vocabulary and varied sentence structures (20-30 sentences, approximately 300-400 words)",
   "questions": [
     {{
       "question": "...",
@@ -400,9 +400,12 @@ Return a valid JSON object ONLY with fields:
 }}
 
 Rules:
-- Generate exactly {num_questions} questions.
-- Make transcript self-contained and coherent.
+- Generate exactly {num_questions} questions covering different parts of the transcript.
+- Make transcript self-contained, coherent, and engaging with realistic dialogue or narration.
+- Include specific details, numbers, dates, or names that can be tested.
+- Vary question formats: use multiple choice, true/false, and fill-in-the-blank appropriately.
 - Keep answers consistent with options order.
+- Ensure the transcript is long enough to support {num_questions} diverse questions.
 """
             response = await asyncio.to_thread(
                 self.client.chat.completions.create,

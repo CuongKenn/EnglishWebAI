@@ -181,12 +181,13 @@ Các chủ đề chính học kỳ này: {topics_str}
 YÊU CẦU QUAN TRỌNG:
 1. Đề thi có 4 phần: LISTENING, READING, WRITING, SPEAKING
 2. MỖI PHẦN 2.5 ĐIỂM (Tổng 10 điểm)
-3. Listening (2.5đ): Script 200-300 từ + {questions_per_skill} câu hỏi ĐA DẠNG (mỗi câu {points_per_question}đ)
+3. Listening (2.5đ): Script 350-500 từ + {questions_per_skill} câu hỏi ĐA DẠNG (mỗi câu {points_per_question}đ)
    - Bao gồm: multiple_choice, fill_blank, true_false
-   - Script phải có độ dài phù hợp với số câu hỏi
-4. Reading (2.5đ): Đoạn văn 300-400 từ + {questions_per_skill} câu hỏi ĐA DẠNG (mỗi câu {points_per_question}đ)
+   - Script phải dài, chi tiết với nhiều thông tin cụ thể (tên, số, ngày tháng, địa điểm)
+   - Script phải có độ dài phù hợp với số câu hỏi, đủ nội dung để test comprehension
+4. Reading (2.5đ): Đoạn văn 400-600 từ + {questions_per_skill} câu hỏi ĐA DẠNG (mỗi câu {points_per_question}đ)
    - Bao gồm: multiple_choice, fill_blank, matching
-   - Đoạn văn phải phong phú và liên quan đến chủ đề
+   - Đoạn văn phải phong phú, chi tiết và liên quan đến chủ đề
 5. Writing (2.5đ): Đề bài viết essay 200-250 từ
    - Cho hướng dẫn cụ thể về cấu trúc và nội dung
 6. Speaking (2.5đ): Đề bài nói với prompt rõ ràng
@@ -200,7 +201,7 @@ Trả về JSON format sau:
     "questions": [
         {{
             "section": "listening",
-            "script": "Đoạn hội thoại hoặc monologue 150-200 từ...",
+            "script": "Đoạn hội thoại hoặc monologue 350-500 từ, chi tiết với nhiều thông tin cụ thể như tên, số liệu, ngày tháng, địa điểm...",
             "total_points": 2.5,
             "questions": [
                 {{
