@@ -1,4 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+import logging
+
+logger = logging.getLogger(__name__)
 from sqlalchemy.orm import Session
 from typing import List
 from pathlib import Path
@@ -60,10 +63,10 @@ async def upload_avatar(
             old_file_path = media_dir / old_filename
             if old_file_path.exists() and old_file_path.is_file():
                 os.remove(old_file_path)
-                print(f"Deleted old avatar: {old_file_path}")
+                logger.info(f"Deleted old avatar: {old_file_path}")
         except Exception as e:
             # Log but don't fail if old file deletion fails
-            print(f"Warning: Could not delete old avatar: {e}")
+            logger.info(f"Warning: Could not delete old avatar: {e}")
     
     # Generate unique filename
     ext = os.path.splitext(file.filename or "")[1].lower()
@@ -198,3 +201,4 @@ async def verify_parent_link(
     """Verify/confirm parent link (student accepts the connection)"""
     ParentService.verify_parent_link(db, current_user.id, parent_id)
     return {"message": "Parent link verified successfully"}
+

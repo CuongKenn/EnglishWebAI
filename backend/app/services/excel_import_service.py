@@ -1,4 +1,7 @@
 import pandas as pd
+import logging
+
+logger = logging.getLogger(__name__)
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any, Optional
 from fastapi import HTTPException, UploadFile
@@ -47,10 +50,10 @@ class ExcelImportService:
             try:
                 df_raw = pd.read_excel(io.BytesIO(contents), header=None)
                 excel_text = df_raw.to_string(index=False, header=False)  # Đọc TẤT CẢ
-                print(f"📄 Excel text length: {len(excel_text)} chars")
-                print(f"First 500 chars: {excel_text[:500]}")
+                logger.info(f"📄 Excel text length: {len(excel_text)} chars")
+                logger.info(f"First 500 chars: {excel_text[:500]}")
             except Exception as parse_err:
-                print(f"⚠️ Pandas parse error: {parse_err}")
+                logger.info(f"⚠️ Pandas parse error: {parse_err}")
                 excel_text = f"File size: {len(contents)} bytes"
             
             client = OpenAI(api_key=settings.OPENAI_API_KEY)
@@ -122,7 +125,7 @@ CHỈ trả về JSON với array "students", không giải thích gì thêm."""
             return students
             
         except Exception as e:
-            print(f"AI parsing failed: {e}")
+            logger.info(f"AI parsing failed: {e}")
             # Throw error thay vì tạo fake data
             raise HTTPException(
                 status_code=400,
@@ -132,13 +135,13 @@ CHỈ trả về JSON với array "students", không giải thích gì thêm."""
     @staticmethod
     def parse_excel_file(file: UploadFile) -> List[StudentExcelRow]:
         """Parse file Excel để lấy danh sách học sinh - AI FIRST APPROACH"""
-        print(f"🤖 Using AI to parse Excel file: {file.filename}")
+        logger.info(f"🤖 Using AI to parse Excel file: {file.filename}")
         
         # Try AI parsing first - more reliable for Vietnamese text
         try:
             return ExcelImportService.parse_excel_with_ai(file)
         except Exception as ai_error:
-            print(f"⚠️ AI parsing failed: {ai_error}, falling back to pandas...")
+            logger.info(f"⚠️ AI parsing failed: {ai_error}, falling back to pandas...")
         
         # Fallback to pandas if AI fails
         try:
@@ -146,7 +149,7 @@ CHỈ trả về JSON với array "students", không giải thích gì thêm."""
             file.file.seek(0)
             contents = file.file.read()
             
-            print(f"📄 Reading Excel file: {file.filename}, size: {len(contents)} bytes")
+            logger.info(f"📄 Reading Excel file: {file.filename}, size: {len(contents)} bytes")
             
             # Try reading with openpyxl first (most common for .xlsx)
             df = None
@@ -154,26 +157,26 @@ CHỈ trả về JSON với array "students", không giải thích gì thêm."""
             
             try:
                 df = pd.read_excel(io.BytesIO(contents), engine='openpyxl', header=None)
-                print(f"✅ Successfully read with openpyxl")
+                logger.info(f"✅ Successfully read with openpyxl")
             except Exception as e1:
-                print(f"❌ openpyxl failed: {e1}")
+                logger.info(f"❌ openpyxl failed: {e1}")
                 parse_error = str(e1)
                 
                 try:
                     df = pd.read_excel(io.BytesIO(contents), engine='xlrd', header=None)
-                    print(f"✅ Successfully read with xlrd")
+                    logger.info(f"✅ Successfully read with xlrd")
                 except Exception as e2:
-                    print(f"❌ xlrd also failed: {e2}")
+                    logger.info(f"❌ xlrd also failed: {e2}")
                     # Fallback to AI parsing
-                    print(f"🤖 Trying AI parsing as last resort...")
+                    logger.info(f"🤖 Trying AI parsing as last resort...")
                     return ExcelImportService.parse_excel_with_ai(file)
             
             if df is None or df.empty:
                 raise HTTPException(status_code=400, detail="File Excel rỗng hoặc không đọc được")
             
-            print(f"📊 DataFrame shape: {df.shape}")
-            print(f"First 5 rows (raw):")
-            print(df.head().to_string())
+            logger.info(f"📊 DataFrame shape: {df.shape}")
+            logger.info(f"First 5 rows (raw):")
+            logger.info(df.head().to_string())
             
             # SIMPLIFIED APPROACH: Tìm header row và data rows
             header_row_index = None
@@ -188,20 +191,20 @@ CHỈ trả về JSON với array "students", không giải thích gì thêm."""
                    ('học sinh' in row_str or 'hoc sinh' in row_str or 'hs' in row_str) and \
                    ('họ' in row_str or 'ho' in row_str or 'tên' in row_str or 'ten' in row_str):
                     header_row_index = idx
-                    print(f"✅ Found header at row {idx}: {row.values}")
+                    logger.info(f"✅ Found header at row {idx}: {row.values}")
                     break
             
             if header_row_index is None:
-                print("⚠️ No clear header found, assuming row 0 is header")
+                logger.info("⚠️ No clear header found, assuming row 0 is header")
                 header_row_index = 0
             
             # Re-read with correct header
             try:
                 df = pd.read_excel(io.BytesIO(contents), skiprows=header_row_index, header=0)
-                print(f"✅ Re-read with header row {header_row_index}")
-                print(f"Columns after re-read: {list(df.columns)}")
+                logger.info(f"✅ Re-read with header row {header_row_index}")
+                logger.info(f"Columns after re-read: {list(df.columns)}")
             except Exception as e:
-                print(f"❌ Failed to re-read: {e}")
+                logger.info(f"❌ Failed to re-read: {e}")
                 # Keep original df
             
             # FIND COLUMNS - Try multiple strategies
@@ -213,24 +216,24 @@ CHỈ trả về JSON với array "students", không giải thích gì thêm."""
                 col_str = str(col).lower().strip()
                 if not ma_hs_col and ('mã' in col_str or 'ma' in col_str) and ('học' in col_str or 'hoc' in col_str or 'hs' in col_str):
                     ma_hs_col = col
-                    print(f"✅ Found student ID column: '{col}'")
+                    logger.info(f"✅ Found student ID column: '{col}'")
                 if not ten_hs_col and ('họ' in col_str or 'ho' in col_str or 'tên' in col_str or 'ten' in col_str or 'name' in col_str):
                     ten_hs_col = col
-                    print(f"✅ Found name column: '{col}'")
+                    logger.info(f"✅ Found name column: '{col}'")
             
             # Strategy 2: Positional - assume standard format [STT, MaHS, Ten, NgaySinh]
             if not ma_hs_col or not ten_hs_col:
-                print("⚠️ Using positional strategy...")
+                logger.info("⚠️ Using positional strategy...")
                 if len(df.columns) >= 3:
                     ma_hs_col = df.columns[1]  # 2nd column
                     ten_hs_col = df.columns[2]  # 3rd column
-                    print(f"Using columns by position: ID={ma_hs_col}, Name={ten_hs_col}")
+                    logger.info(f"Using columns by position: ID={ma_hs_col}, Name={ten_hs_col}")
                 elif len(df.columns) >= 2:
                     ma_hs_col = df.columns[0]
                     ten_hs_col = df.columns[1]
-                    print(f"Using first 2 columns: ID={ma_hs_col}, Name={ten_hs_col}")
+                    logger.info(f"Using first 2 columns: ID={ma_hs_col}, Name={ten_hs_col}")
                 else:
-                    print("❌ Not enough columns, trying AI...")
+                    logger.info("❌ Not enough columns, trying AI...")
                     return ExcelImportService.parse_excel_with_ai(file)
             
             # PARSE ROWS
@@ -273,23 +276,23 @@ CHỈ trả về JSON với array "students", không giải thích gì thêm."""
                     students.append(student)
                     
                     if len(students) <= 5:  # Log first 5
-                        print(f"  ✅ Student {len(students)}: {ma_hs} - {ten_hs}")
+                        logger.info(f"  ✅ Student {len(students)}: {ma_hs} - {ten_hs}")
                     
                 except Exception as e:
-                    print(f"  ⚠️ Error parsing row {idx}: {e}")
+                    logger.info(f"  ⚠️ Error parsing row {idx}: {e}")
                     skipped += 1
                     continue
             
-            print(f"📊 Parsing complete: {len(students)} students found, {skipped} rows skipped")
+            logger.info(f"📊 Parsing complete: {len(students)} students found, {skipped} rows skipped")
             
             if not students:
-                print("❌ No students found, trying AI parsing...")
+                logger.info("❌ No students found, trying AI parsing...")
                 return ExcelImportService.parse_excel_with_ai(file)
             
             return students
             
         except Exception as e:
-            print(f"Excel parsing completely failed: {e}")
+            logger.info(f"Excel parsing completely failed: {e}")
             # Final fallback to AI
             try:
                 return ExcelImportService.parse_excel_with_ai(file)
@@ -340,7 +343,7 @@ CHỈ trả về JSON với array "students", không giải thích gì thêm."""
                 db.add(new_user)
                 db.flush()  # Để lấy ID
                 
-                print(f"Created user: {new_user.username} | {new_user.full_name} | {new_user.email}")
+                logger.info(f"Created user: {new_user.username} | {new_user.full_name} | {new_user.email}")
                 
                 created_students.append({
                     "id": new_user.id,
@@ -483,10 +486,10 @@ CHỈ trả về JSON với array "students", không giải thích gì thêm."""
                         "ho_va_ten": student.ho_va_ten
                     })
                     
-                    print(f"✅ Created: {new_user.username} ({new_user.email}) | {new_user.full_name}")
+                    logger.info(f"✅ Created: {new_user.username} ({new_user.email}) | {new_user.full_name}")
                     
             except Exception as e:
-                print(f"❌ Failed to process student {student.ma_hoc_sinh}: {e}")
+                logger.info(f"❌ Failed to process student {student.ma_hoc_sinh}: {e}")
                 failed_students.append({
                     "ma_hoc_sinh": student.ma_hoc_sinh,
                     "ho_va_ten": student.ho_va_ten,

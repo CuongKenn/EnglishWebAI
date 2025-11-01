@@ -1,5 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+import logging
+
+logger = logging.getLogger(__name__)
 from fastapi.responses import StreamingResponse
+
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_, or_
 from typing import List
@@ -254,8 +258,8 @@ async def get_dashboard_summary(
         raise
     except Exception as e:
         import traceback
-        print(f"Error in get_dashboard_summary: {e}")
-        print(traceback.format_exc())
+        logger.info(f"Error in get_dashboard_summary: {e}")
+        logger.info(traceback.format_exc())
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to load dashboard summary: {str(e)}"
@@ -348,8 +352,8 @@ async def get_pending_exercises(
         raise
     except Exception as e:
         import traceback
-        print(f"Error in get_pending_exercises: {e}")
-        print(traceback.format_exc())
+        logger.info(f"Error in get_pending_exercises: {e}")
+        logger.info(traceback.format_exc())
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to load pending exercises: {str(e)}"
@@ -960,8 +964,8 @@ async def get_monthly_report(
         raise
     except Exception as e:
         import traceback
-        print(f"Error in get_monthly_report: {e}")
-        print(traceback.format_exc())
+        logger.info(f"Error in get_monthly_report: {e}")
+        logger.info(traceback.format_exc())
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to load monthly report: {str(e)}"
@@ -1460,3 +1464,5 @@ async def export_monthly_report_excel(
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
+
+

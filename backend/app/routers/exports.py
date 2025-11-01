@@ -2,7 +2,11 @@
 Export API endpoints for generating Excel/CSV/PDF reports
 """
 from fastapi import APIRouter, Depends, HTTPException, Query
+import logging
+
+logger = logging.getLogger(__name__)
 from fastapi.responses import StreamingResponse
+
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, func
 from typing import List, Optional
@@ -27,7 +31,7 @@ try:
     EXCEL_AVAILABLE = True
 except ImportError:
     EXCEL_AVAILABLE = False
-    print("Warning: openpyxl not installed. Excel export will not be available.")
+    logger.info("Warning: openpyxl not installed. Excel export will not be available.")
 
 
 def create_excel_workbook(title: str):
@@ -543,3 +547,5 @@ async def export_student_list(
             media_type="text/csv",
             headers={"Content-Disposition": f"attachment; filename={filename}"}
         )
+
+

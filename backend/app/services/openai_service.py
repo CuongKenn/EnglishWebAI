@@ -4,28 +4,16 @@ Handles interactions with OpenAI API (ChatGPT) for AI conversation
 """
 
 import openai
-import logging
-
-logger = logging.getLogger(__name__)
 import asyncio
-import logging
-
-logger = logging.getLogger(__name__)
 import json
-import logging
-
-logger = logging.getLogger(__name__)
-from typing import List, Dict
 import os
 import logging
+from typing import List, Dict
 
 logger = logging.getLogger(__name__)
+
 from app.core.config import settings
 
-
-import logging
-
-logger = logging.getLogger(__name__)
 class OpenAIService:
     """Service for handling OpenAI (ChatGPT) conversations"""
     
@@ -240,10 +228,6 @@ class OpenAIService:
             result_text = response.choices[0].message.content.strip()
             
             # Try to parse JSON from response
-            import json
-import logging
-
-logger = logging.getLogger(__name__)
             # Remove markdown code blocks if present
             if "```json" in result_text:
                 result_text = result_text.split("```json")[1].split("```")[0].strip()
@@ -334,10 +318,6 @@ Level: {level}"""
             result_text = response.choices[0].message.content.strip()
             
             # Try to parse JSON from response
-            import json
-import logging
-
-logger = logging.getLogger(__name__)
             # Remove markdown code blocks if present
             if "```json" in result_text:
                 result_text = result_text.split("```json")[1].split("```")[0].strip()
@@ -437,10 +417,6 @@ Rules:
             )
             
             text = response.choices[0].message.content.strip()
-            import json
-import logging
-
-logger = logging.getLogger(__name__)
             if "```json" in text:
                 text = text.split("```json")[1].split("```")[0].strip()
             elif "```" in text:
@@ -494,10 +470,6 @@ Keep prompts realistic for intermediate learners.
             )
             
             text = response.choices[0].message.content.strip()
-            import json
-import logging
-
-logger = logging.getLogger(__name__)
             if "```json" in text:
                 text = text.split("```json")[1].split("```")[0].strip()
             elif "```" in text:
@@ -634,10 +606,6 @@ IMPORTANT:
             logger.info(f"[AI Reading] Raw response from OpenAI (first 500 chars): {result_text[:500]}")
             
             # Parse JSON from response
-            import json
-import logging
-
-logger = logging.getLogger(__name__)
             # Remove markdown code blocks if present
             if "```json" in result_text:
                 result_text = result_text.split("```json")[1].split("```")[0].strip()
@@ -670,9 +638,6 @@ logger = logging.getLogger(__name__)
         except Exception as e:
             logger.info(f"Error generating reading passage: {str(e)}")
             import traceback
-import logging
-
-logger = logging.getLogger(__name__)
             traceback.print_exc()
             logger.info(f"[AI Reading] Using fallback passage for level: {level}")
             # Return fallback passage based on level
@@ -1387,10 +1352,6 @@ QUAN TRỌNG:
             result_text = response.choices[0].message.content.strip()
             
             # Parse JSON
-            import json
-import logging
-
-logger = logging.getLogger(__name__)
             if "```json" in result_text:
                 result_text = result_text.split("```json")[1].split("```")[0].strip()
             elif "```" in result_text:
@@ -1682,10 +1643,6 @@ YÊU CẦU:
             result_text = response.choices[0].message.content.strip()
             
             # Parse JSON
-            import json
-import logging
-
-logger = logging.getLogger(__name__)
             if "```json" in result_text:
                 result_text = result_text.split("```json")[1].split("```")[0].strip()
             elif "```" in result_text:
@@ -1724,5 +1681,6 @@ logger = logging.getLogger(__name__)
 
 # Create a singleton instance
 openai_service = OpenAIService()
+
 
 

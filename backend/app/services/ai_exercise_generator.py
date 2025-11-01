@@ -7,21 +7,13 @@ import logging
 
 logger = logging.getLogger(__name__)
 import os
-import logging
 
-logger = logging.getLogger(__name__)
 import json
-import logging
 
-logger = logging.getLogger(__name__)
 import uuid
-import logging
 
-logger = logging.getLogger(__name__)
 import time
-import logging
 
-logger = logging.getLogger(__name__)
 from typing import Dict, List, Optional
 import azure.cognitiveservices.speech as speechsdk
 
@@ -429,9 +421,7 @@ Chỉ trả về JSON, không có text khác."""
                 # 3. Missing commas
                 import re
                 
-import logging
 
-logger = logging.getLogger(__name__)
                 content_fixed = content
                 
                 # Replace literal newlines within strings with \n
@@ -778,4 +768,5 @@ Trả về JSON:
         except Exception as e:
             logger.info(f"Error generating {skill} exercise: {str(e)}")
             raise
+
 

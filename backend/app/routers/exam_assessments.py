@@ -8,9 +8,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 from fastapi.responses import JSONResponse
-import logging
 
-logger = logging.getLogger(__name__)
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
@@ -918,5 +916,6 @@ async def get_class_exam_submissions(
     db.refresh(submission)
     
     return submission
+
 
 

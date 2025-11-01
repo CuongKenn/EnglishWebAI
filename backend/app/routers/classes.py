@@ -3,9 +3,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 from fastapi.responses import StreamingResponse
-import logging
 
-logger = logging.getLogger(__name__)
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List, Optional
@@ -1149,4 +1147,5 @@ async def preview_excel_import_to_class(
             })
     
     return analysis
+
 

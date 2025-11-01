@@ -1608,7 +1608,7 @@ async def generate_exercise_with_ai(
                 questions_per_skill=request.questions_per_skill or 10,
                 additional_notes=request.additional_notes or None
             )
-            print("[AI Generate API] ✅ Full exam generated successfully")
+            logger.info("[AI Generate API] ✅ Full exam generated successfully")
         else:
             # Generate single skill exercise
             if not request.skill:

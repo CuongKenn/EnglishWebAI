@@ -4,6 +4,9 @@ Handles AI-powered conversation endpoints
 """
 
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
+import logging
+
+logger = logging.getLogger(__name__)
 from sqlalchemy.orm import Session
 from typing import Optional
 import tempfile
@@ -118,7 +121,7 @@ async def assess_speaking_practice(
         temp_file.write(content)
         temp_file.close()
         
-        print(f"[assess_speaking_practice] Audio saved: {temp_file.name}, ref: {reference_text[:50]}")
+        logger.info(f"[assess_speaking_practice] Audio saved: {temp_file.name}, ref: {reference_text[:50]}")
         
         # Get Azure pronunciation assessment
         assessment = azure_speech_service.assess_pronunciation(
@@ -136,7 +139,7 @@ async def assess_speaking_practice(
         completeness_score = assessment.get('completeness_score', 0)
         accuracy_score = assessment.get('accuracy_score', 0)
         
-        print(f"[assess_speaking_practice] Azure scores - Pronunciation: {pronunciation_score}, Fluency: {fluency_score}")
+        logger.info(f"[assess_speaking_practice] Azure scores - Pronunciation: {pronunciation_score}, Fluency: {fluency_score}")
         
         # Use OpenAI to analyze grammar, vocabulary, and generate detailed feedback
         openai_prompt = f"""Phân tích chi tiết bài nói tiếng Anh của học sinh:
@@ -179,9 +182,9 @@ Chỉ trả về JSON, không có text khác."""
             else:
                 openai_data = json.loads(openai_response)
             
-            print(f"[assess_speaking_practice] OpenAI analysis complete")
+            logger.info(f"[assess_speaking_practice] OpenAI analysis complete")
         except Exception as e:
-            print(f"[assess_speaking_practice] OpenAI analysis failed: {e}")
+            logger.info(f"[assess_speaking_practice] OpenAI analysis failed: {e}")
             # Fallback values
             openai_data = {
                 "grammar_score": round(accuracy_score / 10, 1),
@@ -252,7 +255,7 @@ Chỉ trả về JSON, không có text khác."""
     except HTTPException:
         raise
     except Exception as e:
-        print(f"[assess_speaking_practice] Error: {str(e)}")
+        logger.info(f"[assess_speaking_practice] Error: {str(e)}")
         import traceback
         traceback.print_exc()
         raise HTTPException(
@@ -266,3 +269,4 @@ Chỉ trả về JSON, không có text khác."""
                 os.unlink(temp_file.name)
             except:
                 pass
+

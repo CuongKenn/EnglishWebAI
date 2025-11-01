@@ -3,35 +3,17 @@ Azure Speech Service
 Handles speech-to-text and pronunciation assessment using Azure Cognitive Services Speech SDK
 """
 import os
-import logging
-
-logger = logging.getLogger(__name__)
 import json
-import logging
-
-logger = logging.getLogger(__name__)
 import tempfile
-import logging
-
-logger = logging.getLogger(__name__)
 import subprocess
 import logging
-
-logger = logging.getLogger(__name__)
 from pathlib import Path
-import logging
-
-logger = logging.getLogger(__name__)
 from app.core.config import settings
-import logging
 
 logger = logging.getLogger(__name__)
 import azure.cognitiveservices.speech as speechsdk
 import openai
 
-import logging
-
-logger = logging.getLogger(__name__)
 class AzureSpeechService:
     """Service for Azure Speech API - Pronunciation Assessment using Speech SDK"""
     
@@ -214,9 +196,6 @@ class AzureSpeechService:
         except Exception as e:
             logger.info(f"[assess_pronunciation] Exception: {str(e)}")
             import traceback
-import logging
-
-logger = logging.getLogger(__name__)
             traceback.print_exc()
             return {
                 "error": str(e),
@@ -253,7 +232,7 @@ logger = logging.getLogger(__name__)
                     "completeness": 0,
                     "accuracy": 0
                 },
-                "feedback": f"L?i: {assessment_result['error']}"
+                "feedback": f"Lỗi: {assessment_result['error']}"
             }
         
         # Get scores (0-100 scale from Azure)
@@ -277,25 +256,25 @@ logger = logging.getLogger(__name__)
         feedback_parts = []
         
         if pronunciation >= 80:
-            feedback_parts.append("? Ph�t �m r?t t?t")
+            feedback_parts.append("✅ Phát âm rất tốt")
         elif pronunciation >= 60:
-            feedback_parts.append("?? Ph�t �m c?n c?i thi?n")
+            feedback_parts.append("⚠️ Phát âm cần cải thiện")
         else:
-            feedback_parts.append("? Ph�t �m c?n luy?n t?p nhi?u hon")
+            feedback_parts.append("❌ Phát âm cần luyện tập nhiều hơn")
         
         if fluency >= 80:
-            feedback_parts.append("? N�i tr�i ch?y t? nhi�n")
+            feedback_parts.append("✅ Nói trôi chảy tự nhiên")
         elif fluency >= 60:
-            feedback_parts.append("?? C?n n�i t? nhi�n hon")
+            feedback_parts.append("⚠️ Cần nói tự nhiên hơn")
         else:
-            feedback_parts.append("? C?n luy?n t?p d? n�i tr�i ch?y hon")
+            feedback_parts.append("❌ Cần luyện tập để nói trôi chảy hơn")
         
         if completeness >= 80:
-            feedback_parts.append("? Ho�n th�nh d?y d? n?i dung")
+            feedback_parts.append("✅ Hoàn thành đầy đủ nội dung")
         elif completeness >= 60:
-            feedback_parts.append("?? Thi?u m?t s? ph?n")
+            feedback_parts.append("⚠️ Thiếu một số phần")
         else:
-            feedback_parts.append("? N?i dung chua d?y d?")
+            feedback_parts.append("❌ Nội dung chưa đầy đủ")
         
         return {
             "score": round(final_score, 2),
@@ -329,37 +308,37 @@ logger = logging.getLogger(__name__)
         
         try:
             # Prepare detailed context for OpenAI
-            prompt = f"""B?n l� gi�o vi�n ti?ng Anh dang ch?m b�i n�i c?a h?c sinh. H�y dua ra nh?n x�t chi ti?t b?ng ti?ng Vi?t d?a tr�n k?t qu? d�nh gi� ph�t �m t? Azure Speech API.
+            prompt = f"""Bạn là giáo viên tiếng Anh đang chấm bài nói của học sinh. Hãy đưa ra nhận xét chi tiết bằng tiếng Việt dựa trên kết quả đánh giá phát âm từ Azure Speech API.
 
-**Th�ng tin d�nh gi�:**
-- �i?m ph�t �m (Pronunciation): {pronunciation:.1f}/100
-- �i?m d? tr�i ch?y (Fluency): {fluency:.1f}/100
-- �i?m ho�n thi?n (Completeness): {completeness:.1f}/100
-- �i?m ch�nh x�c (Accuracy): {accuracy:.1f}/100
+**Thông tin đánh giá:**
+- Điểm phát âm (Pronunciation): {pronunciation:.1f}/100
+- Điểm độ trôi chảy (Fluency): {fluency:.1f}/100
+- Điểm hoàn thiện (Completeness): {completeness:.1f}/100
+- Điểm chính xác (Accuracy): {accuracy:.1f}/100
 
-**N?i dung y�u c?u:** {reference_text if reference_text else "Kh�ng c�"}
-**N?i dung h?c sinh n�i:** {recognized_text if recognized_text else "Kh�ng nh?n di?n du?c"}
+**Nội dung yêu cầu:** {reference_text if reference_text else "Không có"}
+**Nội dung học sinh nói:** {recognized_text if recognized_text else "Không nhận diện được"}
 
-H�y dua ra nh?n x�t chi ti?t v?i c?u tr�c sau:
+Hãy đưa ra nhận xét chi tiết với cấu trúc sau:
 
-1. **T?ng quan**: ��nh gi� chung v? b�i n�i (2-3 c�u)
+1. **Tổng quan**: Đánh giá chung về bài nói (2-3 câu)
 
-2. **Ph�t �m (Pronunciation {pronunciation:.1f}/100)**:
-   - �i?m m?nh
-   - �i?m c?n c?i thi?n (n?u c�)
-   - L?i khuy�n c? th?
+2. **Phát âm (Pronunciation {pronunciation:.1f}/100)**:
+   - Điểm mạnh
+   - Điểm cần cải thiện (nếu có)
+   - Lời khuyên cụ thể
 
-3. **�? tr�i ch?y (Fluency {fluency:.1f}/100)**:
-   - Nh?n x�t v? nh?p di?u, t?c d? n�i
-   - G?i � c?i thi?n
+3. **Độ trôi chảy (Fluency {fluency:.1f}/100)**:
+   - Nhận xét về nhịp điệu, tốc độ nói
+   - Gợi ý cải thiện
 
-4. **T�nh ho�n ch?nh (Completeness {completeness:.1f}/100)**:
-   - ��nh gi� m?c d? ho�n th�nh n?i dung
-   - Nh?ng ph?n c�n thi?u (n?u c�)
+4. **Tính hoàn chỉnh (Completeness {completeness:.1f}/100)**:
+   - Đánh giá mức độ hoàn thành nội dung
+   - Những phần còn thiếu (nếu có)
 
-5. **L?i khuy�n**: 2-3 l?i khuy�n thi?t th?c d? c?i thi?n k? nang n�i
+5. **Lời khuyên**: 2-3 lời khuyên thiết thực để cải thiện kỹ năng nói
 
-Vi?t theo phong c�ch d?ng vi�n, kh�ch l? h?c sinh. D�ng emoji ph� h?p. Gi?i h?n kho?ng 200-300 t?."""
+Viết theo phong cách động viên, khích lệ học sinh. Dùng emoji phù hợp. Giới hạn khoảng 200-300 từ."""
 
             logger.info("[_generate_detailed_feedback] Calling OpenAI for feedback...")
             response = openai.chat.completions.create(
@@ -380,35 +359,34 @@ Vi?t theo phong c�ch d?ng vi�n, kh�ch l? h?c sinh. D�ng emoji ph� h?p. Gi?i h?n 
         """Generate template feedback when OpenAI is not available"""
         feedback = []
         
-        feedback.append(f"**Ph�t �m (Pronunciation):** {pronunciation:.1f}/100")
+        feedback.append(f"**Phát âm (Pronunciation):** {pronunciation:.1f}/100")
         if pronunciation >= 80:
-            feedback.append("- Ph�t �m chu?n x�c, r� r�ng")
+            feedback.append("- Phát âm chuẩn xác, rõ ràng")
         elif pronunciation >= 60:
-            feedback.append("- C?n ch� � ph�t �m m?t s? t? cho chu?n hon")
+            feedback.append("- Cần chú ý phát âm một số từ cho chuẩn hơn")
         else:
-            feedback.append("- N�n luy?n t?p ph�t �m c�c t? kh�, nghe v� l?p l?i nhi?u l?n")
+            feedback.append("- Nên luyện tập phát âm các từ khó, nghe và lặp lại nhiều lần")
         
-        feedback.append(f"\n**�? tr�i ch?y (Fluency):** {fluency:.1f}/100")
+        feedback.append(f"\n**Độ trôi chảy (Fluency):** {fluency:.1f}/100")
         if fluency >= 80:
-            feedback.append("- N�i tr�i ch?y, t? nhi�n")
+            feedback.append("- Nói trôi chảy, tự nhiên")
         elif fluency >= 60:
-            feedback.append("- C� th? ng?t qu�ng ? m?t s? ch?, c?n luy?n t?p d? t? nhi�n hon")
+            feedback.append("- Có thể ngắt quãng ở một số chỗ, cần luyện tập để tự nhiên hơn")
         else:
-            feedback.append("- N�n d?c to nhi?u l?n d? quen v?i nh?p di?u v� t?c d? n�i")
+            feedback.append("- Nên đọc to nhiều lần để quen với nhịp điệu và tốc độ nói")
         
-        feedback.append(f"\n**T�nh ho�n ch?nh (Completeness):** {completeness:.1f}/100")
+        feedback.append(f"\n**Tính hoàn chỉnh (Completeness):** {completeness:.1f}/100")
         if completeness >= 80:
-            feedback.append("- Ho�n th�nh d?y d? n?i dung y�u c?u")
+            feedback.append("- Hoàn thành đầy đủ nội dung yêu cầu")
         elif completeness >= 60:
-            feedback.append("- Thi?u m?t s? ph?n, h�y d?m b?o d?c/n�i h?t n?i dung")
+            feedback.append("- Thiếu một số phần, hãy đảm bảo đọc/nói hết nội dung")
         else:
-            feedback.append("- Chua ho�n th�nh d? n?i dung, c?n d?c/n�i d?y d? hon")
+            feedback.append("- Chưa hoàn thành đủ nội dung, cần đọc/nói đầy đủ hơn")
         
-        feedback.append(f"\n**�? ch�nh x�c (Accuracy):** {accuracy:.1f}/100")
+        feedback.append(f"\n**Độ chính xác (Accuracy):** {accuracy:.1f}/100")
         
         return "\n".join(feedback)
 
 
 # Initialize service
 azure_speech_service = AzureSpeechService()
-

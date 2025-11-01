@@ -57,7 +57,7 @@ class DocxService:
                     check=True
                 )
                 text = result.stdout
-                print(f"[DOC Extraction] Successfully extracted text using antiword")
+                logger.info(f"[DOC Extraction] Successfully extracted text using antiword")
                 return text
             except (subprocess.CalledProcessError, FileNotFoundError):
                 # antiword not available, try textract or other methods
@@ -67,7 +67,7 @@ class DocxService:
             try:
                 import pypandoc
                 text = pypandoc.convert_file(tmp_doc_path, 'plain', format='doc')
-                print(f"[DOC Extraction] Successfully extracted text using pypandoc")
+                logger.info(f"[DOC Extraction] Successfully extracted text using pypandoc")
                 return text
             except:
                 pass
@@ -120,7 +120,7 @@ class DocxService:
             
             if not is_docx:
                 # It's a .doc file - text extraction only (no images)
-                print("[DOCX Service] Detected .doc file - extracting text only")
+                logger.info("[DOCX Service] Detected .doc file - extracting text only")
                 try:
                     text_content = self._extract_text_from_doc(file_content)
                     paragraphs = [p.strip() for p in text_content.split('\n\n') if p.strip()]
@@ -253,10 +253,10 @@ class DocxService:
                             "height": height
                         })
                     except Exception as e:
-                        print(f"Failed to extract image: {e}")
+                        logger.info(f"Failed to extract image: {e}")
                         continue
         except Exception as e:
-            print(f"Error extracting images: {e}")
+            logger.info(f"Error extracting images: {e}")
         
         return images
     
@@ -427,4 +427,5 @@ Chỉ trả về JSON, không thêm giải thích.
 
 # Global instance
 docx_service = DocxService()
+
 

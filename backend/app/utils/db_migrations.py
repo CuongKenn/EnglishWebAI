@@ -61,7 +61,7 @@ def ensure_schema() -> None:
     try:
         ensure_discussions_columns()
     except Exception as e:
-        print(f"[migrations] ensure discussions columns failed: {e}")
+        logger.info(f"[migrations] ensure discussions columns failed: {e}")
     # Ensure new public courses tables exist (idempotent)
     try:
         from app.models.course import Course, CourseExercise, CourseSubmission
@@ -70,7 +70,7 @@ def ensure_schema() -> None:
         CourseSubmission.__table__.create(bind=engine, checkfirst=True)
     except Exception as e:
         # Avoid crashing startup; only log
-        print(f"[migrations] ensure courses tables failed: {e}")
+        logger.info(f"[migrations] ensure courses tables failed: {e}")
     # Ensure required columns exist for older local DBs
     try:
         ensure_courses_columns()
@@ -80,7 +80,7 @@ def ensure_schema() -> None:
         ensure_course_units_columns()
         ensure_course_questions_columns()
     except Exception as e:
-        print(f"[migrations] ensure courses columns failed: {e}")
+        logger.info(f"[migrations] ensure courses columns failed: {e}")
 
 
 def ensure_discussions_columns() -> None:
@@ -221,3 +221,4 @@ def ensure_course_questions_columns() -> None:
             conn.execute(text("ALTER TABLE course_questions ADD COLUMN order_index INTEGER"))
         if not _has_column(t, "created_at"):
             conn.execute(text("ALTER TABLE course_questions ADD COLUMN created_at DATETIME"))
+

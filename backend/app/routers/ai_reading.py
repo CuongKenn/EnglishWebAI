@@ -4,6 +4,9 @@ Handles AI-powered reading comprehension practice
 """
 
 from fastapi import APIRouter, Depends, HTTPException
+import logging
+
+logger = logging.getLogger(__name__)
 from sqlalchemy.orm import Session
 from typing import Dict, List
 from app.schemas.ai_reading import (
@@ -78,7 +81,7 @@ async def generate_reading_passage(
         return response
         
     except Exception as e:
-        print(f"Error generating reading passage: {str(e)}")
+        logger.info(f"Error generating reading passage: {str(e)}")
         import traceback
         traceback.print_exc()
         raise HTTPException(
@@ -144,7 +147,7 @@ async def check_reading_answers(
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Error checking answers: {str(e)}")
+        logger.info(f"Error checking answers: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail="Failed to check answers. Please try again."
@@ -160,3 +163,4 @@ async def clear_passage_cache(current_user: User = Depends(get_current_user)):
         del passage_cache[current_user.id]
         return {"message": "Cache cleared successfully"}
     return {"message": "No cache to clear"}
+

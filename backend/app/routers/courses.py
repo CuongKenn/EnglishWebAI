@@ -1,4 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+import logging
+
+logger = logging.getLogger(__name__)
 from sqlalchemy.orm import Session
 from sqlalchemy import func, case
 import json
@@ -206,7 +209,7 @@ async def create_course(
         raise
     except Exception as e:
         # Log error for debugging and return JSON detail instead of plain 500
-        print("[ERROR] create_course:", repr(e))
+        logger.info("[ERROR] create_course:", repr(e))
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -494,7 +497,7 @@ async def list_course_units(
     except HTTPException:
         raise
     except Exception as e:
-        print("[ERROR] list_course_units:", repr(e))
+        logger.info("[ERROR] list_course_units:", repr(e))
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -559,7 +562,7 @@ async def create_course_unit(
     except HTTPException:
         raise
     except Exception as e:
-        print("[ERROR] create_course_unit:", repr(e))
+        logger.info("[ERROR] create_course_unit:", repr(e))
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -610,7 +613,7 @@ async def list_unit_questions(
     except HTTPException:
         raise
     except Exception as e:
-        print("[ERROR] list_unit_questions:", repr(e))
+        logger.info("[ERROR] list_unit_questions:", repr(e))
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -715,5 +718,6 @@ async def delete_unit_question(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
+
 
 

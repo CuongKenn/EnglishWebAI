@@ -3,6 +3,9 @@ Teacher Dashboard Router
 Provides overview statistics and data for teacher dashboard
 """
 from fastapi import APIRouter, Depends, HTTPException
+import logging
+
+logger = logging.getLogger(__name__)
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
 from typing import List, Optional
@@ -61,7 +64,7 @@ async def get_dashboard_overview(
     if not current_user:
         raise HTTPException(status_code=401, detail="Not authenticated")
     
-    print(f"[DASHBOARD] Fetching overview for user_id={current_user.id}, role={current_user.role}")
+    logger.info(f"[DASHBOARD] Fetching overview for user_id={current_user.id}, role={current_user.role}")
     
     try:
         # Get teacher's classes
@@ -69,12 +72,12 @@ async def get_dashboard_overview(
             Classroom.teacher_id == current_user.id
         ).all()
         
-        print(f"[DASHBOARD] Found {len(classes)} classes for teacher {current_user.id}")
+        logger.info(f"[DASHBOARD] Found {len(classes)} classes for teacher {current_user.id}")
         
         class_ids = [c.id for c in classes]
         total_classes = len(classes)
         
-        print(f"[DASHBOARD] class_ids: {class_ids}")
+        logger.info(f"[DASHBOARD] class_ids: {class_ids}")
         
         # Count total students (active enrollments with role='student')
         # Use DISTINCT to count unique students (1 student in 2 classes = 1 student)
@@ -85,7 +88,7 @@ async def get_dashboard_overview(
                 Enrollment.role == "student",
                 Enrollment.status == "active"
             ).scalar() or 0
-            print(f"[DASHBOARD] Found {total_students} unique students")
+            logger.info(f"[DASHBOARD] Found {total_students} unique students")
         
         # Count total tests (exercises + exam assessments)
         total_exercises = 0
@@ -106,7 +109,7 @@ async def get_dashboard_overview(
             QuestionBankItem.owner_id == current_user.id
         ).scalar() or 0
         
-        print(f"[DASHBOARD] Stats - classes:{total_classes}, students:{total_students}, tests:{total_tests}, questions:{total_questions}")
+        logger.info(f"[DASHBOARD] Stats - classes:{total_classes}, students:{total_students}, tests:{total_tests}, questions:{total_questions}")
         
         # Get recent activities (last 10)
         recent_activities = []
@@ -267,7 +270,7 @@ async def get_dashboard_overview(
             upcoming_tests=upcoming_tests
         )
     except Exception as e:
-        print(f"[DASHBOARD] ERROR: {str(e)}")
+        logger.info(f"[DASHBOARD] ERROR: {str(e)}")
         import traceback
         traceback.print_exc()
         # Return empty data instead of crashing
@@ -314,3 +317,4 @@ def get_time_ago(dt: datetime) -> str:
         return f"{minutes} phút trước"
     
     return "Vừa xong"
+
