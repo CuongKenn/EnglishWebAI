@@ -8,6 +8,12 @@ Create Date: 2025-11-01 10:00:00.000000
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
+import sys
+import os
+
+# Add parent directory to path to import migration_utils
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+from migration_utils import table_exists
 
 # revision identifiers, used by Alembic.
 revision = '014_weekly_submissions'
@@ -17,8 +23,9 @@ depends_on = None
 
 
 def upgrade():
-    # Create weekly_submissions table
-    op.create_table(
+    # Create weekly_submissions table if not exists
+    if not table_exists('weekly_submissions'):
+        op.create_table(
         'weekly_submissions',
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('assessment_id', sa.Integer(), nullable=False),
@@ -37,12 +44,12 @@ def upgrade():
         sa.ForeignKeyConstraint(['assessment_id'], ['weekly_assessments.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['student_id'], ['users.id'], ondelete='CASCADE'),
         sa.PrimaryKeyConstraint('id')
-    )
-    
-    # Create indexes
-    op.create_index('ix_weekly_submissions_assessment_id', 'weekly_submissions', ['assessment_id'])
-    op.create_index('ix_weekly_submissions_student_id', 'weekly_submissions', ['student_id'])
-    op.create_index('ix_weekly_submissions_status', 'weekly_submissions', ['status'])
+        )
+        
+        # Create indexes
+        op.create_index('ix_weekly_submissions_assessment_id', 'weekly_submissions', ['assessment_id'])
+        op.create_index('ix_weekly_submissions_student_id', 'weekly_submissions', ['student_id'])
+        op.create_index('ix_weekly_submissions_status', 'weekly_submissions', ['status'])
 
 
 def downgrade():

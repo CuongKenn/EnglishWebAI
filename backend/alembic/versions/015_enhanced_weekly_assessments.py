@@ -8,6 +8,12 @@ Create Date: 2025-11-02
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
+import sys
+import os
+
+# Add parent directory to path to import migration_utils
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+from migration_utils import table_exists
 
 # revision identifiers, used by Alembic.
 revision = '015_enhanced_weekly_assessments'
@@ -17,8 +23,9 @@ depends_on = None
 
 
 def upgrade():
-    # Create enhanced_weekly_assessments table
-    op.create_table(
+    # Create enhanced_weekly_assessments table if not exists
+    if not table_exists('enhanced_weekly_assessments'):
+        op.create_table(
         'enhanced_weekly_assessments',
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('class_id', sa.Integer(), nullable=False),
@@ -72,15 +79,16 @@ def upgrade():
         sa.PrimaryKeyConstraint('id'),
         sa.ForeignKeyConstraint(['class_id'], ['classes.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['teacher_id'], ['users.id'], ondelete='CASCADE'),
-    )
-    
-    # Create indexes
-    op.create_index('ix_enhanced_weekly_assessments_id', 'enhanced_weekly_assessments', ['id'])
-    op.create_index('ix_enhanced_weekly_assessments_class_id', 'enhanced_weekly_assessments', ['class_id'])
-    op.create_index('ix_enhanced_weekly_assessments_teacher_id', 'enhanced_weekly_assessments', ['teacher_id'])
+        )
+        
+        # Create indexes
+        op.create_index('ix_enhanced_weekly_assessments_id', 'enhanced_weekly_assessments', ['id'])
+        op.create_index('ix_enhanced_weekly_assessments_class_id', 'enhanced_weekly_assessments', ['class_id'])
+        op.create_index('ix_enhanced_weekly_assessments_teacher_id', 'enhanced_weekly_assessments', ['teacher_id'])
 
-    # Create enhanced_weekly_submissions table
-    op.create_table(
+    # Create enhanced_weekly_submissions table if not exists
+    if not table_exists('enhanced_weekly_submissions'):
+        op.create_table(
         'enhanced_weekly_submissions',
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('assessment_id', sa.Integer(), nullable=False),
@@ -151,12 +159,12 @@ def upgrade():
         sa.PrimaryKeyConstraint('id'),
         sa.ForeignKeyConstraint(['assessment_id'], ['enhanced_weekly_assessments.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['student_id'], ['users.id'], ondelete='CASCADE'),
-    )
-    
-    # Create indexes
-    op.create_index('ix_enhanced_weekly_submissions_id', 'enhanced_weekly_submissions', ['id'])
-    op.create_index('ix_enhanced_weekly_submissions_assessment_id', 'enhanced_weekly_submissions', ['assessment_id'])
-    op.create_index('ix_enhanced_weekly_submissions_student_id', 'enhanced_weekly_submissions', ['student_id'])
+        )
+        
+        # Create indexes
+        op.create_index('ix_enhanced_weekly_submissions_id', 'enhanced_weekly_submissions', ['id'])
+        op.create_index('ix_enhanced_weekly_submissions_assessment_id', 'enhanced_weekly_submissions', ['assessment_id'])
+        op.create_index('ix_enhanced_weekly_submissions_student_id', 'enhanced_weekly_submissions', ['student_id'])
 
 
 def downgrade():
