@@ -1,69 +1,88 @@
 // src/App.jsx
 
-import React, { useState } from 'react'; // 1. Import useState
+import React, { useState, lazy, Suspense } from 'react'; // Add lazy and Suspense
 import { Routes, Route, useNavigate, Navigate } from 'react-router-dom';
 
-// Import Layout và các trang
+// Import ErrorBoundary
+import ErrorBoundary from './components/ErrorBoundary';
+
+// Import Layout và các trang (critical - load immediately)
 import Layout from './components/Layout/Layout';
 import HomeStudent from './pages/HomeStudent/HomeStudent';
 import Login from './components/Login/Login';
 import Register from './components/Register/Register';
 import ForgotPassword from './components/ForgotPassword/ForgotPassword';
-import JoinClass from './pages/JoinClass/JoinClass';
-import Materials from './pages/Materials/Materials';
-import Discussion from './pages/Discussion/Discussion';
-import Exercises from './pages/Exercises/Exercises';
-import News from './pages/News/News';
-import NewsDetail from './pages/News/NewsDetail';
-import Lessons from './pages/Lessons/Lessons';
-import ClassContent from './pages/ClassContent/ClassContent';
-import AIPractice from './pages/student/AIPractice';
-import MyClasses from './pages/student/MyClasses/MyClasses';
-import ExerciseHub from './pages/student/ExerciseHub/ExerciseHub';
-import DoExercise from './pages/student/DoExercise/DoExercise';
-import TakeExam from './pages/student/TakeExam/TakeExam';
-import { WritingAI } from './components/ai/WritingAI';
-import { ReadingAI } from './components/ai/ReadingAI';
-import CourseContentPage from './pages/CourseContentPage/CourseContentPage';
-import MyCourses from './pages/MyCourses/MyCourses';
-import StudyPlan from './pages/StudyPlan/StudyPlan';
-import LearningProfile from './pages/LearningProfile/LearningProfile';
-import SpeakingExercise from './pages/SpeakingExercise/SpeakingExercise';
-import SpeakingExerciseDemo from './pages/SpeakingExercise/SpeakingExerciseDemo';
-import SpeakingExerciseShowcase from './pages/SpeakingExercise/SpeakingExerciseShowcase';
-import ReadingExercise from './pages/ReadingExercise/ReadingExercise';
-import WritingExercise from './pages/WritingExercise/WritingExercise';
-import ListeningExercise from './pages/ListeningExercise/ListeningExercise';
-import CourseLessons from './pages/CourseLessons/CourseLessons';
 
+// Lazy load heavy components
+const JoinClass = lazy(() => import('./pages/JoinClass/JoinClass'));
+const Materials = lazy(() => import('./pages/Materials/Materials'));
+const Discussion = lazy(() => import('./pages/Discussion/Discussion'));
+const Exercises = lazy(() => import('./pages/Exercises/Exercises'));
+const News = lazy(() => import('./pages/News/News'));
+const NewsDetail = lazy(() => import('./pages/News/NewsDetail'));
+const Lessons = lazy(() => import('./pages/Lessons/Lessons'));
+const ClassContent = lazy(() => import('./pages/ClassContent/ClassContent'));
+const AIPractice = lazy(() => import('./pages/student/AIPractice'));
+const MyClasses = lazy(() => import('./pages/student/MyClasses/MyClasses'));
+const ExerciseHub = lazy(() => import('./pages/student/ExerciseHub/ExerciseHub'));
+const DoExercise = lazy(() => import('./pages/student/DoExercise/DoExercise'));
+const TakeExam = lazy(() => import('./pages/student/TakeExam/TakeExam'));
+const WritingAI = lazy(() => import('./components/ai/WritingAI').then(m => ({ default: m.WritingAI })));
+const ReadingAI = lazy(() => import('./components/ai/ReadingAI').then(m => ({ default: m.ReadingAI })));
+const CourseContentPage = lazy(() => import('./pages/CourseContentPage/CourseContentPage'));
+const MyCourses = lazy(() => import('./pages/MyCourses/MyCourses'));
+const StudyPlan = lazy(() => import('./pages/StudyPlan/StudyPlan'));
+const LearningProfile = lazy(() => import('./pages/LearningProfile/LearningProfile'));
+const SpeakingExercise = lazy(() => import('./pages/SpeakingExercise/SpeakingExercise'));
+const SpeakingExerciseDemo = lazy(() => import('./pages/SpeakingExercise/SpeakingExerciseDemo'));
+const SpeakingExerciseShowcase = lazy(() => import('./pages/SpeakingExercise/SpeakingExerciseShowcase'));
+const ReadingExercise = lazy(() => import('./pages/ReadingExercise/ReadingExercise'));
+const WritingExercise = lazy(() => import('./pages/WritingExercise/WritingExercise'));
+const ListeningExercise = lazy(() => import('./pages/ListeningExercise/ListeningExercise'));
+const CourseLessons = lazy(() => import('./pages/CourseLessons/CourseLessons'));
 
-// Import Admin Pages
+// Lazy load Admin Pages
+const AdminDashboardV2 = lazy(() => import('./pages/Admin/AdminDashboardV2/AdminDashboardV2'));
+
+// Lazy load Teacher Pages
+const TeacherDashboardV3 = lazy(() => import('./pages/Teacher/TeacherDashboardV3/TeacherDashboardV3'));
+const TeacherMaterials = lazy(() => import('./pages/Teacher/TeacherMaterials/TeacherMaterials'));
+const SubmissionGradingPage = lazy(() => import('./pages/Teacher/Grading/SubmissionGradingPage'));
+
+// Lazy load Parent Pages
+const ParentDashboardV2 = lazy(() => import('./pages/Parent/ParentDashboardV2/ParentDashboardV2'));
+const TrackProgressPage = lazy(() => import('./pages/Parent/TrackProgress/TrackProgressPage'));
+const NotificationsPage = lazy(() => import('./pages/Parent/Notifications/NotificationsPage'));
+const TeacherCommunication = lazy(() => import('./pages/Parent/TeacherCommunication/TeacherCommunication'));
+
+// Import non-lazy components
 import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute';
-import AdminDashboardV2 from './pages/Admin/AdminDashboardV2/AdminDashboardV2';
-
-// Import Teacher Pages
-import TeacherDashboardV3 from './pages/Teacher/TeacherDashboardV3/TeacherDashboardV3';
-import TeacherMaterials from './pages/Teacher/TeacherMaterials/TeacherMaterials';
-import SubmissionGradingPage from './pages/Teacher/Grading/SubmissionGradingPage';
-
-// Import Parent Pages
-import ParentDashboardV2 from './pages/Parent/ParentDashboardV2/ParentDashboardV2';
-import TrackProgressPage from './pages/Parent/TrackProgress/TrackProgressPage';
-import NotificationsPage from './pages/Parent/Notifications/NotificationsPage';
-import TeacherCommunication from './pages/Parent/TeacherCommunication/TeacherCommunication';
-
-// Import Welcome Notification
 import WelcomeNotification from './components/WelcomeNotification/WelcomeNotification';
-
-// Import Profile
 import Profile from './components/Profile/Profile';
 
-// Import Other Pages
-import ReportCard from './pages/ReportCard/ReportCard';
-import InviteFriends from './pages/InviteFriends/InviteFriends';
+// Lazy load other pages
+const ReportCard = lazy(() => import('./pages/ReportCard/ReportCard'));
+const InviteFriends = lazy(() => import('./pages/InviteFriends/InviteFriends'));
 
 // Import services
 import authService from './services/authService';
+
+// Loading component
+const LoadingFallback = () => (
+  <div style={{
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: '400px',
+    fontSize: '18px',
+    color: '#64748b'
+  }}>
+    <div>
+      <div style={{ fontSize: '48px', marginBottom: '16px', textAlign: 'center' }}>⏳</div>
+      <div>Đang tải...</div>
+    </div>
+  </div>
+);
 
 function App() {
   // 2. Tạo state trung tâm, sử dụng authService để check trạng thái
@@ -116,50 +135,52 @@ function App() {
         userRole={userRole}
       />
 
-      <Routes>
-      {/* 5. Truyền state và các hàm xử lý xuống các trang cần thiết */}
-      <Route
-        path="/"
-        element={
-          <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
-            <HomeStudent />
-          </Layout>
-        }
-      />
-      <Route
-        path="/login"
-        element={<Login onLogin={handleLogin} />}
-      />
-      <Route path="/register" element={<Register />} />
-      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <ErrorBoundary fallbackMessage="Đã xảy ra lỗi khi tải trang. Vui lòng thử lại.">
+        <Suspense fallback={<LoadingFallback />}>
+          <Routes>
+          {/* 5. Truyền state và các hàm xử lý xuống các trang cần thiết */}
+          <Route
+            path="/"
+            element={
+              <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+                <HomeStudent />
+              </Layout>
+            }
+          />
+        <Route
+          path="/login"
+          element={<Login onLogin={handleLogin} />}
+        />
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
 
-      {/* Public Routes */}
-      <Route
-        path="/news"
-        element={
-          <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
-            <News />
-          </Layout>
-        }
-      />
-      <Route
-        path="/news/:newsId"
-        element={
-          <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
-            <NewsDetail />
-          </Layout>
-        }
-      />
-      <Route
-        path="/lessons"
-        element={
-          <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
-            <Lessons />
-          </Layout>
-        }
-      />
+        {/* Public Routes */}
+        <Route
+          path="/news"
+          element={
+            <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+              <News />
+            </Layout>
+          }
+        />
+        <Route
+          path="/news/:newsId"
+          element={
+            <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+              <NewsDetail />
+            </Layout>
+          }
+        />
+        <Route
+          path="/lessons"
+          element={
+            <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+              <Lessons />
+            </Layout>
+          }
+        />
 
-      {/* Student Routes */}
+        {/* Student Routes */}
       {/* Redirect old route to new design */}
       <Route path="/join-class" element={<Navigate to="/my-classes" replace />} />
       <Route
@@ -479,6 +500,8 @@ function App() {
         }
       />
       </Routes>
+      </Suspense>
+      </ErrorBoundary>
     </>
   );
 }
