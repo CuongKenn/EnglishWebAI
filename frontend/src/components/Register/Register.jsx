@@ -464,7 +464,7 @@ const Register = () => {
       />
 
       {/* Toast Notification */}
-      {toast.show && (
+      {toast && (
         <Toast
           message={toast.message}
           type={toast.type}
