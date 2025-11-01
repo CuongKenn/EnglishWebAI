@@ -56,7 +56,9 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   // Import states
   const [wordFile, setWordFile] = useState(null);
   const [importFile, setImportFile] = useState(null);
+  const [passageFile, setPassageFile] = useState(null);
   const [isUploadingWord, setIsUploadingWord] = useState(false);
+  const [wordUploadError, setWordUploadError] = useState(null);
   const wordFileInputRef = useRef(null);
   const importFileInputRef = useRef(null);
   const audioInputRef = useRef(null);
@@ -205,6 +207,19 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
     }
   };
   
+  // Passage file upload handler
+  const handlePassageFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        showWarning('File quá lớn! Tối đa 10MB.');
+        return;
+      }
+      setPassageFile(file);
+    }
+  };
+  
   // Word import submit handler
   const handleWordImportSubmit = async () => {
     if (!wordFile || !classId || !title) {
@@ -213,25 +228,50 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
     }
     
     setIsUploadingWord(true);
+    setWordUploadError(null);
+    
     try {
       const formData = new FormData();
       formData.append('file', wordFile);
-      formData.append('title', title);
+      formData.append('exam_title', title);
       formData.append('class_id', classId);
-      formData.append('due_date', dueDate);
-      formData.append('test_type', testType);
+      formData.append('exam_type', testType);
+      formData.append('is_published', 'false');
+      
+      if (dueDate) {
+        formData.append('end_time', dueDate);
+      }
+      
+      console.log('[Word Import] Uploading file:', wordFile.name);
       
       // Call API to upload and process Word file
-      // const response = await examService.uploadWordExam(formData);
-      showSuccess('Đang xử lý file Word... (3-5 phút)');
+      const response = await examService.uploadExamFromWord(formData);
       
-      // Close modal after successful upload
+      console.log('[Word Import] Success:', response);
+      
+      showSuccess('✅ Import thành công! Đề thi đã được tạo.');
+      
+      // Close modal and refresh data
       setTimeout(() => {
         onClose();
+        if (onCreate) {
+          onCreate(); // Trigger parent refresh
+        }
       }, 1500);
+      
     } catch (error) {
-      console.error('Error uploading Word file:', error);
-      showWarning('Lỗi khi upload file Word!');
+      console.error('[Word Import] Error:', error);
+      
+      // Extract error message
+      let errorMessage = 'Lỗi khi upload file Word!';
+      if (error.response?.data?.detail) {
+        errorMessage = error.response.data.detail;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setWordUploadError(errorMessage);
+      showWarning(errorMessage);
     } finally {
       setIsUploadingWord(false);
     }

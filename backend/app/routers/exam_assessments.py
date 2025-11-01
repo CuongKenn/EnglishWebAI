@@ -4,6 +4,7 @@ API endpoints for managing exam assessments (midterm/final exams)
 imported from Word documents
 """
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
@@ -11,6 +12,7 @@ import json
 import os
 import shutil
 from pathlib import Path
+import asyncio
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
@@ -33,6 +35,8 @@ from app.schemas.exam import (
 from app.services.docx_service import docx_service
 from app.services.openai_service import openai_service
 from app.services.ai_grading_service import AIGradingService
+
+from app.services.notification_service import NotificationService
 
 
 router = APIRouter(prefix="/api/v1/exam-assessments", tags=["Exam Assessments"])
@@ -540,6 +544,11 @@ async def submit_exam(
     if submission.status == "submitted":
         raise HTTPException(status_code=400, detail="Bài thi đã được nộp")
     
+    # Get exam details
+    exam = db.query(ExamAssessment).filter(ExamAssessment.id == submission.exam_id).first()
+    if not exam:
+        raise HTTPException(status_code=404, detail="Không tìm thấy đề thi")
+    
     # Update submission
     submission.answers = submit_data.answers
     submission.status = "submitted"
@@ -554,6 +563,12 @@ async def submit_exam(
     
     db.commit()
     db.refresh(submission)
+    
+    # Notify parents about submission
+    try:
+        NotificationService.notify_parents_on_exam_submission(db, submission)
+    except Exception as e:
+        print(f"[SUBMIT-EXAM] Error creating notification: {e}")
     
     return submission
 
@@ -597,6 +612,57 @@ async def get_my_exam_submission(
     return submission
 
 
+@router.post("/submissions/{submission_id}/auto-grade", response_class=JSONResponse)
+async def auto_grade_exam_submission(
+    submission_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Auto-grade exam submission (teacher triggered)
+    - Multiple choice, True/False, Fill blank: Auto-graded with AI
+    - Writing: ChatGPT AI grading
+    - Speaking: Azure Speech + ChatGPT grading
+    """
+    submission = db.query(ExamSubmission).filter(
+        ExamSubmission.id == submission_id
+    ).first()
+    
+    if not submission:
+        raise HTTPException(status_code=404, detail="Không tìm thấy bài làm")
+    
+    exam = db.query(ExamAssessment).filter(ExamAssessment.id == submission.exam_id).first()
+    if not exam:
+        raise HTTPException(status_code=404, detail="Không tìm thấy đề thi")
+    
+    # Check permissions
+    _ensure_teacher_access(db, current_user, exam.class_id)
+    
+    try:
+        await _auto_grade_exam_submission(submission, exam, db)
+        db.commit()
+        db.refresh(submission)
+        
+        return JSONResponse(content={
+            "success": True,
+            "message": "Đã chấm tự động thành công",
+            "submission": {
+                "id": submission.id,
+                "score": submission.score,
+                "ai_score": submission.ai_score,
+                "feedback": submission.feedback,
+                "ai_feedback": submission.ai_feedback,
+                "status": submission.status,
+                "rubrics_scores": submission.rubrics_scores
+            }
+        })
+    except Exception as e:
+        print(f"[AUTO-GRADE-EXAM] Error: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Lỗi chấm tự động: {str(e)}")
+
+
 @router.post("/submissions/{submission_id}/grade", response_model=ExamSubmissionResponse)
 async def grade_exam_submission(
     submission_id: int,
@@ -624,6 +690,17 @@ async def grade_exam_submission(
     
     db.commit()
     db.refresh(submission)
+    
+    # Notify parents about grading
+    try:
+        teacher_name = current_user.full_name or current_user.username
+        NotificationService.notify_parents_on_exam_grading(db, submission, teacher_name)
+        
+        # If low score, send warning
+        if submission.score and submission.score < 5.0:
+            NotificationService.notify_parents_on_exam_low_score(db, submission)
+    except Exception as e:
+        print(f"[EXAM-GRADE] Error creating notification: {e}")
     
     return submission
 

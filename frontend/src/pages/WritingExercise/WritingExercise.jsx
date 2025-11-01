@@ -539,7 +539,7 @@ const WritingExercise = () => {
       )}
 
       {/* Toast Notification */}
-      {toast && (
+      {toast.show && (
         <Toast
           message={toast.message}
           type={toast.type}

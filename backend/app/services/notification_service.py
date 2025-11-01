@@ -6,9 +6,10 @@ from app.models.notification import Notification
 from app.models.user import User
 from app.models.parent_student import ParentStudent
 from app.models.submission import Submission
+from app.models.exam_assessment import ExamSubmission, ExamAssessment
 from app.models.exercise import Exercise
 from app.models.classroom import Classroom
-from typing import Optional, List
+from typing import Optional, List, Union
 from datetime import datetime
 
 
@@ -336,4 +337,180 @@ class NotificationService:
         ).offset(skip).limit(limit).all()
         
         return notifications
+    
+    # ============= Exam Assessment Notifications =============
+    
+    @staticmethod
+    def notify_parents_on_exam_grading(
+        db: Session,
+        submission: ExamSubmission,
+        teacher_name: str
+    ):
+        """
+        Thông báo cho phụ huynh khi giáo viên chấm bài thi
+        
+        Args:
+            submission: ExamSubmission đã được chấm
+            teacher_name: Tên giáo viên
+        """
+        # Lấy thông tin đề thi
+        exam = db.query(ExamAssessment).filter(ExamAssessment.id == submission.exam_id).first()
+        if not exam:
+            return
+        
+        # Lấy thông tin học sinh
+        student = db.query(User).filter(User.id == submission.student_id).first()
+        if not student:
+            return
+        
+        # Lấy danh sách phụ huynh của học sinh
+        parent_links = db.query(ParentStudent).filter(
+            ParentStudent.student_id == student.id,
+            ParentStudent.is_verified == True
+        ).all()
+        
+        # Tạo thông báo cho từng phụ huynh
+        for link in parent_links:
+            # Determine exam type display name
+            exam_type_name = {
+                'midterm': 'giữa kỳ',
+                'final': 'cuối kỳ',
+                'quiz': 'kiểm tra',
+                'practice': 'luyện tập'
+            }.get(exam.exam_type, 'bài thi')
+            
+            title = f"Điểm {exam_type_name} mới"
+            
+            # Format điểm
+            score_text = f"{submission.score}/{exam.total_points}" if submission.score else "chưa có điểm"
+            
+            message = (
+                f"Con bạn {student.full_name or student.username} đã nhận điểm "
+                f"{score_text} cho {exam_type_name} \"{exam.title}\""
+            )
+            
+            if submission.feedback:
+                message += f". Nhận xét: {submission.feedback[:100]}"
+                if len(submission.feedback) > 100:
+                    message += "..."
+            
+            NotificationService.create_notification(
+                db=db,
+                user_id=link.parent_id,
+                title=title,
+                message=message,
+                notification_type="grade",
+                related_id=submission.id,
+                related_type="exam_submission"
+            )
+    
+    @staticmethod
+    def notify_parents_on_exam_submission(
+        db: Session,
+        submission: ExamSubmission
+    ):
+        """
+        Thông báo cho phụ huynh khi học sinh nộp bài thi
+        
+        Args:
+            submission: ExamSubmission vừa được nộp
+        """
+        # Lấy thông tin đề thi
+        exam = db.query(ExamAssessment).filter(ExamAssessment.id == submission.exam_id).first()
+        if not exam:
+            return
+        
+        # Lấy thông tin học sinh
+        student = db.query(User).filter(User.id == submission.student_id).first()
+        if not student:
+            return
+        
+        # Lấy danh sách phụ huynh của học sinh
+        parent_links = db.query(ParentStudent).filter(
+            ParentStudent.student_id == student.id,
+            ParentStudent.is_verified == True
+        ).all()
+        
+        # Tạo thông báo cho từng phụ huynh
+        for link in parent_links:
+            exam_type_name = {
+                'midterm': 'giữa kỳ',
+                'final': 'cuối kỳ',
+                'quiz': 'kiểm tra',
+                'practice': 'luyện tập'
+            }.get(exam.exam_type, 'bài thi')
+            
+            title = f"Hoàn thành {exam_type_name}"
+            message = (
+                f"Con bạn {student.full_name or student.username} đã hoàn thành "
+                f"{exam_type_name} \"{exam.title}\". Đang chờ giáo viên chấm điểm."
+            )
+            
+            NotificationService.create_notification(
+                db=db,
+                user_id=link.parent_id,
+                title=title,
+                message=message,
+                notification_type="success",
+                related_id=submission.id,
+                related_type="exam_submission"
+            )
+    
+    @staticmethod
+    def notify_parents_on_exam_low_score(
+        db: Session,
+        submission: ExamSubmission,
+        threshold: float = 5.0
+    ):
+        """
+        Thông báo cho phụ huynh khi học sinh có điểm thi thấp
+        
+        Args:
+            submission: ExamSubmission với điểm thấp
+            threshold: Ngưỡng điểm (mặc định 5.0)
+        """
+        if not submission.score or submission.score >= threshold:
+            return
+        
+        # Lấy thông tin đề thi
+        exam = db.query(ExamAssessment).filter(ExamAssessment.id == submission.exam_id).first()
+        if not exam:
+            return
+        
+        # Lấy thông tin học sinh
+        student = db.query(User).filter(User.id == submission.student_id).first()
+        if not student:
+            return
+        
+        # Lấy danh sách phụ huynh của học sinh
+        parent_links = db.query(ParentStudent).filter(
+            ParentStudent.student_id == student.id,
+            ParentStudent.is_verified == True
+        ).all()
+        
+        # Tạo thông báo cho từng phụ huynh
+        for link in parent_links:
+            exam_type_name = {
+                'midterm': 'giữa kỳ',
+                'final': 'cuối kỳ',
+                'quiz': 'kiểm tra',
+                'practice': 'luyện tập'
+            }.get(exam.exam_type, 'bài thi')
+            
+            title = f"Cần chú ý - Điểm {exam_type_name} thấp"
+            message = (
+                f"Con bạn {student.full_name or student.username} đã nhận điểm "
+                f"{submission.score}/{exam.total_points} cho {exam_type_name} \"{exam.title}\". "
+                f"Phụ huynh nên quan tâm và hỗ trợ con học tập tốt hơn."
+            )
+            
+            NotificationService.create_notification(
+                db=db,
+                user_id=link.parent_id,
+                title=title,
+                message=message,
+                notification_type="warning",
+                related_id=submission.id,
+                related_type="exam_submission"
+            )
 

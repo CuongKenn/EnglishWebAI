@@ -247,6 +247,31 @@ const ExamViewer = ({ examId, onSubmitSuccess }) => {
           </div>
         );
 
+      case 'matching':
+        return (
+          <div className="question-item matching-item" key={questionKey}>
+            <div className="matching-row">
+              <div className="matching-word">
+                {question.question_text}
+              </div>
+              <span className="matching-arrow">→</span>
+              <select
+                className="matching-select"
+                value={answers[questionKey] || ''}
+                onChange={(e) => handleAnswerChange(questionKey, e.target.value)}
+                disabled={isDisabled}
+              >
+                <option value="">-- Chọn --</option>
+                {question.options?.map((option, idx) => (
+                  <option key={idx} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        );
+
       default:
         return (
           <div className="question-item" key={questionKey}>

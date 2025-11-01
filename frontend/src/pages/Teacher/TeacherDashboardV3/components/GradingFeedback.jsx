@@ -356,23 +356,29 @@ export default function GradingFeedback() {
                 </div>
                 
                 <div className="writing-scores-grid">
-                  {Object.entries(selectedSubmission.rubrics_scores.writing_assessment).map(([key, value]) => (
-                    <div key={key} className="writing-criterion">
-                      <div className="criterion-header">
-                        <span className="criterion-name">{value.name}</span>
-                        <span className="criterion-weight">({(value.weight * 100).toFixed(0)}%)</span>
-                      </div>
-                      <div className="criterion-score">
-                        <div className="score-bar">
-                          <div 
-                            className="score-fill" 
-                            style={{ width: `${value.score}%` }}
-                          />
+                  {Object.entries(selectedSubmission.rubrics_scores.writing_assessment).map(([key, value]) => {
+                    // Skip if value is not a valid object with required properties
+                    if (!value || typeof value !== 'object' || typeof value.score === 'undefined') {
+                      return null;
+                    }
+                    return (
+                      <div key={key} className="writing-criterion">
+                        <div className="criterion-header">
+                          <span className="criterion-name">{value.name || key}</span>
+                          <span className="criterion-weight">({((value.weight || 0) * 100).toFixed(0)}%)</span>
                         </div>
-                        <span className="score-text">{value.score}/100</span>
+                        <div className="criterion-score">
+                          <div className="score-bar">
+                            <div 
+                              className="score-fill" 
+                              style={{ width: `${value.score || 0}%` }}
+                            />
+                          </div>
+                          <span className="score-text">{value.score || 0}/100</span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 
                 {selectedSubmission.rubrics_scores.word_count && (
@@ -386,7 +392,7 @@ export default function GradingFeedback() {
                     <h5>✅ Điểm mạnh:</h5>
                     <ul>
                       {selectedSubmission.rubrics_scores.strengths.map((item, idx) => (
-                        <li key={idx}>{item}</li>
+                        <li key={idx}>{typeof item === 'object' ? JSON.stringify(item) : String(item)}</li>
                       ))}
                     </ul>
                   </div>
@@ -397,7 +403,7 @@ export default function GradingFeedback() {
                     <h5>⚠️ Cần cải thiện:</h5>
                     <ul>
                       {selectedSubmission.rubrics_scores.improvements.map((item, idx) => (
-                        <li key={idx}>{item}</li>
+                        <li key={idx}>{typeof item === 'object' ? JSON.stringify(item) : String(item)}</li>
                       ))}
                     </ul>
                   </div>
@@ -408,7 +414,7 @@ export default function GradingFeedback() {
                     <h5>🔧 Sửa lỗi:</h5>
                     <ul>
                       {selectedSubmission.rubrics_scores.corrections.map((item, idx) => (
-                        <li key={idx}>{item}</li>
+                        <li key={idx}>{typeof item === 'object' ? JSON.stringify(item) : String(item)}</li>
                       ))}
                     </ul>
                   </div>
@@ -417,27 +423,33 @@ export default function GradingFeedback() {
                 {selectedSubmission.rubrics_scores.suggestions && (
                   <div className="suggestions-box">
                     <h5>💡 Gợi ý:</h5>
-                    <p>{selectedSubmission.rubrics_scores.suggestions}</p>
+                    <p>{typeof selectedSubmission.rubrics_scores.suggestions === 'object' 
+                      ? JSON.stringify(selectedSubmission.rubrics_scores.suggestions) 
+                      : String(selectedSubmission.rubrics_scores.suggestions)}</p>
                   </div>
                 )}
                 </div>
               )}
 
               {/* Objective/Auto-graded Results (MC/TF/FillBlank) */}
-              {selectedSubmission.rubrics_scores?.auto_grade_results && (
+              {selectedSubmission.rubrics_scores?.auto_grade_results && 
+               typeof selectedSubmission.rubrics_scores.auto_grade_results === 'object' &&
+               Object.keys(selectedSubmission.rubrics_scores.auto_grade_results).length > 0 && (
                 <div className="auto-grade-results-section card">
                 <div className="auto-grade-summary">
                   <span>
-                    Tự động chấm: {selectedSubmission.rubrics_scores.auto_graded_count}/{selectedSubmission.rubrics_scores.total_questions} câu
+                    Tự động chấm: {selectedSubmission.rubrics_scores.auto_graded_count || 0}/{selectedSubmission.rubrics_scores.total_questions || 0} câu
                     {selectedSubmission.rubrics_scores.has_short_answer && (
                       <span style={{ color: '#f59e0b', marginLeft: '8px' }}>
-                        ({selectedSubmission.rubrics_scores.total_questions - selectedSubmission.rubrics_scores.auto_graded_count} câu tự luận chờ chấm)
+                        ({(selectedSubmission.rubrics_scores.total_questions || 0) - (selectedSubmission.rubrics_scores.auto_graded_count || 0)} câu tự luận chờ chấm)
                       </span>
                     )}
                   </span>
                 </div>
                 <div className="auto-grade-questions">
-                  {Object.entries(selectedSubmission.rubrics_scores.auto_grade_results).map(([qId, result]) => (
+                  {Object.entries(selectedSubmission.rubrics_scores.auto_grade_results).map(([qId, result]) => {
+                    if (!result || typeof result !== 'object') return null;
+                    return (
                     <div key={qId} className={`auto-grade-question ${result.correct ? 'correct' : result.status === 'pending_review' ? 'pending' : 'incorrect'}`}>
                       <div className="question-header">
                         <span className="question-id">Câu {qId}</span>
@@ -453,14 +465,20 @@ export default function GradingFeedback() {
                           <div className="answer-row">
                             <span className="label">Trả lời:</span>
                             <span className={result.correct ? 'answer correct' : 'answer incorrect'}>
-                              {result.student_answer || '(Chưa trả lời)'}
+                              {typeof result.student_answer === 'object' 
+                                ? JSON.stringify(result.student_answer) 
+                                : (result.student_answer || '(Chưa trả lời)')}
                               {result.correct ? ' ✓' : ' ✗'}
                             </span>
                           </div>
                           {!result.correct && (
                             <div className="answer-row">
                               <span className="label">Đáp án:</span>
-                              <span className="answer correct">{result.correct_answer}</span>
+                              <span className="answer correct">
+                                {typeof result.correct_answer === 'object' 
+                                  ? JSON.stringify(result.correct_answer) 
+                                  : result.correct_answer}
+                              </span>
                             </div>
                           )}
                         </div>
@@ -468,13 +486,18 @@ export default function GradingFeedback() {
                         <div className="question-details">
                           <div className="essay-answer">
                             <span className="label">Câu trả lời tự luận:</span>
-                            <p className="essay-text">{result.student_answer || '(Chưa trả lời)'}</p>
+                            <p className="essay-text">
+                              {typeof result.student_answer === 'object' 
+                                ? JSON.stringify(result.student_answer) 
+                                : (result.student_answer || '(Chưa trả lời)')}
+                            </p>
                             <span className="pending-badge">⏳ Đợi giáo viên chấm</span>
                           </div>
                         </div>
                       )}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 </div>
               )}
@@ -737,7 +760,7 @@ export default function GradingFeedback() {
       </div>
 
       {/* Toast Notification */}
-      {toast && (
+      {toast.show && (
         <Toast
           message={toast.message}
           type={toast.type}

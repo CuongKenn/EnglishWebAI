@@ -5,6 +5,7 @@ from sqlalchemy import func, or_, and_
 from typing import List, Optional
 from datetime import datetime
 import os
+import json
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.models.user import User, UserRole
@@ -135,7 +136,9 @@ async def _auto_grade_submission(submission: Submission, exercise: Exercise, db:
                 if not os.path.exists(audio_path):
                     audio_path = None
             
+
             # Run async grading - use await instead of event loop
+
             grading_results = await grading_service.grade_comprehensive_submission(
                 content,
                 submission.answers or {},
@@ -331,17 +334,11 @@ async def _auto_grade_submission(submission: Submission, exercise: Exercise, db:
                 from app.services.ai_grading_service import AIGradingService
                 grading_service = AIGradingService()
                 
-                import asyncio
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                fill_result = loop.run_until_complete(
-                    grading_service.grade_fill_blank(
-                        student_answer=str(student_answer),
-                        correct_answer=str(correct_answer),
-                        max_points=q_points
-                    )
+                fill_result = await grading_service.grade_fill_blank(
+                    student_answer=str(student_answer),
+                    correct_answer=str(correct_answer),
+                    max_points=q_points
                 )
-                loop.close()
                 
                 earned_points = fill_result['points_earned']
                 is_correct = fill_result['is_correct']
@@ -386,17 +383,11 @@ async def _auto_grade_submission(submission: Submission, exercise: Exercise, db:
                 # Get pairs from question
                 pairs = q.get('pairs', [])
                 
-                import asyncio
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                matching_result = loop.run_until_complete(
-                    grading_service.grade_matching(
-                        student_pairs=student_answer,
-                        correct_pairs=pairs,
-                        max_points=q_points
-                    )
+                matching_result = await grading_service.grade_matching(
+                    student_pairs=student_answer,
+                    correct_pairs=pairs,
+                    max_points=q_points
                 )
-                loop.close()
                 
                 earned_points = matching_result['points_earned']
                 total_score += earned_points
@@ -1551,6 +1542,9 @@ async def generate_exercise_with_ai(
     try:
         generator = AIExerciseGenerator()
         
+        print(f"[AI Generate API] Generating {request.test_type} for Grade {request.grade}, Semester {request.semester}")
+        print(f"[AI Generate API] Questions per skill: {request.questions_per_skill or 10}")
+        
         # Generate exercise based on type
         if request.test_type in ['midterm', 'final']:
             # Generate full exam with all 4 skills
@@ -1562,6 +1556,7 @@ async def generate_exercise_with_ai(
                 questions_per_skill=request.questions_per_skill or 10,
                 additional_notes=request.additional_notes or None
             )
+            print("[AI Generate API] ✅ Full exam generated successfully")
         else:
             # Generate single skill exercise
             if not request.skill:
@@ -1573,6 +1568,7 @@ async def generate_exercise_with_ai(
                 grade=request.grade,
                 semester=request.semester
             )
+            print(f"[AI Generate API] ✅ {request.skill.capitalize()} exercise generated successfully")
         
         return JSONResponse(content={
             "success": True,
@@ -1580,10 +1576,49 @@ async def generate_exercise_with_ai(
             "exercise": exercise_data
         })
         
-    except Exception as e:
-        print(f"AI Generation Error: {str(e)}")
+    except HTTPException:
+        raise
+    except TimeoutError as e:
+        print(f"[AI Generate API] ❌ Timeout Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=504,
+            detail="OpenAI timeout - Đề thi có thể quá dài. Vui lòng thử giảm số câu hỏi hoặc thử lại."
+        )
+    except json.JSONDecodeError as e:
+        print(f"[AI Generate API] ❌ JSON Parse Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(
             status_code=500,
-            detail=f"Lỗi khi sinh đề bằng AI: {str(e)}"
+            detail="Lỗi parse JSON từ AI - Vui lòng thử lại."
         )
+    except Exception as e:
+        error_msg = str(e)
+        print(f"[AI Generate API] ❌ Error: {error_msg}")
+        import traceback
+        traceback.print_exc()
+        
+        # Check for specific OpenAI errors
+        if "429" in error_msg or "quota" in error_msg.lower() or "insufficient_quota" in error_msg.lower():
+            raise HTTPException(
+                status_code=429,
+                detail="⚠️ Tài khoản OpenAI đã hết credit hoặc vượt giới hạn. Vui lòng liên hệ admin để nạp thêm credit tại https://platform.openai.com/account/billing"
+            )
+        elif "401" in error_msg or "authentication" in error_msg.lower():
+            raise HTTPException(
+                status_code=401,
+                detail="OpenAI API key không hợp lệ. Vui lòng kiểm tra lại cấu hình."
+            )
+        elif "rate_limit" in error_msg.lower():
+            raise HTTPException(
+                status_code=429,
+                detail="Vượt giới hạn số request/phút của OpenAI. Vui lòng thử lại sau 1 phút."
+            )
+        else:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Lỗi OpenAI: {error_msg}"
+            )
 
