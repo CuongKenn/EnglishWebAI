@@ -7,6 +7,33 @@ import Toast from '../../../../components/Toast/Toast';
 import useToast from '../../../../hooks/useToast';
 import './ExportReports.css';
 
+const EXPORT_TYPE_CARDS = [
+  {
+    key: 'single',
+    title: '1 Bài tập',
+    description: 'Xuất báo cáo chi tiết cho một bài tập cụ thể',
+    label: 'Đơn giản',
+    Icon: FileText,
+    variant: 'single'
+  },
+  {
+    key: 'multiple',
+    title: 'Nhiều Bài tập',
+    description: 'Tổng hợp báo cáo từ nhiều bài tập khác nhau',
+    label: 'Tổng hợp',
+    Icon: Layers,
+    variant: 'multiple'
+  },
+  {
+    key: 'class',
+    title: 'Theo Lớp',
+    description: 'Xuất báo cáo tổng quan theo từng lớp học',
+    label: 'Chi tiết',
+    Icon: Users,
+    variant: 'class'
+  }
+];
+
 export default function ExportReports() {
   const [exportType, setExportType] = useState('single'); // single | multiple | class
   const [selectedExercises, setSelectedExercises] = useState([]);
@@ -195,35 +222,28 @@ export default function ExportReports() {
       <div className="export-type-section">
         <h2>Chọn loại báo cáo</h2>
         <div className="export-type-grid">
-          <button
-            className={`export-type-card ${exportType === 'single' ? 'active' : ''}`}
-            onClick={() => setExportType('single')}
-          >
-            <FileText size={32} />
-            <h3>1 Bài tập</h3>
-            <p>Xuất điểm của một bài tập cụ thể</p>
-            <span className="type-label">Đơn giản</span>
-          </button>
-
-          <button
-            className={`export-type-card ${exportType === 'multiple' ? 'active' : ''}`}
-            onClick={() => setExportType('multiple')}
-          >
-            <Layers size={32} />
-            <h3>Nhiều Bài tập</h3>
-            <p>Xuất điểm của nhiều bài trong một file</p>
-            <span className="type-label">Tổng hợp</span>
-          </button>
-
-          <button
-            className={`export-type-card ${exportType === 'class' ? 'active' : ''}`}
-            onClick={() => setExportType('class')}
-          >
-            <Users size={32} />
-            <h3>Theo Lớp</h3>
-            <p>Xuất toàn bộ điểm của một hoặc nhiều lớp</p>
-            <span className="type-label">Chi tiết</span>
-          </button>
+          {EXPORT_TYPE_CARDS.map(({ key, title, description, label, Icon, variant }) => {
+            const isActive = exportType === key;
+            return (
+              <button
+                key={key}
+                type="button"
+                className={`export-type-card variant-${variant} ${isActive ? 'active' : ''}`}
+                onClick={() => setExportType(key)}
+                aria-pressed={isActive}
+              >
+                <div className="export-type-icon">
+                  <Icon size={28} />
+                </div>
+                <h3>{title}</h3>
+                <p>{description}</p>
+                <span className="export-type-cta">
+                  <Download size={16} />
+                  <span>{label}</span>
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
