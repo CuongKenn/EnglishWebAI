@@ -1003,8 +1003,16 @@ Trả về JSON với format:
             results["speaking"] = {
                 "points_earned": round(min(total_speaking_score, 2.5), 2),
                 "max_points": 2.5,
+                # Keep full pronunciation and content objects for detailed analysis
                 "pronunciation": pronunciation_result,
                 "content": content_result,
+                # Add speaking_assessment for frontend compatibility (KPI display)
+                "speaking_assessment": {
+                    "pronunciation": pronunciation_score,
+                    "fluency": fluency_score,
+                    "completeness": completeness_score,
+                    "accuracy": accuracy_score
+                },
                 "scoring_breakdown": {
                     "pronunciation_component": round(pronunciation_component, 2),
                     "content_component": round(content_component, 2),
