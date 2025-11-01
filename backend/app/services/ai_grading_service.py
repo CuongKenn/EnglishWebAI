@@ -233,10 +233,41 @@ Respond with JSON:
                 "accuracy_score": 0,
                 "fluency_score": 0,
                 "completeness_score": 0,
-                "error": "Azure Speech key not configured"
+                "error": "Azure Speech key not configured",
+                "success": False
             }
         
         try:
+            import subprocess
+            import os
+            
+            # Convert audio to WAV if needed (Azure Speech SDK requires WAV format)
+            wav_path = audio_file_path
+            if not audio_file_path.lower().endswith('.wav'):
+                wav_path = audio_file_path.rsplit('.', 1)[0] + '_converted.wav'
+                
+                # Use ffmpeg to convert to 16kHz mono WAV
+                try:
+                    subprocess.run([
+                        'ffmpeg', '-y',
+                        '-i', audio_file_path,
+                        '-ar', '16000',
+                        '-ac', '1',
+                        '-c:a', 'pcm_s16le',
+                        wav_path
+                    ], check=True, capture_output=True)
+                    print(f"[grade_speaking_pronunciation] Audio converted to WAV: {wav_path}")
+                except subprocess.CalledProcessError as conv_err:
+                    print(f"[grade_speaking_pronunciation] ffmpeg conversion failed: {conv_err}")
+                    return {
+                        "pronunciation_score": 0,
+                        "accuracy_score": 0,
+                        "fluency_score": 0,
+                        "completeness_score": 0,
+                        "error": f"Audio conversion failed: {conv_err}",
+                        "success": False
+                    }
+            
             # Configure speech recognition
             speech_config = speechsdk.SpeechConfig(
                 subscription=self.speech_key,
@@ -252,7 +283,7 @@ Respond with JSON:
             )
             
             # Audio input from file
-            audio_config = speechsdk.audio.AudioConfig(filename=audio_file_path)
+            audio_config = speechsdk.audio.AudioConfig(filename=wav_path)
             
             # Create recognizer
             speech_recognizer = speechsdk.SpeechRecognizer(
@@ -266,6 +297,13 @@ Respond with JSON:
             
             # Recognize
             result = speech_recognizer.recognize_once_async().get()
+            
+            # Clean up converted file
+            if wav_path != audio_file_path and os.path.exists(wav_path):
+                try:
+                    os.remove(wav_path)
+                except:
+                    pass
             
             if result.reason == speechsdk.ResultReason.RecognizedSpeech:
                 pronunciation_result = speechsdk.PronunciationAssessmentResult(result)
@@ -290,6 +328,8 @@ Respond with JSON:
                 
         except Exception as e:
             print(f"Error in pronunciation assessment: {e}")
+            import traceback
+            traceback.print_exc()
             return {
                 "pronunciation_score": 0,
                 "accuracy_score": 0,
@@ -300,43 +340,53 @@ Respond with JSON:
             }
     
     async def grade_speaking_content(self, audio_transcript: str, question: str, rubric: Dict) -> Dict:
-        """Grade speaking content using ChatGPT"""
+        """Grade speaking content using ChatGPT with detailed feedback"""
         max_points = rubric.get("points", 0.83)
         
         try:
             rubric_str = "\n".join([f"- {key}: {value}" for key, value in rubric.items() if key != "points"])
             
-            prompt = f"""You are an English teacher grading a speaking response.
+            prompt = f"""Bạn là một giáo viên tiếng Anh đang chấm bài nói của học sinh. Hãy đánh giá và đưa ra nhận xét chi tiết.
 
-Question: {question}
-Student's response (transcribed): {audio_transcript}
+Câu hỏi/Đề bài: {question}
+Câu trả lời của học sinh (đã chuyển thành văn bản): {audio_transcript}
 
-Rubric:
+Tiêu chí đánh giá:
 {rubric_str}
 
-Grade the response based on:
-- Content relevance and completeness
-- Grammar usage
-- Vocabulary appropriateness
-- Coherence and organization
+Hãy đánh giá dựa trên:
+1. Nội dung: Độ liên quan và đầy đủ của câu trả lời
+2. Ngữ pháp: Sử dụng cấu trúc câu và thì đúng
+3. Từ vựng: Sự phong phú và chính xác
+4. Độ mạch lạc: Tổ chức ý và sự liên kết
 
-Respond with JSON:
+QUAN TRỌNG: 
+- Sử dụng xưng hô "cô" (giáo viên) và "em" (học sinh)
+- Đưa ra nhận xét cụ thể, chi tiết
+- Chỉ ra điểm tốt và điểm cần cải thiện
+- Gợi ý cách cải thiện cụ thể
+
+Trả về JSON với format:
 {{
-    "score": 0-{max_points},
-    "content_feedback": "feedback on content",
-    "grammar_feedback": "feedback on grammar",
-    "vocabulary_feedback": "feedback on vocabulary",
-    "overall_comment": "Overall comment in Vietnamese"
+    "score": 0-{max_points} (điểm số),
+    "content_feedback": "Nhận xét chi tiết về nội dung (80-120 từ)",
+    "grammar_feedback": "Nhận xét chi tiết về ngữ pháp với ví dụ cụ thể (80-120 từ)",
+    "vocabulary_feedback": "Nhận xét về từ vựng và cách dùng từ (60-100 từ)",
+    "pronunciation_note": "Ghi chú về phát âm dựa trên văn bản nhận dạng (40-60 từ)",
+    "strengths": ["Điểm mạnh 1", "Điểm mạnh 2", "Điểm mạnh 3"],
+    "improvements": ["Cần cải thiện 1", "Cần cải thiện 2", "Cần cải thiện 3"],
+    "suggestions": ["Gợi ý cụ thể 1", "Gợi ý cụ thể 2"],
+    "overall_comment": "Nhận xét tổng quan và động viên (100-150 từ)"
 }}"""
 
             response = self.client.chat.completions.create(
                 model="gpt-4",
                 messages=[
-                    {"role": "system", "content": "You are an English teacher grading speaking responses."},
+                    {"role": "system", "content": "Bạn là giáo viên tiếng Anh giàu kinh nghiệm, nhiệt tình và tận tâm. Bạn luôn đưa ra nhận xét chi tiết, cụ thể và xây dựng để giúp học sinh tiến bộ."},
                     {"role": "user", "content": prompt}
                 ],
-                temperature=0.5,
-                max_tokens=500
+                temperature=0.7,
+                max_tokens=1200
             )
             
             content = response.choices[0].message.content.strip()
@@ -355,11 +405,17 @@ Respond with JSON:
                 "content_feedback": result.get("content_feedback", ""),
                 "grammar_feedback": result.get("grammar_feedback", ""),
                 "vocabulary_feedback": result.get("vocabulary_feedback", ""),
+                "pronunciation_note": result.get("pronunciation_note", ""),
+                "strengths": result.get("strengths", []),
+                "improvements": result.get("improvements", []),
+                "suggestions": result.get("suggestions", []),
                 "overall_comment": result.get("overall_comment", "")
             }
             
         except Exception as e:
             print(f"Error grading speaking content: {e}")
+            import traceback
+            traceback.print_exc()
             return {
                 "content_score": 0,
                 "content_feedback": "Lỗi khi chấm nội dung",

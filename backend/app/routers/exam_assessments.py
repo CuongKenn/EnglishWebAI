@@ -71,11 +71,12 @@ def _ensure_student_access(db: Session, current_user: User, class_id: int) -> bo
     return enrollment is not None
 
 
-def _auto_grade_exam_submission(submission: ExamSubmission, db: Session):
+async def _auto_grade_exam_submission(submission: ExamSubmission, db: Session):
     """
     Auto-grade exam submission using AI
     - Grades objective questions (multiple choice, true/false, fill blank, matching)
-    - For speaking/writing, requires AI service to grade
+    - Grades speaking with Azure Speech + ChatGPT
+    - For writing, uses ChatGPT
     """
     exam = db.query(ExamAssessment).filter(ExamAssessment.id == submission.exam_id).first()
     if not exam:
@@ -92,6 +93,9 @@ def _auto_grade_exam_submission(submission: ExamSubmission, db: Session):
     total_questions = 0
     has_speaking = False
     has_writing = False
+    
+    # Initialize AI grading service for speaking/writing
+    ai_grading_service = AIGradingService()
     
     # Grade each section's questions
     for section in sections:
@@ -156,14 +160,136 @@ def _auto_grade_exam_submission(submission: ExamSubmission, db: Session):
                         result['status'] = 'invalid_format'
                         
                 elif q_type in ['short_answer', 'essay']:
-                    # Needs manual grading or AI
+                    # Grade writing with ChatGPT
                     result['status'] = 'pending_review'
                     has_writing = True
                     
+                    if student_answer and isinstance(student_answer, str) and student_answer.strip():
+                        try:
+                            question_text = question.get('question_text', '')
+                            rubric = question.get('rubric', {})
+                            
+                            writing_result = await ai_grading_service.grade_writing(
+                                question={'rubric': rubric, 'points': q_points},
+                                student_text=student_answer,  # FIXED: changed from student_answer to student_text
+                                prompt=question_text
+                            )
+                            
+                            earned_points = writing_result.get('points_earned', 0)
+                            result['earned'] = round(earned_points, 2)
+                            result['ai_feedback'] = writing_result.get('feedback', {})
+                            result['status'] = 'ai_graded'
+                            total_score += result['earned']
+                            auto_graded_count += 1
+                            
+                            print(f"[AUTO-GRADE-EXAM] Writing Q{q_id} graded: {result['earned']}/{q_points}")
+                        except Exception as e:
+                            print(f"[AUTO-GRADE-EXAM] Error grading writing Q{q_id}: {e}")
+                            result['status'] = 'grading_error'
+                            result['error'] = str(e)
+                    
                 elif q_type == 'speaking':
-                    # Needs AI grading with audio
+                    # Grade speaking with Azure Speech + ChatGPT
                     result['status'] = 'pending_review'
                     has_speaking = True
+                    
+                    # Check if student uploaded audio file
+                    audio_path = None
+                    if isinstance(student_answer, dict):
+                        audio_path = student_answer.get('audio_file')
+                    elif isinstance(student_answer, str):
+                        audio_path = student_answer
+                    
+                    if audio_path:
+                        try:
+                            # Convert to absolute path - handle various formats
+                            if audio_path.startswith('/media/'):
+                                audio_path = audio_path.replace('/media/', 'media/')
+                            elif audio_path.startswith('media/'):
+                                pass  # Already correct
+                            elif not audio_path.startswith('/'):
+                                # Relative path, prepend media/
+                                audio_path = f'media/{audio_path}'
+                            
+                            print(f"[AUTO-GRADE-EXAM] Checking audio path: {audio_path}")
+                            
+                            if os.path.exists(audio_path):
+                                reference_text = question.get('reference_text', '') or question.get('question_text', '')
+                                question_text = question.get('question_text', '')
+                                
+                                # Step 1: Azure pronunciation assessment
+                                print(f"[AUTO-GRADE-EXAM] Grading speaking Q{q_id} with Azure...")
+                                pronunciation_result = await ai_grading_service.grade_speaking_pronunciation(
+                                    audio_path,
+                                    reference_text
+                                )
+                                
+                                # Step 2: ChatGPT content grading
+                                recognized_text = pronunciation_result.get("recognized_text", "")
+                                
+                                if recognized_text and pronunciation_result.get("success"):
+                                    print(f"[AUTO-GRADE-EXAM] Recognized text: {recognized_text}")
+                                    print(f"[AUTO-GRADE-EXAM] Grading speaking content Q{q_id} with ChatGPT...")
+                                    rubric = question.get('rubric', {})
+                                    
+                                    content_result = await ai_grading_service.grade_speaking_content(
+                                        recognized_text,
+                                        question_text,
+                                        {'points': q_points, **rubric}
+                                    )
+                                    
+                                    # Combine scores: 50% pronunciation, 50% content
+                                    pronunciation_score = pronunciation_result.get("pronunciation_score", 0) / 100 * (q_points / 2)
+                                    content_score = content_result.get("content_score", 0)
+                                    total_speaking_score = pronunciation_score + content_score
+                                    
+                                    result['earned'] = round(min(total_speaking_score, q_points), 2)
+                                    result['pronunciation'] = pronunciation_result
+                                    result['content'] = content_result
+                                    
+                                    # Detailed feedback structure
+                                    result['ai_feedback'] = {
+                                        # Azure pronunciation metrics
+                                        'pronunciation_score': pronunciation_result.get('pronunciation_score', 0),
+                                        'fluency_score': pronunciation_result.get('fluency_score', 0),
+                                        'accuracy_score': pronunciation_result.get('accuracy_score', 0),
+                                        'completeness_score': pronunciation_result.get('completeness_score', 0),
+                                        'transcript': recognized_text,
+                                        
+                                        # ChatGPT detailed feedback
+                                        'content_feedback': content_result.get('content_feedback', ''),
+                                        'grammar_feedback': content_result.get('grammar_feedback', ''),
+                                        'vocabulary_feedback': content_result.get('vocabulary_feedback', ''),
+                                        'pronunciation_note': content_result.get('pronunciation_note', ''),
+                                        
+                                        # Strengths and improvements
+                                        'strengths': content_result.get('strengths', []),
+                                        'improvements': content_result.get('improvements', []),
+                                        'suggestions': content_result.get('suggestions', []),
+                                        
+                                        # Overall
+                                        'overall_comment': content_result.get('overall_comment', ''),
+                                        'content_score': content_result.get('content_score', 0)
+                                    }
+                                    result['status'] = 'ai_graded'
+                                    total_score += result['earned']
+                                    auto_graded_count += 1
+                                    
+                                    print(f"[AUTO-GRADE-EXAM] Speaking Q{q_id} graded: {result['earned']}/{q_points}")
+                                else:
+                                    result['status'] = 'recognition_failed'
+                                    result['error'] = pronunciation_result.get('error', 'Không thể nhận diện giọng nói')
+                                    print(f"[AUTO-GRADE-EXAM] Speaking Q{q_id} recognition failed: {result['error']}")
+                            else:
+                                result['status'] = 'audio_not_found'
+                                result['error'] = f'File audio không tồn tại: {audio_path}'
+                                print(f"[AUTO-GRADE-EXAM] Audio file not found: {audio_path}")
+                        except Exception as e:
+                            print(f"[AUTO-GRADE-EXAM] Error grading speaking Q{q_id}: {e}")
+                            import traceback
+                            traceback.print_exc()
+                            result['status'] = 'grading_error'
+                            result['error'] = str(e)
                     
                 graded_results[q_id] = result
     
@@ -556,9 +682,11 @@ async def submit_exam(
     
     # Auto-grade objective questions immediately
     try:
-        _auto_grade_exam_submission(submission, db)
+        await _auto_grade_exam_submission(submission, db)
     except Exception as e:
         print(f"[submit_exam] Auto-grade error: {e}")
+        import traceback
+        traceback.print_exc()
         # Continue even if auto-grade fails
     
     db.commit()
@@ -639,7 +767,7 @@ async def auto_grade_exam_submission(
     _ensure_teacher_access(db, current_user, exam.class_id)
     
     try:
-        await _auto_grade_exam_submission(submission, exam, db)
+        await _auto_grade_exam_submission(submission, db)
         db.commit()
         db.refresh(submission)
         
@@ -703,45 +831,6 @@ async def grade_exam_submission(
         print(f"[EXAM-GRADE] Error creating notification: {e}")
     
     return submission
-
-
-@router.post("/submissions/{submission_id}/auto-grade")
-async def auto_grade_exam_submission(
-    submission_id: int,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """
-    Manually trigger AI auto-grading for an exam submission (teacher only)
-    This will re-grade objective questions and update AI scores
-    """
-    submission = db.query(ExamSubmission).filter(
-        ExamSubmission.id == submission_id
-    ).first()
-    
-    if not submission:
-        raise HTTPException(status_code=404, detail="Không tìm thấy bài làm")
-    
-    exam = db.query(ExamAssessment).filter(ExamAssessment.id == submission.exam_id).first()
-    if not exam:
-        raise HTTPException(status_code=404, detail="Không tìm thấy đề thi")
-    
-    _ensure_teacher_access(db, current_user, exam.class_id)
-    
-    try:
-        # Re-grade the submission
-        _auto_grade_exam_submission(submission, db)
-        db.commit()
-        db.refresh(submission)
-        
-        return {
-            "success": True,
-            "message": "Chấm tự động thành công",
-            "submission": ExamSubmissionResponse.from_orm(submission)
-        }
-    except Exception as e:
-        print(f"[auto_grade_exam_submission] Error: {e}")
-        raise HTTPException(status_code=500, detail=f"Lỗi khi chấm tự động: {str(e)}")
 
 
 @router.get("/submissions/class/{class_id}")

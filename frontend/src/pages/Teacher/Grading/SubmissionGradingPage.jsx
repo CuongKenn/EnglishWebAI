@@ -36,6 +36,18 @@ export default function SubmissionGradingPage() {
   const [feedbackInput, setFeedbackInput] = useState('');
   const [detailedFeedbackInput, setDetailedFeedbackInput] = useState('');
   const [isExam, setIsExam] = useState(false); // NEW: track if this is an exam submission
+  
+  // Speaking feedback editable states
+  const [editableSpeaking, setEditableSpeaking] = useState({
+    content_feedback: '',
+    grammar_feedback: '',
+    vocabulary_feedback: '',
+    pronunciation_note: '',
+    strengths: [],
+    improvements: [],
+    suggestions: [],
+    overall_comment: ''
+  });
 
   const hasAI = typeof submission?.ai_score === 'number';
 
@@ -83,6 +95,21 @@ export default function SubmissionGradingPage() {
           setScoreInput(String(found.ai_score ?? found.score ?? ''));
           setFeedbackInput(found.ai_feedback ?? found.feedback ?? '');
           setDetailedFeedbackInput(found.rubrics_scores?.detailed_feedback || '');
+          
+          // Initialize editable speaking feedback from rubrics_scores.speaking.content
+          if (found.rubrics_scores?.speaking?.content) {
+            const content = found.rubrics_scores.speaking.content;
+            setEditableSpeaking({
+              content_feedback: content.content_feedback || '',
+              grammar_feedback: content.grammar_feedback || '',
+              vocabulary_feedback: content.vocabulary_feedback || '',
+              pronunciation_note: content.pronunciation_note || '',
+              strengths: Array.isArray(content.strengths) ? content.strengths : [],
+              improvements: Array.isArray(content.improvements) ? content.improvements : [],
+              suggestions: Array.isArray(content.suggestions) ? content.suggestions : [],
+              overall_comment: content.overall_comment || ''
+            });
+          }
         }
       } catch (e) {
         console.error('Failed to fetch submission', e);
@@ -130,11 +157,26 @@ export default function SubmissionGradingPage() {
     try {
       setLoading(true);
       
-      // Update rubrics_scores with edited detailed_feedback
+      // Update rubrics_scores with edited detailed_feedback and speaking feedback
       const updatedRubrics = {
         ...(submission.rubrics_scores || {}),
         detailed_feedback: detailedFeedbackInput
       };
+      
+      // Update speaking content feedback if exists
+      if (updatedRubrics.speaking?.content) {
+        updatedRubrics.speaking.content = {
+          ...updatedRubrics.speaking.content,
+          content_feedback: editableSpeaking.content_feedback,
+          grammar_feedback: editableSpeaking.grammar_feedback,
+          vocabulary_feedback: editableSpeaking.vocabulary_feedback,
+          pronunciation_note: editableSpeaking.pronunciation_note,
+          strengths: editableSpeaking.strengths,
+          improvements: editableSpeaking.improvements,
+          suggestions: editableSpeaking.suggestions,
+          overall_comment: editableSpeaking.overall_comment
+        };
+      }
       
       // Use appropriate endpoint based on submission type
       if (isExam) {
@@ -463,42 +505,359 @@ export default function SubmissionGradingPage() {
                     <div className="gp-speaking-breakdown">
                       <div className="gp-speaking-score-row">
                         <span className="gp-lbl">🎯 Pronunciation (Azure):</span>
-                        <span className="gp-score">{speakingSection.pronunciation_score?.toFixed(1) || 0}/1.25</span>
+                        <span className="gp-score">
+                          {speakingSection.pronunciation?.pronunciation_score?.toFixed(1) || speakingSection.pronunciation_score?.toFixed(1) || 0}/100
+                        </span>
                       </div>
                       <div className="gp-speaking-score-row">
                         <span className="gp-lbl">💬 Content (ChatGPT):</span>
-                        <span className="gp-score">{speakingSection.content_score?.toFixed(1) || 0}/1.25</span>
+                        <span className="gp-score">
+                          {speakingSection.content?.content_score?.toFixed(1) || speakingSection.content_score?.toFixed(1) || 0} điểm
+                        </span>
                       </div>
                     </div>
                     
-                    {speakingSection.pronunciation_details && (
-                      <div className="gp-kpis">
-                        {Object.entries(speakingSection.pronunciation_details).map(([key, val]) => {
-                          const map = {
-                            pronunciation: { name: 'Phát âm', color: '#f59e0b' },
-                            fluency: { name: 'Trôi chảy', color: '#3b82f6' },
-                            completeness: { name: 'Hoàn chỉnh', color: '#10b981' },
-                            accuracy: { name: 'Chính xác', color: '#ef4444' },
-                          };
-                          if (typeof val !== 'number' || !map[key]) return null;
-                          return (
-                            <div key={key} className="gp-kpi" style={{ borderColor: map[key].color }}>
-                              <div className="gp-kpi-value" style={{ color: map[key].color }}>{val.toFixed(1)}</div>
-                              <div className="gp-kpi-label">{map[key].name}</div>
+                    {/* Azure Speech Detailed Metrics */}
+                    {speakingSection.pronunciation && (
+                      <div style={{ 
+                        marginTop: '15px',
+                        marginBottom: '15px', 
+                        padding: '15px', 
+                        background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)', 
+                        borderRadius: '10px',
+                        border: '2px solid #fbbf24'
+                      }}>
+                        <div style={{ fontWeight: 'bold', marginBottom: '12px', color: '#92400e', fontSize: '15px' }}>
+                          🎯 Đánh giá phát âm từ Azure Speech AI
+                        </div>
+                        <div className="gp-kpis">
+                          {[
+                            { key: 'pronunciation_score', name: 'Phát âm', color: '#f59e0b' },
+                            { key: 'fluency_score', name: 'Trôi chảy', color: '#3b82f6' },
+                            { key: 'accuracy_score', name: 'Chính xác', color: '#10b981' },
+                            { key: 'completeness_score', name: 'Hoàn chỉnh', color: '#ef4444' }
+                          ].map((item) => {
+                            const val = speakingSection.pronunciation[item.key];
+                            if (typeof val !== 'number') return null;
+                            return (
+                              <div key={item.key} className="gp-kpi" style={{ borderColor: item.color }}>
+                                <div className="gp-kpi-value" style={{ color: item.color }}>{val.toFixed(1)}</div>
+                                <div className="gp-kpi-label">{item.name}</div>
+                                <div className="gp-kpi-bar">
+                                  <div className="gp-kpi-fill" style={{ width: `${val}%`, backgroundColor: item.color }}></div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Recognized Text */}
+                    {(speakingSection.pronunciation?.recognized_text || speakingSection.recognized_text) && (
+                      <div style={{ 
+                        marginBottom: '15px', 
+                        padding: '12px', 
+                        background: '#f0f9ff', 
+                        borderRadius: '8px',
+                        borderLeft: '4px solid #3b82f6'
+                      }}>
+                        <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#1e40af' }}>
+                          📄 Văn bản nhận dạng được:
+                        </div>
+                        <div style={{ color: '#1e3a8a', fontStyle: 'italic', lineHeight: '1.6' }}>
+                          "{safeRender(speakingSection.pronunciation?.recognized_text || speakingSection.recognized_text)}"
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* ChatGPT Content Feedback */}
+                    {speakingSection.content && (
+                      <div style={{ marginTop: '15px' }}>
+                        <div style={{ fontSize: '15px', fontWeight: '700', marginBottom: '12px', color: '#4f46e5' }}>
+                          💡 Nhận xét chi tiết từ giáo viên AI
+                        </div>
+                        
+                        {speakingSection.content.content_feedback && (
+                          <div style={{ 
+                            marginBottom: '12px', 
+                            padding: '14px', 
+                            background: '#f0fdf4', 
+                            borderRadius: '8px',
+                            borderLeft: '4px solid #10b981'
+                          }}>
+                            <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#065f46' }}>
+                              📝 Nhận xét về nội dung:
                             </div>
-                          );
-                        })}
+                            <textarea
+                              value={editableSpeaking.content_feedback}
+                              onChange={(e) => setEditableSpeaking(prev => ({...prev, content_feedback: e.target.value}))}
+                              style={{ 
+                                width: '100%',
+                                minHeight: '80px',
+                                color: '#064e3b', 
+                                lineHeight: '1.7',
+                                padding: '10px',
+                                border: '1px solid #10b981',
+                                borderRadius: '6px',
+                                background: 'white',
+                                fontSize: '14px',
+                                fontFamily: 'inherit',
+                                resize: 'vertical'
+                              }}
+                            />
+                          </div>
+                        )}
+                        
+                        {speakingSection.content.grammar_feedback && (
+                          <div style={{ 
+                            marginBottom: '12px', 
+                            padding: '14px', 
+                            background: '#eff6ff', 
+                            borderRadius: '8px',
+                            borderLeft: '4px solid #3b82f6'
+                          }}>
+                            <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#1e40af' }}>
+                              📖 Nhận xét về ngữ pháp:
+                            </div>
+                            <textarea
+                              value={editableSpeaking.grammar_feedback}
+                              onChange={(e) => setEditableSpeaking(prev => ({...prev, grammar_feedback: e.target.value}))}
+                              style={{ 
+                                width: '100%',
+                                minHeight: '80px',
+                                color: '#1e3a8a', 
+                                lineHeight: '1.7',
+                                padding: '10px',
+                                border: '1px solid #3b82f6',
+                                borderRadius: '6px',
+                                background: 'white',
+                                fontSize: '14px',
+                                fontFamily: 'inherit',
+                                resize: 'vertical'
+                              }}
+                            />
+                          </div>
+                        )}
+                        
+                        {speakingSection.content.vocabulary_feedback && (
+                          <div style={{ 
+                            marginBottom: '12px', 
+                            padding: '14px', 
+                            background: '#fef3c7', 
+                            borderRadius: '8px',
+                            borderLeft: '4px solid #f59e0b'
+                          }}>
+                            <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#92400e' }}>
+                              📚 Nhận xét về từ vựng:
+                            </div>
+                            <textarea
+                              value={editableSpeaking.vocabulary_feedback}
+                              onChange={(e) => setEditableSpeaking(prev => ({...prev, vocabulary_feedback: e.target.value}))}
+                              style={{ 
+                                width: '100%',
+                                minHeight: '80px',
+                                color: '#78350f', 
+                                lineHeight: '1.7',
+                                padding: '10px',
+                                border: '1px solid #f59e0b',
+                                borderRadius: '6px',
+                                background: 'white',
+                                fontSize: '14px',
+                                fontFamily: 'inherit',
+                                resize: 'vertical'
+                              }}
+                            />
+                          </div>
+                        )}
+                        
+                        {speakingSection.content.pronunciation_note && (
+                          <div style={{ 
+                            marginBottom: '12px', 
+                            padding: '14px', 
+                            background: '#fce7f3', 
+                            borderRadius: '8px',
+                            borderLeft: '4px solid #ec4899'
+                          }}>
+                            <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#9f1239' }}>
+                              🎤 Ghi chú về phát âm:
+                            </div>
+                            <textarea
+                              value={editableSpeaking.pronunciation_note}
+                              onChange={(e) => setEditableSpeaking(prev => ({...prev, pronunciation_note: e.target.value}))}
+                              style={{ 
+                                width: '100%',
+                                minHeight: '80px',
+                                color: '#831843', 
+                                lineHeight: '1.7',
+                                padding: '10px',
+                                border: '1px solid #ec4899',
+                                borderRadius: '6px',
+                                background: 'white',
+                                fontSize: '14px',
+                                fontFamily: 'inherit',
+                                resize: 'vertical'
+                              }}
+                            />
+                          </div>
+                        )}
+                        
+                        {Array.isArray(editableSpeaking.strengths) && editableSpeaking.strengths.length > 0 && (
+                          <div style={{ 
+                            marginBottom: '12px', 
+                            padding: '14px', 
+                            background: '#d1fae5', 
+                            borderRadius: '8px',
+                            border: '2px solid #10b981'
+                          }}>
+                            <div style={{ fontWeight: 'bold', marginBottom: '10px', color: '#065f46' }}>
+                              ✅ Điểm mạnh của em:
+                            </div>
+                            {editableSpeaking.strengths.map((strength, idx) => (
+                              <div key={idx} style={{ marginBottom: '8px', display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                                <span style={{ color: '#065f46', fontWeight: 'bold' }}>{idx + 1}.</span>
+                                <textarea
+                                  value={strength}
+                                  onChange={(e) => {
+                                    const newStrengths = [...editableSpeaking.strengths];
+                                    newStrengths[idx] = e.target.value;
+                                    setEditableSpeaking(prev => ({...prev, strengths: newStrengths}));
+                                  }}
+                                  style={{ 
+                                    flex: 1,
+                                    minHeight: '60px',
+                                    color: '#064e3b', 
+                                    lineHeight: '1.6',
+                                    padding: '8px',
+                                    border: '1px solid #10b981',
+                                    borderRadius: '6px',
+                                    background: 'white',
+                                    fontSize: '14px',
+                                    fontFamily: 'inherit',
+                                    resize: 'vertical'
+                                  }}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        
+                        {Array.isArray(editableSpeaking.improvements) && editableSpeaking.improvements.length > 0 && (
+                          <div style={{ 
+                            marginBottom: '12px', 
+                            padding: '14px', 
+                            background: '#fef3c7', 
+                            borderRadius: '8px',
+                            border: '2px solid #f59e0b'
+                          }}>
+                            <div style={{ fontWeight: 'bold', marginBottom: '10px', color: '#92400e' }}>
+                              ⚠️ Em cần cải thiện:
+                            </div>
+                            {editableSpeaking.improvements.map((improvement, idx) => (
+                              <div key={idx} style={{ marginBottom: '8px', display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                                <span style={{ color: '#92400e', fontWeight: 'bold' }}>{idx + 1}.</span>
+                                <textarea
+                                  value={improvement}
+                                  onChange={(e) => {
+                                    const newImprovements = [...editableSpeaking.improvements];
+                                    newImprovements[idx] = e.target.value;
+                                    setEditableSpeaking(prev => ({...prev, improvements: newImprovements}));
+                                  }}
+                                  style={{ 
+                                    flex: 1,
+                                    minHeight: '60px',
+                                    color: '#78350f', 
+                                    lineHeight: '1.6',
+                                    padding: '8px',
+                                    border: '1px solid #f59e0b',
+                                    borderRadius: '6px',
+                                    background: 'white',
+                                    fontSize: '14px',
+                                    fontFamily: 'inherit',
+                                    resize: 'vertical'
+                                  }}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        
+                        {Array.isArray(editableSpeaking.suggestions) && editableSpeaking.suggestions.length > 0 && (
+                          <div style={{ 
+                            marginBottom: '12px', 
+                            padding: '14px', 
+                            background: '#e0e7ff', 
+                            borderRadius: '8px',
+                            border: '2px solid #6366f1'
+                          }}>
+                            <div style={{ fontWeight: 'bold', marginBottom: '10px', color: '#3730a3' }}>
+                              💡 Gợi ý của cô:
+                            </div>
+                            {editableSpeaking.suggestions.map((suggestion, idx) => (
+                              <div key={idx} style={{ marginBottom: '8px', display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                                <span style={{ color: '#3730a3', fontWeight: 'bold' }}>{idx + 1}.</span>
+                                <textarea
+                                  value={suggestion}
+                                  onChange={(e) => {
+                                    const newSuggestions = [...editableSpeaking.suggestions];
+                                    newSuggestions[idx] = e.target.value;
+                                    setEditableSpeaking(prev => ({...prev, suggestions: newSuggestions}));
+                                  }}
+                                  style={{ 
+                                    flex: 1,
+                                    minHeight: '60px',
+                                    color: '#312e81', 
+                                    lineHeight: '1.6',
+                                    padding: '8px',
+                                    border: '1px solid #6366f1',
+                                    borderRadius: '6px',
+                                    background: 'white',
+                                    fontSize: '14px',
+                                    fontFamily: 'inherit',
+                                    resize: 'vertical'
+                                  }}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        
+                        {speakingSection.content.overall_comment && (
+                          <div style={{ 
+                            marginTop: '15px',
+                            padding: '16px', 
+                            background: 'linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%)', 
+                            borderRadius: '10px',
+                            border: '2px solid #6366f1',
+                            boxShadow: '0 4px 6px rgba(99, 102, 241, 0.1)'
+                          }}>
+                            <div style={{ fontWeight: 'bold', marginBottom: '10px', color: '#3730a3', fontSize: '15px' }}>
+                              💬 Nhận xét tổng quan:
+                            </div>
+                            <textarea
+                              value={editableSpeaking.overall_comment}
+                              onChange={(e) => setEditableSpeaking(prev => ({...prev, overall_comment: e.target.value}))}
+                              style={{ 
+                                width: '100%',
+                                minHeight: '100px',
+                                color: '#312e81', 
+                                lineHeight: '1.8',
+                                padding: '12px',
+                                border: '2px solid #6366f1',
+                                borderRadius: '8px',
+                                background: 'white',
+                                fontSize: '14px',
+                                fontFamily: 'inherit',
+                                resize: 'vertical'
+                              }}
+                            />
+                          </div>
+                        )}
                       </div>
                     )}
                     
-                    {speakingSection.recognized_text && (
-                      <div className="gp-recognized">
-                        <strong>Văn bản nhận dạng:</strong>
-                        <p>{safeRender(speakingSection.recognized_text)}</p>
-                      </div>
-                    )}
-                    
-                    {speakingSection.feedback && (
+                    {/* Legacy feedback (fallback) */}
+                    {!speakingSection.content && speakingSection.feedback && (
                       <div className="gp-feedback">
                         <strong>Nhận xét AI:</strong>
                         {typeof speakingSection.feedback === 'object' && speakingSection.feedback !== null ? (
@@ -784,15 +1143,20 @@ export default function SubmissionGradingPage() {
                   <div className="gp-card">
                     <div className="gp-card-title">✅ Kết quả trắc nghiệm</div>
                     <div className="gp-questions">
-                      {Object.entries(auto).map(([qId, result]) => (
-                        <div key={qId} className={`gp-q ${result.correct ? 'ok' : result.status === 'pending_review' ? 'pending' : 'wrong'}`}>
-                          <div className="gp-q-head">
-                            <div className="gp-q-id">Câu {qId}</div>
-                            <div className="gp-q-pts">
-                              {result.earned !== undefined ? `${result.earned}/${result.points} điểm` : `${result.points} điểm (chờ chấm)`}
+                      {Object.entries(auto).map(([qId, result]) => {
+                        // Skip speaking/writing questions - they'll be shown in dedicated sections below
+                        if (result.type === 'speaking' || result.type === 'short_answer' || result.type === 'essay') {
+                          return null;
+                        }
+                        
+                        return (
+                          <div key={qId} className={`gp-q ${result.correct ? 'ok' : result.status === 'pending_review' ? 'pending' : 'wrong'}`}>
+                            <div className="gp-q-head">
+                              <div className="gp-q-id">Câu {qId}</div>
+                              <div className="gp-q-pts">
+                                {result.earned !== undefined ? `${result.earned}/${result.points} điểm` : `${result.points} điểm (chờ chấm)`}
+                              </div>
                             </div>
-                          </div>
-                          {result.type !== 'short_answer' ? (
                             <div className="gp-q-body">
                               <div className="gp-row">
                                 <span className="gp-lbl">Trả lời:</span>
@@ -813,22 +1177,394 @@ export default function SubmissionGradingPage() {
                                 </div>
                               )}
                             </div>
-                          ) : (
-                            <div className="gp-q-body">
-                              <div className="gp-essay">
-                                <span className="gp-lbl">Câu trả lời tự luận:</span>
-                                <p className="gp-essay-text">
-                                  {typeof result.student_answer === 'object'
-                                    ? JSON.stringify(result.student_answer)
-                                    : (result.student_answer || '(Chưa trả lời)')}
-                                </p>
-                                <span className="gp-pending">⏳ Đợi giáo viên chấm</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Exam Speaking Results (from auto_grade_results) */}
+                {auto && Object.entries(auto).some(([_, result]) => result.type === 'speaking') && (
+                  <div className="gp-card">
+                    <div className="gp-card-header">
+                      <div className="gp-card-title">🗣️ Kết quả Speaking (Exam)</div>
+                    </div>
+                    {Object.entries(auto).filter(([_, result]) => result.type === 'speaking').map(([qId, result]) => (
+                      <div key={qId} className="gp-exam-speaking-section">
+                        <div className="gp-q-head" style={{ marginBottom: '15px' }}>
+                          <div className="gp-q-id">Câu {qId}</div>
+                          <div className="gp-q-pts">
+                            {result.earned !== undefined ? `${result.earned}/${result.points} điểm` : `${result.points} điểm`}
+                          </div>
+                        </div>
+                        
+                        {/* Status Badge */}
+                        {result.status && (
+                          <div style={{ marginBottom: '10px' }}>
+                            <span className={`gp-badge ${
+                              result.status === 'ai_graded' ? 'ok' : 
+                              result.status === 'grading_error' ? 'danger' : 
+                              result.status === 'recognition_failed' ? 'warn' : 'pending'
+                            }`}>
+                              {result.status === 'ai_graded' ? '✅ Đã chấm tự động' :
+                               result.status === 'grading_error' ? '❌ Lỗi chấm' :
+                               result.status === 'recognition_failed' ? '⚠️ Không nhận diện được' :
+                               result.status === 'audio_not_found' ? '📁 Không tìm thấy audio' :
+                               '⏳ Chờ xử lý'}
+                            </span>
+                          </div>
+                        )}
+                        
+                        {/* Pronunciation & Content Breakdown */}
+                        {result.pronunciation && result.content && (
+                          <div style={{ marginBottom: '20px' }}>
+                            <div className="gp-speaking-breakdown">
+                              <div className="gp-speaking-score-row">
+                                <span className="gp-lbl">🎯 Pronunciation (Azure Speech):</span>
+                                <span className="gp-score">
+                                  {result.pronunciation.pronunciation_score || 0}/100
+                                </span>
+                              </div>
+                              <div className="gp-speaking-score-row">
+                                <span className="gp-lbl">💬 Content (ChatGPT):</span>
+                                <span className="gp-score">
+                                  {result.content.content_score || 0} điểm
+                                </span>
                               </div>
                             </div>
-                          )}
-                        </div>
-                      ))}
+                            
+                            {/* Azure Pronunciation Details */}
+                            {result.pronunciation && (
+                              <div className="gp-kpis" style={{ marginTop: '15px' }}>
+                                {[
+                                  { key: 'pronunciation_score', name: 'Phát âm', color: '#f59e0b' },
+                                  { key: 'fluency_score', name: 'Trôi chảy', color: '#3b82f6' },
+                                  { key: 'accuracy_score', name: 'Chính xác', color: '#10b981' },
+                                  { key: 'completeness_score', name: 'Hoàn chỉnh', color: '#ef4444' }
+                                ].map(({ key, name, color }) => {
+                                  const val = result.pronunciation[key];
+                                  if (typeof val !== 'number') return null;
+                                  return (
+                                    <div key={key} className="gp-kpi" style={{ borderColor: color }}>
+                                      <div className="gp-kpi-value" style={{ color }}>{val.toFixed(1)}</div>
+                                      <div className="gp-kpi-label">{name}</div>
+                                      <div className="gp-kpi-bar">
+                                        <div className="gp-kpi-fill" style={{ width: `${val}%`, backgroundColor: color }}></div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* AI Feedback */}
+                        {result.ai_feedback && (
+                          <div className="gp-feedback-detailed" style={{ marginTop: '20px' }}>
+                            <div style={{ fontSize: '16px', fontWeight: '700', marginBottom: '15px', color: '#4f46e5' }}>
+                              💡 Nhận xét chi tiết từ giáo viên AI
+                            </div>
+                            
+                            {/* Transcript */}
+                            {result.ai_feedback.transcript && (
+                              <div style={{ 
+                                marginBottom: '15px', 
+                                padding: '12px', 
+                                background: '#f0f9ff', 
+                                borderRadius: '8px',
+                                borderLeft: '4px solid #3b82f6'
+                              }}>
+                                <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#1e40af' }}>
+                                  📄 Văn bản nhận dạng được:
+                                </div>
+                                <div style={{ color: '#1e3a8a', fontStyle: 'italic', lineHeight: '1.6' }}>
+                                  "{safeRender(result.ai_feedback.transcript)}"
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Pronunciation Scores Grid */}
+                            {(result.ai_feedback.pronunciation_score !== undefined) && (
+                              <div style={{ 
+                                marginBottom: '20px', 
+                                padding: '15px', 
+                                background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)', 
+                                borderRadius: '10px',
+                                border: '2px solid #fbbf24'
+                              }}>
+                                <div style={{ fontWeight: 'bold', marginBottom: '12px', color: '#92400e', fontSize: '15px' }}>
+                                  🎯 Đánh giá phát âm từ Azure Speech AI
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '10px' }}>
+                                  {[
+                                    { label: 'Phát âm', value: result.ai_feedback.pronunciation_score, color: '#f59e0b' },
+                                    { label: 'Độ trôi chảy', value: result.ai_feedback.fluency_score, color: '#3b82f6' },
+                                    { label: 'Độ chính xác', value: result.ai_feedback.accuracy_score, color: '#10b981' },
+                                    { label: 'Hoàn chỉnh', value: result.ai_feedback.completeness_score, color: '#ef4444' }
+                                  ].map((item, idx) => (
+                                    <div key={idx} style={{ 
+                                      background: 'white', 
+                                      padding: '12px', 
+                                      borderRadius: '8px',
+                                      textAlign: 'center',
+                                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                    }}>
+                                      <div style={{ fontSize: '24px', fontWeight: '900', color: item.color }}>
+                                        {item.value}/100
+                                      </div>
+                                      <div style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>
+                                        {item.label}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Content Feedback */}
+                            {result.ai_feedback.content_feedback && (
+                              <div style={{ 
+                                marginBottom: '12px', 
+                                padding: '14px', 
+                                background: '#f0fdf4', 
+                                borderRadius: '8px',
+                                borderLeft: '4px solid #10b981'
+                              }}>
+                                <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#065f46' }}>
+                                  📝 Nhận xét về nội dung:
+                                </div>
+                                <div style={{ color: '#064e3b', lineHeight: '1.7' }}>
+                                  {safeRender(result.ai_feedback.content_feedback)}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Grammar Feedback */}
+                            {result.ai_feedback.grammar_feedback && (
+                              <div style={{ 
+                                marginBottom: '12px', 
+                                padding: '14px', 
+                                background: '#eff6ff', 
+                                borderRadius: '8px',
+                                borderLeft: '4px solid #3b82f6'
+                              }}>
+                                <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#1e40af' }}>
+                                  📖 Nhận xét về ngữ pháp:
+                                </div>
+                                <div style={{ color: '#1e3a8a', lineHeight: '1.7' }}>
+                                  {safeRender(result.ai_feedback.grammar_feedback)}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Vocabulary Feedback */}
+                            {result.ai_feedback.vocabulary_feedback && (
+                              <div style={{ 
+                                marginBottom: '12px', 
+                                padding: '14px', 
+                                background: '#fef3c7', 
+                                borderRadius: '8px',
+                                borderLeft: '4px solid #f59e0b'
+                              }}>
+                                <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#92400e' }}>
+                                  📚 Nhận xét về từ vựng:
+                                </div>
+                                <div style={{ color: '#78350f', lineHeight: '1.7' }}>
+                                  {safeRender(result.ai_feedback.vocabulary_feedback)}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Pronunciation Note */}
+                            {result.ai_feedback.pronunciation_note && (
+                              <div style={{ 
+                                marginBottom: '12px', 
+                                padding: '14px', 
+                                background: '#fce7f3', 
+                                borderRadius: '8px',
+                                borderLeft: '4px solid #ec4899'
+                              }}>
+                                <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#9f1239' }}>
+                                  � Ghi chú về phát âm:
+                                </div>
+                                <div style={{ color: '#831843', lineHeight: '1.7' }}>
+                                  {safeRender(result.ai_feedback.pronunciation_note)}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Strengths */}
+                            {Array.isArray(result.ai_feedback.strengths) && result.ai_feedback.strengths.length > 0 && (
+                              <div style={{ 
+                                marginBottom: '12px', 
+                                padding: '14px', 
+                                background: '#d1fae5', 
+                                borderRadius: '8px',
+                                border: '2px solid #10b981'
+                              }}>
+                                <div style={{ fontWeight: 'bold', marginBottom: '10px', color: '#065f46' }}>
+                                  ✅ Điểm mạnh của em:
+                                </div>
+                                <ul style={{ margin: 0, paddingLeft: '20px', color: '#064e3b' }}>
+                                  {result.ai_feedback.strengths.map((strength, idx) => (
+                                    <li key={idx} style={{ marginBottom: '6px', lineHeight: '1.6' }}>
+                                      {safeRender(strength)}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            
+                            {/* Improvements */}
+                            {Array.isArray(result.ai_feedback.improvements) && result.ai_feedback.improvements.length > 0 && (
+                              <div style={{ 
+                                marginBottom: '12px', 
+                                padding: '14px', 
+                                background: '#fef3c7', 
+                                borderRadius: '8px',
+                                border: '2px solid #f59e0b'
+                              }}>
+                                <div style={{ fontWeight: 'bold', marginBottom: '10px', color: '#92400e' }}>
+                                  ⚠️ Em cần cải thiện:
+                                </div>
+                                <ul style={{ margin: 0, paddingLeft: '20px', color: '#78350f' }}>
+                                  {result.ai_feedback.improvements.map((improvement, idx) => (
+                                    <li key={idx} style={{ marginBottom: '6px', lineHeight: '1.6' }}>
+                                      {safeRender(improvement)}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            
+                            {/* Suggestions */}
+                            {Array.isArray(result.ai_feedback.suggestions) && result.ai_feedback.suggestions.length > 0 && (
+                              <div style={{ 
+                                marginBottom: '12px', 
+                                padding: '14px', 
+                                background: '#e0e7ff', 
+                                borderRadius: '8px',
+                                border: '2px solid #6366f1'
+                              }}>
+                                <div style={{ fontWeight: 'bold', marginBottom: '10px', color: '#3730a3' }}>
+                                  💡 Gợi ý của cô:
+                                </div>
+                                <ul style={{ margin: 0, paddingLeft: '20px', color: '#312e81' }}>
+                                  {result.ai_feedback.suggestions.map((suggestion, idx) => (
+                                    <li key={idx} style={{ marginBottom: '6px', lineHeight: '1.6' }}>
+                                      {safeRender(suggestion)}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            
+                            {/* Overall Comment */}
+                            {result.ai_feedback.overall_comment && (
+                              <div style={{ 
+                                marginTop: '15px',
+                                padding: '16px', 
+                                background: 'linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%)', 
+                                borderRadius: '10px',
+                                border: '2px solid #6366f1',
+                                boxShadow: '0 4px 6px rgba(99, 102, 241, 0.1)'
+                              }}>
+                                <div style={{ fontWeight: 'bold', marginBottom: '10px', color: '#3730a3', fontSize: '15px' }}>
+                                  💬 Nhận xét tổng quan:
+                                </div>
+                                <div style={{ color: '#312e81', lineHeight: '1.8', fontSize: '14px' }}>
+                                  {safeRender(result.ai_feedback.overall_comment)}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Error Message */}
+                        {result.error && (
+                          <div className="gp-error-msg" style={{ marginTop: '10px' }}>
+                            <AlertCircle size={14} /> Lỗi: {safeRender(result.error)}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Exam Writing Results (from auto_grade_results) */}
+                {auto && Object.entries(auto).some(([_, result]) => result.type === 'short_answer' || result.type === 'essay') && (
+                  <div className="gp-card">
+                    <div className="gp-card-header">
+                      <div className="gp-card-title">✍️ Kết quả Writing (Exam)</div>
                     </div>
+                    {Object.entries(auto).filter(([_, result]) => result.type === 'short_answer' || result.type === 'essay').map(([qId, result]) => (
+                      <div key={qId} className="gp-exam-writing-section">
+                        <div className="gp-q-head" style={{ marginBottom: '15px' }}>
+                          <div className="gp-q-id">Câu {qId}</div>
+                          <div className="gp-q-pts">
+                            {result.earned !== undefined ? `${result.earned}/${result.points} điểm` : `${result.points} điểm (chờ chấm)`}
+                          </div>
+                        </div>
+                        
+                        {/* Status */}
+                        {result.status && (
+                          <div style={{ marginBottom: '10px' }}>
+                            <span className={`gp-badge ${result.status === 'ai_graded' ? 'ok' : 'pending'}`}>
+                              {result.status === 'ai_graded' ? '✅ Đã chấm AI' : '⏳ Chờ chấm'}
+                            </span>
+                          </div>
+                        )}
+                        
+                        {/* Student Answer */}
+                        <div className="gp-essay">
+                          <span className="gp-lbl">Câu trả lời của học sinh:</span>
+                          <p className="gp-essay-text">
+                            {typeof result.student_answer === 'object'
+                              ? JSON.stringify(result.student_answer)
+                              : (result.student_answer || '(Chưa trả lời)')}
+                          </p>
+                        </div>
+                        
+                        {/* AI Feedback for Writing */}
+                        {result.ai_feedback && (
+                          <div className="gp-feedback" style={{ marginTop: '15px' }}>
+                            <strong>💡 Nhận xét AI:</strong>
+                            {typeof result.ai_feedback === 'object' ? (
+                              <div style={{ marginTop: '10px' }}>
+                                {Object.entries(result.ai_feedback).map(([criterion, feedback]) => (
+                                  <div key={criterion} style={{ 
+                                    marginBottom: '10px', 
+                                    padding: '12px', 
+                                    background: '#f8f9fa', 
+                                    borderRadius: '8px',
+                                    borderLeft: '3px solid #10b981'
+                                  }}>
+                                    <div style={{ fontWeight: 'bold', marginBottom: '5px', textTransform: 'capitalize' }}>
+                                      {criterion === 'content_feedback' ? '📝 Nội dung' : 
+                                       criterion === 'grammar_feedback' ? '📖 Ngữ pháp' :
+                                       criterion === 'vocabulary_feedback' ? '📚 Từ vựng' :
+                                       criterion === 'structure_feedback' ? '🏗️ Cấu trúc' : criterion}:
+                                    </div>
+                                    <div style={{ color: '#374151' }}>{safeRender(feedback)}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p>{safeRender(result.ai_feedback)}</p>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Error */}
+                        {result.error && (
+                          <div className="gp-error-msg" style={{ marginTop: '10px' }}>
+                            <AlertCircle size={14} /> Lỗi: {safeRender(result.error)}
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 )}
               </>

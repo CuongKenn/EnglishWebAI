@@ -496,3 +496,61 @@
   background: #fef3c7;
   color: #78350f;
 }
+
+/* Exam Speaking & Writing Sections */
+.gp-exam-speaking-section,
+.gp-exam-writing-section {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.05), rgba(59, 130, 246, 0.05));
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 18px;
+  margin-bottom: 16px;
+}
+
+.gp-exam-speaking-section:last-child,
+.gp-exam-writing-section:last-child {
+  margin-bottom: 0;
+}
+
+.gp-badge.danger {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.gp-badge.pending {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.gp-speaking-breakdown {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 14px;
+  margin: 12px 0;
+}
+
+.gp-speaking-score-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.gp-speaking-score-row:last-child {
+  border-bottom: none;
+}
+
+.gp-speaking-score-row .gp-lbl {
+  font-weight: 600;
+  color: #374151;
+  font-size: 14px;
+}
+
+.gp-speaking-score-row .gp-score {
+  font-weight: 800;
+  color: #4f46e5;
+  font-size: 16px;
+}
+
