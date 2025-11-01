@@ -33,55 +33,37 @@
 - ✅ `src/components/Loading/LoadingSpinner.jsx`
 - ✅ Multiple variants: Spinner, Skeleton, Overlay, Pulse, Progress
 
+### 7. React.memo Optimization
+- ✅ `ExerciseListTable.jsx` - Table component (wrapped with React.memo)
+- ✅ `ExerciseList.jsx` - Card grid (wrapped with React.memo)
+- ✅ `QuestionBankSelectorModal.jsx` - Modal (wrapped with React.memo)
+- ✅ `AISidebar.jsx`, `ScrollArea.jsx`, `Slider.jsx` - UI components
+- ✅ Expected: ~30-40% reduction in unnecessary re-renders
+
 ---
 
 ## 🔧 Cần implement (To Do)
 
-### 1. React.memo cho Pure Components
+### 1. useMemo và useCallback cho Heavy Computations
 
-**Khi nào dùng React.memo:**
-- Component render nhiều lần với cùng props
-- Component là pure function (same props = same output)
-- Component không có internal state hoặc side effects phức tạp
+**⚠️ Priority:** HIGH - CreateExerciseModalComplete.jsx cần refactor trước
 
-**Ví dụ cần wrap:**
+**Lý do skip tạm thời:**
+- File quá lớn (2000+ lines)
+- Có nhiều state dependencies phức tạp
+- Cần split thành smaller components trước
+- Adding useMemo/useCallback vào file lớn không hiệu quả
 
-```jsx
-// ❌ Before
-export default function ExerciseCard({ exercise, onView }) {
-  return (
-    <div className="card">
-      <h3>{exercise.title}</h3>
-      <button onClick={() => onView(exercise.id)}>View</button>
-    </div>
-  );
-}
+**Kế hoạch:**
+1. Split CreateExerciseModalComplete thành:
+   - `ListeningSection.jsx`
+   - `ReadingSection.jsx`
+   - `WritingSection.jsx`
+   - `SpeakingSection.jsx`
+   - `QuestionList.jsx`
+2. Sau khi split, áp dụng useMemo/useCallback cho từng section
 
-// ✅ After
-import React from 'react';
-
-const ExerciseCard = React.memo(({ exercise, onView }) => {
-  return (
-    <div className="card">
-      <h3>{exercise.title}</h3>
-      <button onClick={() => onView(exercise.id)}>View</button>
-    </div>
-  );
-});
-
-export default ExerciseCard;
-```
-
-**Files cần optimize:**
-- `ExerciseListTable.jsx`
-- `ExerciseDetailModal.jsx`
-- `QuestionBankSelectorModal.jsx`
-- Card components trong các dashboards
-- List item components
-
----
-
-### 2. useMemo và useCallback
+**Files khác cần optimize:**
 
 **useMemo - Cho expensive computations:**
 
