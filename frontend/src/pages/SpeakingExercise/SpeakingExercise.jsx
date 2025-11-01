@@ -25,6 +25,7 @@ import {
   Loader2
 } from 'lucide-react';
 import apiClient from '../../services/api';
+import { getSpeakingPrompt } from '../../api/courseContent';
 import './SpeakingExercise.css';
 import Toast from '../../components/Toast/Toast';
 import useToast from '../../hooks/useToast';
@@ -49,6 +50,9 @@ const SpeakingExercise = () => {
   const [showCompletionMessage, setShowCompletionMessage] = useState(false);
   const [isAssessing, setIsAssessing] = useState(false);
   const [assessmentResults, setAssessmentResults] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [speakingData, setSpeakingData] = useState(null);
 
   // Refs
   const mediaRecorderRef = useRef(null);
@@ -80,49 +84,102 @@ const SpeakingExercise = () => {
     navigate('/learning-profile');
   };
 
-  // Mock data cho bài speaking - sẽ được thay thế bằng API call
-  const speakingData = {
-    id: lessonId || '1',
-    title: 'Speaking Unit 1',
-    courseTitle: 'Speaking Học bài',
-    difficulty: 'Beginner',
-    estimatedTime: 10, // minutes
-    totalQuestions: 4,
-    questions: [
-      {
-        id: 1,
-        question: "Are you a student?",
-        instruction: "Ghi âm câu trả lời của bạn cho câu hỏi IELTS Speaking sau đây",
-        timeLimit: 60, // seconds
-        minSentences: 2,
-        audioUrl: null // Will be loaded from backend
-      },
-      {
-        id: 2,
-        question: "What type of films do you like best?",
-        instruction: "Ghi âm câu trả lời của bạn cho câu hỏi IELTS Speaking sau đây",
-        timeLimit: 60,
-        minSentences: 2,
-        audioUrl: null
-      },
-      {
-        id: 3,
-        question: "Do you prefer to study alone or with others?",
-        instruction: "Ghi âm câu trả lời của bạn cho câu hỏi IELTS Speaking sau đây",
-        timeLimit: 60,
-        minSentences: 2,
-        audioUrl: null
-      },
-      {
-        id: 4,
-        question: "What is your favorite subject?",
-        instruction: "Ghi âm câu trả lời của bạn cho câu hỏi IELTS Speaking sau đây",
-        timeLimit: 60,
-        minSentences: 2,
-        audioUrl: null
+  // Load speaking data from API
+  useEffect(() => {
+    const fetchSpeakingData = async () => {
+      if (!lessonId) return;
+      
+      setLoading(true);
+      setError(null);
+      
+      // Try new Rich Content API first
+      try {
+        const promptData = await getSpeakingPrompt(lessonId);
+        
+        // Parse tips and vocabulary if they're strings
+        let tips = promptData.tips;
+        if (typeof tips === 'string') {
+          try {
+            tips = JSON.parse(tips);
+          } catch (e) {
+            tips = [];
+          }
+        }
+        
+        let vocabulary = promptData.vocabulary;
+        if (typeof vocabulary === 'string') {
+          try {
+            vocabulary = JSON.parse(vocabulary);
+          } catch (e) {
+            vocabulary = {};
+          }
+        }
+        
+        // Transform to component format
+        setSpeakingData({
+          id: promptData.id,
+          title: promptData.title,
+          courseTitle: 'Speaking',
+          difficulty: promptData.difficulty || 'Intermediate',
+          estimatedTime: Math.ceil((promptData.preparation_time + promptData.response_time) / 60) || 10,
+          totalQuestions: 1,
+          preparation_time: promptData.preparation_time,
+          response_time: promptData.response_time,
+          questions: [
+            {
+              id: promptData.id,
+              question: promptData.prompt,
+              instruction: promptData.instruction,
+              context: promptData.context,
+              timeLimit: promptData.response_time || 120,
+              minSentences: 2,
+              audioUrl: promptData.sample_audio_url,
+              tips: tips || [],
+              vocabulary: vocabulary || {},
+              sampleResponse: promptData.sample_response,
+              criteria: promptData.criteria || []
+            }
+          ]
+        });
+        setLoading(false);
+        return; // Success - exit early
+      } catch (apiErr) {
+        // 404 is expected when no rich content - fallback silently
+        // Continue to fallback...
       }
-    ]
-  };
+      
+      // Fallback: Use mock/placeholder data
+      try {
+        const mockData = {
+          id: lessonId || '1',
+          title: 'Speaking Unit',
+          courseTitle: 'Speaking',
+          difficulty: 'Beginner',
+          estimatedTime: 10,
+          totalQuestions: 1,
+          questions: [
+            {
+              id: 1,
+              question: "Describe yourself",
+              instruction: "Record your answer to the following IELTS Speaking question",
+              timeLimit: 60,
+              minSentences: 2,
+              audioUrl: null
+            }
+          ]
+        };
+        
+        setSpeakingData(mockData);
+      } catch (err) {
+        console.error('Error setting fallback data:', err);
+        setError('Không thể tải bài tập speaking. Vui lòng thử lại sau.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSpeakingData();
+  }, [lessonId]);
 
   // Mock results data - sẽ được thay thế bằng API response
   const mockResults = {
@@ -410,6 +467,36 @@ const SpeakingExercise = () => {
     setTimeSpent(0);
     setShowCompletionMessage(false);
   };
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="speaking-exercise-page">
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column', gap: '1rem' }}>
+          <Loader2 size={48} className="animate-spin" style={{ color: '#4F46E5' }} />
+          <p style={{ color: '#6B7280' }}>Đang tải bài tập speaking...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error || !speakingData) {
+    return (
+      <div className="speaking-exercise-page">
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column', gap: '1rem' }}>
+          <AlertCircle size={48} style={{ color: '#EF4444' }} />
+          <p style={{ color: '#EF4444' }}>{error || 'Không tìm thấy bài tập'}</p>
+          <button 
+            onClick={() => navigate(`/course/${courseId}`)}
+            style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', backgroundColor: '#4F46E5', color: 'white', border: 'none', cursor: 'pointer' }}
+          >
+            Quay lại
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const currentQuestionData = speakingData.questions[currentQuestion];
 

@@ -380,12 +380,13 @@ function App() {
         }
       />
 
+      {/* DEPRECATED: Old class route - now using CourseContentPage for all courses */}
       <Route
         path="/class/:classId/content"
         element={
           <ProtectedRoute isLoggedIn={isLoggedIn}>
             <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
-              <ClassContent />
+              <CourseContentPage />
             </Layout>
           </ProtectedRoute>
         }

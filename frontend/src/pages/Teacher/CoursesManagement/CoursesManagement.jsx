@@ -775,6 +775,7 @@ const CoursesManagement = () => {
 
 // Unit Questions Modal Component
 const UnitQuestionsModal = ({ unit, course, onClose, onRefresh }) => {
+  const { toast, showWarning, hideToast, showSuccess, showError } = useToast();
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isAddQuestionOpen, setIsAddQuestionOpen] = useState(false);
@@ -917,8 +918,10 @@ const UnitQuestionsModal = ({ unit, course, onClose, onRefresh }) => {
       setIsAddQuestionOpen(false);
       await loadQuestions();
       if (onRefresh) onRefresh();
+      showSuccess('Đã thêm câu hỏi thành công!');
     } catch (error) {
       console.error('Error creating question:', error);
+      showError(error?.response?.data?.detail || 'Không thể thêm câu hỏi');
     }
   };
 
@@ -1250,8 +1253,10 @@ const UnitQuestionsModal = ({ unit, course, onClose, onRefresh }) => {
                             await coursesAPI.deleteQuestion(unit.id, q.id);
                             await loadQuestions();
                             if (onRefresh) onRefresh();
+                            showSuccess('Đã xóa câu hỏi thành công!');
                           } catch (error) {
                             console.error('Error deleting question:', error);
+                            showError(error?.response?.data?.detail || 'Không thể xóa câu hỏi');
                           }
                         }
                       }}
@@ -1270,12 +1275,22 @@ const UnitQuestionsModal = ({ unit, course, onClose, onRefresh }) => {
           </div>
         </div>
       </div>
+      
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={hideToast}
+          duration={toast.duration}
+        />
+      )}
     </div>
   );
 };
 
 // Course Detail Modal Component
 const CourseDetailModal = ({ course, onClose, onEdit }) => {
+  const { toast, showWarning, hideToast, showSuccess, showError } = useToast();
   const [units, setUnits] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isAddUnitOpen, setIsAddUnitOpen] = useState(false);
@@ -1310,8 +1325,10 @@ const CourseDetailModal = ({ course, onClose, onEdit }) => {
       setUnitForm({ title: '', description: '', week_index: 1, max_cups: 2 });
       setIsAddUnitOpen(false);
       await loadUnits();
+      showSuccess('Đã thêm bài học thành công!');
     } catch (error) {
       console.error('Error creating unit:', error);
+      showError(error?.response?.data?.detail || 'Không thể thêm bài học');
     }
   };
 
@@ -1425,10 +1442,12 @@ const CourseDetailModal = ({ course, onClose, onEdit }) => {
                         onClick={async () => {
                           if (window.confirm(`Bạn có chắc muốn xóa bài học "${unit.title}"?`)) {
                             try {
-                                await coursesAPI.deleteUnit(course.id, unit.id);
+                              await coursesAPI.deleteUnit(course.id, unit.id);
                               await loadUnits();
+                              showSuccess('Đã xóa bài học thành công!');
                             } catch (error) {
                               console.error('Error deleting unit:', error);
+                              showError(error?.response?.data?.detail || 'Không thể xóa bài học');
                             }
                           }
                         }}

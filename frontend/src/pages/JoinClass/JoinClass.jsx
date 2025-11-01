@@ -105,9 +105,9 @@ const JoinClass = () => {
   const handleJoinClass = async (classId) => {
     try {
       try { await classesAPI.joinClass(classId); } catch (e) { /* Bỏ qua lỗi */ }
-      navigate(`/class/${classId}/content`);
+      navigate(`/course/${classId}`);
     } catch (err) {
-      navigate(`/class/${classId}/content`);
+      navigate(`/course/${classId}`);
     }
   };
 

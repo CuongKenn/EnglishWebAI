@@ -11,9 +11,11 @@ import {
   Award,
   Star,
   X,
-  BookOpen
+  BookOpen,
+  Loader
 } from 'lucide-react';
 import './ReadingExercise.css';
+import { getReadingPassage } from '../../api/courseContent';
 
 const ReadingExercise = () => {
   const { courseId, lessonId } = useParams();
@@ -27,142 +29,112 @@ const ReadingExercise = () => {
   const [isCompleted, setIsCompleted] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const [showCompletionMessage, setShowCompletionMessage] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [readingData, setReadingData] = useState(null);
 
-  // Mock data cho bài reading - sẽ được thay thế bằng API call
-  const readingData = {
-    id: lessonId || '1',
-    title: 'Reading Unit 1',
-    courseTitle: 'Reading Học bài',
-    difficulty: 'Beginner',
-    estimatedTime: 15, // minutes
-    totalQuestions: 5,
-    passage: {
-      title: 'The rainmakers',
-      subtitle: 'Science and technology work with nature to bring rain when and where it is needed.',
-      paragraphs: [
-        {
-          id: 'A',
-          content: 'Gang Liu, a wheat farmer in Luohe, China, was worried. His crops were failing because there was no rain. But then scientists fired silver iodide (AgI) into the clouds using rockets. This process, called cloud seeding, makes moisture drops turn into ice. The ice falls as rain. Gang Liu\'s wheat was saved.',
-          heading: 'A worried farmer',
-          questions: [
-            {
-              id: 1,
-              type: 'matching',
-              instruction: 'Match the heading with paragraph A',
-              options: [
-                { id: 1, text: 'A worried farmer' },
-                { id: 2, text: 'Questions about effectiveness' },
-                { id: 3, text: 'Research and technology' },
-                { id: 4, text: 'Future possibilities' },
-                { id: 5, text: 'Challenges ahead' }
-              ],
-              correctAnswer: 1
-            }
-          ]
-        },
-        {
-          id: 'B',
-          content: 'But does cloud seeding really work? Some experts think it might just be a coincidence when it rains after seeding. They say we don\'t know how effective it is because rain might have happened naturally anyway. Despite this, more than 150 weather-modifying projects are happening in over 40 countries. Not all are for making rain. In the USA, microwaves are used to prevent tornadoes. In Russia, they make sure there\'s sunshine for national events.',
-          heading: 'Questions about effectiveness',
-          questions: [
-            {
-              id: 2,
-              type: 'multiple-choice',
-              instruction: 'What is cloud seeding?',
-              options: [
-                'A process that makes clouds disappear',
-                'A technique that uses silver iodide to make rain',
-                'A method to prevent all rain',
-                'A way to control tornadoes'
-              ],
-              correctAnswer: 1
-            },
-            {
-              id: 3,
-              type: 'multiple-choice',
-              instruction: 'How many weather-modifying projects are happening worldwide?',
-              options: [
-                'More than 50',
-                'More than 100',
-                'More than 150',
-                'More than 200'
-              ],
-              correctAnswer: 2
-            }
-          ]
-        },
-        {
-          id: 'C',
-          content: 'Rainmaking dominates research programs. They often use trials with seeded and unseeded clouds. Arlen Huggins from the Desert Research Institute is leading a project in Australia. He says advanced weather-monitoring technology lets them measure human impact on weather better. His team\'s findings are promising. They suggest cloud seeding works. There are two years left on their six-year project.',
-          heading: 'Research and technology',
-          questions: [
-            {
-              id: 4,
-              type: 'multiple-choice',
-              instruction: 'What technology is mentioned for future weather modification?',
-              options: [
-                'Virtual reality',
-                'Artificial intelligence',
-                'Blockchain',
-                'Quantum computing'
-              ],
-              correctAnswer: 1
-            }
-          ]
-        },
-        {
-          id: 'D',
-          content: 'The future of weather modification looks bright. New technologies are being developed to make cloud seeding more precise and effective. Scientists are using artificial intelligence to predict the best times and places for seeding. This could help farmers like Gang Liu around the world.',
-          heading: 'Future possibilities',
-          questions: [
-            {
-              id: 4,
-              type: 'multiple-choice',
-              instruction: 'What technology is mentioned for improving cloud seeding?',
-              options: [
-                'Artificial intelligence',
-                'Robots',
-                'Satellites',
-                'Drones'
-              ],
-              correctAnswer: 0
-            },
-            {
-              id: 5,
-              type: 'multiple-choice',
-              instruction: 'Who could benefit from improved weather modification?',
-              options: [
-                'Only scientists',
-                'Only farmers in China',
-                'Farmers around the world',
-                'Only government officials'
-              ],
-              correctAnswer: 2
-            }
-          ]
-        },
-        {
-          id: 'E',
-          content: 'However, there are still challenges. Weather modification requires careful planning and international cooperation. Different countries have different rules about changing the weather. Some people worry about the environmental effects. More research is needed to understand the long-term impacts.',
-          heading: 'Challenges ahead',
-          questions: [
-            {
-              id: 6,
-              type: 'multiple-choice',
-              instruction: 'What is one challenge mentioned about weather modification?',
-              options: [
-                'It\'s too expensive',
-                'It requires international cooperation',
-                'It doesn\'t work at all',
-                'It\'s too simple'
-              ],
-              correctAnswer: 1
-            }
-          ]
-        }
-      ]
-    }
-  };
+  // Fetch reading passage từ API
+  useEffect(() => {
+    const fetchReadingData = async () => {
+      if (!lessonId) return;
+      
+      setLoading(true);
+      setError(null);
+      
+      // Try new Rich Content API first
+      try {
+        const data = await getReadingPassage(lessonId);
+        
+        // Transform API data vào format component cần
+        const transformedData = {
+          id: data.id,
+          title: data.title,
+          courseTitle: 'Reading',
+          difficulty: data.difficulty || 'Beginner',
+          estimatedTime: data.estimated_time || 15,
+          totalQuestions: data.total_questions || 0,
+          passage: {
+            title: data.title,
+            subtitle: data.subtitle || '',
+            paragraphs: data.paragraphs?.map(para => ({
+              id: para.paragraph_id,
+              content: para.content,
+              heading: para.heading || '',
+              questions: para.questions?.map(q => {
+                // Parse options_json if it's a string
+                let options = q.options_json;
+                if (typeof options === 'string') {
+                  try {
+                    options = JSON.parse(options);
+                  } catch (e) {
+                    console.error('Failed to parse options_json:', e);
+                    options = [];
+                  }
+                }
+                
+                return {
+                  id: q.id,
+                  type: q.type,
+                  instruction: q.instruction,
+                  options: options || [],
+                  correctAnswer: q.correct_answer
+                };
+              }) || []
+            })) || []
+          }
+        };
+        
+        setReadingData(transformedData);
+        setLoading(false);
+        return; // Success - exit early
+      } catch (apiErr) {
+        // 404 is expected when no rich content - fallback silently
+        // Continue to fallback...
+      }
+      
+      // Fallback: Use mock/placeholder data since old CourseQuestions doesn't have proper reading structure
+      // This will show a basic UI until teacher adds rich content
+      try {
+        const mockData = {
+          id: lessonId || '1',
+          title: 'Reading Unit',
+          courseTitle: 'Reading',
+          difficulty: 'Beginner',
+          estimatedTime: 15,
+          totalQuestions: 1,
+          passage: {
+            title: 'Reading Practice',
+            subtitle: 'Complete the reading exercise below',
+            paragraphs: [
+              {
+                id: 'A',
+                content: 'This is a practice reading passage. Rich content will be available once your teacher adds it.',
+                heading: 'Practice Passage',
+                questions: [
+                  {
+                    id: 1,
+                    type: 'multiple-choice',
+                    instruction: 'This is a sample question. Real questions will appear once content is added.',
+                    options: ['Option A', 'Option B', 'Option C', 'Option D'],
+                    correctAnswer: 0
+                  }
+                ]
+              }
+            ]
+          }
+        };
+        
+        setReadingData(mockData);
+      } catch (err) {
+        console.error('Error setting fallback data:', err);
+        setError('Không thể tải bài đọc. Vui lòng thử lại sau.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReadingData();
+  }, [lessonId]);
 
   // Timer effect
   useEffect(() => {
@@ -264,6 +236,36 @@ const ReadingExercise = () => {
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="reading-exercise-page">
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column', gap: '1rem' }}>
+          <Loader size={48} className="animate-spin" style={{ color: '#4F46E5' }} />
+          <p style={{ color: '#6B7280' }}>Đang tải bài đọc...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error || !readingData) {
+    return (
+      <div className="reading-exercise-page">
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column', gap: '1rem' }}>
+          <XCircle size={48} style={{ color: '#EF4444' }} />
+          <p style={{ color: '#EF4444' }}>{error || 'Không tìm thấy bài đọc'}</p>
+          <button 
+            onClick={() => navigate(`/course/${courseId}`)}
+            style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', backgroundColor: '#4F46E5', color: 'white', border: 'none', cursor: 'pointer' }}
+          >
+            Quay lại
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="reading-exercise-page">

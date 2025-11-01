@@ -26,6 +26,7 @@ import {
   X
 } from 'lucide-react';
 import { coursesAPI } from '../../services/api';
+import { getListeningAudio } from '../../api/courseContent';
 import './ListeningExercise.css';
 import Toast from '../../components/Toast/Toast';
 import useToast from '../../hooks/useToast';
@@ -98,14 +99,62 @@ const ListeningExercise = () => {
   // Load listening data from server (not AI)
   useEffect(() => {
     const fetchListeningData = async () => {
+      if (!lessonId) return;
+      
       setLoading(true);
       setError(null);
       try {
-        // Load course data
+        // Try to load from new API first
+        try {
+          const audioData = await getListeningAudio(lessonId);
+          
+          // Parse questions options_json
+          const parsedQuestions = audioData.questions?.map((q, idx) => {
+            let options = q.options;
+            if (typeof options === 'string') {
+              try {
+                options = JSON.parse(options);
+              } catch (e) {
+                options = [];
+              }
+            }
+            
+            return {
+              id: q.id,
+              number: idx + 1,
+              question: q.question_text || `Câu ${idx + 1}`,
+              options: options || [],
+              correctAnswer: q.correct_answer || '',
+              explanation: q.explanation || '',
+              mediaUrl: null, // Not used in new structure
+              points: q.points || 1,
+              type: q.type || 'mcq',
+              timestamp: q.timestamp
+            };
+          }) || [];
+          
+          setListeningData({
+            id: audioData.id,
+            title: audioData.title,
+            courseTitle: 'Listening',
+            difficulty: audioData.difficulty || 'Intermediate',
+            estimatedTime: audioData.duration ? Math.ceil(audioData.duration / 60) : 5,
+            totalQuestions: audioData.total_questions || parsedQuestions.length,
+            audioUrl: audioData.audio_url,
+            duration: audioData.duration || 0,
+            transcript: audioData.transcript || '',
+            questions: parsedQuestions
+          });
+          
+          return; // Success, exit
+        } catch (apiErr) {
+          // If new API fails (404), fallback to old method silently
+        }
+
+        // Fallback: Load từ old CourseQuestions API
         const course = await coursesAPI.getCourse(courseId);
         setCourseData(course);
 
-        // Load units
         const units = await coursesAPI.getUnits(courseId);
         const unit = units.find(u => u.id === parseInt(lessonId));
         if (!unit) {
@@ -113,7 +162,6 @@ const ListeningExercise = () => {
         }
         setUnitData(unit);
 
-        // Load questions from server
         const qs = await coursesAPI.getQuestions(parseInt(lessonId));
         setQuestions(qs || []);
 

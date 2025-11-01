@@ -7,7 +7,7 @@ class CourseBase(BaseModel):
     title: str
     description: Optional[str] = None
     grade: int = Field(ge=1, le=12)
-    skill: str = Field(pattern=r"^(listening|speaking|reading|writing)$")
+    skill: str = Field(pattern=r"^(listening|speaking|reading|writing|vocabulary|grammar)$")
     level: Optional[str] = None
     is_active: Optional[bool] = True
 
@@ -20,7 +20,7 @@ class CourseUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     grade: Optional[int] = Field(default=None, ge=1, le=12)
-    skill: Optional[str] = Field(default=None, pattern=r"^(listening|speaking|reading|writing)$")
+    skill: Optional[str] = Field(default=None, pattern=r"^(listening|speaking|reading|writing|vocabulary|grammar)$")
     level: Optional[str] = None
     is_active: Optional[bool] = None
 
