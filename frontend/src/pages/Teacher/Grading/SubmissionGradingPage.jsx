@@ -733,7 +733,7 @@ export default function SubmissionGradingPage() {
                 {speakingSection && (
                   <div className="gp-card">
                     <div className="gp-card-header">
-                      <div className="gp-card-title">🗣️ PHẦN 4: NÓI</div>
+                      <div className="gp-card-title"><Mic className="inline-block w-5 h-5 mr-2" /> PHẦN 4: NÓI</div>
                       <div className="gp-section-score">
                         {speakingSection.points_earned?.toFixed(1) || 0}/2.5 điểm
                       </div>
@@ -873,7 +873,7 @@ export default function SubmissionGradingPage() {
                             borderLeft: '4px solid #3b82f6'
                           }}>
                             <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#1e40af' }}>
-                              📖 Nhận xét về ngữ pháp:
+                              <BookOpen className="inline-block w-4 h-4 mr-1" /> Nhận xét về ngữ pháp:
                             </div>
                             <textarea
                               value={editableSpeaking.grammar_feedback}
@@ -1240,7 +1240,7 @@ export default function SubmissionGradingPage() {
                     
                     {/* Teacher's Editable Feedback */}
                     <div className="gp-feedback-editable">
-                      <strong>✍️ Nhận xét của giáo viên:</strong>
+                      <strong><PenTool className="inline-block w-4 h-4 mr-1" /> Nhận xét của giáo viên:</strong>
                       <textarea 
                         className="gp-textarea-feedback"
                         value={detailedFeedbackInput}
@@ -1257,7 +1257,7 @@ export default function SubmissionGradingPage() {
                 {(submission?.content_text || writing) && (
                   <div className="gp-card">
                     <div className="gp-card-header">
-                      <div className="gp-card-title">✍️ Bài viết của học sinh (Writing Assessment)</div>
+                      <div className="gp-card-title"><PenTool className="inline-block w-5 h-5 mr-2" /> Bài viết của học sinh (Writing Assessment)</div>
                       {submission?.ai_score && (
                         <div className="gp-section-score">
                           Điểm AI: {submission.ai_score}/10
@@ -1320,7 +1320,7 @@ export default function SubmissionGradingPage() {
                               }}>
                                 <div style={{ fontWeight: 'bold', textTransform: 'capitalize', marginBottom: '5px' }}>
                                   {criterion === 'content' ? '📝 Nội dung' : 
-                                   criterion === 'grammar' ? '📖 Ngữ pháp' :
+                                   criterion === 'grammar' ? <><BookOpen className="inline-block w-4 h-4 mr-1" /> Ngữ pháp</> :
                                    criterion === 'vocabulary' ? '📚 Từ vựng' :
                                    criterion === 'structure' ? '🏗️ Cấu trúc' : criterion}
                                 </div>
@@ -1443,7 +1443,7 @@ export default function SubmissionGradingPage() {
                 {auto && Object.entries(auto).some(([_, result]) => result.type === 'speaking') && (
                   <div className="gp-card">
                     <div className="gp-card-header">
-                      <div className="gp-card-title">🗣️ Kết quả Speaking (Exam)</div>
+                      <div className="gp-card-title"><Mic className="inline-block w-5 h-5 mr-2" /> Kết quả Speaking (Exam)</div>
                     </div>
                     {Object.entries(auto).filter(([_, result]) => result.type === 'speaking').map(([qId, result]) => (
                       <div key={qId} className="gp-exam-speaking-section">
@@ -1606,7 +1606,7 @@ export default function SubmissionGradingPage() {
                                 borderLeft: '4px solid #3b82f6'
                               }}>
                                 <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#1e40af' }}>
-                                  📖 Nhận xét về ngữ pháp:
+                                  <BookOpen className="inline-block w-4 h-4 mr-1" /> Nhận xét về ngữ pháp:
                                 </div>
                                 <div style={{ color: '#1e3a8a', lineHeight: '1.7' }}>
                                   {safeRender(result.ai_feedback.grammar_feedback)}
@@ -1752,7 +1752,7 @@ export default function SubmissionGradingPage() {
                 {auto && Object.entries(auto).some(([_, result]) => result.type === 'short_answer' || result.type === 'essay') && (
                   <div className="gp-card">
                     <div className="gp-card-header">
-                      <div className="gp-card-title">✍️ Kết quả Writing (Exam)</div>
+                      <div className="gp-card-title"><PenTool className="inline-block w-5 h-5 mr-2" /> Kết quả Writing (Exam)</div>
                     </div>
                     {Object.entries(auto).filter(([_, result]) => result.type === 'short_answer' || result.type === 'essay').map(([qId, result]) => (
                       <div key={qId} className="gp-exam-writing-section">
@@ -1798,7 +1798,7 @@ export default function SubmissionGradingPage() {
                                   }}>
                                     <div style={{ fontWeight: 'bold', marginBottom: '5px', textTransform: 'capitalize' }}>
                                       {criterion === 'content_feedback' ? '📝 Nội dung' : 
-                                       criterion === 'grammar_feedback' ? '📖 Ngữ pháp' :
+                                       criterion === 'grammar_feedback' ? <><BookOpen className="inline-block w-4 h-4 mr-1" /> Ngữ pháp</> :
                                        criterion === 'vocabulary_feedback' ? '📚 Từ vựng' :
                                        criterion === 'structure_feedback' ? '🏗️ Cấu trúc' : criterion}:
                                     </div>
