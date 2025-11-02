@@ -5,7 +5,7 @@ import { apiV1 } from '../../../../services/api';
 
 const Dashboard = () => {
   const [greeting, setGreeting] = useState('');
-  const [greetingIcon, setGreetingIcon] = useState(Sun);
+  const [greetingIcon, setGreetingIcon] = useState(SunIcon);
   const [loading, setLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState(null);
 
@@ -52,10 +52,10 @@ const Dashboard = () => {
   };
 
   const stats = dashboardData ? [
-    { label: 'Tổng số lớp', value: dashboardData.stats.total_classes.toString(), icon: Users, color: 'bg-blue-500' },
-    { label: 'Học sinh', value: dashboardData.stats.total_students.toString(), icon: Users, color: 'bg-green-500' },
-    { label: 'Bài kiểm tra', value: dashboardData.stats.total_tests.toString(), icon: FileCheck, color: 'bg-purple-500' },
-    { label: 'Câu hỏi', value: dashboardData.stats.total_questions.toLocaleString('vi-VN'), icon: Brain, color: 'bg-orange-500' }
+    { label: 'Tổng số lớp', value: dashboardData.stats.total_classes.toString(), icon: UserGroupIcon, color: 'bg-blue-500' },
+    { label: 'Học sinh', value: dashboardData.stats.total_students.toString(), icon: UserGroupIcon, color: 'bg-green-500' },
+    { label: 'Bài kiểm tra', value: dashboardData.stats.total_tests.toString(), icon: DocumentCheckIcon, color: 'bg-purple-500' },
+    { label: 'Câu hỏi', value: dashboardData.stats.total_questions.toLocaleString('vi-VN'), icon: CpuChipIcon, color: 'bg-orange-500' }
   ] : [];
 
   const recentActivities = dashboardData?.recent_activities || [];
