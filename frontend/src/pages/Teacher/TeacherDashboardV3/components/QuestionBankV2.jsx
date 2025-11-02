@@ -6,6 +6,14 @@ import {
   Bot, Settings, Play, Clock, Target, FileText, Wand2, Mic,
   RotateCcw, Save, Loader2
 } from 'lucide-react';
+import { 
+  ScaleIcon,
+  BookOpenIcon as BookOpenHero,
+  SpeakerWaveIcon,
+  ChatBubbleLeftRightIcon,
+  AdjustmentsHorizontalIcon,
+  SparklesIcon as SparklesHero
+} from '@heroicons/react/24/outline';
 import { Card } from '../../../../components/ui/card';
 import AddQuestionModal from './AddQuestionModal';
 import { questionBankAPI } from '../../../../services/api';
@@ -453,7 +461,7 @@ export default function QuestionBankV2() {
   const templates = [
     {
       id: 'balanced',
-      name: '⚖️ Cân bằng',
+      name: <><ScaleIcon className="w-4 h-4 inline" /> Cân bằng</>,
       description: 'Cân bằng 4 kỹ năng, độ khó trung bình',
       config: {
         skillDistribution: { listening: 25, speaking: 25, reading: 25, writing: 25 },
@@ -464,7 +472,7 @@ export default function QuestionBankV2() {
     },
     {
       id: 'reading_focus',
-      name: '📖 Tập trung Đọc',
+      name: <><BookOpenHero className="w-4 h-4 inline" /> Tập trung Đọc</>,
       description: '60% Reading, 40% các kỹ năng khác',
       config: {
         skillDistribution: { listening: 15, speaking: 10, reading: 60, writing: 15 },
@@ -475,7 +483,7 @@ export default function QuestionBankV2() {
     },
     {
       id: 'listening_speaking',
-      name: '🎧🗣️ Nghe - Nói',
+      name: <><SpeakerWaveIcon className="w-4 h-4 inline" /><ChatBubbleLeftRightIcon className="w-4 h-4 inline" /> Nghe - Nói</>,
       description: 'Tập trung vào kỹ năng giao tiếp',
       config: {
         skillDistribution: { listening: 45, speaking: 45, reading: 5, writing: 5 },
@@ -486,7 +494,7 @@ export default function QuestionBankV2() {
     },
     {
       id: 'comprehensive',
-      name: '🎯 Toàn diện',
+      name: <><AdjustmentsHorizontalIcon className="w-4 h-4 inline" /> Toàn diện</>,
       description: 'Đề thi đầy đủ, khó cao',
       config: {
         skillDistribution: { listening: 30, speaking: 20, reading: 30, writing: 20 },
@@ -497,7 +505,7 @@ export default function QuestionBankV2() {
     },
     {
       id: 'beginner',
-      name: '🌱 Người mới',
+      name: <><SparklesHero className="w-4 h-4 inline" /> Người mới</>,
       description: 'Đề dễ cho học sinh mới',
       config: {
         skillDistribution: { listening: 30, speaking: 20, reading: 30, writing: 20 },
