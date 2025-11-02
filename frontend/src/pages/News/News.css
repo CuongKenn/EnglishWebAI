@@ -498,6 +498,7 @@
   font-size: 1.1rem;
   font-weight: 700;
   margin-bottom: 0.5rem;
+  color: #ffffff;
 }
 
 .newsletter-subtext {
@@ -505,6 +506,7 @@
   opacity: 0.9;
   margin-bottom: 1rem;
   line-height: 1.5;
+  color: #ffffff;
 }
 
 .newsletter-form {
@@ -577,11 +579,22 @@
   font-size: 1.8rem;
   font-weight: 800;
   margin-bottom: 0.25rem;
+  color: #ffffff;
 }
 
 .stat-label {
   font-size: 0.9rem;
   opacity: 0.9;
+  color: #ffffff;
+}
+
+.stats-widget .stat-number,
+.stats-widget .stat-label {
+  color: #ffffff !important;
+  background: none !important;
+  -webkit-background-clip: initial !important;
+  -webkit-text-fill-color: #ffffff !important;
+  background-clip: initial !important;
 }
 
 /* Loading & Error */
