@@ -17,6 +17,39 @@ export function ConversationAI() {
   ]);
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [speakingIndex, setSpeakingIndex] = useState(null);
+
+  // Text-to-Speech functionality
+  const speak = (text, messageIndex) => {
+    if ('speechSynthesis' in window) {
+      // Stop any ongoing speech
+      window.speechSynthesis.cancel();
+      
+      if (speakingIndex === messageIndex) {
+        // If clicking the same button, stop speaking
+        setSpeakingIndex(null);
+        return;
+      }
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US'; // Conversation AI is in English
+      utterance.rate = 0.9;
+      utterance.pitch = 1;
+      
+      utterance.onend = () => {
+        setSpeakingIndex(null);
+      };
+      
+      utterance.onerror = () => {
+        setSpeakingIndex(null);
+      };
+
+      setSpeakingIndex(messageIndex);
+      window.speechSynthesis.speak(utterance);
+    } else {
+      alert('Trình duyệt không hỗ trợ text-to-speech');
+    }
+  };
 
   const handleSend = async () => {
     if (inputText.trim() && !isLoading) {
@@ -176,7 +209,13 @@ export function ConversationAI() {
                     <p>{message.content}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="sm" className="h-6 px-2">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className={`h-6 px-2 ${speakingIndex === index ? 'text-red-500' : ''}`}
+                      onClick={() => speak(message.content, index)}
+                      title="Phát âm"
+                    >
                       <Volume2 className="h-3 w-3" />
                     </Button>
                     <span className="text-xs text-gray-400">
