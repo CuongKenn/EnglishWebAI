@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import './GradingFeedback.css';
 import apiClient from '../../../services/api';
+import { 
+  CheckCircleIcon, 
+  BoltIcon, 
+  PencilSquareIcon, 
+  DocumentTextIcon,
+  ClockIcon,
+  ChartBarIcon,
+  MagnifyingGlassIcon
+} from '@heroicons/react/24/outline';
 
 const GradingFeedback = () => {
   const [submissions, setSubmissions] = useState([]);
@@ -125,9 +134,9 @@ const GradingFeedback = () => {
 
   const getStatusLabel = (status) => {
     switch(status) {
-      case 'submitted': return '🟡 Chờ chấm';
-      case 'graded': return '🟢 Đã chấm';
-      case 'late': return '🔴 Nộp muộn';
+      case 'submitted': return 'Chờ chấm';
+      case 'graded': return 'Đã chấm';
+      case 'late': return 'Nộp muộn';
       default: return status;
     }
   };
@@ -138,7 +147,10 @@ const GradingFeedback = () => {
     <div className="grading-feedback">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Chấm điểm & Phản hồi ✅</h1>
+          <h1 className="page-title">
+            <CheckCircleIcon className="w-6 h-6 inline-block mr-2" />
+            Chấm điểm & Phản hồi
+          </h1>
           <p className="page-subtitle">Chấm điểm bài làm và gửi phản hồi cho học sinh</p>
         </div>
       </div>
@@ -146,7 +158,9 @@ const GradingFeedback = () => {
       {/* Stats */}
       <div className="stats-row">
         <div className="stat-box orange">
-          <div className="stat-icon">⏳</div>
+          <div className="stat-icon">
+            <ClockIcon className="w-8 h-8" />
+          </div>
           <div className="stat-content">
             <div className="stat-number">
               {submissions.filter(s => s.status === 'submitted').length}
@@ -155,7 +169,9 @@ const GradingFeedback = () => {
           </div>
         </div>
         <div className="stat-box green">
-          <div className="stat-icon">✅</div>
+          <div className="stat-icon">
+            <CheckCircleIcon className="w-8 h-8" />
+          </div>
           <div className="stat-content">
             <div className="stat-number">
               {submissions.filter(s => s.status === 'graded').length}
@@ -164,7 +180,9 @@ const GradingFeedback = () => {
           </div>
         </div>
         <div className="stat-box blue">
-          <div className="stat-icon">📊</div>
+          <div className="stat-icon">
+            <ChartBarIcon className="w-8 h-8" />
+          </div>
           <div className="stat-content">
             <div className="stat-number">
               {submissions.filter(s => s.score !== null).length > 0
@@ -176,7 +194,9 @@ const GradingFeedback = () => {
           </div>
         </div>
         <div className="stat-box purple">
-          <div className="stat-icon">⚡</div>
+          <div className="stat-icon">
+            <BoltIcon className="w-8 h-8" />
+          </div>
           <div className="stat-content">
             <div className="stat-number">
               {submissions.length}
@@ -189,7 +209,9 @@ const GradingFeedback = () => {
       {/* Filters */}
       <div className="filters-section">
         <div className="search-box">
-          <span className="search-icon">🔍</span>
+          <span className="search-icon">
+            <MagnifyingGlassIcon className="w-5 h-5" />
+          </span>
           <input 
             type="text" 
             placeholder="Tìm kiếm học sinh hoặc bài tập..."
@@ -240,7 +262,10 @@ const GradingFeedback = () => {
 
             <div className="submission-card-body">
               <div className="assignment-info">
-                <h4 className="assignment-title">📝 {submission.assignment_title}</h4>
+                <h4 className="assignment-title">
+                  <DocumentTextIcon className="w-4 h-4 inline-block mr-1" />
+                  {submission.assignment_title}
+                </h4>
                 <p className="assignment-class">🏫 {submission.class_name}</p>
               </div>
 
@@ -303,7 +328,17 @@ const GradingFeedback = () => {
                 className="action-btn primary"
                 onClick={() => openGradeModal(submission)}
               >
-                {submission.status === 'graded' ? '✏️ Sửa điểm' : '✅ Chấm điểm'}
+                {submission.status === 'graded' ? (
+                  <>
+                    <PencilSquareIcon className="w-4 h-4 inline-block mr-1" />
+                    Sửa điểm
+                  </>
+                ) : (
+                  <>
+                    <CheckCircleIcon className="w-4 h-4 inline-block mr-1" />
+                    Chấm điểm
+                  </>
+                )}
               </button>
               <button className="action-btn">👁️ Xem chi tiết</button>
             </div>
@@ -324,7 +359,10 @@ const GradingFeedback = () => {
         <div className="modal-overlay" onClick={() => setShowGradeModal(false)}>
           <div className="modal-content large" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>✅ Chấm điểm bài làm</h2>
+              <h2>
+                <CheckCircleIcon className="w-5 h-5 inline-block mr-2" />
+                Chấm điểm bài làm
+              </h2>
               <button className="close-btn" onClick={() => setShowGradeModal(false)}>×</button>
             </div>
 
@@ -410,7 +448,8 @@ const GradingFeedback = () => {
                         className="quick-btn"
                         onClick={() => setGradeData({...gradeData, feedback: 'Cần cải thiện thêm về ngữ pháp và từ vựng.'})}
                       >
-                        📝 Cần cải thiện
+                        <DocumentTextIcon className="w-4 h-4 inline-block mr-1" />
+                        Cần cải thiện
                       </button>
                       <button 
                         type="button"
