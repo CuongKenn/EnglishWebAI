@@ -4,7 +4,8 @@ import { apiV1 } from '../../../services/api';
 import Navbar from '../../../components/Navbar/Navbar';
 import {
   ArrowLeft, Sparkles, CheckCircle, PlayCircle, FileAudio, FileImage,
-  User, Clock, Award, AlertCircle, Loader2
+  User, Clock, Award, AlertCircle, Loader2, BookOpen, PencilLine, 
+  BookMarked, Building2, XCircle, AlertTriangle, Check, X
 } from 'lucide-react';
 import './SubmissionGradingPage.css';
 
@@ -298,14 +299,18 @@ export default function SubmissionGradingPage() {
           {q.type === 'fill_blank' && q.ai_feedback && (
             <div className="gp-ai-hint">
               <Sparkles size={14} /> {safeRender(q.ai_feedback)}
-              {q.semantic_match && <span className="gp-badge ok">Semantic match ✓</span>}
+              {q.semantic_match && (
+                <span className="gp-badge ok">
+                  <Check size={14} /> Semantic match
+                </span>
+              )}
             </div>
           )}
           
           {/* Matching details */}
           {q.type === 'matching' && q.correct_count !== undefined && (
             <div className="gp-matching-stats">
-              ✓ Đúng {q.correct_count}/{q.total_pairs} cặp
+              <Check size={14} className="inline-block" /> Đúng {q.correct_count}/{q.total_pairs} cặp
               {q.partial_credit && <span className="gp-badge warn">Partial credit</span>}
             </div>
           )}
@@ -400,7 +405,10 @@ export default function SubmissionGradingPage() {
                 {readingSection && (
                   <div className="gp-card">
                     <div className="gp-card-header">
-                      <div className="gp-card-title">📖 PHẦN 2: ĐỌC HIỂU</div>
+                      <div className="gp-card-title">
+                        <BookOpen size={20} className="inline-block mr-2" />
+                        PHẦN 2: ĐỌC HIỂU
+                      </div>
                       <div className="gp-section-score">
                         {readingSection.total_points?.toFixed(1) || 0}/2.5 điểm
                       </div>
@@ -430,7 +438,10 @@ export default function SubmissionGradingPage() {
                 {writingSection && (
                   <div className="gp-card">
                     <div className="gp-card-header">
-                      <div className="gp-card-title">✍️ PHẦN 3: VIẾT</div>
+                      <div className="gp-card-title">
+                        <PencilLine size={20} className="inline-block mr-2" />
+                        PHẦN 3: VIẾT
+                      </div>
                       <div className="gp-section-score">
                         {writingSection.points_earned?.toFixed(1) || 0}/2.5 điểm
                       </div>
@@ -487,7 +498,8 @@ export default function SubmissionGradingPage() {
                                 borderLeft: '4px solid #f59e0b'
                               }}>
                                 <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#92400e' }}>
-                                  📝 Nội dung:
+                                  <PencilLine size={16} className="inline-block mr-1" />
+                                  Nội dung:
                                 </div>
                                 <textarea
                                   value={editableWriting.content}
@@ -517,7 +529,8 @@ export default function SubmissionGradingPage() {
                                 borderLeft: '4px solid #ec4899'
                               }}>
                                 <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#831843' }}>
-                                  📖 Ngữ pháp:
+                                  <BookOpen size={16} className="inline-block mr-1" />
+                                  Ngữ pháp:
                                 </div>
                                 <textarea
                                   value={editableWriting.grammar}
@@ -547,7 +560,8 @@ export default function SubmissionGradingPage() {
                                 borderLeft: '4px solid #3b82f6'
                               }}>
                                 <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#1e40af' }}>
-                                  📚 Từ vựng:
+                                  <BookMarked size={16} className="inline-block mr-1" />
+                                  Từ vựng:
                                 </div>
                                 <textarea
                                   value={editableWriting.vocabulary}
@@ -577,7 +591,8 @@ export default function SubmissionGradingPage() {
                                 borderLeft: '4px solid #10b981'
                               }}>
                                 <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#065f46' }}>
-                                  🏗️ Cấu trúc:
+                                  <Building2 size={16} className="inline-block mr-1" />
+                                  Cấu trúc:
                                 </div>
                                 <textarea
                                   value={editableWriting.structure}
