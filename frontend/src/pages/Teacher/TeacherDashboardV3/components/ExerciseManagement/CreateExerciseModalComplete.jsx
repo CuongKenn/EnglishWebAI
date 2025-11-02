@@ -1523,28 +1523,28 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
                 <p>AI sẽ tạo đề thi toàn diện với 4 kỹ năng dựa trên chương trình Tiếng Anh 2018 cho khối {selectedClass?.grade || selectedClass?.name?.match(/\d+/)?.[0] || '10'}, học kỳ {aiFormData.semester || '1'}:</p>
                 <div className="skill-checklist">
                   <div className="skill-item">
-                    <div className="skill-icon">🎧</div>
+                    <div className="skill-icon"><Headphones className="w-6 h-6" /></div>
                     <div>
                       <strong>Nghe (Listening)</strong>
                       <p>Audio tự động + câu hỏi trắc nghiệm</p>
                     </div>
                   </div>
                   <div className="skill-item">
-                    <div className="skill-icon">📖</div>
+                    <div className="skill-icon"><BookOpen className="w-6 h-6" /></div>
                     <div>
                       <strong>Đọc (Reading)</strong>
                       <p>Bài đọc phù hợp trình độ + câu hỏi</p>
                     </div>
                   </div>
                   <div className="skill-item">
-                    <div className="skill-icon">✍️</div>
+                    <div className="skill-icon"><PenLine className="w-6 h-6" /></div>
                     <div>
                       <strong>Viết (Writing)</strong>
                       <p>Đề bài viết luận theo chủ đề</p>
                     </div>
                   </div>
                   <div className="skill-item">
-                    <div className="skill-icon">🗣️</div>
+                    <div className="skill-icon"><Mic className="w-6 h-6" /></div>
                     <div>
                       <strong>Nói (Speaking)</strong>
                       <p>Câu hỏi trả lời và thảo luận</p>
@@ -1719,10 +1719,10 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
               
               <div className="form-section-ex">
                 <label>
-                  {q.type === 'listening' && '🎧 Đề bài Listening'}
-                  {q.type === 'reading' && '📖 Đoạn văn Reading'}
-                  {q.type === 'speaking' && '🗣️ Yêu cầu Speaking'}
-                  {q.type === 'writing' && '✍️ Đề bài Writing'}
+                  {q.type === 'listening' && <><Headphones className="inline-block w-4 h-4 mr-1" /> Đề bài Listening</>}
+                  {q.type === 'reading' && <><BookOpen className="inline-block w-4 h-4 mr-1" /> Đoạn văn Reading</>}
+                  {q.type === 'speaking' && <><Mic className="inline-block w-4 h-4 mr-1" /> Yêu cầu Speaking</>}
+                  {q.type === 'writing' && <><PenLine className="inline-block w-4 h-4 mr-1" /> Đề bài Writing</>}
                   {!['listening', 'reading', 'speaking', 'writing'].includes(q.type) && 'Câu hỏi'}
                 </label>
                 <textarea
