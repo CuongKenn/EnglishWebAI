@@ -272,13 +272,6 @@ const News = () => {
                 <div className="stat-label">Bài viết</div>
               </div>
             </div>
-            <div className="stat-box-sidebar">
-              <div className="stat-icon">👥</div>
-              <div className="stat-info">
-                <div className="stat-number">2.4K</div>
-                <div className="stat-label">Độc giả</div>
-              </div>
-            </div>
           </div>
         </aside>
       </div>
