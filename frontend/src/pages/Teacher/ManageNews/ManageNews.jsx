@@ -1,6 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import apiClient from '../../../services/api';
 import './ManageNews.css';
+import { 
+  NewspaperIcon, 
+  MegaphoneIcon, 
+  GiftIcon, 
+  LightBulbIcon, 
+  BookOpenIcon, 
+  SparklesIcon,
+  RocketLaunchIcon,
+  FireIcon,
+  StarIcon,
+  PlusIcon
+} from '@heroicons/react/24/outline';
 
 const ManageNews = () => {
   const [newsList, setNewsList] = useState([]);
@@ -20,15 +32,25 @@ const ManageNews = () => {
 
   const categories = ['Thông báo', 'Khuyến mãi', 'Học tập', 'Hướng dẫn', 'Sự kiện', 'Tính năng mới'];
   const types = [
-    { value: 'announcement', label: 'Thông báo', icon: '📢' },
-    { value: 'promotion', label: 'Khuyến mãi', icon: '🎁' },
-    { value: 'tips', label: 'Mẹo học tập', icon: '💡' },
-    { value: 'guide', label: 'Hướng dẫn', icon: '📖' },
-    { value: 'event', label: 'Sự kiện', icon: '🎉' },
-    { value: 'feature', label: 'Tính năng mới', icon: '✨' }
+    { value: 'announcement', label: 'Thông báo', icon: <MegaphoneIcon className="w-4 h-4" /> },
+    { value: 'promotion', label: 'Khuyến mãi', icon: <GiftIcon className="w-4 h-4" /> },
+    { value: 'tips', label: 'Mẹo học tập', icon: <LightBulbIcon className="w-4 h-4" /> },
+    { value: 'guide', label: 'Hướng dẫn', icon: <BookOpenIcon className="w-4 h-4" /> },
+    { value: 'event', label: 'Sự kiện', icon: <SparklesIcon className="w-4 h-4" /> },
+    { value: 'feature', label: 'Tính năng mới', icon: <StarIcon className="w-4 h-4" /> }
   ];
 
-  const icons = ['📰', '📢', '🎁', '💡', '📖', '🎉', '✨', '🚀', '🔥', '⭐', '🎯', '📚'];
+  const icons = [
+    { icon: <NewspaperIcon className="w-5 h-5" />, value: '📰' },
+    { icon: <MegaphoneIcon className="w-5 h-5" />, value: '📢' },
+    { icon: <GiftIcon className="w-5 h-5" />, value: '🎁' },
+    { icon: <LightBulbIcon className="w-5 h-5" />, value: '💡' },
+    { icon: <BookOpenIcon className="w-5 h-5" />, value: '📖' },
+    { icon: <SparklesIcon className="w-5 h-5" />, value: '🎉' },
+    { icon: <StarIcon className="w-5 h-5" />, value: '✨' },
+    { icon: <RocketLaunchIcon className="w-5 h-5" />, value: '🚀' },
+    { icon: <FireIcon className="w-5 h-5" />, value: '🔥' },
+  ];
 
   useEffect(() => {
     loadNews();
