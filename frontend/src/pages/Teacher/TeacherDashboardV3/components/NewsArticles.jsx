@@ -2,6 +2,22 @@ import { useState, useEffect } from 'react';
 import { newsAPI } from '../../../../services/api';
 import Toast from '../../../../components/Toast/Toast';
 import useToast from '../../../../hooks/useToast';
+import { 
+  NewspaperIcon, 
+  MegaphoneIcon, 
+  GiftIcon, 
+  LightBulbIcon, 
+  BookOpenIcon, 
+  SparklesIcon,
+  RocketLaunchIcon,
+  FireIcon,
+  StarIcon,
+  PlusIcon,
+  EyeIcon,
+  HeartIcon,
+  PencilIcon,
+  TrashIcon
+} from '@heroicons/react/24/outline';
 import './NewsArticles.css';
 
 const NewsArticles = () => {
@@ -23,15 +39,25 @@ const NewsArticles = () => {
 
   const categories = ['Thông báo', 'Khuyến mãi', 'Học tập', 'Hướng dẫn', 'Sự kiện', 'Tính năng mới'];
   const types = [
-    { value: 'announcement', label: 'Thông báo', icon: '📢' },
-    { value: 'promotion', label: 'Khuyến mãi', icon: '🎁' },
-    { value: 'tips', label: 'Mẹo học tập', icon: '💡' },
-    { value: 'guide', label: 'Hướng dẫn', icon: '📖' },
-    { value: 'event', label: 'Sự kiện', icon: '🎉' },
-    { value: 'feature', label: 'Tính năng mới', icon: '✨' }
+    { value: 'announcement', label: 'Thông báo', icon: <MegaphoneIcon className="w-4 h-4" /> },
+    { value: 'promotion', label: 'Khuyến mãi', icon: <GiftIcon className="w-4 h-4" /> },
+    { value: 'tips', label: 'Mẹo học tập', icon: <LightBulbIcon className="w-4 h-4" /> },
+    { value: 'guide', label: 'Hướng dẫn', icon: <BookOpenIcon className="w-4 h-4" /> },
+    { value: 'event', label: 'Sự kiện', icon: <SparklesIcon className="w-4 h-4" /> },
+    { value: 'feature', label: 'Tính năng mới', icon: <StarIcon className="w-4 h-4" /> }
   ];
 
-  const icons = ['📰', '📢', '🎁', '💡', '📖', '🎉', '✨', '🚀', '🔥', '⭐', '🎯', '📚'];
+  const icons = [
+    { icon: <NewspaperIcon className="w-5 h-5" />, value: '📰' },
+    { icon: <MegaphoneIcon className="w-5 h-5" />, value: '📢' },
+    { icon: <GiftIcon className="w-5 h-5" />, value: '🎁' },
+    { icon: <LightBulbIcon className="w-5 h-5" />, value: '💡' },
+    { icon: <BookOpenIcon className="w-5 h-5" />, value: '📖' },
+    { icon: <SparklesIcon className="w-5 h-5" />, value: '🎉' },
+    { icon: <StarIcon className="w-5 h-5" />, value: '✨' },
+    { icon: <RocketLaunchIcon className="w-5 h-5" />, value: '🚀' },
+    { icon: <FireIcon className="w-5 h-5" />, value: '🔥' },
+  ];
 
   useEffect(() => {
     loadNews();
@@ -140,11 +166,14 @@ const NewsArticles = () => {
     <div className="manage-news-page">
       <div className="page-header">
         <div>
-          <h1 className="page-title">📰 Quản lý Tin tức</h1>
+          <h1 className="page-title">
+            <NewspaperIcon className="w-6 h-6 inline-block mr-2" />
+            Quản lý Tin tức
+          </h1>
           <p className="page-subtitle">Tạo và quản lý tin tức, thông báo cho hệ thống</p>
         </div>
         <button className="btn-primary" onClick={() => handleOpenModal()}>
-          <span>➕</span> Tạo tin tức mới
+          <PlusIcon className="w-5 h-5 inline-block" /> Tạo tin tức mới
         </button>
       </div>
 
@@ -184,8 +213,14 @@ const NewsArticles = () => {
                     <span className="category-badge">{news.category}</span>
                   </td>
                   <td>{getStatusBadge(news.status)}</td>
-                  <td>👁️ {news.views || 0}</td>
-                  <td>❤️ {news.likes || 0}</td>
+                  <td>
+                    <EyeIcon className="w-4 h-4 inline-block mr-1" />
+                    {news.views || 0}
+                  </td>
+                  <td>
+                    <HeartIcon className="w-4 h-4 inline-block mr-1" />
+                    {news.likes || 0}
+                  </td>
                   <td>{news.author_name}</td>
                   <td>{new Date(news.created_at).toLocaleDateString('vi-VN')}</td>
                   <td>
@@ -195,14 +230,14 @@ const NewsArticles = () => {
                         onClick={() => handleOpenModal(news)}
                         title="Chỉnh sửa"
                       >
-                        ✏️
+                        <PencilIcon className="w-4 h-4" />
                       </button>
                       <button 
                         className="btn-delete" 
                         onClick={() => handleDelete(news.id)}
                         title="Xóa"
                       >
-                        🗑️
+                        <TrashIcon className="w-4 h-4" />
                       </button>
             </div>
                   </td>
@@ -213,7 +248,9 @@ const NewsArticles = () => {
 
           {newsList.length === 0 && (
             <div className="empty-state">
-              <div className="empty-icon">📰</div>
+              <div className="empty-icon">
+                <NewspaperIcon className="w-16 h-16" />
+              </div>
               <h3>Chưa có tin tức nào</h3>
               <p>Tạo tin tức đầu tiên để bắt đầu</p>
             </div>
@@ -290,7 +327,7 @@ const NewsArticles = () => {
                   >
                     {types.map((type) => (
                       <option key={type.value} value={type.value}>
-                        {type.icon} {type.label}
+                        {type.label}
                       </option>
                     ))}
                   </select>
@@ -301,14 +338,14 @@ const NewsArticles = () => {
                 <div className="form-group">
                   <label>Icon</label>
                   <div className="icon-selector">
-                    {icons.map((icon) => (
+                    {icons.map((iconItem, idx) => (
                       <button
-                        key={icon}
+                        key={idx}
                         type="button"
-                        className={`icon-btn ${formData.icon === icon ? 'active' : ''}`}
-                        onClick={() => setFormData({ ...formData, icon })}
+                        className={`icon-btn ${formData.icon === iconItem.value ? 'active' : ''}`}
+                        onClick={() => setFormData({ ...formData, icon: iconItem.value })}
                       >
-                        {icon}
+                        {iconItem.icon}
                       </button>
                     ))}
                 </div>
