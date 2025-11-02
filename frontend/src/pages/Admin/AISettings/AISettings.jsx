@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Eye, EyeOff, Save, Key, Shield, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Eye, EyeOff, Save, Key, Shield, AlertCircle, CheckCircle2, Bot, Globe, Mic2, Type, MessageCircle, Headphones, PenLine, BookOpen, CreditCard } from 'lucide-react';
 import aiSettingsService from '../../../services/aiSettingsService';
 import './AISettings.css';
 
@@ -71,7 +71,7 @@ const AISettings = () => {
     {
       id: 'openai',
       name: 'OpenAI API',
-      icon: '🤖',
+      icon: <Bot className="inline-block w-5 h-5" />,
       description: 'Dùng cho Conversation AI, Writing AI, Reading AI',
       placeholder: 'sk-...',
       docs: 'https://platform.openai.com/api-keys',
@@ -79,7 +79,7 @@ const AISettings = () => {
     {
       id: 'googleTranslate',
       name: 'Google Translate API',
-      icon: '🌐',
+      icon: <Globe className="inline-block w-5 h-5" />,
       description: 'Dùng cho Translation AI',
       placeholder: 'AIza...',
       docs: 'https://cloud.google.com/translate/docs',
@@ -87,7 +87,7 @@ const AISettings = () => {
     {
       id: 'elevenLabs',
       name: 'ElevenLabs API',
-      icon: '🎙️',
+      icon: <Mic2 className="inline-block w-5 h-5" />,
       description: 'Dùng cho Text-to-Speech trong Listening AI',
       placeholder: 'el_...',
       docs: 'https://elevenlabs.io/docs',
@@ -95,7 +95,7 @@ const AISettings = () => {
     {
       id: 'deepl',
       name: 'DeepL API',
-      icon: '🔤',
+      icon: <Type className="inline-block w-5 h-5" />,
       description: 'API dịch thuật chất lượng cao (tùy chọn)',
       placeholder: '',
       docs: 'https://www.deepl.com/docs-api',
@@ -103,12 +103,12 @@ const AISettings = () => {
   ];
 
   const features = [
-    { id: 'translate', name: 'Dịch bằng AI', icon: '🌐', color: 'blue' },
-    { id: 'conversation', name: 'Conversation AI', icon: '💬', color: 'purple' },
-    { id: 'listening', name: 'Luyện nghe AI', icon: '🎧', color: 'green' },
-    { id: 'writing', name: 'Luyện viết AI', icon: '✍️', color: 'orange' },
-    { id: 'reading', name: 'Luyện đọc AI', icon: '📖', color: 'indigo' },
-    { id: 'flashcard', name: 'Flashcard AI', icon: '🎴', color: 'pink' },
+    { id: 'translate', name: 'Dịch bằng AI', icon: <Globe className="inline-block w-5 h-5" />, color: 'blue' },
+    { id: 'conversation', name: 'Conversation AI', icon: <MessageCircle className="inline-block w-5 h-5" />, color: 'purple' },
+    { id: 'listening', name: 'Luyện nghe AI', icon: <Headphones className="inline-block w-5 h-5" />, color: 'green' },
+    { id: 'writing', name: 'Luyện viết AI', icon: <PenLine className="inline-block w-5 h-5" />, color: 'orange' },
+    { id: 'reading', name: 'Luyện đọc AI', icon: <BookOpen className="inline-block w-5 h-5" />, color: 'indigo' },
+    { id: 'flashcard', name: 'Flashcard AI', icon: <CreditCard className="inline-block w-5 h-5" />, color: 'pink' },
   ];
 
   if (!settings) return <div>Đang tải...</div>;
