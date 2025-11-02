@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { 
   Clock, Save, Send, Volume2, Mic, Play, Pause, RotateCcw,
-  Check, X, FileText, AlertCircle, Zap, BookOpen
+  Check, X, FileText, AlertCircle, Zap, BookOpen, Headphones, PenLine, CheckCircle, Target
 } from 'lucide-react';
 import './DoExercise.css';
 import { apiV1 } from '../../../services/api';
@@ -1563,11 +1563,10 @@ export default function DoExercise() {
           <div className="result-header">
             <div className="result-header-left">
               <h1>
-                {exercise.skill_type === 'listening' && '🎧'}
-                {exercise.skill_type === 'speaking' && '🗣️'}
-                {exercise.skill_type === 'reading' && '📖'}
-                {exercise.skill_type === 'writing' && '✍️'}
-                {' '}
+                {exercise.skill_type === 'listening' && <Headphones className="inline-block w-6 h-6 mr-2" />}
+                {exercise.skill_type === 'speaking' && <Mic className="inline-block w-6 h-6 mr-2" />}
+                {exercise.skill_type === 'reading' && <BookOpen className="inline-block w-6 h-6 mr-2" />}
+                {exercise.skill_type === 'writing' && <PenLine className="inline-block w-6 h-6 mr-2" />}
                 {exercise.title}
               </h1>
               <p className="result-subtitle">Bài làm của bạn</p>
@@ -1639,10 +1638,10 @@ export default function DoExercise() {
         <div className="result-header">
           <div className="result-header-left">
             <h1>
-              {exercise.skill_type === 'listening' && '🎧'}
-              {exercise.skill_type === 'speaking' && '🗣️'}
-              {exercise.skill_type === 'reading' && '📖'}
-              {exercise.skill_type === 'writing' && '✍️'}
+              {exercise.skill_type === 'listening' && <Headphones className="inline-block w-6 h-6 mr-2" />}
+              {exercise.skill_type === 'speaking' && <Mic className="inline-block w-6 h-6 mr-2" />}
+              {exercise.skill_type === 'reading' && <BookOpen className="inline-block w-6 h-6 mr-2" />}
+              {exercise.skill_type === 'writing' && <PenLine className="inline-block w-6 h-6 mr-2" />}
               {' '}
               {exercise.title}
             </h1>
@@ -1778,7 +1777,7 @@ export default function DoExercise() {
             {/* Speaking Assessment - Detailed like teacher view */}
             {(submission.rubrics_scores.speaking_assessment || submission.rubrics_scores.speaking) && (
               <div className="rubric-section speaking-detailed">
-                <h4>🗣️ Đánh giá kỹ năng Speaking</h4>
+                <h4><Mic className="inline-block w-5 h-5 mr-2" /> Đánh giá kỹ năng Speaking</h4>
                 
                 {/* KPI Scores Display */}
                 {submission.rubrics_scores.speaking_assessment && (
@@ -1786,10 +1785,10 @@ export default function DoExercise() {
                     {['pronunciation', 'fluency', 'completeness', 'accuracy'].map((key) => {
                       const value = submission.rubrics_scores.speaking_assessment[key];
                       const labels = {
-                        pronunciation: { name: 'Phát âm', icon: '🗣️', color: '#f59e0b' },
-                        fluency: { name: 'Trôi chảy', icon: '⚡', color: '#3b82f6' },
-                        completeness: { name: 'Hoàn chỉnh', icon: '✅', color: '#10b981' },
-                        accuracy: { name: 'Chính xác', icon: '🎯', color: '#ef4444' }
+                        pronunciation: { name: 'Phát âm', icon: <Mic className="w-6 h-6" />, color: '#f59e0b' },
+                        fluency: { name: 'Trôi chảy', icon: <Zap className="w-6 h-6" />, color: '#3b82f6' },
+                        completeness: { name: 'Hoàn chỉnh', icon: <CheckCircle className="w-6 h-6" />, color: '#10b981' },
+                        accuracy: { name: 'Chính xác', icon: <Target className="w-6 h-6" />, color: '#ef4444' }
                       };
                       if (typeof value !== 'number') return null;
                       return (
@@ -2150,21 +2149,21 @@ export default function DoExercise() {
         <div className="start-screen-overlay">
           <div className="start-screen-card">
             <div className="start-screen-icon">
-              {exercise.skill_type === 'listening' && '🎧'}
-              {exercise.skill_type === 'speaking' && '🗣️'}
-              {exercise.skill_type === 'reading' && '📖'}
-              {exercise.skill_type === 'writing' && '✍️'}
-              {!exercise.skill_type && '📝'}
+              {exercise.skill_type === 'listening' && <Headphones className="w-16 h-16 text-blue-500" />}
+              {exercise.skill_type === 'speaking' && <Mic className="w-16 h-16 text-green-500" />}
+              {exercise.skill_type === 'reading' && <BookOpen className="w-16 h-16 text-purple-500" />}
+              {exercise.skill_type === 'writing' && <PenLine className="w-16 h-16 text-orange-500" />}
+              {!exercise.skill_type && <FileText className="w-16 h-16 text-gray-500" />}
             </div>
             <h2>{exercise.title}</h2>
             <p className="start-screen-desc">{exercise.description}</p>
             
             <div className="start-screen-info">
               <div className="info-item">
-                <strong>⏱️ Thời gian:</strong> {exercise.duration ? `${exercise.duration} phút` : 'Không giới hạn'}
+                <strong><Clock className="inline-block w-4 h-4 mr-1" /> Thời gian:</strong> {exercise.duration ? `${exercise.duration} phút` : 'Không giới hạn'}
               </div>
               <div className="info-item">
-                <strong>📊 Điểm tối đa:</strong> {exercise.max_score || 10} điểm
+                <strong><Target className="inline-block w-4 h-4 mr-1" /> Điểm tối đa:</strong> {exercise.max_score || 10} điểm
               </div>
             </div>
             
@@ -2208,10 +2207,10 @@ export default function DoExercise() {
       <div className="exercise-header">
         <div className="header-left">
           <h1>
-            {exercise.skill_type === 'listening' && '🎧'}
-            {exercise.skill_type === 'speaking' && '🗣️'}
-            {exercise.skill_type === 'reading' && '📖'}
-            {exercise.skill_type === 'writing' && '✍️'}
+            {exercise.skill_type === 'listening' && <Headphones className="inline-block w-6 h-6 mr-2" />}
+            {exercise.skill_type === 'speaking' && <Mic className="inline-block w-6 h-6 mr-2" />}
+            {exercise.skill_type === 'reading' && <BookOpen className="inline-block w-6 h-6 mr-2" />}
+            {exercise.skill_type === 'writing' && <PenLine className="inline-block w-6 h-6 mr-2" />}
             {' '}
             {exercise.title}
           </h1>
