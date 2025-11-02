@@ -842,7 +842,7 @@ export default function DoExercise() {
           {/* PART 1: LISTENING (2.5 điểm) */}
           <div className="test-section">
             <div className="section-header">
-              <h4>🎧 PHẦN 1: NGHE HIỂU (2.5 điểm)</h4>
+              <h4><Headphones className="inline-block w-5 h-5 mr-2" /> PHẦN 1: NGHE HIỂU (2.5 điểm)</h4>
             </div>
             
             {/* Audio Player */}
