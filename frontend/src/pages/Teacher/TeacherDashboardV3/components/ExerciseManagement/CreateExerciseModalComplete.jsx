@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { 
   X, FileText, Clock, Award, Upload, FileAudio, File, 
-  Plus, Trash2, Sparkles, Bot, Database, FileUp, Check
+  Plus, Trash2, Sparkles, Bot, Database, FileUp, Check,
+  Headphones, Mic, BookOpen, PenLine, Edit3
 } from 'lucide-react';
 import './ExerciseManagement.css';
 import QuestionBankSelectorModal from './QuestionBankSelectorModal';
@@ -584,7 +585,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
                     checked={selectedSkill === 'listening'}
                     onChange={(e) => setSelectedSkill(e.target.value)}
                   />
-                  <span>🎧 Nghe</span>
+                  <span><Headphones className="inline-block w-4 h-4 mr-1" /> Nghe</span>
                 </label>
                 <label className="skill-option-ex">
                   <input 
@@ -594,7 +595,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
                     checked={selectedSkill === 'speaking'}
                     onChange={(e) => setSelectedSkill(e.target.value)}
                   />
-                  <span>🗣️ Nói</span>
+                  <span><Mic className="inline-block w-4 h-4 mr-1" /> Nói</span>
                 </label>
                 <label className="skill-option-ex">
                   <input 
@@ -604,7 +605,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
                     checked={selectedSkill === 'reading'}
                     onChange={(e) => setSelectedSkill(e.target.value)}
                   />
-                  <span>📖 Đọc</span>
+                  <span><BookOpen className="inline-block w-4 h-4 mr-1" /> Đọc</span>
                 </label>
                 <label className="skill-option-ex">
                   <input 
@@ -614,7 +615,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
                     checked={selectedSkill === 'writing'}
                     onChange={(e) => setSelectedSkill(e.target.value)}
                   />
-                  <span>✍️ Viết</span>
+                  <span><PenLine className="inline-block w-4 h-4 mr-1" /> Viết</span>
                 </label>
               </div>
             </div>
@@ -679,7 +680,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
                           checked={inputMethod === 'manual'}
                           onChange={() => setInputMethod('manual')}
                         />
-                        <span>✍️ Tạo thủ công</span>
+                        <span><Edit3 className="inline-block w-4 h-4 mr-1" /> Tạo thủ công</span>
                       </label>
                       <label className="method-option">
                         <input 
@@ -757,7 +758,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
                 checked={inputMethod === 'manual'}
                 onChange={() => setInputMethod('manual')}
               />
-              <span>✍️ Tạo thủ công</span>
+              <span><Edit3 className="inline-block w-4 h-4 mr-1" /> Tạo thủ công</span>
             </label>
             <label className="method-option">
               <input 
@@ -779,30 +780,30 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
             
             {/* Listening Section */}
             <div className="comprehensive-section">
-              <h5 className="section-subtitle">🎧 Phần Nghe (Listening)</h5>
+              <h5 className="section-subtitle"><Headphones className="inline-block w-5 h-5 mr-2" /> Phần Nghe (Listening)</h5>
               {renderListeningForm()}
             </div>
             
             {/* Reading Section */}
             <div className="comprehensive-section">
-              <h5 className="section-subtitle">📖 Phần Đọc (Reading)</h5>
+              <h5 className="section-subtitle"><BookOpen className="inline-block w-5 h-5 mr-2" /> Phần Đọc (Reading)</h5>
               {renderReadingForm()}
             </div>
             
             {/* Writing Section */}
             <div className="comprehensive-section">
-              <h5 className="section-subtitle">✍️ Phần Viết (Writing)</h5>
+              <h5 className="section-subtitle"><PenLine className="inline-block w-5 h-5 mr-2" /> Phần Viết (Writing)</h5>
               {renderWritingForm()}
             </div>
             
             {/* Speaking Section */}
             <div className="comprehensive-section">
-              <h5 className="section-subtitle">🗣️ Phần Nói (Speaking)</h5>
+              <h5 className="section-subtitle"><Mic className="inline-block w-5 h-5 mr-2" /> Phần Nói (Speaking)</h5>
               {renderSpeakingForm()}
             </div>
             
             <div className="info-box-note">
-              <span className="info-icon">💡</span>
+              <Sparkles className="inline-block w-5 h-5 mr-2 text-yellow-500" />
               <p>Đề thi toàn diện bao gồm cả 4 kỹ năng. Mỗi phần có câu hỏi riêng.</p>
             </div>
           </>
@@ -816,7 +817,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   function renderListeningForm() {
     return (
       <div className="listening-form-content">
-        <h4 className="section-title">🎧 Nội dung bài Nghe</h4>
+        <h4 className="section-title"><Headphones className="inline-block w-5 h-5 mr-2" /> Nội dung bài Nghe</h4>
         
         {/* Audio Upload or AI Generated Audio */}
         <div className="form-section-ex">
@@ -925,7 +926,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   function renderSpeakingForm() {
     return (
       <div className="speaking-form-content">
-        <h4 className="section-title">🗣️ Nội dung bài Nói</h4>
+        <h4 className="section-title"><Mic className="inline-block w-5 h-5 mr-2" /> Nội dung bài Nói</h4>
         
         {/* Prompt */}
         <div className="form-section-ex">
@@ -996,7 +997,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   function renderReadingForm() {
     return (
       <div className="reading-form-content">
-        <h4 className="section-title">📖 Nội dung bài Đọc</h4>
+        <h4 className="section-title"><BookOpen className="inline-block w-5 h-5 mr-2" /> Nội dung bài Đọc</h4>
         
         {/* Input Method Tabs */}
         <div className="input-method-tabs">
@@ -1081,7 +1082,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   function renderWritingForm() {
     return (
       <div className="writing-form-content">
-        <h4 className="section-title">✍️ Nội dung bài Viết</h4>
+        <h4 className="section-title"><PenLine className="inline-block w-5 h-5 mr-2" /> Nội dung bài Viết</h4>
         
         {/* Prompt */}
         <div className="form-section-ex">
