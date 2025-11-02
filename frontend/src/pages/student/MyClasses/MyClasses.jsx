@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BookOpen, Users, Calendar, FileText, Video, ChevronRight, Download, Eye, PlayCircle, Star, Clock, Award, TrendingUp, CheckCircle2, Target, Bell, AlertCircle } from 'lucide-react';
+import { BookOpen, Users, Calendar, FileText, Video, ChevronRight, Download, Eye, PlayCircle, Star, Clock, Award, TrendingUp, CheckCircle2, Target, Bell, AlertCircle, HandRaisedIcon as HandRaised, PenLine, FileCheck } from 'lucide-react';
 import './MyClasses.css';
 import { apiV1 } from '../../../services/api';
 
@@ -367,7 +367,17 @@ export default function MyClasses() {
                         <div key={exercise.id} className={`exercise-item-new ${isGraded ? 'graded' : hasSubmission ? 'submitted' : isOverdue ? 'overdue' : ''}`}>
                           <div className="exercise-header-new">
                             <div className="exercise-type-new">
-                              {exercise.type === 'quiz' ? '📝 Kiểm tra' : '✏️ Bài tập'}
+                              {exercise.type === 'quiz' ? (
+                                <>
+                                  <FileCheck size={14} className="inline-block mr-1" />
+                                  Kiểm tra
+                                </>
+                              ) : (
+                                <>
+                                  <PenLine size={14} className="inline-block mr-1" />
+                                  Bài tập
+                                </>
+                              )}
                             </div>
                             {isGraded && (
                               <div className="exercise-score-new">
