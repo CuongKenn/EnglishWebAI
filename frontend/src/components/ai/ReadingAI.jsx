@@ -19,7 +19,7 @@ export function ReadingAI() {
   ];
 
   const types = [
-    { value: 'story', label: 'Story', icon: <Book className="w-4 h-4" />, desc: 'Truyện ngắn' },
+    { value: 'story', label: 'Story', icon: <Book className="w-6 h-6" />, desc: 'Truyện ngắn' },
     { value: 'article', label: 'Article', icon: '📰', desc: 'Bài báo' },
     { value: 'news', label: 'News', icon: '📺', desc: 'Tin tức' },
     { value: 'essay', label: 'Essay', icon: '📝', desc: 'Tiểu luận' },
@@ -227,7 +227,7 @@ export function ReadingAI() {
                         : 'border-gray-200 hover:border-purple-300'
                     }`}
                   >
-                    <div className="text-2xl mb-1 flex justify-center">{type.icon}</div>
+                    <div className="text-2xl mb-1 flex items-center justify-center">{type.icon}</div>
                     <div className="text-xs font-medium text-gray-700">{type.desc}</div>
                   </button>
                 ))}
