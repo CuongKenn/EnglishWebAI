@@ -271,7 +271,7 @@ async def get_student_analytics(
     
     # Try to get from cache
     cached_result = get_cached_student_analytics(class_id)
-    if cached_result:
+    if cached_result is not None:
         logger.info(f"Returning cached analytics for class {class_id}")
         return cached_result
     

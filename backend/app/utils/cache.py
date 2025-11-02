@@ -12,8 +12,20 @@ logger = logging.getLogger(__name__)
 _redis_client: Optional[redis.Redis] = None
 
 
+def reset_redis_client():
+    """Force reset Redis client connection"""
+    global _redis_client
+    if _redis_client:
+        try:
+            _redis_client.close()
+        except:
+            pass
+    _redis_client = None
+    logger.info("🔄 Redis client reset")
+
+
 def get_redis_client() -> Optional[redis.Redis]:
-    """Get Redis client singleton"""
+    """Get Redis client singleton with health check"""
     global _redis_client
     
     if _redis_client is None:
@@ -24,7 +36,10 @@ def get_redis_client() -> Optional[redis.Redis]:
                     redis_url,
                     decode_responses=False,  # We'll handle encoding
                     socket_connect_timeout=5,
-                    socket_timeout=5
+                    socket_timeout=5,
+                    health_check_interval=30,  # Check connection health every 30s
+                    retry_on_timeout=True,
+                    max_connections=50
                 )
                 # Test connection
                 _redis_client.ping()
@@ -34,6 +49,14 @@ def get_redis_client() -> Optional[redis.Redis]:
         except Exception as e:
             logger.warning(f"Failed to connect to Redis: {e}. Caching disabled.")
             _redis_client = None
+    else:
+        # Health check for existing connection
+        try:
+            _redis_client.ping()
+        except Exception as e:
+            logger.warning(f"Redis connection lost: {e}. Reconnecting...")
+            _redis_client = None
+            return get_redis_client()  # Recursive retry
     
     return _redis_client
 
@@ -70,16 +93,30 @@ def cache_result(key_prefix: str, ttl: int = 300):
                 result = func(*args, **kwargs)
                 
                 # Store in cache
-                redis_client.setex(
-                    cache_key,
-                    ttl,
-                    pickle.dumps(result)
-                )
+                try:
+                    redis_client.setex(
+                        cache_key,
+                        ttl,
+                        pickle.dumps(result)
+                    )
+                    logger.debug(f"✅ Cached result: {cache_key}")
+                except redis.exceptions.ReadOnlyError as e:
+                    logger.error(f"🔴 Redis READ-ONLY error on setex: {e}")
+                    reset_redis_client()
+                except Exception as set_err:
+                    if "READONLY" in str(set_err).upper() or "read only" in str(set_err).lower():
+                        logger.error(f"🔴 Detected READ-ONLY in setex: {set_err}")
+                        reset_redis_client()
+                    else:
+                        logger.warning(f"Failed to cache result: {set_err}")
                 
                 return result
                 
             except Exception as e:
                 logger.warning(f"Cache error: {e}. Falling back to direct call.")
+                if "READONLY" in str(e).upper() or "read only" in str(e).lower():
+                    logger.error(f"🔴 READ-ONLY detected in decorator: {e}")
+                    reset_redis_client()
                 return func(*args, **kwargs)
         
         return wrapper
@@ -130,14 +167,22 @@ def _build_cache_key(*args, **kwargs) -> str:
 
 # Convenience functions for common cache operations
 def cache_teacher_stats(teacher_id: int, period: str, data: Any, ttl: int = 300):
-    """Cache teacher statistics"""
+    """Cache teacher statistics with retry on connection errors"""
     redis_client = get_redis_client()
     if redis_client:
         try:
             key = f"teacher_stats:{teacher_id}:{period}"
-            redis_client.setex(key, ttl, pickle.dumps(data))
+            serialized = pickle.dumps(data)
+            redis_client.setex(key, ttl, serialized)
+            logger.info(f"✅ Cached teacher stats: {key} ({len(serialized)} bytes, TTL: {ttl}s)")
+        except redis.exceptions.ReadOnlyError as e:
+            logger.error(f"🔴 Redis is READ-ONLY! Resetting connection... Error: {e}")
+            reset_redis_client()
         except Exception as e:
-            logger.warning(f"Failed to cache teacher stats: {e}")
+            logger.error(f"❌ Failed to cache teacher stats: {e}", exc_info=True)
+            if "READONLY" in str(e).upper() or "read only" in str(e).lower():
+                logger.error("🔴 Detected READ-ONLY error, resetting connection")
+                reset_redis_client()
 
 
 def get_cached_teacher_stats(teacher_id: int, period: str) -> Optional[Any]:
@@ -160,14 +205,32 @@ def invalidate_teacher_stats(teacher_id: int):
 
 
 def cache_student_analytics(student_id: int, data: Any, ttl: int = 180):
-    """Cache student analytics"""
+    """Cache student analytics with retry on connection errors"""
     redis_client = get_redis_client()
     if redis_client:
         try:
             key = f"student_analytics:{student_id}"
-            redis_client.setex(key, ttl, pickle.dumps(data))
+            serialized = pickle.dumps(data)
+            redis_client.setex(key, ttl, serialized)
+            logger.info(f"✅ Cached student analytics: {key} ({len(serialized)} bytes, TTL: {ttl}s)")
+        except redis.exceptions.ReadOnlyError as e:
+            logger.error(f"🔴 Redis is READ-ONLY! Resetting connection... Error: {e}")
+            reset_redis_client()
+            # Retry once
+            try:
+                redis_client = get_redis_client()
+                if redis_client:
+                    redis_client.setex(key, ttl, serialized)
+                    logger.info(f"✅ Retry successful: {key}")
+            except Exception as retry_err:
+                logger.error(f"❌ Retry failed: {retry_err}")
         except Exception as e:
-            logger.warning(f"Failed to cache student analytics: {e}")
+            logger.error(f"❌ Failed to cache student analytics {student_id}: {e}", exc_info=True)
+            if "READONLY" in str(e).upper() or "read only" in str(e).lower():
+                logger.error("🔴 Detected READ-ONLY error, resetting connection")
+                reset_redis_client()
+    else:
+        logger.warning(f"⚠️ Redis client not available for student_analytics:{student_id}")
 
 
 def get_cached_student_analytics(student_id: int) -> Optional[Any]:
@@ -178,7 +241,13 @@ def get_cached_student_analytics(student_id: int) -> Optional[Any]:
             key = f"student_analytics:{student_id}"
             cached = redis_client.get(key)
             if cached:
-                return pickle.loads(cached)
+                result = pickle.loads(cached)
+                logger.info(f"🎯 Cache HIT: {key} ({len(cached)} bytes)")
+                return result
+            else:
+                logger.info(f"❌ Cache MISS: {key}")
         except Exception as e:
-            logger.warning(f"Failed to get cached student analytics: {e}")
+            logger.error(f"❌ Failed to get cached student analytics {student_id}: {e}", exc_info=True)
+    else:
+        logger.warning(f"⚠️ Redis client not available for get student_analytics:{student_id}")
     return None
