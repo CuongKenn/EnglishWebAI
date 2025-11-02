@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { UserPlus, Copy, Check, Share2 } from 'lucide-react';
+import { UserPlusIcon, ClipboardDocumentIcon, CheckIcon, ShareIcon } from '@heroicons/react/24/outline';
 import './InviteFriends.css';
 
 const InviteFriends = () => {
   const [copied, setCopied] = useState(false);
-  const inviteCode = 'ENGLISHAI2024';
-  const inviteLink = `https://englishai.com/register?ref=${inviteCode}`;
+  const inviteCode = 'SMARTLEARN2024';
+  const inviteLink = `https://smartlearn.vn/register?ref=${inviteCode}`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(inviteLink);
@@ -16,7 +16,7 @@ const InviteFriends = () => {
   return (
     <div className="invite-friends-page">
       <div className="invite-header">
-        <UserPlus size={48} />
+        <UserPlusIcon size={48} />
         <h1>Giới thiệu bạn bè</h1>
         <p>Chia sẻ Smart Learn với bạn bè và nhận ưu đãi!</p>
       </div>
@@ -24,7 +24,7 @@ const InviteFriends = () => {
       <div className="invite-content">
         <div className="invite-card">
           <div className="invite-icon">
-            <Share2 size={64} />
+            <ShareIcon size={64} />
           </div>
           <h2>Mã giới thiệu của bạn</h2>
           <div className="invite-code-box">
@@ -43,7 +43,7 @@ const InviteFriends = () => {
               onClick={handleCopy}
               title="Sao chép link"
             >
-              {copied ? <Check size={20} /> : <Copy size={20} />}
+              {copied ? <CheckIcon size={20} /> : <ClipboardDocumentIcon size={20} />}
             </button>
           </div>
 
