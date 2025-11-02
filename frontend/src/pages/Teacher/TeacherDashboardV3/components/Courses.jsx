@@ -4,7 +4,7 @@ import { Button } from '../../../../components/ui/button';
 import { Input } from '../../../../components/ui/input';
 import { Badge } from '../../../../components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../../../../components/ui/dialog';
-import { PlusIcon, MagnifyingGlassIcon, ArrowUpTrayIcon, BookOpenIcon, UserGroupIcon, ClockIcon, PencilSquareIcon, TrashIcon, EyeIcon, PlayCircleIcon, ArrowPathIcon, MicrophoneIcon, PencilIcon, SignalIcon, ChatBubbleBottomCenterTextIcon } from '@heroicons/react/24/outline';
+import { Plus, Search, Upload, BookOpen, Users, Clock, Edit, Trash2, Eye, PlayCircle, Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../../components/ui/tabs';
 import { Label } from '../../../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
@@ -99,17 +99,17 @@ const Courses = () => {
     }
   };
 
-  // Get skill icon component
+  // Get skill emoji
   const getSkillEmoji = (skill) => {
-    const iconMap = {
-      'speaking': <MicrophoneIcon className="w-3.5 h-3.5" />,
-      'writing': <PencilIcon className="w-3.5 h-3.5" />,
-      'reading': <BookOpenIcon className="w-3.5 h-3.5" />,
-      'listening': <SignalIcon className="w-3.5 h-3.5" />,
-      'vocabulary': <ChatBubbleBottomCenterTextIcon className="w-3.5 h-3.5" />,
-      'grammar': <PencilSquareIcon className="w-3.5 h-3.5" />
+    const emojiMap = {
+      'speaking': '🗣️',
+      'writing': '✍️',
+      'reading': '📖',
+      'listening': '🎧',
+      'vocabulary': '📚',
+      'grammar': '📝'
     };
-    return iconMap[skill] || <BookOpenIcon className="w-3.5 h-3.5" />;
+    return emojiMap[skill] || '📚';
   };
 
   // Get skill color
@@ -174,7 +174,7 @@ const Courses = () => {
         <Card className="p-6">
           <div className="flex items-center gap-4">
             <div className="bg-blue-500 p-3 rounded-lg">
-              <BookOpenIcon className="w-6 h-6 text-white" />
+              <BookOpen className="w-6 h-6 text-white" />
             </div>
             <div>
               <p className="text-gray-600 text-sm">Tổng khóa học</p>
@@ -185,7 +185,7 @@ const Courses = () => {
         <Card className="p-6">
           <div className="flex items-center gap-4">
             <div className="bg-green-500 p-3 rounded-lg">
-              <UserGroupIcon className="w-6 h-6 text-white" />
+              <Users className="w-6 h-6 text-white" />
             </div>
             <div>
               <p className="text-gray-600 text-sm">Đã hoàn thành</p>
@@ -196,7 +196,7 @@ const Courses = () => {
         <Card className="p-6">
           <div className="flex items-center gap-4">
             <div className="bg-orange-500 p-3 rounded-lg">
-              <PlayCircleIcon className="w-6 h-6 text-white" />
+              <PlayCircle className="w-6 h-6 text-white" />
             </div>
             <div>
               <p className="text-gray-600 text-sm">Đang học</p>
@@ -207,7 +207,7 @@ const Courses = () => {
         <Card className="p-6">
           <div className="flex items-center gap-4">
             <div className="bg-purple-500 p-3 rounded-lg">
-              <UserGroupIcon className="w-6 h-6 text-white" />
+              <Users className="w-6 h-6 text-white" />
             </div>
             <div>
               <p className="text-gray-600 text-sm">Tổng học sinh</p>
@@ -221,7 +221,7 @@ const Courses = () => {
       <Card className="p-4 mb-6">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
-            <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <Input
               placeholder="Tìm kiếm khóa học..."
               className="pl-10"
@@ -243,7 +243,7 @@ const Courses = () => {
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
               <Button className="gap-2">
-                <PlusIcon className="w-4 h-4" />
+                <Plus className="w-4 h-4" />
                 Tạo khóa học
               </Button>
             </DialogTrigger>
@@ -319,7 +319,7 @@ const Courses = () => {
                 <div>
                   <Label>Upload thumbnail</Label>
                   <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-purple-400 transition-colors cursor-pointer">
-                    <ArrowUpTrayIcon className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                    <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                     <p className="text-sm text-gray-600 mb-1">Kéo thả ảnh hoặc click để chọn</p>
                     <p className="text-xs text-gray-500">PNG, JPG (tối đa 2MB)</p>
                   </div>
@@ -349,7 +349,7 @@ const Courses = () => {
       {/* Courses Grid */}
       {loading ? (
         <div className="flex justify-center items-center py-20">
-          <ArrowPathIcon className="w-10 h-10 animate-spin text-blue-500" />
+          <Loader2 className="w-10 h-10 animate-spin text-blue-500" />
           <span className="ml-3 text-gray-600">Đang tải khóa học...</span>
         </div>
       ) : error ? (
@@ -394,11 +394,11 @@ const Courses = () => {
                   </div>
                   <div className="flex items-center justify-between text-xs text-gray-600 mb-3">
                     <span className="flex items-center gap-1">
-                      <BookOpenIcon className="w-3 h-3" />
+                      <BookOpen className="w-3 h-3" />
                       {course.totalUnits || 0} bài học
                     </span>
                     <span className="flex items-center gap-1">
-                      <ClockIcon className="w-3 h-3" />
+                      <Clock className="w-3 h-3" />
                       {course.completedUnits || 0} hoàn thành
                     </span>
                   </div>
@@ -427,7 +427,7 @@ const Courses = () => {
                         }
                       }}
                     >
-                      <EyeIcon className="w-4 h-4" />
+                      <Eye className="w-4 h-4" />
                     </Button>
                     <Button 
                       size="sm" 
@@ -451,7 +451,7 @@ const Courses = () => {
                         }
                       }}
                     >
-                      <PencilSquareIcon className="w-4 h-4" />
+                      <Edit className="w-4 h-4" />
                     </Button>
                     <Button 
                       size="sm" 
@@ -462,7 +462,7 @@ const Courses = () => {
                         setIsDeleteOpen(true);
                       }}
                     >
-                      <TrashIcon className="w-4 h-4" />
+                      <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
@@ -593,7 +593,7 @@ const Courses = () => {
             <div>
               <Label>Tài liệu bài học</Label>
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-purple-400 transition-colors cursor-pointer">
-                <ArrowUpTrayIcon className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                 <p className="text-sm text-gray-600">Upload tài liệu, video, audio...</p>
                 <p className="text-xs text-gray-500">PDF, DOCX, MP4, MP3 (tối đa 50MB)</p>
               </div>
@@ -604,7 +604,7 @@ const Courses = () => {
               <div className="border rounded-lg p-4 bg-gray-50">
                 <p className="text-sm text-gray-600 mb-2">Chưa có bài tập nào</p>
                 <Button size="sm" variant="outline">
-                  <PlusIcon className="w-4 h-4 mr-1" />
+                  <Plus className="w-4 h-4 mr-1" />
                   Thêm bài tập
                 </Button>
               </div>

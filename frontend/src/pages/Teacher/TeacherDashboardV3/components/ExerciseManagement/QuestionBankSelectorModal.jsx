@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { XMarkIcon, MagnifyingGlassIcon, FunnelIcon, CheckIcon, BookOpenIcon, SignalIcon, MicrophoneIcon, PencilIcon, ClipboardDocumentListIcon } from '@heroicons/react/24/outline';
+import { X, Search, Filter, Check } from 'lucide-react';
 import './ExerciseManagement.css';
 
 export default function QuestionBankSelectorModal({ skillType, onClose, onSelect }) {
@@ -104,14 +104,14 @@ export default function QuestionBankSelectorModal({ skillType, onClose, onSelect
     }));
     onSelect(exerciseQuestions);
   };
-
+  
   const getSkillIcon = (skill) => {
-    switch (skill) {
-      case 'listening': return <SignalIcon className="w-3.5 h-3.5" />;
-      case 'speaking': return <MicrophoneIcon className="w-3.5 h-3.5" />;
-      case 'reading': return <BookOpenIcon className="w-3.5 h-3.5" />;
-      case 'writing': return <PencilIcon className="w-3.5 h-3.5" />;
-      default: return <ClipboardDocumentListIcon className="w-3.5 h-3.5" />;
+    switch(skill) {
+      case 'listening': return '🎧';
+      case 'speaking': return '🗣️';
+      case 'reading': return '📖';
+      case 'writing': return '✍️';
+      default: return '📝';
     }
   };
   
@@ -144,14 +144,14 @@ export default function QuestionBankSelectorModal({ skillType, onClose, onSelect
             <p>Chọn các câu hỏi để thêm vào bài tập</p>
           </div>
           <button className="qb-close-btn" onClick={onClose}>
-            <XMarkIcon className="w-6 h-6" />
+            <X size={24} />
           </button>
         </div>
         
         {/* Filters */}
         <div className="qb-filters">
           <div className="qb-search-box">
-            <MagnifyingGlassIcon className="w-4.5 h-4.5" />
+            <Search size={18} />
             <input 
               type="text"
               placeholder="Tìm kiếm câu hỏi..."
@@ -223,7 +223,7 @@ export default function QuestionBankSelectorModal({ skillType, onClose, onSelect
                       checked={isSelected}
                       readOnly
                     />
-                    {isSelected && <CheckIcon className="w-3.5 h-3.5 check-icon" />}
+                    {isSelected && <Check size={14} className="check-icon" />}
                   </div>
                   
                   <div className="qb-question-content">
@@ -277,7 +277,7 @@ export default function QuestionBankSelectorModal({ skillType, onClose, onSelect
               onClick={handleConfirm}
               disabled={selectedQuestions.length === 0}
             >
-              <CheckIcon className="w-4.5 h-4.5" />
+              <Check size={18} />
               Thêm vào bài tập
             </button>
           </div>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card } from '../../../../components/ui/card';
 import { Badge } from '../../../../components/ui/badge';
-import { ArrowTrendingUpIcon, ArrowTrendingDownIcon, MinusIcon, ChartBarIcon } from '@heroicons/react/24/outline';
+import { TrendingUp, TrendingDown, Minus, BarChart3 } from 'lucide-react';
 import { apiV1 } from '../../../../services/api';
 
 const StudentAnalytics = () => {
@@ -47,9 +47,9 @@ const StudentAnalytics = () => {
   };
 
   const getTrendIcon = (trend) => {
-    if (trend === 'improving') return <ArrowTrendingUpIcon className="text-green-500" size={20} />;
-    if (trend === 'declining') return <ArrowTrendingDownIcon className="text-red-500" size={20} />;
-    return <MinusIcon className="text-gray-400" size={20} />;
+    if (trend === 'improving') return <TrendingUp className="text-green-500" size={20} />;
+    if (trend === 'declining') return <TrendingDown className="text-red-500" size={20} />;
+    return <Minus className="text-gray-400" size={20} />;
   };
 
   const getTrendBadge = (trend) => {
@@ -62,7 +62,7 @@ const StudentAnalytics = () => {
     <div className="p-8">
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
-          <ChartBarIcon className="w-8 h-8 text-purple-600" />
+          <BarChart3 className="w-8 h-8 text-purple-600" />
           <h1 className="text-3xl font-bold text-gray-900">Phân tích tiến độ học sinh</h1>
         </div>
         <p className="text-gray-600">Theo dõi tiến độ và phân tích kết quả học tập của từng học sinh</p>
@@ -92,7 +92,7 @@ const StudentAnalytics = () => {
       <div className="space-y-4">
         {analytics.length === 0 ? (
           <Card className="p-12 text-center">
-            <ChartBarIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-600">Chưa có dữ liệu phân tích</p>
           </Card>
         ) : (

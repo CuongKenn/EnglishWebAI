@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { apiV1 } from '../../../../services/api';
-import { ChartBarIcon, UserGroupIcon, DocumentTextIcon, CheckCircleIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+import { BarChart3, Users, FileText, CheckCircle, Loader2 } from 'lucide-react';
 
 export default function ProgressAnalytics() {
   const [classes, setClasses] = useState([]);
@@ -37,7 +37,7 @@ export default function ProgressAnalytics() {
     <div className="p-8">
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-2">
-          <ChartBarIcon className="w-8 h-8 text-purple-600" />
+          <BarChart3 className="w-8 h-8 text-purple-600" />
           <h1 className="text-3xl font-bold text-gray-900">Phân tích tiến độ lớp học</h1>
         </div>
         <p className="text-gray-600">Tổng quan điểm số, tỷ lệ nộp bài, và xu hướng theo lớp</p>
@@ -56,7 +56,7 @@ export default function ProgressAnalytics() {
       </div>
 
       {loading ? (
-        <div className="flex items-center gap-2 text-gray-500"><ArrowPathIcon className="animate-spin" /> Đang tải...</div>
+        <div className="flex items-center gap-2 text-gray-500"><Loader2 className="animate-spin" /> Đang tải...</div>
       ) : !overview ? (
         <div className="text-gray-500">Chưa có dữ liệu</div>
       ) : (
@@ -66,21 +66,21 @@ export default function ProgressAnalytics() {
             <div className="p-5 rounded-xl border bg-white">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-gray-500">Sĩ số</span>
-                <UserGroupIcon className="text-blue-500" />
+                <Users className="text-blue-500" />
               </div>
               <div className="text-2xl font-bold text-gray-900">{overview.student_count}</div>
             </div>
             <div className="p-5 rounded-xl border bg-white">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-gray-500">Bài tập</span>
-                <DocumentTextIcon className="text-purple-500" />
+                <FileText className="text-purple-500" />
               </div>
               <div className="text-2xl font-bold text-gray-900">{overview.total_exercises}</div>
             </div>
             <div className="p-5 rounded-xl border bg-white">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-gray-500">Đã nộp</span>
-                <CheckCircleIcon className="text-green-500" />
+                <CheckCircle className="text-green-500" />
               </div>
               <div className="text-2xl font-bold text-gray-900">{overview.total_submissions}</div>
             </div>

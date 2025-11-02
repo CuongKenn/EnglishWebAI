@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../../components/ui/tabs';
 import { Label } from '../../../../components/ui/label';
 import { Textarea } from '../../../../components/ui/textarea';
-import { ArrowUpTrayIcon, PlusIcon, BookOpenIcon, UserGroupIcon, DocumentTextIcon, VideoCameraIcon, CalendarIcon, EyeIcon, TrashIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
+import { Upload, Plus, BookOpen, Users, FileText, Video, Calendar, Eye, Trash2, Edit } from 'lucide-react';
 import { apiV1 } from '../../../../services/api';
 
 const MyClassesTeacher = () => {
@@ -106,7 +106,7 @@ const MyClassesTeacher = () => {
     return (
       <div className="p-8">
         <div className="text-center py-16">
-          <BookOpenIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Chưa có lớp học nào</h3>
           <p className="text-gray-600">Bạn chưa được phân công giảng dạy lớp nào</p>
         </div>
@@ -135,7 +135,7 @@ const MyClassesTeacher = () => {
               }`}
             >
               <div className="flex items-center gap-2">
-                <BookOpenIcon size={18} />
+                <BookOpen size={18} />
                 <span>{cls.name}</span>
                 <Badge variant="secondary" className="ml-2">{cls.student_count} HS</Badge>
               </div>
@@ -154,11 +154,11 @@ const MyClassesTeacher = () => {
                 <p className="text-gray-600 mb-4">{selectedClass.description || 'Không có mô tả'}</p>
                 <div className="flex gap-4">
                   <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <UserGroupIcon size={16} />
+                    <Users size={16} />
                     <span>{selectedClass.student_count} học sinh</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <CalendarIcon size={16} />
+                    <Calendar size={16} />
                     <span>{selectedClass.schedule || 'Chưa có lịch'}</span>
                   </div>
                 </div>
@@ -167,7 +167,7 @@ const MyClassesTeacher = () => {
                 <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
                   <DialogTrigger asChild>
                     <Button className="gap-2">
-                      <ArrowUpTrayIcon size={18} />
+                      <Upload size={18} />
                       Upload tài liệu
                     </Button>
                   </DialogTrigger>
@@ -196,7 +196,7 @@ const MyClassesTeacher = () => {
                       <div>
                         <Label>Tải lên file</Label>
                         <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-purple-400 transition-colors cursor-pointer">
-                          <ArrowUpTrayIcon className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                          <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                           <p className="text-sm text-gray-600 mb-1">Kéo thả file hoặc click để chọn</p>
                           <p className="text-xs text-gray-500">Hỗ trợ: PowerPoint, PDF, Video (tối đa 50MB)</p>
                         </div>
@@ -212,7 +212,7 @@ const MyClassesTeacher = () => {
                 <Dialog open={isCreateExerciseOpen} onOpenChange={setIsCreateExerciseOpen}>
                   <DialogTrigger asChild>
                     <Button variant="outline" className="gap-2">
-                      <PlusIcon size={18} />
+                      <Plus size={18} />
                       Tạo bài tập
                     </Button>
                   </DialogTrigger>
@@ -266,19 +266,19 @@ const MyClassesTeacher = () => {
           <Tabs defaultValue="lessons">
             <TabsList className="mb-6">
               <TabsTrigger value="lessons" className="gap-2">
-                <BookOpenIcon size={18} />
+                <BookOpen size={18} />
                 Bài giảng ({lessons.length})
               </TabsTrigger>
               <TabsTrigger value="materials" className="gap-2">
-                <VideoCameraIcon size={18} />
+                <Video size={18} />
                 Tài liệu ({materials.length})
               </TabsTrigger>
               <TabsTrigger value="exercises" className="gap-2">
-                <DocumentTextIcon size={18} />
+                <FileText size={18} />
                 Bài tập ({exercises.length})
               </TabsTrigger>
               <TabsTrigger value="students" className="gap-2">
-                <UserGroupIcon size={18} />
+                <Users size={18} />
                 Học sinh ({students.length})
               </TabsTrigger>
             </TabsList>
@@ -287,7 +287,7 @@ const MyClassesTeacher = () => {
               <div className="space-y-4">
                 {lessons.length === 0 ? (
                   <Card className="p-12 text-center">
-                    <BookOpenIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                     <p className="text-gray-600">Chưa có bài giảng nào</p>
                     <Button className="mt-4" onClick={() => setIsCreateLessonOpen(true)}>
                       Tạo bài giảng đầu tiên
@@ -307,17 +307,17 @@ const MyClassesTeacher = () => {
                           <p className="text-gray-600 mb-2">{lesson.content || 'Không có nội dung'}</p>
                           {lesson.lesson_date && (
                             <div className="flex items-center gap-2 text-sm text-gray-500">
-                              <CalendarIcon size={14} />
+                              <Calendar size={14} />
                               <span>{new Date(lesson.lesson_date).toLocaleDateString('vi-VN')}</span>
                             </div>
                           )}
                         </div>
                         <div className="flex gap-2">
                           <Button size="sm" variant="outline">
-                            <PencilSquareIcon size={16} />
+                            <Edit size={16} />
                           </Button>
                           <Button size="sm" variant="outline" className="text-red-600">
-                            <TrashIcon size={16} />
+                            <Trash2 size={16} />
                           </Button>
                         </div>
                       </div>
@@ -331,7 +331,7 @@ const MyClassesTeacher = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {materials.length === 0 ? (
                   <Card className="col-span-full p-12 text-center">
-                    <VideoCameraIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <Video className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                     <p className="text-gray-600">Chưa có tài liệu nào</p>
                   </Card>
                 ) : (
@@ -339,17 +339,17 @@ const MyClassesTeacher = () => {
                     <Card key={material.id} className="p-4 hover:shadow-lg transition-shadow">
                       <div className="flex items-start gap-3">
                         <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                          {material.type === 'video' ? <VideoCameraIcon className="text-purple-600" size={24} /> : <DocumentTextIcon className="text-purple-600" size={24} />}
+                          {material.type === 'video' ? <Video className="text-purple-600" size={24} /> : <FileText className="text-purple-600" size={24} />}
                         </div>
                         <div className="flex-1">
                           <h4 className="font-semibold text-gray-900 mb-1">{material.title}</h4>
                           <p className="text-sm text-gray-600 mb-2">{material.description}</p>
                           <div className="flex gap-2">
                             <Button size="sm" variant="outline">
-                              <EyeIcon size={14} />
+                              <Eye size={14} />
                             </Button>
                             <Button size="sm" variant="outline" className="text-red-600">
-                              <TrashIcon size={14} />
+                              <Trash2 size={14} />
                             </Button>
                           </div>
                         </div>
@@ -364,7 +364,7 @@ const MyClassesTeacher = () => {
               <div className="space-y-4">
                 {exercises.length === 0 ? (
                   <Card className="p-12 text-center">
-                    <DocumentTextIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                     <p className="text-gray-600">Chưa có bài tập nào</p>
                   </Card>
                 ) : (
@@ -405,7 +405,7 @@ const MyClassesTeacher = () => {
               <Card className="overflow-hidden">
                 {students.length === 0 ? (
                   <div className="p-12 text-center">
-                    <UserGroupIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                     <p className="text-gray-600">Chưa có học sinh nào</p>
                   </div>
                 ) : (

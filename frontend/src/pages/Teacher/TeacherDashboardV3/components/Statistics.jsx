@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card } from '../../../../components/ui/card';
 import { Button } from '../../../../components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
-import { ArrowTrendingUpIcon, UserGroupIcon, DocumentCheckIcon, TrophyIcon, ArrowDownTrayIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+import { TrendingUp, Users, FileCheck, Award, Download, Loader2 } from 'lucide-react';
 import { Progress } from '../../../../components/ui/progress';
 import { apiV1 } from '../../../../services/api';
 import Toast from '../../../../components/Toast/Toast';
@@ -151,7 +151,7 @@ const Statistics = () => {
             </SelectContent>
           </Select>
           <Button className="ml-auto gap-2" onClick={handleExportReport}>
-            <ArrowDownTrayIcon className="w-4 h-4" />
+            <Download className="w-4 h-4" />
             Xuất báo cáo
           </Button>
         </div>
@@ -159,7 +159,7 @@ const Statistics = () => {
 
       {loading && (
         <div className="flex items-center justify-center py-12">
-          <ArrowPathIcon className="w-8 h-8 animate-spin text-purple-600 mr-3" />
+          <Loader2 className="w-8 h-8 animate-spin text-purple-600 mr-3" />
           <span className="text-gray-600">Đang tải thống kê...</span>
         </div>
       )}
@@ -178,7 +178,7 @@ const Statistics = () => {
         <Card className="p-6">
           <div className="flex items-center gap-4">
             <div className="bg-blue-500 p-3 rounded-lg">
-              <UserGroupIcon className="w-6 h-6 text-white" />
+              <Users className="w-6 h-6 text-white" />
             </div>
             <div>
               <p className="text-gray-600 text-sm">Tổng học sinh</p>
@@ -189,7 +189,7 @@ const Statistics = () => {
         <Card className="p-6">
           <div className="flex items-center gap-4">
             <div className="bg-green-500 p-3 rounded-lg">
-              <ArrowTrendingUpIcon className="w-6 h-6 text-white" />
+              <TrendingUp className="w-6 h-6 text-white" />
             </div>
             <div>
               <p className="text-gray-600 text-sm">Điểm TB chung</p>
@@ -200,7 +200,7 @@ const Statistics = () => {
         <Card className="p-6">
           <div className="flex items-center gap-4">
             <div className="bg-purple-500 p-3 rounded-lg">
-              <DocumentCheckIcon className="w-6 h-6 text-white" />
+              <FileCheck className="w-6 h-6 text-white" />
             </div>
             <div>
               <p className="text-gray-600 text-sm">Hoàn thành</p>
@@ -211,7 +211,7 @@ const Statistics = () => {
         <Card className="p-6">
           <div className="flex items-center gap-4">
             <div className="bg-orange-500 p-3 rounded-lg">
-              <TrophyIcon className="w-6 h-6 text-white" />
+              <Award className="w-6 h-6 text-white" />
             </div>
             <div>
               <p className="text-gray-600 text-sm">Xuất sắc</p>

@@ -5,7 +5,7 @@ import { Input } from '../../../../components/ui/input';
 import { Badge } from '../../../../components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../../../../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
-import { ChevronLeftIcon, ChevronRightIcon, PlusIcon, CalendarIcon, ClockIcon, MapPinIcon, UserGroupIcon, PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { ChevronLeft, ChevronRight, Plus, Calendar, Clock, MapPin, Users, Edit, Trash2 } from 'lucide-react';
 import { Label } from '../../../../components/ui/label';
 import { Textarea } from '../../../../components/ui/textarea';
 
@@ -126,10 +126,10 @@ const Schedule = () => {
 
   const getTypeIcon = (type) => {
     switch (type) {
-      case 'class': return <UserGroupIcon className="w-3 h-3" />;
-      case 'meeting': return <UserGroupIcon className="w-3 h-3" />;
-      case 'task': return <ClockIcon className="w-3 h-3" />;
-      default: return <CalendarIcon className="w-3 h-3" />;
+      case 'class': return <Users className="w-3 h-3" />;
+      case 'meeting': return <Users className="w-3 h-3" />;
+      case 'task': return <Clock className="w-3 h-3" />;
+      default: return <Calendar className="w-3 h-3" />;
     }
   };
 
@@ -155,7 +155,7 @@ const Schedule = () => {
         <Card className="p-6">
           <div className="flex items-center gap-4">
             <div className="bg-blue-500 p-3 rounded-lg">
-              <CalendarIcon className="w-6 h-6 text-white" />
+              <Calendar className="w-6 h-6 text-white" />
             </div>
             <div>
               <p className="text-gray-600 text-sm">Lớp học hôm nay</p>
@@ -166,7 +166,7 @@ const Schedule = () => {
         <Card className="p-6">
           <div className="flex items-center gap-4">
             <div className="bg-green-500 p-3 rounded-lg">
-              <ClockIcon className="w-6 h-6 text-white" />
+              <Clock className="w-6 h-6 text-white" />
             </div>
             <div>
               <p className="text-gray-600 text-sm">Tổng giờ dạy</p>
@@ -177,7 +177,7 @@ const Schedule = () => {
         <Card className="p-6">
           <div className="flex items-center gap-4">
             <div className="bg-purple-500 p-3 rounded-lg">
-              <UserGroupIcon className="w-6 h-6 text-white" />
+              <Users className="w-6 h-6 text-white" />
             </div>
             <div>
               <p className="text-gray-600 text-sm">Cuộc họp</p>
@@ -188,7 +188,7 @@ const Schedule = () => {
         <Card className="p-6">
           <div className="flex items-center gap-4">
             <div className="bg-orange-500 p-3 rounded-lg">
-              <CalendarIcon className="w-6 h-6 text-white" />
+              <Calendar className="w-6 h-6 text-white" />
             </div>
             <div>
               <p className="text-gray-600 text-sm">Công việc</p>
@@ -203,13 +203,13 @@ const Schedule = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button variant="outline" size="sm" onClick={() => navigateWeek(-1)}>
-              <ChevronLeftIcon className="w-4 h-4" />
+              <ChevronLeft className="w-4 h-4" />
             </Button>
             <h2 className="text-xl font-semibold text-gray-900">
               Tuần {weekDates[0].getDate()}/{weekDates[0].getMonth() + 1} - {weekDates[6].getDate()}/{weekDates[6].getMonth() + 1}/{weekDates[6].getFullYear()}
             </h2>
             <Button variant="outline" size="sm" onClick={() => navigateWeek(1)}>
-              <ChevronRightIcon className="w-4 h-4" />
+              <ChevronRight className="w-4 h-4" />
             </Button>
             <Button variant="outline" size="sm" onClick={goToToday}>
               Hôm nay
@@ -218,7 +218,7 @@ const Schedule = () => {
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
               <Button className="gap-2">
-                <PlusIcon className="w-4 h-4" />
+                <Plus className="w-4 h-4" />
                 Thêm sự kiện
               </Button>
             </DialogTrigger>
@@ -355,12 +355,12 @@ const Schedule = () => {
                         >
                           <div className="text-xs font-semibold line-clamp-1">{event.title}</div>
                           <div className="text-xs flex items-center gap-1 mt-1 opacity-80">
-                            <ClockIcon className="w-3 h-3" />
+                            <Clock className="w-3 h-3" />
                             {event.startTime}
                           </div>
                           {event.room && (
                             <div className="text-xs flex items-center gap-1 opacity-80">
-                              <MapPinIcon className="w-3 h-3" />
+                              <MapPin className="w-3 h-3" />
                               {event.room}
                             </div>
                           )}
@@ -386,16 +386,16 @@ const Schedule = () => {
                   <h4 className="text-base font-semibold mb-1">{event.title}</h4>
                   <div className="flex items-center gap-4 text-sm opacity-80">
                     <span className="flex items-center gap-1">
-                      <ClockIcon className="w-4 h-4" />
+                      <Clock className="w-4 h-4" />
                       {event.startTime} - {event.endTime}
                     </span>
                     <span className="flex items-center gap-1">
-                      <MapPinIcon className="w-4 h-4" />
+                      <MapPin className="w-4 h-4" />
                       {event.room}
                     </span>
                     {event.students && (
                       <span className="flex items-center gap-1">
-                        <UserGroupIcon className="w-4 h-4" />
+                        <Users className="w-4 h-4" />
                         {event.students} HS
                       </span>
                     )}
@@ -403,10 +403,10 @@ const Schedule = () => {
                 </div>
                 <div className="flex gap-2">
                   <Button size="sm" variant="outline">
-                    <PencilSquareIcon className="w-4 h-4" />
+                    <Edit className="w-4 h-4" />
                   </Button>
                   <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700">
-                    <TrashIcon className="w-4 h-4" />
+                    <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
               </div>

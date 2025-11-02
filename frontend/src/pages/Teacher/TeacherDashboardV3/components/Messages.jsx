@@ -4,7 +4,7 @@ import { Button } from '../../../../components/ui/button';
 import { Input } from '../../../../components/ui/input';
 import { Avatar, AvatarFallback } from '../../../../components/ui/avatar';
 import { Badge } from '../../../../components/ui/badge';
-import { MagnifyingGlassIcon, PaperAirplaneIcon, PaperClipIcon, FaceSmileIcon, EllipsisVerticalIcon } from '@heroicons/react/24/outline';
+import { Search, Send, Paperclip, Smile, MoreVertical } from 'lucide-react';
 import { Textarea } from '../../../../components/ui/textarea';
 import messageService from '../../../../services/messageService';
 import { getCurrentUser } from '../../../../services/userService';
@@ -199,7 +199,7 @@ const Messages = () => {
         <div className="w-80 border-r border-gray-200 flex flex-col">
           <div className="p-4 border-b border-gray-200">
             <div className="relative">
-              <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <Input
                 placeholder="Tìm kiếm..."
                 className="pl-10"
@@ -282,7 +282,7 @@ const Messages = () => {
                   </div>
                 </div>
                 <Button size="sm" variant="ghost">
-                  <EllipsisVerticalIcon className="w-4 h-4" />
+                  <MoreVertical className="w-4 h-4" />
                 </Button>
               </div>
 
@@ -325,10 +325,10 @@ const Messages = () => {
               <div className="p-4 border-t border-gray-200">
                 <div className="flex gap-2">
                   <Button size="sm" variant="ghost">
-                    <PaperClipIcon className="w-5 h-5" />
+                    <Paperclip className="w-5 h-5" />
                   </Button>
                   <Button size="sm" variant="ghost">
-                    <FaceSmileIcon className="w-5 h-5" />
+                    <Smile className="w-5 h-5" />
                   </Button>
                   <Input
                     placeholder="Nhập tin nhắn..."
@@ -343,7 +343,7 @@ const Messages = () => {
                     className="flex-1"
                   />
                   <Button onClick={handleSendMessage} disabled={sending} className="gap-2">
-                    <PaperAirplaneIcon className="w-4 h-4" />
+                    <Send className="w-4 h-4" />
                     {sending ? 'Đang gửi...' : 'Gửi'}
                   </Button>
                 </div>

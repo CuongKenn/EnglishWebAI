@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
 import { lessonPlansAPI } from '../../../services/api';
-import { XMarkIcon, PlusIcon, SparklesIcon, EyeIcon, PencilIcon, TrashIcon, BookOpenIcon, ClockIcon, AcademicCapIcon, ArrowDownTrayIcon, DocumentTextIcon, ArrowDownCircleIcon, CpuChipIcon, PencilSquareIcon, ClipboardDocumentListIcon, WrenchIcon } from '@heroicons/react/24/outline';
+import { X, Plus, Sparkles, Eye, Edit, Trash2, BookOpen, Clock, GraduationCap, Download, FileText, FileDown } from 'lucide-react';
 import Toast from '../../../components/Toast/Toast';
 import useToast from '../../../hooks/useToast';
-import './LessonPlans.css';
 import './LessonPlans.css';
 
 const LessonPlans = () => {
@@ -173,7 +172,7 @@ const LessonPlans = () => {
       <div className="lp-header">
         <div className="lp-header-left">
           <div className="lp-header-icon">
-            <BookOpenIcon className="w-32 h-32" />
+            <BookOpen size={32} />
           </div>
           <div>
             <h1 className="lp-title">Quản lý Giáo án</h1>
@@ -182,11 +181,11 @@ const LessonPlans = () => {
         </div>
         <div className="lp-header-actions">
           <button className="lp-btn lp-btn-ai" onClick={() => setShowAIModal(true)}>
-            <SparklesIcon className="w-18 h-18" />
+            <Sparkles size={18} />
             <span>Tạo bằng AI</span>
           </button>
           <button className="lp-btn lp-btn-primary" onClick={() => setShowCreateModal(true)}>
-            <PlusIcon className="w-18 h-18" />
+            <Plus size={18} />
             <span>Tạo giáo án</span>
           </button>
         </div>
@@ -208,21 +207,21 @@ const LessonPlans = () => {
       {/* Stats */}
       <div className="lp-stats">
         <div className="lp-stat-card">
-          <div className="lp-stat-icon"><BookOpenIcon className="w-4 h-4" /></div>
+          <div className="lp-stat-icon">📚</div>
           <div className="lp-stat-info">
             <div className="lp-stat-value">{lessonPlans.length}</div>
             <div className="lp-stat-label">Tổng giáo án</div>
           </div>
         </div>
         <div className="lp-stat-card">
-          <div className="lp-stat-icon"><CpuChipIcon className="w-4 h-4" /></div>
+          <div className="lp-stat-icon">🤖</div>
           <div className="lp-stat-info">
             <div className="lp-stat-value">{lessonPlans.filter(p => p.ai_generated === 1).length}</div>
             <div className="lp-stat-label">Tạo bằng AI</div>
           </div>
         </div>
         <div className="lp-stat-card">
-          <div className="lp-stat-icon"><PencilSquareIcon className="w-4 h-4" /></div>
+          <div className="lp-stat-icon">✏️</div>
           <div className="lp-stat-info">
             <div className="lp-stat-value">{lessonPlans.filter(p => p.ai_generated === 0).length}</div>
             <div className="lp-stat-label">Tạo thủ công</div>
@@ -236,10 +235,10 @@ const LessonPlans = () => {
           <div className="lp-loading">Đang tải...</div>
         ) : lessonPlans.length === 0 ? (
           <div className="lp-empty">
-            <BookOpenIcon className="w-64 h-64" color="#cbd5e1" />
+            <BookOpen size={64} color="#cbd5e1" />
             <p>Chưa có giáo án nào</p>
             <button className="lp-btn lp-btn-primary" onClick={() => setShowAIModal(true)}>
-              <SparklesIcon className="w-18 h-18" />
+              <Sparkles size={18} />
               Tạo giáo án đầu tiên bằng AI
             </button>
           </div>
@@ -248,7 +247,7 @@ const LessonPlans = () => {
             <div key={plan.id} className="lp-card">
               {plan.ai_generated === 1 && (
                 <div className="lp-badge-ai">
-                  <SparklesIcon className="w-14 h-14" />
+                  <Sparkles size={14} />
                   AI Generated
                 </div>
               )}
@@ -256,12 +255,12 @@ const LessonPlans = () => {
                 <h3>{plan.title}</h3>
                 <div className="lp-card-meta">
                   <span className="lp-meta-item">
-                    <AcademicCapIcon className="w-14 h-14" />
+                    <GraduationCap size={14} />
                     Lớp {plan.grade}
                   </span>
                   {plan.duration && (
                     <span className="lp-meta-item">
-                      <ClockIcon className="w-14 h-14" />
+                      <Clock size={14} />
                       {plan.duration} phút
                     </span>
                   )}
@@ -269,21 +268,21 @@ const LessonPlans = () => {
               </div>
               
               <div className="lp-card-body">
-                {plan.unit && <div className="lp-card-unit"><BookOpenIcon className="w-3 h-3 inline mr-1" />{plan.unit}</div>}
+                {plan.unit && <div className="lp-card-unit">📖 {plan.unit}</div>}
                 {plan.lesson_number && <div className="lp-card-lesson">{plan.lesson_number}</div>}
               </div>
               
               <div className="lp-card-actions">
                 <button className="lp-card-btn" onClick={() => openDetail(plan)}>
-                  <EyeIcon className="w-16 h-16" />
+                  <Eye size={16} />
                   Chi tiết
                 </button>
                 <button className="lp-card-btn" onClick={() => openEdit(plan)}>
-                  <PencilIcon className="w-16 h-16" />
+                  <Edit size={16} />
                   Sửa
                 </button>
                 <button className="lp-card-btn lp-card-btn-delete" onClick={() => openDelete(plan)}>
-                  <TrashIcon className="w-16 h-16" />
+                  <Trash2 size={16} />
                   Xóa
                 </button>
               </div>
@@ -299,7 +298,7 @@ const LessonPlans = () => {
             <div className="lp-modal-header">
               <h2>Tạo giáo án mới</h2>
               <button className="lp-modal-close" onClick={() => setShowCreateModal(false)}>
-                <XMarkIcon className="w-20 h-20" />
+                <X size={20} />
               </button>
             </div>
             <div className="lp-modal-body">
@@ -378,11 +377,11 @@ const LessonPlans = () => {
           <div className="lp-modal lp-modal-large" onClick={e => e.stopPropagation()}>
             <div className="lp-modal-header">
               <div className="lp-modal-title-ai">
-                <SparklesIcon className="w-24 h-24" />
+                <Sparkles size={24} />
                 <h2>Tạo giáo án bằng AI</h2>
               </div>
               <button className="lp-modal-close" onClick={() => setShowAIModal(false)}>
-                <XMarkIcon className="w-20 h-20" />
+                <X size={20} />
               </button>
             </div>
             <div className="lp-modal-body">
@@ -480,7 +479,7 @@ const LessonPlans = () => {
                   </>
                 ) : (
                   <>
-                    <SparklesIcon className="w-18 h-18" />
+                    <Sparkles size={18} />
                     Tạo giáo án
                   </>
                 )}
@@ -497,15 +496,15 @@ const LessonPlans = () => {
             <div className="lp-modal-header">
               <h2>{selectedPlan.title}</h2>
               <button className="lp-modal-close" onClick={() => setShowDetailModal(false)}>
-                <XMarkIcon className="w-20 h-20" />
+                <X size={20} />
               </button>
             </div>
             <div className="lp-modal-body lp-detail-content">
               <div className="lp-detail-meta">
-                <span><BookOpenIcon className="w-3 h-3 inline mr-1" />Lớp {selectedPlan.grade}</span>
-                <span><BookOpenIcon className="w-3 h-3 inline mr-1" />{selectedPlan.unit}</span>
-                <span><ClockIcon className="w-3 h-3 inline mr-1" />{selectedPlan.duration} phút</span>
-                {selectedPlan.ai_generated === 1 && <span className="lp-detail-ai-badge"><SparklesIcon className="w-3 h-3 inline mr-1" />AI Generated</span>}
+                <span>📚 Lớp {selectedPlan.grade}</span>
+                <span>📖 {selectedPlan.unit}</span>
+                <span>⏱️ {selectedPlan.duration} phút</span>
+                {selectedPlan.ai_generated === 1 && <span className="lp-detail-ai-badge">🤖 AI Generated</span>}
               </div>
               
               {selectedPlan.objectives && (
@@ -564,7 +563,7 @@ const LessonPlans = () => {
                 Đóng
               </button>
               <button className="lp-btn lp-btn-primary" onClick={() => { setShowDetailModal(false); openEdit(selectedPlan); }}>
-                <PencilIcon className="w-16 h-16" />
+                <Edit size={16} />
                 Chỉnh sửa
               </button>
             </div>
@@ -579,7 +578,7 @@ const LessonPlans = () => {
             <div className="lp-modal-header">
               <h2>Chỉnh sửa giáo án</h2>
               <button className="lp-modal-close" onClick={() => setShowEditModal(false)}>
-                <XMarkIcon className="w-20 h-20" />
+                <X size={20} />
               </button>
             </div>
             <div className="lp-modal-body">
@@ -647,22 +646,19 @@ const LessonPlans = () => {
                 <h2>{selectedPlan.title}</h2>
                 {selectedPlan.ai_generated === 1 && (
                   <div className="lp-badge-ai" style={{ marginTop: '0.5rem' }}>
-                    <SparklesIcon className="w-14 h-14" />
+                    <Sparkles size={14} />
                     AI Generated
                   </div>
                 )}
               </div>
               <button className="lp-modal-close" onClick={() => setShowDetailModal(false)}>
-                <XMarkIcon className="w-20 h-20" />
+                <X size={20} />
               </button>
             </div>
             <div className="lp-modal-body">
               {/* Basic Info */}
               <div className="lp-detail-section">
-                <h3 className="flex items-center gap-2">
-                  <ClipboardDocumentListIcon className="w-5 h-5" />
-                  Thông tin cơ bản
-                </h3>
+                <h3>📋 Thông tin cơ bản</h3>
                 <div className="lp-detail-grid">
                   <div className="lp-detail-item">
                     <span className="lp-detail-label">Khối lớp:</span>
@@ -686,7 +682,7 @@ const LessonPlans = () => {
               {/* Objectives */}
               {selectedPlan.objectives && Object.keys(selectedPlan.objectives).length > 0 && (
                 <div className="lp-detail-section">
-                  <h3><ClipboardDocumentListIcon className="w-4 h-4 inline mr-2" />Mục tiêu bài học</h3>
+                  <h3>🎯 Mục tiêu bài học</h3>
                   {selectedPlan.objectives.knowledge && selectedPlan.objectives.knowledge.length > 0 && (
                     <div className="lp-detail-subsection">
                       <h4>Kiến thức:</h4>
@@ -733,7 +729,7 @@ const LessonPlans = () => {
               {/* Teaching Aids */}
               {selectedPlan.teaching_aids && selectedPlan.teaching_aids.length > 0 && (
                 <div className="lp-detail-section">
-                  <h3><WrenchIcon className="w-4 h-4 inline mr-2" />Thiết bị và học liệu</h3>
+                  <h3>🛠️ Thiết bị và học liệu</h3>
                   <ul>
                     {selectedPlan.teaching_aids.map((aid, idx) => (
                       <li key={idx}>{aid}</li>
@@ -745,7 +741,7 @@ const LessonPlans = () => {
               {/* Activities */}
               {selectedPlan.activities && Object.keys(selectedPlan.activities).length > 0 && (
                 <div className="lp-detail-section">
-                  <h3><BookOpenIcon className="w-4 h-4 inline mr-2" />Tiến trình dạy học</h3>
+                  <h3>📚 Tiến trình dạy học</h3>
                   {selectedPlan.activities.warm_up && (
                     <div className="lp-activity-card">
                       <h4>Hoạt động 1: Khởi động</h4>
@@ -788,7 +784,7 @@ const LessonPlans = () => {
               {/* Notes */}
               {selectedPlan.notes && (
                 <div className="lp-detail-section">
-                  <h3><DocumentTextIcon className="w-4 h-4 inline mr-2" />Ghi chú</h3>
+                  <h3>📝 Ghi chú</h3>
                   <p className="lp-detail-text">{selectedPlan.notes}</p>
                 </div>
               )}
@@ -796,14 +792,14 @@ const LessonPlans = () => {
               {/* Homework */}
               {selectedPlan.homework && (
                 <div className="lp-detail-section">
-                  <h3><BookOpenIcon className="w-4 h-4 inline mr-2" />Bài tập về nhà</h3>
+                  <h3>📖 Bài tập về nhà</h3>
                   <p className="lp-detail-text">{selectedPlan.homework}</p>
                 </div>
               )}
             </div>
             <div className="lp-modal-footer">
               <button className="lp-btn lp-btn-primary" onClick={() => { setShowDetailModal(false); openEdit(selectedPlan); }}>
-                <PencilIcon className="w-18 h-18" />
+                <Edit size={18} />
                 Chỉnh sửa
               </button>
               <button className="lp-btn lp-btn-secondary" onClick={async () => {
@@ -823,7 +819,7 @@ const LessonPlans = () => {
                   showError('Tải Word thất bại. Vui lòng thử lại sau.');
                 }
               }}>
-                <ArrowDownTrayIcon className="w-18 h-18" />
+                <Download size={18} />
                 Tải Word
               </button>
               <button className="lp-btn lp-btn-secondary" onClick={async () => {
@@ -843,7 +839,7 @@ const LessonPlans = () => {
                   showError('Tải PDF chưa được hỗ trợ. Vui lòng sử dụng tải Word thay thế.');
                 }
               }}>
-                <ArrowDownCircleIcon className="w-18 h-18" />
+                <FileDown size={18} />
                 Tải PDF
               </button>
               <button className="lp-btn lp-btn-close" onClick={() => setShowDetailModal(false)}>
@@ -861,7 +857,7 @@ const LessonPlans = () => {
             <div className="lp-modal-header">
               <h2>Xác nhận xóa</h2>
               <button className="lp-modal-close" onClick={() => setShowDeleteModal(false)}>
-                <XMarkIcon className="w-20 h-20" />
+                <X size={20} />
               </button>
             </div>
             <div className="lp-modal-body">
@@ -873,7 +869,7 @@ const LessonPlans = () => {
                 Hủy
               </button>
               <button className="lp-btn lp-btn-danger" onClick={handleDelete}>
-                <TrashIcon className="w-16 h-16" />
+                <Trash2 size={16} />
                 Xóa giáo án
               </button>
             </div>

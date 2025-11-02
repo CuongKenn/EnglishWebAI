@@ -1,11 +1,11 @@
 import { Card } from '../../../../components/ui/card';
-import { UserGroupIcon, DocumentCheckIcon, CpuChipIcon, ArrowTrendingUpIcon, ClockIcon, CheckCircleIcon, SunIcon, MoonIcon, CakeIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+import { Users, FileCheck, Brain, TrendingUp, Clock, CheckCircle, Sun, Moon, Coffee, Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { apiV1 } from '../../../../services/api';
 
 const Dashboard = () => {
   const [greeting, setGreeting] = useState('');
-  const [greetingIcon, setGreetingIcon] = useState(SunIcon);
+  const [greetingIcon, setGreetingIcon] = useState(Sun);
   const [loading, setLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState(null);
 
@@ -13,13 +13,13 @@ const Dashboard = () => {
     const hour = new Date().getHours();
     if (hour < 12) {
       setGreeting('Chào buổi sáng');
-      setGreetingIcon(SunIcon);
+      setGreetingIcon(Sun);
     } else if (hour < 18) {
       setGreeting('Chào buổi chiều');
-      setGreetingIcon(CakeIcon);
+      setGreetingIcon(Coffee);
     } else {
       setGreeting('Chào buổi tối');
-      setGreetingIcon(MoonIcon);
+      setGreetingIcon(Moon);
     }
 
     // Fetch dashboard data
@@ -52,10 +52,10 @@ const Dashboard = () => {
   };
 
   const stats = dashboardData ? [
-    { label: 'Tổng số lớp', value: dashboardData.stats.total_classes.toString(), icon: UserGroupIcon, color: 'bg-blue-500' },
-    { label: 'Học sinh', value: dashboardData.stats.total_students.toString(), icon: UserGroupIcon, color: 'bg-green-500' },
-    { label: 'Bài kiểm tra', value: dashboardData.stats.total_tests.toString(), icon: DocumentCheckIcon, color: 'bg-purple-500' },
-    { label: 'Câu hỏi', value: dashboardData.stats.total_questions.toLocaleString('vi-VN'), icon: CpuChipIcon, color: 'bg-orange-500' }
+    { label: 'Tổng số lớp', value: dashboardData.stats.total_classes.toString(), icon: Users, color: 'bg-blue-500' },
+    { label: 'Học sinh', value: dashboardData.stats.total_students.toString(), icon: Users, color: 'bg-green-500' },
+    { label: 'Bài kiểm tra', value: dashboardData.stats.total_tests.toString(), icon: FileCheck, color: 'bg-purple-500' },
+    { label: 'Câu hỏi', value: dashboardData.stats.total_questions.toLocaleString('vi-VN'), icon: Brain, color: 'bg-orange-500' }
   ] : [];
 
   const recentActivities = dashboardData?.recent_activities || [];
@@ -72,7 +72,7 @@ const Dashboard = () => {
     return (
       <div className="p-8 flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <ArrowPathIcon className="w-12 h-12 animate-spin mx-auto mb-4 text-purple-600" />
+          <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4 text-purple-600" />
           <p className="text-gray-600">Đang tải dữ liệu dashboard...</p>
         </div>
       </div>
@@ -126,7 +126,7 @@ const Dashboard = () => {
         {/* Recent Activities */}
         <Card className="p-6">
           <div className="flex items-center gap-2 mb-4">
-            <ClockIcon className="w-5 h-5 text-purple-600" />
+            <Clock className="w-5 h-5 text-purple-600" />
             <h2 className="text-xl font-semibold text-gray-900">Hoạt động gần đây</h2>
           </div>
           <div className="space-y-4">
@@ -154,7 +154,7 @@ const Dashboard = () => {
         {/* Upcoming Tests */}
         <Card className="p-6">
           <div className="flex items-center gap-2 mb-4">
-            <DocumentCheckIcon className="w-5 h-5 text-purple-600" />
+            <FileCheck className="w-5 h-5 text-purple-600" />
             <h2 className="text-xl font-semibold text-gray-900">Bài kiểm tra sắp tới</h2>
           </div>
           <div className="space-y-4">

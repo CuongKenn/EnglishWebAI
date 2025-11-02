@@ -1,16 +1,15 @@
-import { EyeIcon, PencilIcon, TrashIcon, UserGroupIcon, CalendarIcon, TrophyIcon, DocumentTextIcon, ClockIcon } from '@heroicons/react/24/outline';
-import { BookOpenIcon, SignalIcon, MicrophoneIcon, PencilSquareIcon, ClipboardDocumentListIcon } from '@heroicons/react/24/outline';
+import { Eye, Edit, Trash2, Users, Calendar, Award, FileText, Clock } from 'lucide-react';
 import './ExerciseManagement.css';
 
 export default function ExerciseList({ exercises, onViewDetail, onDelete }) {
   const getSkillIcon = (skill) => {
-    switch (skill) {
-      case 'listening': return <SignalIcon className="w-3 h-3" />;
-      case 'speaking': return <MicrophoneIcon className="w-3 h-3" />;
-      case 'reading': return <BookOpenIcon className="w-3 h-3" />;
-      case 'writing': return <PencilSquareIcon className="w-3 h-3" />;
-      default: return <ClipboardDocumentListIcon className="w-3 h-3" />;
-    }
+    const icons = {
+      listening: '🎧',
+      speaking: '🗣️',
+      reading: '📖',
+      writing: '✍️'
+    };
+    return icons[skill] || '📝';
   };
   
   const getTypeLabel = (type) => {
@@ -38,9 +37,9 @@ export default function ExerciseList({ exercises, onViewDetail, onDelete }) {
             <div className="exercise-card-header">
               <div className="exercise-type-badges">
                 <span className={`type-badge-ex ${exercise.type}`}>
-                  {exercise.type === 'skill_exercise' && <DocumentTextIcon className="w-3.5 h-3.5" />}
-                  {exercise.type === 'test_15min' && <ClockIcon className="w-3.5 h-3.5" />}
-                  {(exercise.type === 'midterm' || exercise.type === 'final') && <TrophyIcon className="w-3.5 h-3.5" />}
+                  {exercise.type === 'skill_exercise' && <FileText size={14} />}
+                  {exercise.type === 'test_15min' && <Clock size={14} />}
+                  {(exercise.type === 'midterm' || exercise.type === 'final') && <Award size={14} />}
                   {getTypeLabel(exercise.type)}
                 </span>
                 {exercise.skill && (
@@ -59,15 +58,15 @@ export default function ExerciseList({ exercises, onViewDetail, onDelete }) {
               
               <div className="exercise-meta-info">
                 <div className="meta-item">
-                  <UserGroupIcon className="w-3.5 h-3.5" />
+                  <Users size={14} />
                   <span>{exercise.class}</span>
                 </div>
                 <div className="meta-item">
-                  <CalendarIcon className="w-3.5 h-3.5" />
+                  <Calendar size={14} />
                   <span>Hạn: {new Date(exercise.dueDate).toLocaleDateString('vi-VN')}</span>
                 </div>
                 <div className="meta-item">
-                  <TrophyIcon className="w-3.5 h-3.5" />
+                  <Award size={14} />
                   <span>{exercise.maxScore} điểm</span>
                 </div>
               </div>
@@ -92,7 +91,7 @@ export default function ExerciseList({ exercises, onViewDetail, onDelete }) {
                 onClick={() => onViewDetail(exercise)}
                 title="Xem chi tiết"
               >
-                <EyeIcon className="w-4 h-4" />
+                <Eye size={16} />
                 Xem chi tiết
               </button>
               <button 
@@ -100,7 +99,7 @@ export default function ExerciseList({ exercises, onViewDetail, onDelete }) {
                 onClick={() => onDelete(exercise.id)}
                 title="Xóa"
               >
-                <TrashIcon className="w-4 h-4" />
+                <Trash2 size={16} />
               </button>
             </div>
           </div>
@@ -109,7 +108,7 @@ export default function ExerciseList({ exercises, onViewDetail, onDelete }) {
       
       {exercises.length === 0 && (
         <div className="empty-state-ex">
-          <DocumentTextIcon className="w-16 h-16 empty-icon" />
+          <FileText size={64} className="empty-icon" />
           <h3>Chưa có bài tập nào</h3>
           <p>Click "Tạo bài tập mới" để bắt đầu</p>
         </div>

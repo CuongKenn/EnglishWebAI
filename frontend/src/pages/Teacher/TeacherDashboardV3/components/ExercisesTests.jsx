@@ -5,7 +5,7 @@ import { Input } from '../../../../components/ui/input';
 import { Badge } from '../../../../components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../../../../components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../../components/ui/table';
-import { ArrowUpTrayIcon, PlusIcon, MagnifyingGlassIcon, PencilSquareIcon, TrashIcon, EyeIcon, UserGroupIcon, SparklesIcon, ClipboardDocumentIcon, XMarkIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { Upload, Plus, Search, Edit, Trash2, Eye, Users, Wand2, Copy, X, Check } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../../components/ui/tabs';
 import { Label } from '../../../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
@@ -211,7 +211,7 @@ const ExercisesTests = () => {
       <Card className="p-4 mb-6">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
-            <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <Input
               placeholder="Tìm kiếm bài kiểm tra..."
               className="pl-10"
@@ -222,7 +222,7 @@ const ExercisesTests = () => {
           <Dialog open={isImportOpen} onOpenChange={setIsImportOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" className="gap-2">
-                <ArrowUpTrayIcon className="w-4 h-4" />
+                <Upload className="w-4 h-4" />
                 Import đề
               </Button>
             </DialogTrigger>
@@ -271,7 +271,7 @@ const ExercisesTests = () => {
                 <div>
                   <Label>Tải lên file đề</Label>
                   <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-purple-400 transition-colors cursor-pointer">
-                    <ArrowUpTrayIcon className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                    <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                     <p className="text-sm text-gray-600 mb-1">Kéo thả file hoặc click để chọn</p>
                     <p className="text-xs text-gray-500">Hỗ trợ: .docx, .txt (tối đa 10MB)</p>
                   </div>
@@ -286,7 +286,7 @@ const ExercisesTests = () => {
           <Dialog open={isGenerateOpen} onOpenChange={setIsGenerateOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" className="gap-2">
-                <SparklesIcon className="w-4 h-4" />
+                <Wand2 className="w-4 h-4" />
                 Tạo đề bằng AI
               </Button>
             </DialogTrigger>
@@ -398,7 +398,7 @@ const ExercisesTests = () => {
                 <div className="flex gap-2 justify-end">
                   <Button variant="outline" onClick={() => setIsGenerateOpen(false)}>Hủy</Button>
                   <Button onClick={() => setIsGenerateOpen(false)} className="gap-2">
-                    <SparklesIcon className="w-4 h-4" />
+                    <Wand2 className="w-4 h-4" />
                     Tạo đề
                   </Button>
                 </div>
@@ -408,7 +408,7 @@ const ExercisesTests = () => {
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
               <Button className="gap-2">
-                <PlusIcon className="w-4 h-4" />
+                <Plus className="w-4 h-4" />
                 Tạo mới
               </Button>
             </DialogTrigger>
@@ -583,11 +583,11 @@ const ExercisesTests = () => {
                     setIsDetailOpen(true);
                   }}
                 >
-                  <EyeIcon className="w-4 h-4" />
+                  <Eye className="w-4 h-4" />
                   Chi tiết
                 </Button>
                 <Button size="sm" variant="outline" className="gap-2">
-                  <PencilSquareIcon className="w-4 h-4" />
+                  <Edit className="w-4 h-4" />
                   Sửa
                 </Button>
                 {test.status === 'published' && (
@@ -600,12 +600,12 @@ const ExercisesTests = () => {
                       setIsGradingOpen(true);
                     }}
                   >
-                    <UserGroupIcon className="w-4 h-4" />
+                    <Users className="w-4 h-4" />
                     Chấm điểm
                   </Button>
                 )}
                 <Button size="sm" variant="outline" className="gap-2 text-red-600 hover:text-red-700">
-                  <TrashIcon className="w-4 h-4" />
+                  <Trash2 className="w-4 h-4" />
                   Xóa
                 </Button>
               </div>
@@ -661,7 +661,7 @@ const ExercisesTests = () => {
                   }}
                   className="gap-2"
                 >
-                  <ClipboardDocumentIcon className="w-4 h-4" />
+                  <Copy className="w-4 h-4" />
                   Copy
                 </Button>
               </div>
@@ -708,7 +708,7 @@ const ExercisesTests = () => {
                 <p className="text-xl font-semibold text-gray-900">{selectedTest?.completedStudents}/{selectedTest?.totalStudents} học sinh</p>
               </div>
               <Button className="gap-2">
-                <SparklesIcon className="w-4 h-4" />
+                <Wand2 className="w-4 h-4" />
                 Chấm tự động bằng AI
               </Button>
             </div>
@@ -768,7 +768,7 @@ const ExercisesTests = () => {
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle className="text-green-600 flex items-center gap-2">
-                <CheckIcon className="w-6 h-6" />
+                <Check className="w-6 h-6" />
                 Tạo bài tập thành công!
               </DialogTitle>
             </DialogHeader>
@@ -803,7 +803,7 @@ const ExercisesTests = () => {
                     }}
                     className="gap-2"
                   >
-                    <ClipboardDocumentIcon className="w-4 h-4" />
+                    <Copy className="w-4 h-4" />
                     Copy
                   </Button>
                 </div>
@@ -824,7 +824,7 @@ const ExercisesTests = () => {
                   }}
                   className="gap-2"
                 >
-                  <EyeIcon className="w-4 h-4" />
+                  <Eye className="w-4 h-4" />
                   Xem trước
                 </Button>
                 <Button
