@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react';
 import { lessonPlansAPI } from '../../../services/api';
 import { X, Plus, Sparkles, Eye, Edit, Trash2, BookOpen, Clock, GraduationCap, Download, FileText, FileDown } from 'lucide-react';
+import { 
+  BookOpenIcon as BookOpenHero, 
+  CpuChipIcon, 
+  PencilSquareIcon 
+} from '@heroicons/react/24/outline';
 import Toast from '../../../components/Toast/Toast';
 import useToast from '../../../hooks/useToast';
 import './LessonPlans.css';
@@ -207,21 +212,27 @@ const LessonPlans = () => {
       {/* Stats */}
       <div className="lp-stats">
         <div className="lp-stat-card">
-          <div className="lp-stat-icon">📚</div>
+          <div className="lp-stat-icon">
+            <BookOpenHero className="w-6 h-6" />
+          </div>
           <div className="lp-stat-info">
             <div className="lp-stat-value">{lessonPlans.length}</div>
             <div className="lp-stat-label">Tổng giáo án</div>
           </div>
         </div>
         <div className="lp-stat-card">
-          <div className="lp-stat-icon">🤖</div>
+          <div className="lp-stat-icon">
+            <CpuChipIcon className="w-6 h-6" />
+          </div>
           <div className="lp-stat-info">
             <div className="lp-stat-value">{lessonPlans.filter(p => p.ai_generated === 1).length}</div>
             <div className="lp-stat-label">Tạo bằng AI</div>
           </div>
         </div>
         <div className="lp-stat-card">
-          <div className="lp-stat-icon">✏️</div>
+          <div className="lp-stat-icon">
+            <PencilSquareIcon className="w-6 h-6" />
+          </div>
           <div className="lp-stat-info">
             <div className="lp-stat-value">{lessonPlans.filter(p => p.ai_generated === 0).length}</div>
             <div className="lp-stat-label">Tạo thủ công</div>
