@@ -974,7 +974,7 @@ export default function DoExercise() {
           {/* PART 2: READING (2.5 điểm) */}
           <div className="test-section">
             <div className="section-header">
-              <h4>📖 PHẦN 2: ĐỌC HIỂU (2.5 điểm)</h4>
+              <h4><BookOpen className="inline-block w-5 h-5 mr-2" /> PHẦN 2: ĐỌC HIỂU (2.5 điểm)</h4>
             </div>
             
             {/* Reading Passage */}
@@ -1097,7 +1097,7 @@ export default function DoExercise() {
           {/* PART 3: WRITING (2.5 điểm) */}
           <div className="test-section">
             <div className="section-header">
-              <h4>✍️ PHẦN 3: VIẾT (2.5 điểm)</h4>
+              <h4><PenLine className="inline-block w-5 h-5 mr-2" /> PHẦN 3: VIẾT (2.5 điểm)</h4>
             </div>
             
             <div className="writing-section">
@@ -1150,7 +1150,7 @@ export default function DoExercise() {
           {/* PART 4: SPEAKING (2.5 điểm) */}
           <div className="test-section">
             <div className="section-header">
-              <h4>🗣️ PHẦN 4: NÓI (2.5 điểm)</h4>
+              <h4><Mic className="inline-block w-5 h-5 mr-2" /> PHẦN 4: NÓI (2.5 điểm)</h4>
             </div>
             
             <div className="speaking-section">
@@ -1720,8 +1720,8 @@ export default function DoExercise() {
                   return (
                     <div className="formatted-feedback">
                       {sections.map((section, idx) => {
-                        // Check if section starts with emoji icons
-                        const hasIcon = /^[🎧📖✍️🗣️💡]/.test(section.trim());
+                        // Check if section starts with skill icons (removed emoji regex, icons now in JSX)
+                        const hasIcon = false;
                         
                         return (
                           <div key={idx} className={`feedback-section ${hasIcon ? 'with-icon' : ''}`}>
@@ -1836,7 +1836,7 @@ export default function DoExercise() {
                     
                     {submission.rubrics_scores.speaking.content.pronunciation_note && (
                       <div className="feedback-item pronunciation-feedback">
-                        <strong>🗣️ Phát âm:</strong>
+                        <strong><Mic className="inline-block w-4 h-4 mr-1" /> Phát âm:</strong>
                         <p>{submission.rubrics_scores.speaking.content.pronunciation_note}</p>
                       </div>
                     )}
@@ -1906,7 +1906,7 @@ export default function DoExercise() {
             {/* Writing breakdown */}
             {submission.rubrics_scores.writing_assessment && (
               <div className="rubric-section">
-                <h4>✍️ Đánh giá kỹ năng Writing</h4>
+                <h4><PenLine className="inline-block w-5 h-5 mr-2" /> Đánh giá kỹ năng Writing</h4>
                 
                 {/* Writing Assessment Grid */}
                 <div className="writing-assessment-grid">
