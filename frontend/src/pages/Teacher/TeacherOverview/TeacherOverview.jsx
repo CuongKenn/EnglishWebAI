@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { BellIcon, MagnifyingGlassIcon, BuildingLibraryIcon, UserGroupIcon, ClipboardDocumentListIcon, ChartBarIcon, ClockIcon, PlusIcon, CheckCircleIcon, BookOpenIcon } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
 import './TeacherOverview.css';
 import apiClient from '../../../services/api';
@@ -64,15 +65,15 @@ const TeacherOverview = () => {
     <div className="teacher-overview">
       <div className="overview-header">
         <div>
-          <h1 className="page-title">Xin chào, Giáo viên! 👋</h1>
+          <h1 className="page-title">Xin chào, Giáo viên!</h1>
           <p className="page-subtitle">Đây là tổng quan về hoạt động giảng dạy của bạn</p>
         </div>
         <div className="header-actions">
           <button className="btn-icon" title="Thông báo">
             <span className="notification-badge">3</span>
-            🔔
+            <BellIcon className="w-5 h-5" />
           </button>
-          <button className="btn-icon" title="Tìm kiếm">🔍</button>
+          <button className="btn-icon" title="Tìm kiếm"><MagnifyingGlassIcon className="w-5 h-5" /></button>
         </div>
       </div>
 
@@ -80,7 +81,7 @@ const TeacherOverview = () => {
       <div className="stats-grid">
         <div className="stat-card blue-gradient">
           <div className="stat-icon-wrapper blue">
-            <span className="stat-icon">🏫</span>
+            <span className="stat-icon"><BuildingLibraryIcon className="w-6 h-6" /></span>
           </div>
           <div className="stat-content">
             <div className="stat-label">Tổng số lớp học</div>
@@ -91,7 +92,7 @@ const TeacherOverview = () => {
 
         <div className="stat-card orange-gradient">
           <div className="stat-icon-wrapper orange">
-            <span className="stat-icon">👥</span>
+            <span className="stat-icon"><UserGroupIcon className="w-6 h-6" /></span>
           </div>
           <div className="stat-content">
             <div className="stat-label">Tổng số học sinh</div>
@@ -102,7 +103,7 @@ const TeacherOverview = () => {
 
         <div className="stat-card purple-gradient">
           <div className="stat-icon-wrapper purple">
-            <span className="stat-icon">📝</span>
+            <span className="stat-icon"><ClipboardDocumentListIcon className="w-6 h-6" /></span>
           </div>
           <div className="stat-content">
             <div className="stat-label">Bài tập chờ chấm</div>
@@ -113,7 +114,7 @@ const TeacherOverview = () => {
 
         <div className="stat-card green-gradient">
           <div className="stat-icon-wrapper green">
-            <span className="stat-icon">📊</span>
+            <span className="stat-icon"><ChartBarIcon className="w-6 h-6" /></span>
           </div>
           <div className="stat-content">
             <div className="stat-label">Bài kiểm tra sắp tới</div>
@@ -139,7 +140,7 @@ const TeacherOverview = () => {
                 <div className={`class-color-bar ${cls.color}`}></div>
                 <div className="class-info">
                   <h4 className="class-name">{cls.name}</h4>
-                  <p className="class-time">⏰ {cls.time}</p>
+                  <p className="class-time"><ClockIcon className="inline w-4 h-4 mr-1" /> {cls.time}</p>
                 </div>
                 <div className="class-students">
                   <span className="student-count">{cls.students} HS</span>
@@ -159,10 +160,10 @@ const TeacherOverview = () => {
             {recentActivities.map(activity => (
               <div key={activity.id} className="activity-item">
                 <div className={`activity-icon ${activity.type}`}>
-                  {activity.type === 'submission' && '📤'}
-                  {activity.type === 'grade' && '✅'}
-                  {activity.type === 'class' && '🏫'}
-                  {activity.type === 'material' && '📚'}
+                  {activity.type === 'submission' && <ClipboardDocumentListIcon className="w-4 h-4" />}
+                  {activity.type === 'grade' && <CheckCircleIcon className="w-4 h-4" />}
+                  {activity.type === 'class' && <BuildingLibraryIcon className="w-4 h-4" />}
+                  {activity.type === 'material' && <BookOpenIcon className="w-4 h-4" />}
                 </div>
                 <div className="activity-content">
                   <p className="activity-text">{activity.text}</p>
@@ -183,28 +184,28 @@ const TeacherOverview = () => {
               className="quick-action-btn blue"
               onClick={() => navigate('/teacher-dashboard/assignments')}
             >
-              <span className="action-icon">➕</span>
+              <span className="action-icon"><PlusIcon className="w-5 h-5" /></span>
               <span className="action-text">Tạo bài tập mới</span>
             </button>
             <button 
               className="quick-action-btn green"
               onClick={() => navigate('/teacher-dashboard/grading')}
             >
-              <span className="action-icon">✅</span>
+              <span className="action-icon"><CheckCircleIcon className="w-5 h-5" /></span>
               <span className="action-text">Chấm điểm</span>
             </button>
             <button 
               className="quick-action-btn purple"
               onClick={() => navigate('/teacher-dashboard/materials')}
             >
-              <span className="action-icon">📚</span>
+              <span className="action-icon"><BookOpenIcon className="w-5 h-5" /></span>
               <span className="action-text">Thêm học liệu</span>
             </button>
             <button 
               className="quick-action-btn orange"
               onClick={() => navigate('/teacher-dashboard/statistics')}
             >
-              <span className="action-icon">📊</span>
+              <span className="action-icon"><ChartBarIcon className="w-5 h-5" /></span>
               <span className="action-text">Xem báo cáo</span>
             </button>
           </div>

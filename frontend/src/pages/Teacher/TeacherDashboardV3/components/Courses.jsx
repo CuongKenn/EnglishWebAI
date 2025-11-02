@@ -4,7 +4,7 @@ import { Button } from '../../../../components/ui/button';
 import { Input } from '../../../../components/ui/input';
 import { Badge } from '../../../../components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../../../../components/ui/dialog';
-import { PlusIcon, MagnifyingGlassIcon, ArrowUpTrayIcon, BookOpenIcon, UserGroupIcon, ClockIcon, PencilSquareIcon, TrashIcon, EyeIcon, PlayCircleIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, MagnifyingGlassIcon, ArrowUpTrayIcon, BookOpenIcon, UserGroupIcon, ClockIcon, PencilSquareIcon, TrashIcon, EyeIcon, PlayCircleIcon, ArrowPathIcon, MicrophoneIcon, PencilIcon, SignalIcon, ChatBubbleBottomCenterTextIcon } from '@heroicons/react/24/outline';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../../components/ui/tabs';
 import { Label } from '../../../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
@@ -99,17 +99,17 @@ const Courses = () => {
     }
   };
 
-  // Get skill emoji
+  // Get skill icon component
   const getSkillEmoji = (skill) => {
-    const emojiMap = {
-      'speaking': '🗣️',
-      'writing': '✍️',
-      'reading': '📖',
-      'listening': '🎧',
-      'vocabulary': '📚',
-      'grammar': '📝'
+    const iconMap = {
+      'speaking': <MicrophoneIcon className="w-3.5 h-3.5" />,
+      'writing': <PencilIcon className="w-3.5 h-3.5" />,
+      'reading': <BookOpenIcon className="w-3.5 h-3.5" />,
+      'listening': <SignalIcon className="w-3.5 h-3.5" />,
+      'vocabulary': <ChatBubbleBottomCenterTextIcon className="w-3.5 h-3.5" />,
+      'grammar': <PencilSquareIcon className="w-3.5 h-3.5" />
     };
-    return emojiMap[skill] || '📚';
+    return iconMap[skill] || <BookOpenIcon className="w-3.5 h-3.5" />;
   };
 
   // Get skill color

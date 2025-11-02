@@ -3,9 +3,11 @@ import { useNavigate, Link } from 'react-router-dom';
 import {
   ArrowTrendingUpIcon, ClockIcon, TrophyIcon, CheckCircleIcon, 
   CalendarIcon, ChartBarIcon, SparklesIcon, PlayIcon, 
-  ChevronRightIcon, BookOpenIcon, BoltIcon, AcademicCapIcon
+  ChevronRightIcon, BookOpenIcon, BoltIcon, AcademicCapIcon, LightBulbIcon
 } from '@heroicons/react/24/outline';
 import { CircleIcon } from '@heroicons/react/24/solid';
+// Lucide-react icons for features not in Heroicons
+import { TrendingUp, Target, Award, CheckCircle, Clock, Circle, BookOpen } from 'lucide-react';
 import ConsistentSidebarLayout from '../../components/Layout/ConsistentSidebarLayout';
 import './Lessons.css';
 
@@ -187,11 +189,11 @@ const Lessons = () => {
               {/* Milestones */}
               <div className="progress-milestones">
                 <div className={`milestone ${studyProgress.progress >= 25 ? 'achieved' : ''}`}>
-                  <div className="milestone-icon">🌱</div>
+                  <div className="milestone-icon"><SparklesIcon className="w-5 h-5" /></div>
                   <span>25%</span>
                 </div>
                 <div className={`milestone ${studyProgress.progress >= 50 ? 'achieved' : ''}`}>
-                  <div className="milestone-icon">🌿</div>
+                  <div className="milestone-icon"><BoltIcon className="w-5 h-5" /></div>
                   <span>50%</span>
                 </div>
                 <div className={`milestone ${studyProgress.progress >= 75 ? 'achieved' : ''}`}>
@@ -305,7 +307,7 @@ const Lessons = () => {
           </div>
 
           <div className="motivation-box">
-            <div className="motivation-icon">🐝</div>
+            <div className="motivation-icon"><LightBulbIcon className="w-5 h-5" /></div>
             <p>Không có giáo dục nào tốt hơn việc học hỏi từ trải nghiệm</p>
           </div>
         </div>
