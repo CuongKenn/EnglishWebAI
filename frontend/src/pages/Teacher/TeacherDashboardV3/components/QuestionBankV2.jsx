@@ -1019,7 +1019,7 @@ export default function QuestionBankV2() {
                     <div className="mt-2">
                       {(question.passage_text || question.passage_url) && (
                         <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded line-clamp-3">
-                          📖 {question.passage_text ? question.passage_text : 'Có file đoạn văn'}
+                          <BookOpen className="inline-block w-3 h-3 mr-1" /> {question.passage_text ? question.passage_text : 'Có file đoạn văn'}
                         </div>
                       )}
                     </div>
