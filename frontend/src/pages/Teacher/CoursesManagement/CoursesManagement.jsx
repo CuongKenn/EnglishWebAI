@@ -963,7 +963,7 @@ const UnitQuestionsModal = ({ unit, course, onClose, onRefresh }) => {
         {/* Audio Upload for Listening */}
         {(questionForm.type === 'mcq-audio' || questionForm.type === 'dictation') && (
           <div className="cm-form-group">
-            <label>🎧 NỘI DUNG BÀI NGHE</label>
+            <label><Headphones className="inline-block w-4 h-4 mr-1" /> NỘI DUNG BÀI NGHE</label>
             <div className="cm-file-upload-area">
               <input
                 type="file"
@@ -975,7 +975,7 @@ const UnitQuestionsModal = ({ unit, course, onClose, onRefresh }) => {
               <label htmlFor="audio-upload" className="cm-upload-box">
                 {uploadedAudio ? (
                   <div className="cm-uploaded-file">
-                    <div className="cm-file-icon">🎧</div>
+                    <div className="cm-file-icon"><Headphones size={24} /></div>
                     <div className="cm-file-info">
                       <p className="cm-file-name">{uploadedAudio.name}</p>
                       <p className="cm-file-size">
@@ -995,7 +995,7 @@ const UnitQuestionsModal = ({ unit, course, onClose, onRefresh }) => {
                   </div>
                 ) : (
                   <>
-                    <div className="cm-upload-icon">🎧</div>
+                    <div className="cm-upload-icon"><Headphones size={40} /></div>
                     <p className="cm-upload-text">Click để chọn file audio</p>
                     <p className="cm-upload-hint">File Audio * (.mp3, .wav, .ogg)</p>
                     <p className="cm-upload-hint">Tối đa 50MB</p>
@@ -1009,7 +1009,7 @@ const UnitQuestionsModal = ({ unit, course, onClose, onRefresh }) => {
         {/* Document Upload for Reading */}
         {['mcq', 'fill-blank', 'short'].includes(questionForm.type) && (
           <div className="cm-form-group">
-            <label>📖 NỘI DUNG BÀI ĐỌC</label>
+            <label><BookOpen className="inline-block w-4 h-4 mr-1" /> NỘI DUNG BÀI ĐỌC</label>
             <div className="cm-file-upload-tabs">
               <button
                 type="button"
@@ -1241,7 +1241,7 @@ const UnitQuestionsModal = ({ unit, course, onClose, onRefresh }) => {
                       )}
                       {q.media_url && (
                         <div className="cm-question-media">
-                          <span>🎧 Audio: {q.media_url}</span>
+                          <span><Headphones className="inline-block w-4 h-4 mr-1" /> Audio: {q.media_url}</span>
                         </div>
                       )}
                     </div>
