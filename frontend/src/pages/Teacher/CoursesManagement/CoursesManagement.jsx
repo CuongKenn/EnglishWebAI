@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   BookOpen, Users, TrendingUp, Plus, Eye, Edit, Trash2,
   Search, Upload, X, ChevronRight, Award, Clock, Filter,
-  FileText, CheckCircle, AlertCircle, Loader
+  FileText, CheckCircle, AlertCircle, Loader, Headphones, MessageSquare, PenLine
 } from 'lucide-react';
 import './CoursesManagement.css';
 
@@ -12,10 +12,10 @@ import useToast from '../../../hooks/useToast';
 
 
 const SKILLS = [
-  { value: 'listening', label: 'Listening', emoji: '🎧', color: '#10b981' },
-  { value: 'speaking', label: 'Speaking', emoji: '🗣️', color: '#8b5cf6' },
-  { value: 'reading', label: 'Reading', emoji: '📖', color: '#3b82f6' },
-  { value: 'writing', label: 'Writing', emoji: '✍️', color: '#f97316' },
+  { value: 'listening', label: 'Listening', icon: <Headphones size={16} />, color: '#10b981' },
+  { value: 'speaking', label: 'Speaking', icon: <MessageSquare size={16} />, color: '#8b5cf6' },
+  { value: 'reading', label: 'Reading', icon: <BookOpen size={16} />, color: '#3b82f6' },
+  { value: 'writing', label: 'Writing', icon: <PenLine size={16} />, color: '#f97316' },
 ];
 
 const LEVELS = [
@@ -256,10 +256,10 @@ const CoursesManagement = () => {
     return skillObj?.color || '#64748b';
   };
 
-  // Get skill emoji
-  const getSkillEmoji = (skill) => {
+  // Get skill icon component
+  const getSkillIcon = (skill) => {
     const skillObj = SKILLS.find(s => s.value === skill);
-    return skillObj?.emoji || '📚';
+    return skillObj?.icon || <BookOpen size={16} />;
   };
 
   return (
@@ -387,7 +387,7 @@ const CoursesManagement = () => {
                   background: `linear-gradient(135deg, ${getSkillColor(course.category)}15 0%, ${getSkillColor(course.category)}30 100%)`,
                 }}
               >
-                <div className="cm-course-emoji">{getSkillEmoji(course.category)}</div>
+                <div className="cm-course-emoji">{getSkillIcon(course.category)}</div>
                 <div className="cm-course-badge" style={{ backgroundColor: getSkillColor(course.category) }}>
                   {course.level || 'INTERMEDIATE'}
                 </div>
