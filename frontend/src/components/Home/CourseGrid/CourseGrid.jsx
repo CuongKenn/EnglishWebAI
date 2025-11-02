@@ -155,7 +155,7 @@ const CourseGrid = () => {
       <div className="grid-header">
         <h2 className="grid-title">Khóa học Tiếng Anh AI</h2>
         <p className="grid-subtitle">
-          English AI cung cấp chương trình học tiếng Anh toàn diện từ lớp 1 đến lớp 12, 
+          Smart Learn cung cấp chương trình học tiếng Anh toàn diện từ lớp 1 đến lớp 12, 
           được thiết kế bởi đội ngũ giáo viên chuyên nghiệp và công nghệ AI hiện đại. 
           Mỗi khóa học được cá nhân hóa theo năng lực và tiến độ của từng học sinh.
         </p>

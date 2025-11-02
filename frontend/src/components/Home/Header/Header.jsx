@@ -72,7 +72,7 @@ const Header = ({ userRole = 'student', isLoggedIn = false, onLogout }) => {
       <div className="header-top">
         <div className="logo">
           <div className="logo-icon">🎓</div>
-          <span className="logo-text">English AI</span>
+          <span className="logo-text">Smart Learn</span>
         </div>
         <div className="search-bar">
           <input type="text" placeholder="Tìm kiếm bài học, bài tập, từ vựng, ngữ pháp..." />

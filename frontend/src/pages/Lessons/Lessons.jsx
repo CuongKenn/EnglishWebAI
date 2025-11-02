@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   TrendingUp, Clock, Award, CheckCircle, Circle,
-  Calendar, BarChart3, Sparkles, Play, ChevronRight, BookOpen, Target
+  Calendar, BarChart3, Sparkles, Play, ChevronRight, BookOpen, Target, GraduationCap
 } from 'lucide-react';
 import ConsistentSidebarLayout from '../../components/Layout/ConsistentSidebarLayout';
 import './Lessons.css';
@@ -81,7 +81,7 @@ const Lessons = () => {
             </div>
             <div className="mascot-container">
               <div className="mascot">
-                <span className="mascot-emoji">🎓</span>
+                <GraduationCap className="mascot-icon" size={48} strokeWidth={2} />
                 <Sparkles className="sparkle sparkle-1" size={20} />
                 <Sparkles className="sparkle sparkle-2" size={16} />
               </div>

@@ -279,7 +279,7 @@ const AboutUs = () => {
               </p>
               
               <p className="mission-description">
-                Nền tảng EnglishWebAI được thiết kế để đáp ứng nhu cầu của mọi đối tượng học viên, 
+                Nền tảng Smart Learn được thiết kế để đáp ứng nhu cầu của mọi đối tượng học viên, 
                 từ học sinh tiểu học đến người đi làm muốn nâng cao trình độ. Với công nghệ AI tiên tiến, 
                 chúng tôi cung cấp trải nghiệm học tập được cá nhân hóa, phản hồi tức thì và chính xác, 
                 cùng với hệ thống đánh giá thông minh giúp người học nắm bắt được tiến độ của mình 
@@ -417,7 +417,7 @@ const AboutUs = () => {
             </p>
             
             <p className="vision-description">
-              Trong 5 năm tới, EnglishWebAI sẽ phục vụ hàng triệu học sinh và giáo viên trên toàn quốc, 
+              Trong 5 năm tới, Smart Learn sẽ phục vụ hàng triệu học sinh và giáo viên trên toàn quốc, 
               góp phần nâng cao năng lực tiếng Anh của thế hệ trẻ Việt Nam, giúp các em tự tin giao tiếp 
               và hội nhập với thế giới. Chúng tôi tin rằng ngôn ngữ là chìa khóa mở ra cơ hội, và AI là 
               cây cầu giúp mọi người tiếp cận tri thức một cách công bằng và hiệu quả nhất.
@@ -475,8 +475,8 @@ const AboutUs = () => {
               </div>
               <h4>Email</h4>
               <div>
-                <p>contact@englishwebai.com</p>
-                <p>support@englishwebai.com</p>
+                <p>contact@smartlearn.vn</p>
+                <p>support@smartlearn.vn</p>
               </div>
             </div>
 

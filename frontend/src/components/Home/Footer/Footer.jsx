@@ -9,16 +9,16 @@ const Footer = () => {
         <div className="footer-section footer-about">
           <div className="footer-logo">
             <div className="logo-icon">🎓</div>
-            <h2>English AI</h2>
+            <h2>Smart Learn</h2>
           </div>
           <p className="footer-description">
-            English AI là nền tảng giáo dục trực tuyến với công nghệ AI tiên tiến. 
+            Smart Learn là nền tảng giáo dục trực tuyến với công nghệ AI tiên tiến. 
             Chúng tôi cung cấp các khóa học Tiếng Anh từ cơ bản đến nâng cao cho học sinh 
             từ lớp 1 đến lớp 12. Các bài học được cá nhân hóa và phân tích thời gian thực 
             giúp học sinh nâng cao kỹ năng tiếng Anh hiệu quả.
           </p>
           <div className="footer-social">
-            <span>Theo dõi English AI trên:</span>
+            <span>Theo dõi Smart Learn trên:</span>
             <div className="social-icons">
               <a href="#" aria-label="Facebook"><i className="fab fa-facebook"></i></a>
               <a href="#" aria-label="YouTube"><i className="fab fa-youtube"></i></a>
@@ -31,7 +31,7 @@ const Footer = () => {
         <div className="footer-section">
           <h3>Về chúng tôi</h3>
           <ul>
-            <li><a href="#">Giới thiệu English AI</a></li>
+            <li><a href="#">Giới thiệu Smart Learn</a></li>
             <li><a href="#">Dành cho Học sinh</a></li>
             <li><a href="#">Dành cho Giáo viên</a></li>
             <li><a href="#">Dành cho Phụ huynh</a></li>
@@ -46,7 +46,9 @@ const Footer = () => {
             <li><a href="#">Trung tâm trợ giúp</a></li>
             <li><a href="#">Hướng dẫn sử dụng</a></li>
             <li><a href="#">Câu hỏi thường gặp</a></li>
-            <li><a href="#">Phản hồi với English AI</a></li>
+            <li><a href="#">Chính sách bảo mật</a></li>
+            <li><a href="#">Điều khoản sử dụng</a></li>
+            <li><a href="#">Phản hồi với Smart Learn</a></li>
             <li><a href="#">Liên hệ</a></li>
           </ul>
         </div>
