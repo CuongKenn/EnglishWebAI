@@ -279,7 +279,7 @@ const LessonPlans = () => {
               </div>
               
               <div className="lp-card-body">
-                {plan.unit && <div className="lp-card-unit">📖 {plan.unit}</div>}
+                {plan.unit && <div className="lp-card-unit"><BookOpen className="inline-block w-4 h-4 mr-1" /> {plan.unit}</div>}
                 {plan.lesson_number && <div className="lp-card-lesson">{plan.lesson_number}</div>}
               </div>
               
@@ -513,7 +513,7 @@ const LessonPlans = () => {
             <div className="lp-modal-body lp-detail-content">
               <div className="lp-detail-meta">
                 <span>📚 Lớp {selectedPlan.grade}</span>
-                <span>📖 {selectedPlan.unit}</span>
+                <span><BookOpen className="inline-block w-4 h-4 mr-1" /> {selectedPlan.unit}</span>
                 <span>⏱️ {selectedPlan.duration} phút</span>
                 {selectedPlan.ai_generated === 1 && <span className="lp-detail-ai-badge">🤖 AI Generated</span>}
               </div>
@@ -803,7 +803,7 @@ const LessonPlans = () => {
               {/* Homework */}
               {selectedPlan.homework && (
                 <div className="lp-detail-section">
-                  <h3>📖 Bài tập về nhà</h3>
+                  <h3><BookOpen className="inline-block w-5 h-5 mr-2" /> Bài tập về nhà</h3>
                   <p className="lp-detail-text">{selectedPlan.homework}</p>
                 </div>
               )}
