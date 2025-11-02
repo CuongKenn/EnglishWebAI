@@ -114,7 +114,6 @@
 /* Section Title */
 .section-title {
   font-size: 22px;
- suminterface
   font-weight: 800;
   color: #0f172a;
   margin: 0 0 16px 0;
@@ -122,8 +121,6 @@
   -webkit-background-clip: initial !important;
   -webkit-text-fill-color: inherit !important;
   background-clip: initial !important;
-
- 
 }
 
 /* Today's Goal Section */
