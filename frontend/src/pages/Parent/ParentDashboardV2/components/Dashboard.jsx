@@ -453,7 +453,7 @@ const Dashboard = ({ onNavigate }) => {
                   className="view-details-btn-premium"
                   onClick={() => navigate('/track-progress')}
                   >
-                  <Eye className="btn-icon-left" />
+                  <EyeIcon className="btn-icon-left" />
                     Xem chi tiết
                   <ChevronRightIcon className="btn-arrow-detail" />
                   </button>
@@ -495,7 +495,7 @@ const Dashboard = ({ onNavigate }) => {
               onClick={() => handleExportTypeSelect('pdf')}
             >
               <div className="export-option-icon-wrapper pdf">
-                <FileText className="export-option-icon" />
+                <DocumentTextIcon className="export-option-icon" />
               </div>
               <h3 className="export-option-title">Tải báo cáo PDF</h3>
               <p className="export-option-description">Định dạng PDF, dễ in ấn và chia sẻ</p>
@@ -788,7 +788,7 @@ const Dashboard = ({ onNavigate }) => {
               Đóng
             </button>
             <button className="modal-btn-primary" onClick={() => navigate('/track-progress')}>
-              <Eye className="btn-icon-modal" />
+              <EyeIcon className="btn-icon-modal" />
               Xem chi tiết tiến độ
             </button>
           </div>
@@ -955,7 +955,7 @@ const Dashboard = ({ onNavigate }) => {
                     </div>
                     {subject.teacher_comment && (
                       <p className="report-teacher-comment">
-                        <MessageCircle className="comment-icon" />
+                        <ChatBubbleLeftRightIcon className="comment-icon" />
                         {subject.teacher_comment}
                       </p>
                     )}
@@ -1001,7 +1001,7 @@ const Dashboard = ({ onNavigate }) => {
       <div className="quick-access-section-modern">
         <div className="section-header-dashboard">
           <div className="section-header-left-dash">
-            <Target className="section-icon-dash" />
+            <ChartPieIcon className="section-icon-dash" />
             <div>
               <h2 className="section-title-dash">Truy cập nhanh</h2>
               <p className="section-subtitle-dash">Các tính năng thường dùng</p>
@@ -1027,7 +1027,7 @@ const Dashboard = ({ onNavigate }) => {
             onClick={() => navigate('/notifications')}
           >
             <div className="quick-card-icon-wrapper notifications">
-              <Bell className="quick-card-icon" />
+              <BellIcon className="quick-card-icon" />
             </div>
             <h3 className="quick-card-title">Thông báo</h3>
             <p className="quick-card-description">Cập nhật từ giáo viên</p>
@@ -1042,7 +1042,7 @@ const Dashboard = ({ onNavigate }) => {
             onClick={() => navigate('/teacher-communication')}
           >
             <div className="quick-card-icon-wrapper messages">
-              <MessageCircle className="quick-card-icon" />
+              <ChatBubbleLeftRightIcon className="quick-card-icon" />
             </div>
             <h3 className="quick-card-title">Trao đổi</h3>
             <p className="quick-card-description">Liên hệ với giáo viên</p>

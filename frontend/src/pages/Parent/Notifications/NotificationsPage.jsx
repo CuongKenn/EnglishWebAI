@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Bell, CheckCircle, AlertCircle, Info, Award, BookOpen, 
-  Calendar, Trash2, Check, ArrowLeft, ChevronRight, Filter,
-  Search, Download, FileText, FileSpreadsheet
-} from 'lucide-react';
+  BellIcon, CheckCircleIcon, ExclamationCircleIcon, InformationCircleIcon, TrophyIcon, BookOpenIcon, 
+  CalendarIcon, TrashIcon, CheckIcon, ArrowLeftIcon, ChevronRightIcon, FunnelIcon,
+  MagnifyingGlassIcon, ArrowDownTrayIcon, DocumentTextIcon, DocumentChartBarIcon
+} from '@heroicons/react/24/outline';
 import Navbar from '../../../components/Navbar/Navbar';
 import Modal from '../ParentDashboardV2/components/Modal';
 import authService from '../../../services/authService';
@@ -254,17 +254,17 @@ const NotificationsPage = () => {
         <div className="page-header-notifications">
           <div className="breadcrumb">
             <span className="back-btn" onClick={() => navigate('/')}>
-              <ArrowLeft className="back-icon" />
+              <ArrowLeftIcon className="back-icon" />
               Home
             </span>
-            <ChevronRight className="breadcrumb-separator" />
+            <ChevronRightIcon className="breadcrumb-separator" />
             <span className="breadcrumb-current">Thông báo</span>
           </div>
 
           <div className="page-title-section-notif">
             <div className="page-title-left-notif">
               <div className="page-icon-wrapper-notif">
-                <Bell className="page-icon-notif" />
+                <BellIcon className="page-icon-notif" />
                 {unreadCount > 0 && (
                   <span className="notification-badge-header">{unreadCount}</span>
                 )}
@@ -281,12 +281,12 @@ const NotificationsPage = () => {
             <div className="page-actions-notif">
               {unreadCount > 0 && (
                 <button className="action-btn-secondary-notif" onClick={markAllAsRead}>
-                  <Check className="btn-icon-notif" />
+                  <CheckIcon className="btn-icon-notif" />
                   Đánh dấu tất cả đã đọc
                 </button>
               )}
               <button className="action-btn-primary-notif" onClick={() => setShowExportModal(true)}>
-                <Download className="btn-icon-notif" />
+                <ArrowDownTrayIcon className="btn-icon-notif" />
                 Xuất danh sách
               </button>
             </div>
@@ -320,7 +320,7 @@ const NotificationsPage = () => {
           </div>
 
           <div className="search-notifications">
-            <Search className="search-icon-notif" />
+            <MagnifyingGlassIcon className="search-icon-notif" />
             <input
               type="text"
               placeholder="Tìm kiếm thông báo..."
@@ -379,7 +379,7 @@ const NotificationsPage = () => {
                       }}
                       title="Xóa thông báo"
                     >
-                      <Trash2 className="delete-icon-modern" />
+                      <TrashIcon className="delete-icon-modern" />
                     </button>
                   </div>
                 );
@@ -388,7 +388,7 @@ const NotificationsPage = () => {
           ) : (
             <div className="empty-notifications-modern">
               <div className="empty-icon-container-notif">
-                <Bell className="empty-icon-notif" />
+                <BellIcon className="empty-icon-notif" />
               </div>
               <h3 className="empty-title-notif">Không có thông báo nào</h3>
               <p className="empty-description-notif">
@@ -426,7 +426,7 @@ const NotificationsPage = () => {
               onClick={() => handleExportTypeSelect('pdf')}
             >
               <div className="export-option-icon-wrapper pdf">
-                <FileText className="export-option-icon" />
+                <DocumentTextIcon className="export-option-icon" />
               </div>
               <h3 className="export-option-title">Tải báo cáo PDF</h3>
               <p className="export-option-description">Định dạng PDF, dễ in ấn và chia sẻ</p>
@@ -437,7 +437,7 @@ const NotificationsPage = () => {
               onClick={() => handleExportTypeSelect('excel')}
             >
               <div className="export-option-icon-wrapper excel">
-                <FileSpreadsheet className="export-option-icon" />
+                <DocumentChartBarIcon className="export-option-icon" />
               </div>
               <h3 className="export-option-title">Xuất dữ liệu Excel</h3>
               <p className="export-option-description">Định dạng Excel, dễ phân tích dữ liệu</p>
@@ -445,7 +445,7 @@ const NotificationsPage = () => {
           </div>
 
           <div className="export-info-box">
-            <Info className="export-info-icon" />
+            <InformationCircleIcon className="export-info-icon" />
             <div className="export-info-content">
               <h4 className="export-info-title">Danh sách bao gồm:</h4>
               <ul className="export-info-list">
@@ -477,7 +477,7 @@ const NotificationsPage = () => {
               onClick={() => handleExportOptionToggle('title')}
             >
               <div className="export-checkbox">
-                {exportOptions.title && <CheckCircle className="check-icon" />}
+                {exportOptions.title && <CheckCircleIcon className="check-icon" />}
               </div>
               <div className="export-checkbox-content">
                 <span className="export-checkbox-label">Tiêu đề thông báo</span>
@@ -490,7 +490,7 @@ const NotificationsPage = () => {
               onClick={() => handleExportOptionToggle('content')}
             >
               <div className="export-checkbox">
-                {exportOptions.content && <CheckCircle className="check-icon" />}
+                {exportOptions.content && <CheckCircleIcon className="check-icon" />}
               </div>
               <div className="export-checkbox-content">
                 <span className="export-checkbox-label">Nội dung thông báo</span>
@@ -503,7 +503,7 @@ const NotificationsPage = () => {
               onClick={() => handleExportOptionToggle('marks')}
             >
               <div className="export-checkbox">
-                {exportOptions.marks && <CheckCircle className="check-icon" />}
+                {exportOptions.marks && <CheckCircleIcon className="check-icon" />}
               </div>
               <div className="export-checkbox-content">
                 <span className="export-checkbox-label">Điểm danh</span>
@@ -516,7 +516,7 @@ const NotificationsPage = () => {
               onClick={() => handleExportOptionToggle('attendance')}
             >
               <div className="export-checkbox">
-                {exportOptions.attendance && <CheckCircle className="check-icon" />}
+                {exportOptions.attendance && <CheckCircleIcon className="check-icon" />}
               </div>
               <div className="export-checkbox-content">
                 <span className="export-checkbox-label">Tham gia lớp học</span>
@@ -529,7 +529,7 @@ const NotificationsPage = () => {
               onClick={() => handleExportOptionToggle('sender')}
             >
               <div className="export-checkbox">
-                {exportOptions.sender && <CheckCircle className="check-icon" />}
+                {exportOptions.sender && <CheckCircleIcon className="check-icon" />}
               </div>
               <div className="export-checkbox-content">
                 <span className="export-checkbox-label">Người gửi</span>
@@ -542,7 +542,7 @@ const NotificationsPage = () => {
               onClick={() => handleExportOptionToggle('time')}
             >
               <div className="export-checkbox">
-                {exportOptions.time && <CheckCircle className="check-icon" />}
+                {exportOptions.time && <CheckCircleIcon className="check-icon" />}
               </div>
               <div className="export-checkbox-content">
                 <span className="export-checkbox-label">Thời gian</span>
@@ -552,7 +552,7 @@ const NotificationsPage = () => {
           </div>
 
           <div className="export-summary-box">
-            <Info className="export-info-icon" />
+            <InformationCircleIcon className="export-info-icon" />
             <div className="export-summary-content">
               <span className="export-summary-text">
                 Đã chọn {Object.values(exportOptions).filter(v => v).length}/6 tùy chọn
@@ -569,14 +569,14 @@ const NotificationsPage = () => {
                 setSelectedExportType(null);
               }}
             >
-              <ChevronRight className="btn-icon-back" style={{ transform: 'rotate(180deg)' }} />
+              <ChevronRightIcon className="btn-icon-back" style={{ transform: 'rotate(180deg)' }} />
               Quay lại
             </button>
             <button 
               className="modal-btn-primary"
               onClick={handleExportConfirm}
             >
-              <Download className="btn-icon-modal" />
+              <ArrowDownTrayIcon className="btn-icon-modal" />
               Xuất {selectedExportType === 'pdf' ? 'PDF' : 'Excel'}
             </button>
           </div>

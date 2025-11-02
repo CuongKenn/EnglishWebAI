@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { parentAPI } from '../../../services/parentService';
 import { 
-  TrendingUp, BookOpen, Award, Calendar, ChevronRight, 
-  CheckCircle, Clock, AlertCircle, Target, BarChart3,
-  Users, ArrowLeft, Download, Filter, FileText, FileSpreadsheet, Info, X
-} from 'lucide-react';
+  ArrowTrendingUpIcon, BookOpenIcon, TrophyIcon, CalendarIcon, ChevronRightIcon, 
+  CheckCircleIcon, ClockIcon, ExclamationCircleIcon, ChartPieIcon, ChartBarIcon,
+  UserGroupIcon, ArrowLeftIcon, ArrowDownTrayIcon, FunnelIcon, DocumentTextIcon, DocumentChartBarIcon, InformationCircleIcon, XMarkIcon
+} from '@heroicons/react/24/outline';
 import Navbar from '../../../components/Navbar/Navbar';
 import authService from '../../../services/authService';
 import Modal from '../ParentDashboardV2/components/Modal';
@@ -359,17 +359,17 @@ const TrackProgressPage = () => {
         <div className="page-header-track">
           <div className="breadcrumb">
             <span className="back-btn" onClick={() => navigate('/')}>
-              <ArrowLeft className="back-icon" />
+              <ArrowLeftIcon className="back-icon" />
               Home
             </span>
-            <ChevronRight className="breadcrumb-separator" />
+            <ChevronRightIcon className="breadcrumb-separator" />
             <span className="breadcrumb-current">Theo dõi tiến độ</span>
           </div>
           
           <div className="page-title-section">
             <div className="page-title-left">
               <div className="page-icon-wrapper">
-                <TrendingUp className="page-icon" />
+                <ArrowTrendingUpIcon className="page-icon" />
               </div>
               <div>
                 <h1 className="page-title">Theo dõi tiến độ học tập</h1>
@@ -379,7 +379,7 @@ const TrackProgressPage = () => {
             <div className="page-actions-modern">
               <button className="modern-action-btn filter-btn" onClick={() => setShowFilterModal(true)}>
                 <div className="action-btn-icon-wrapper">
-                  <Filter className="action-btn-icon" />
+                  <FunnelIcon className="action-btn-icon" />
                 </div>
                 <div className="action-btn-content">
                   <span className="action-btn-title">Bộ lọc</span>
@@ -388,7 +388,7 @@ const TrackProgressPage = () => {
               </button>
               <button className="modern-action-btn export-btn" onClick={() => setShowExportModal(true)}>
                 <div className="action-btn-icon-wrapper">
-                  <Download className="action-btn-icon" />
+                  <ArrowDownTrayIcon className="action-btn-icon" />
                 </div>
                 <div className="action-btn-content">
                   <span className="action-btn-title">Xuất báo cáo</span>
@@ -404,7 +404,7 @@ const TrackProgressPage = () => {
           <div className="child-selector-section">
             <div className="selector-header">
               <h2 className="selector-title">
-                <Users className="selector-icon" />
+                <UserGroupIcon className="selector-icon" />
                 Chọn con em
               </h2>
               <span className="selector-count">{children.length} học sinh</span>
@@ -423,7 +423,7 @@ const TrackProgressPage = () => {
                   </div>
                   {selectedChild?.id === child.id && (
                     <div className="tab-card-active-indicator">
-                      <CheckCircle className="indicator-icon" />
+                      <CheckCircleIcon className="indicator-icon" />
                     </div>
                   )}
                 </button>
@@ -439,7 +439,7 @@ const TrackProgressPage = () => {
             <div className="content-section">
               <div className="section-header-modern">
                 <div className="section-header-left">
-                  <Calendar className="section-header-icon" />
+                  <CalendarIcon className="section-header-icon" />
                   <div>
                     <h2 className="section-title-modern">Chuyên cần</h2>
                     <p className="section-subtitle-modern">Thống kê tham gia học tập của con em</p>
@@ -450,7 +450,7 @@ const TrackProgressPage = () => {
                 <div className="attendance-card-modern card-present">
                   <div className="card-modern-header">
                     <div className="card-icon-wrapper present">
-                      <CheckCircle className="card-icon" />
+                      <CheckCircleIcon className="card-icon" />
                     </div>
                     <span className="card-trend positive">+5%</span>
                   </div>
@@ -469,7 +469,7 @@ const TrackProgressPage = () => {
                 <div className="attendance-card-modern card-absent">
                   <div className="card-modern-header">
                     <div className="card-icon-wrapper absent">
-                      <AlertCircle className="card-icon" />
+                      <ExclamationCircleIcon className="card-icon" />
                     </div>
                     {childProgress.attendance.absent > 0 && (
                       <span className="card-trend negative">Cần chú ý</span>
@@ -490,7 +490,7 @@ const TrackProgressPage = () => {
                 <div className="attendance-card-modern card-late">
                   <div className="card-modern-header">
                     <div className="card-icon-wrapper late">
-                      <Clock className="card-icon" />
+                      <ClockIcon className="card-icon" />
                     </div>
                   </div>
                   <div className="card-modern-body">
@@ -508,7 +508,7 @@ const TrackProgressPage = () => {
                 <div className="attendance-card-modern card-total">
                   <div className="card-modern-header">
                     <div className="card-icon-wrapper total">
-                      <BarChart3 className="card-icon" />
+                      <ChartBarIcon className="card-icon" />
                     </div>
                   </div>
                   <div className="card-modern-body">
@@ -526,7 +526,7 @@ const TrackProgressPage = () => {
             <div className="content-section">
               <div className="section-header-modern">
                 <div className="section-header-left">
-                  <Target className="section-header-icon" />
+                  <ChartPieIcon className="section-header-icon" />
                   <div>
                     <h2 className="section-title-modern">Tiến độ theo kỹ năng</h2>
                     <p className="section-subtitle-modern">Phân tích chi tiết từng kỹ năng học tập</p>
@@ -538,7 +538,7 @@ const TrackProgressPage = () => {
                   <div key={index} className="subject-card-premium">
                     <div className="subject-card-header-modern">
                       <div className="subject-icon-wrapper" style={{ background: `${subject.color}20` }}>
-                        <BookOpen className="subject-icon" style={{ color: subject.color }} />
+                        <BookOpenIcon className="subject-icon" style={{ color: subject.color }} />
                       </div>
                       <h3 className="subject-name">{subject.subject}</h3>
                     </div>
@@ -601,7 +601,7 @@ const TrackProgressPage = () => {
               <div className="content-section">
                 <div className="section-header-modern">
                   <div className="section-header-left">
-                    <Clock className="section-header-icon" />
+                    <ClockIcon className="section-header-icon" />
                     <div>
                       <h2 className="section-title-modern">Hoạt động gần đây</h2>
                       <p className="section-subtitle-modern">Các hoạt động học tập mới nhất</p>
@@ -612,8 +612,8 @@ const TrackProgressPage = () => {
                   {childProgress.recentActivities.map((activity, index) => (
                     <div key={index} className="timeline-item-modern">
                       <div className={`timeline-marker-modern type-${activity.type}`}>
-                        {activity.type === 'lesson' && <BookOpen className="marker-icon" />}
-                        {activity.type === 'exercise' && <Award className="marker-icon" />}
+                        {activity.type === 'lesson' && <BookOpenIcon className="marker-icon" />}
+                        {activity.type === 'exercise' && <TrophyIcon className="marker-icon" />}
                         {activity.type === 'discussion' && '💬'}
                       </div>
                       <div className="timeline-content-modern">
@@ -628,7 +628,7 @@ const TrackProgressPage = () => {
                         <div className="timeline-bottom">
                           {activity.score !== null && activity.score !== undefined && (
                             <span className="timeline-score-modern">
-                              <Award className="score-icon-small" />
+                              <TrophyIcon className="score-icon-small" />
                               {activity.score}/{activity.maxScore || 10}
                             </span>
                           )}
@@ -654,7 +654,7 @@ const TrackProgressPage = () => {
               <div className="content-section">
                 <div className="section-header-modern">
                   <div className="section-header-left">
-                    <AlertCircle className="section-header-icon" />
+                    <ExclamationCircleIcon className="section-header-icon" />
                     <div>
                       <h2 className="section-title-modern">Công việc sắp tới</h2>
                       <p className="section-subtitle-modern">Bài tập và deadline quan trọng</p>
@@ -677,12 +677,12 @@ const TrackProgressPage = () => {
                         <p className="task-subject-modern">{task.subject}</p>
                         <div className="task-footer-modern">
                           <div className="task-due-modern">
-                            <Calendar className="due-icon-small" />
+                            <CalendarIcon className="due-icon-small" />
                             <span>{task.dueDate}</span>
                           </div>
                         </div>
                       </div>
-                      <ChevronRight className="task-arrow-modern" />
+                      <ChevronRightIcon className="task-arrow-modern" />
                     </div>
                   ))}
                 </div>
@@ -694,7 +694,7 @@ const TrackProgressPage = () => {
         {children.length === 0 && (
           <div className="empty-state-modern">
             <div className="empty-icon-container">
-              <TrendingUp className="empty-icon" />
+              <ArrowTrendingUpIcon className="empty-icon" />
             </div>
             <h3 className="empty-title">Chưa có dữ liệu tiến độ</h3>
             <p className="empty-description">Hãy thêm con em của bạn để theo dõi tiến độ học tập</p>
@@ -815,7 +815,7 @@ const TrackProgressPage = () => {
               onClick={() => handleExportTypeSelect('pdf')}
             >
               <div className="export-option-icon-wrapper pdf">
-                <FileText className="export-option-icon" />
+                <DocumentTextIcon className="export-option-icon" />
               </div>
               <h3 className="export-option-title">Tải báo cáo PDF</h3>
               <p className="export-option-description">Định dạng PDF, dễ in ấn và chia sẻ</p>
@@ -826,7 +826,7 @@ const TrackProgressPage = () => {
               onClick={() => handleExportTypeSelect('excel')}
             >
               <div className="export-option-icon-wrapper excel">
-                <FileSpreadsheet className="export-option-icon" />
+                <DocumentChartBarIcon className="export-option-icon" />
               </div>
               <h3 className="export-option-title">Xuất dữ liệu Excel</h3>
               <p className="export-option-description">Định dạng Excel, dễ phân tích dữ liệu</p>
@@ -834,7 +834,7 @@ const TrackProgressPage = () => {
           </div>
 
           <div className="export-info-box">
-            <Info className="export-info-icon" />
+            <InformationCircleIcon className="export-info-icon" />
             <div className="export-info-content">
               <h4 className="export-info-title">Báo cáo bao gồm:</h4>
               <ul className="export-info-list">
@@ -866,7 +866,7 @@ const TrackProgressPage = () => {
               onClick={() => handleExportOptionToggle('studentInfo')}
             >
               <div className="export-checkbox">
-                {exportOptions.studentInfo && <CheckCircle className="check-icon" />}
+                {exportOptions.studentInfo && <CheckCircleIcon className="check-icon" />}
               </div>
               <div className="export-checkbox-content">
                 <span className="export-checkbox-label">Thông tin học sinh</span>
@@ -879,7 +879,7 @@ const TrackProgressPage = () => {
               onClick={() => handleExportOptionToggle('grades')}
             >
               <div className="export-checkbox">
-                {exportOptions.grades && <CheckCircle className="check-icon" />}
+                {exportOptions.grades && <CheckCircleIcon className="check-icon" />}
               </div>
               <div className="export-checkbox-content">
                 <span className="export-checkbox-label">Điểm số các môn học</span>
@@ -892,7 +892,7 @@ const TrackProgressPage = () => {
               onClick={() => handleExportOptionToggle('teacherComments')}
             >
               <div className="export-checkbox">
-                {exportOptions.teacherComments && <CheckCircle className="check-icon" />}
+                {exportOptions.teacherComments && <CheckCircleIcon className="check-icon" />}
               </div>
               <div className="export-checkbox-content">
                 <span className="export-checkbox-label">Nhận xét của giáo viên</span>
@@ -905,7 +905,7 @@ const TrackProgressPage = () => {
               onClick={() => handleExportOptionToggle('progressChart')}
             >
               <div className="export-checkbox">
-                {exportOptions.progressChart && <CheckCircle className="check-icon" />}
+                {exportOptions.progressChart && <CheckCircleIcon className="check-icon" />}
               </div>
               <div className="export-checkbox-content">
                 <span className="export-checkbox-label">Biểu đồ tiến độ</span>
@@ -918,7 +918,7 @@ const TrackProgressPage = () => {
               onClick={() => handleExportOptionToggle('attendance')}
             >
               <div className="export-checkbox">
-                {exportOptions.attendance && <CheckCircle className="check-icon" />}
+                {exportOptions.attendance && <CheckCircleIcon className="check-icon" />}
               </div>
               <div className="export-checkbox-content">
                 <span className="export-checkbox-label">Chuyên cần</span>
@@ -931,7 +931,7 @@ const TrackProgressPage = () => {
               onClick={() => handleExportOptionToggle('overallEvaluation')}
             >
               <div className="export-checkbox">
-                {exportOptions.overallEvaluation && <CheckCircle className="check-icon" />}
+                {exportOptions.overallEvaluation && <CheckCircleIcon className="check-icon" />}
               </div>
               <div className="export-checkbox-content">
                 <span className="export-checkbox-label">Đánh giá tổng quan</span>
@@ -941,7 +941,7 @@ const TrackProgressPage = () => {
           </div>
 
           <div className="export-summary-box">
-            <Info className="export-info-icon" />
+            <InformationCircleIcon className="export-info-icon" />
             <div className="export-summary-content">
               <span className="export-summary-text">
                 Đã chọn {Object.values(exportOptions).filter(v => v).length}/6 mục
@@ -958,14 +958,14 @@ const TrackProgressPage = () => {
                 setSelectedExportType(null);
               }}
             >
-              <ChevronRight className="btn-icon-back" style={{ transform: 'rotate(180deg)' }} />
+              <ChevronRightIcon className="btn-icon-back" style={{ transform: 'rotate(180deg)' }} />
               Quay lại
             </button>
             <button 
               className="modal-btn-primary"
               onClick={handleExportConfirm}
             >
-              <Download className="btn-icon-modal" />
+              <ArrowDownTrayIcon className="btn-icon-modal" />
               Xuất {selectedExportType === 'pdf' ? 'PDF' : 'Excel'}
           </button>
           </div>
