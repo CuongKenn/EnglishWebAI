@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileBarChart, Download, Filter, AlertCircle, CheckCircle, TrendingDown, FileText, Users, Calendar, Award } from 'lucide-react';
+import { FileBarChart, Download, Filter, AlertCircle, CheckCircle, TrendingDown, FileText, Users, Calendar, Award, Target, BookOpen, PenLine, Headphones, Mic } from 'lucide-react';
 import { Card } from '../../../components/ui/card';
 import { apiV1 } from '../../../services/api';
 import { useToast } from '../../../components/ui/Toast';
@@ -186,7 +186,7 @@ export default function ErrorAnalysisExport() {
 
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              🎯 Kỹ năng (tùy chọn)
+              <Target className="inline-block w-4 h-4 mr-1" /> Kỹ năng (tùy chọn)
             </label>
             <select
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
@@ -194,10 +194,10 @@ export default function ErrorAnalysisExport() {
               onChange={(e) => setSkillType(e.target.value)}
             >
               <option value="all">Tất cả kỹ năng</option>
-              <option value="reading">📖 Reading (Đọc)</option>
-              <option value="writing">✍️ Writing (Viết)</option>
-              <option value="listening">🎧 Listening (Nghe)</option>
-              <option value="speaking">🗣️ Speaking (Nói)</option>
+              <option value="reading"><BookOpen className="inline-block w-4 h-4 mr-1" /> Reading (Đọc)</option>
+              <option value="writing"><PenLine className="inline-block w-4 h-4 mr-1" /> Writing (Viết)</option>
+              <option value="listening"><Headphones className="inline-block w-4 h-4 mr-1" /> Listening (Nghe)</option>
+              <option value="speaking"><Mic className="inline-block w-4 h-4 mr-1" /> Speaking (Nói)</option>
             </select>
           </div>
 
