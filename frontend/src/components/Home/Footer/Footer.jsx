@@ -1,4 +1,5 @@
 import React from 'react';
+import { GraduationCap } from 'lucide-react';
 import './Footer.css';
 
 const Footer = () => {
@@ -8,7 +9,7 @@ const Footer = () => {
         {/* Logo và mô tả */}
         <div className="footer-section footer-about">
           <div className="footer-logo">
-            <div className="logo-icon">🎓</div>
+            <GraduationCap className="logo-icon" size={32} />
             <h2>Smart Learn</h2>
           </div>
           <p className="footer-description">

@@ -13,49 +13,42 @@ function ExerciseSidebar({ activeTab, onTabChange }) {
       icon: FileText,
       label: "Tất cả bài tập",
       gradient: "from-blue-500 to-cyan-500",
-      emoji: "📝",
     },
     {
       id: "listening",
       icon: Headphones,
       label: "Bài tập Nghe",
       gradient: "from-green-500 to-emerald-500",
-      emoji: "🎧",
     },
     {
       id: "speaking",
       icon: MessageSquare,
       label: "Bài tập Nói",
       gradient: "from-purple-500 to-pink-500",
-      emoji: "🗣️",
     },
     {
       id: "reading",
       icon: BookOpen,
       label: "Bài tập Đọc",
       gradient: "from-indigo-500 to-blue-500",
-      emoji: "📖",
     },
     {
       id: "writing",
       icon: PenTool,
       label: "Bài tập Viết",
       gradient: "from-orange-500 to-red-500",
-      emoji: "✍️",
     },
     {
       id: "tests",
       icon: AlertCircle,
       label: "Bài kiểm tra",
       gradient: "from-red-500 to-pink-500",
-      emoji: "📊",
     },
     {
       id: "grades",
       icon: BarChart3,
       label: "Điểm & Tiến độ",
       gradient: "from-pink-500 to-rose-500",
-      emoji: "🏆",
     },
   ];
 
@@ -96,7 +89,6 @@ function ExerciseSidebar({ activeTab, onTabChange }) {
                   
                   <div className="menu-item-text">
                     <div className="menu-item-label">
-                      <span className="menu-emoji">{item.emoji}</span>
                       <span className="menu-label">{item.label}</span>
                     </div>
                   </div>
@@ -280,7 +272,12 @@ export default function ExerciseHub() {
         <div className="card-body-new">
           <h3 className="card-title-new">{exercise.title}</h3>
           {exercise.skill_type && (
-            <div className="skill-badge">{getSkillEmoji(exercise.skill_type)} {getSkillName(exercise.skill_type)}</div>
+            <div className="skill-badge">
+              <span style={{display: 'inline-flex', alignItems: 'center', marginRight: '4px'}}>
+                {getSkillIcon(exercise.skill_type)}
+              </span>
+              {getSkillName(exercise.skill_type)}
+            </div>
           )}
           <p className="card-description-new">{exercise.description || 'Không có mô tả'}</p>
         </div>
@@ -359,14 +356,14 @@ export default function ExerciseHub() {
     );
   };
 
-  const getSkillEmoji = (skill) => {
-    const emojis = {
-      listening: '🎧',
-      speaking: '🗣️',
-      reading: '📖',
-      writing: '✍️'
+  const getSkillIcon = (skill) => {
+    const icons = {
+      listening: <Headphones size={20} />,
+      speaking: <MessageSquare size={20} />,
+      reading: <BookOpen size={20} />,
+      writing: <PenTool size={20} />
     };
-    return emojis[skill] || '📝';
+    return icons[skill] || <FileText size={20} />;
   };
 
   const getSkillName = (skill) => {
@@ -383,10 +380,10 @@ export default function ExerciseHub() {
     if (!skillStats) return null;
     
     const skills = [
-      { key: 'listening', name: 'Kỹ năng Nghe', color: 'from-green-500 to-emerald-500', emoji: '🎧' },
-      { key: 'speaking', name: 'Kỹ năng Nói', color: 'from-purple-500 to-pink-500', emoji: '🗣️' },
-      { key: 'reading', name: 'Kỹ năng Đọc', color: 'from-indigo-500 to-blue-500', emoji: '📖' },
-      { key: 'writing', name: 'Kỹ năng Viết', color: 'from-orange-500 to-red-500', emoji: '✍️' }
+      { key: 'listening', name: 'Kỹ năng Nghe', color: 'from-green-500 to-emerald-500', icon: Headphones },
+      { key: 'speaking', name: 'Kỹ năng Nói', color: 'from-purple-500 to-pink-500', icon: MessageSquare },
+      { key: 'reading', name: 'Kỹ năng Đọc', color: 'from-indigo-500 to-blue-500', icon: BookOpen },
+      { key: 'writing', name: 'Kỹ năng Viết', color: 'from-orange-500 to-red-500', icon: PenTool }
     ];
 
     return (
@@ -448,12 +445,13 @@ export default function ExerciseHub() {
             {skills.map(skill => {
               const stat = skillStats[skill.key];
               const percentage = parseFloat(stat.average) || 0;
+              const SkillIcon = skill.icon;
               
               return (
                 <div key={skill.key} className="skill-card-new">
                   <div className="skill-header-new">
                     <div className={`skill-icon-new ${skill.color}`}>
-                      <span className="skill-emoji-new">{skill.emoji}</span>
+                      <SkillIcon size={24} />
                     </div>
                     <div className="skill-info-new">
                       <h4>{skill.name}</h4>
@@ -578,7 +576,7 @@ export default function ExerciseHub() {
                 <div key={submission.id} className={`grade-item-new ${gradeLevel}`}>
                   <div className="grade-item-left-new">
                     <div className="grade-item-icon-new">
-                      {getSkillEmoji(exercise.skill_type)}
+                      {getSkillIcon(exercise.skill_type)}
                     </div>
                     <div className="grade-item-info-new">
                       <div className="grade-item-title-new">{exercise.title}</div>

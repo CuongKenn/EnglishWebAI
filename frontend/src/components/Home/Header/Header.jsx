@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'; 
 import { Link } from 'react-router-dom';
+import { GraduationCap } from 'lucide-react';
 import './Header.css';
 
 const Header = ({ userRole = 'student', isLoggedIn = false, onLogout }) => {
@@ -71,7 +72,7 @@ const Header = ({ userRole = 'student', isLoggedIn = false, onLogout }) => {
       {/* Top Header Bar */}
       <div className="header-top">
         <div className="logo">
-          <div className="logo-icon">🎓</div>
+          <GraduationCap className="logo-icon" size={32} />
           <span className="logo-text">Smart Learn</span>
         </div>
         <div className="search-bar">

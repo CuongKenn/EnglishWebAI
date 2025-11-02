@@ -193,18 +193,18 @@ const Lessons = () => {
                   <span>50%</span>
                 </div>
                 <div className={`milestone ${studyProgress.progress >= 75 ? 'achieved' : ''}`}>
-                  <div className="milestone-icon">🌳</div>
+                  <div className="milestone-icon"><Award size={24} /></div>
                   <span>75%</span>
                 </div>
                 <div className={`milestone ${studyProgress.progress >= 100 ? 'achieved' : ''}`}>
-                  <div className="milestone-icon">🏆</div>
+                  <div className="milestone-icon"><Trophy size={24} /></div>
                   <span>100%</span>
                 </div>
               </div>
 
               {/* Motivation Box */}
               <div className="motivation-box-modern">
-                <div className="motivation-icon">💪</div>
+                <div className="motivation-icon"><Zap size={24} /></div>
                 <div className="motivation-content">
                   <p className="motivation-title">Bạn đang làm rất tốt!</p>
                   <p className="motivation-text">

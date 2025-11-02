@@ -1,5 +1,6 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { Users, BookOpen, Star, Trophy, TrendingUp, Target, Award, Brain, UserCircle2, Rocket } from 'lucide-react';
 import AuthModal from '../../components/Navbar/AuthModal';
 import authService from '../../services/authService';
 import './HomeStudent.css';
@@ -35,10 +36,10 @@ const HomeStudent = () => {
   }, []);
 
   const heroStats = [
-    { icon: '👥', number: '50K+', label: 'Học viên' },
-    { icon: '📚', number: '200+', label: 'Khóa học' },
-    { icon: '⭐', number: '95%', label: 'Hài lòng' },
-    { icon: '🏆', number: '24/7', label: 'Hỗ trợ' },
+    { icon: <Users size={24} />, number: '50K+', label: 'Học viên' },
+    { icon: <BookOpen size={24} />, number: '200+', label: 'Khóa học' },
+    { icon: <Star size={24} />, number: '95%', label: 'Hài lòng' },
+    { icon: <Trophy size={24} />, number: '24/7', label: 'Hỗ trợ' },
   ];
 
   const aiPractices = [
@@ -78,16 +79,16 @@ const HomeStudent = () => {
   ];
 
   const features = [
-    { icon: '🧠', title: 'AI Thông Minh', description: 'Học tập cá nhân hóa với AI tiên tiến nhất', color: '#667eea' },
-    { icon: '📈', title: 'Theo Dõi Tiến Độ', description: 'Thống kê chi tiết quá trình học tập', color: '#f093fb' },
-    { icon: '🎯', title: 'Lộ Trình Cá Nhân', description: 'Học theo nhịp độ riêng của bạn', color: '#4facfe' },
-    { icon: '🏆', title: 'Chứng Chỉ Uy Tín', description: 'Nhận chứng chỉ được công nhận quốc tế', color: '#43e97b' },
+    { icon: <Brain size={24} />, title: 'AI Thông Minh', description: 'Học tập cá nhân hóa với AI tiên tiến nhất', color: '#667eea' },
+    { icon: <TrendingUp size={24} />, title: 'Theo Dõi Tiến Độ', description: 'Thống kê chi tiết quá trình học tập', color: '#f093fb' },
+    { icon: <Target size={24} />, title: 'Lộ Trình Cá Nhân', description: 'Học theo nhịp độ riêng của bạn', color: '#4facfe' },
+    { icon: <Award size={24} />, title: 'Chứng Chỉ Uy Tín', description: 'Nhận chứng chỉ được công nhận quốc tế', color: '#43e97b' },
   ];
 
   const testimonials = [
-    { name: 'Nguyễn Văn A', role: 'Sinh viên ĐHQG', avatar: '👨‍🎓', comment: 'Nền tảng tuyệt vời! AI chấm bài rất chính xác và chi tiết. Tôi đã cải thiện Writing từ 6.0 lên 7.5 IELTS chỉ sau 3 tháng.', rating: 5 },
-    { name: 'Trần Thị B', role: 'Nhân viên văn phòng', avatar: '👩‍💼', comment: 'Học linh hoạt, rất phù hợp với người đi làm! Tôi có thể học bất cứ lúc nào, giao diện đẹp và dễ sử dụng.', rating: 5 },
-    { name: 'Lê Văn C', role: 'Học sinh lớp 12', avatar: '👨‍🎓', comment: 'Giao diện đẹp, dễ sử dụng! AI Speaking giúp tôi tự tin giao tiếp tiếng Anh hơn rất nhiều. Highly recommended!', rating: 5 },
+    { name: 'Nguyễn Văn A', role: 'Sinh viên ĐHQG', avatar: <UserCircle2 size={48} />, comment: 'Nền tảng tuyệt vời! AI chấm bài rất chính xác và chi tiết. Tôi đã cải thiện Writing từ 6.0 lên 7.5 IELTS chỉ sau 3 tháng.', rating: 5 },
+    { name: 'Trần Thị B', role: 'Nhân viên văn phòng', avatar: <UserCircle2 size={48} />, comment: 'Học linh hoạt, rất phù hợp với người đi làm! Tôi có thể học bất cứ lúc nào, giao diện đẹp và dễ sử dụng.', rating: 5 },
+    { name: 'Lê Văn C', role: 'Học sinh lớp 12', avatar: <UserCircle2 size={48} />, comment: 'Giao diện đẹp, dễ sử dụng! AI Speaking giúp tôi tự tin giao tiếp tiếng Anh hơn rất nhiều. Highly recommended!', rating: 5 },
   ];
 
   useEffect(() => {
@@ -356,7 +357,7 @@ const HomeStudent = () => {
             {/* Top Badge */}
             <div className="hero-top-badge">
               <span className="badge-pulse"></span>
-              <span className="badge-text">🚀 Nền tảng học tiếng Anh AI #1 Việt Nam</span>
+              <span className="badge-text"><Rocket size={16} style={{display: 'inline', verticalAlign: 'middle', marginRight: '4px'}} /> Nền tảng học tiếng Anh AI #1 Việt Nam</span>
             </div>
 
             {/* Main Title with Typing Effect */}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Home, BookOpen, Users, MessageSquare, Mail, Bell, Settings, LogOut, User, Menu, X, ChevronDown, Sparkles, GraduationCap } from 'lucide-react';
 import ProfileDropdown from '../ProfileDropdown/ProfileDropdown';
 import AuthModal from './AuthModal';
 import authService from '../../services/authService';
@@ -120,7 +121,7 @@ const Navbar = ({ userRole = 'student', isLoggedIn: isLoggedInProp = false, onLo
         {/* Logo */}
         <div className="navbar-brand">
           <Link to="/" className="brand-link">
-            <div className="brand-icon">🎓</div>
+            <GraduationCap className="brand-icon" size={28} />
             <span className="brand-text">Smart Learn</span>
           </Link>
         </div>
