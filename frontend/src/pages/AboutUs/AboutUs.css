@@ -2,16 +2,45 @@
 
 .about-us-container {
   min-height: 100vh;
+  min-width: 100vw;
   background: #0a0e27;
   color: #ffffff;
-  overflow-x: hidden;
+  overflow: hidden;
   position: relative;
   padding: 0;
   margin: 0;
-  width: 100%;
-  max-width: 100%;
+  width: 100vw;
+  max-width: 100vw;
   border: none;
   border-radius: 0;
+}
+
+html.about-page-active,
+body.about-page-active {
+  background: #0a0e27 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100%;
+  min-height: 100%;
+  overflow-x: hidden !important;
+}
+
+#root.about-page-root {
+  background: #0a0e27 !important;
+  width: 100% !important;
+  min-height: 100vh;
+}
+
+.layout.about-layout,
+.main-content.about-layout-content {
+  background: #0a0e27 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-height: 100vh;
+  border-radius: 0 !important;
+  box-shadow: none !important;
 }
 
 /* Scroll Indicators */
@@ -636,6 +665,22 @@
   -webkit-text-fill-color: transparent;
   background-clip: text;
   padding: 0 40px;
+}
+
+.pillars-section .section-title {
+  background: none;
+  -webkit-background-clip: initial;
+  -webkit-text-fill-color: #ffffff;
+  background-clip: initial;
+  color: #ffffff;
+}
+
+.technology-section .section-title {
+  background: none;
+  -webkit-background-clip: initial;
+  -webkit-text-fill-color: #ffffff;
+  background-clip: initial;
+  color: #ffffff;
 }
 
 .mission-text {
