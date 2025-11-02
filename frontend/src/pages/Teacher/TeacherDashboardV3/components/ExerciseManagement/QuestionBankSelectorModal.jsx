@@ -1,5 +1,12 @@
 import { useState, useEffect } from 'react';
 import { X, Search, Filter, Check } from 'lucide-react';
+import { 
+  SpeakerWaveIcon, 
+  ChatBubbleLeftRightIcon, 
+  BookOpenIcon, 
+  PencilSquareIcon,
+  DocumentTextIcon
+} from '@heroicons/react/24/outline';
 import './ExerciseManagement.css';
 
 export default function QuestionBankSelectorModal({ skillType, onClose, onSelect }) {
@@ -106,12 +113,13 @@ export default function QuestionBankSelectorModal({ skillType, onClose, onSelect
   };
   
   const getSkillIcon = (skill) => {
+    const iconClass = "w-4 h-4 inline";
     switch(skill) {
-      case 'listening': return '🎧';
-      case 'speaking': return '🗣️';
-      case 'reading': return '📖';
-      case 'writing': return '✍️';
-      default: return '📝';
+      case 'listening': return <SpeakerWaveIcon className={iconClass} />;
+      case 'speaking': return <ChatBubbleLeftRightIcon className={iconClass} />;
+      case 'reading': return <BookOpenIcon className={iconClass} />;
+      case 'writing': return <PencilSquareIcon className={iconClass} />;
+      default: return <DocumentTextIcon className={iconClass} />;
     }
   };
   
