@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { X, Plus, Trash2, FileAudio, Upload, Check, FileText } from 'lucide-react';
+import { X, Plus, Trash2, FileAudio, Upload, Check, FileText, Headphones, Mic, BookOpen, PenLine } from 'lucide-react';
 import './AddQuestionModal.css';
 import Toast from '../../../../components/Toast/Toast';
 import useToast from '../../../../hooks/useToast';
@@ -333,7 +333,7 @@ export default function AddQuestionModal({ onClose, onAdd, mode = 'add', initial
                 disabled={mode === 'edit'}
                 style={mode === 'edit' ? {opacity: 0.6, cursor: 'not-allowed'} : {}}
               >
-                🎧 Nghe
+                <Headphones className="inline-block w-4 h-4 mr-1" /> Nghe
               </button>
               <button 
                 className={`skill-pill ${skillType === 'speaking' ? 'active' : ''}`}
@@ -341,7 +341,7 @@ export default function AddQuestionModal({ onClose, onAdd, mode = 'add', initial
                 disabled={mode === 'edit'}
                 style={mode === 'edit' ? {opacity: 0.6, cursor: 'not-allowed'} : {}}
               >
-                🗣️ Nói
+                <Mic className="inline-block w-4 h-4 mr-1" /> Nói
               </button>
               <button 
                 className={`skill-pill ${skillType === 'reading' ? 'active' : ''}`}
@@ -349,7 +349,7 @@ export default function AddQuestionModal({ onClose, onAdd, mode = 'add', initial
                 disabled={mode === 'edit'}
                 style={mode === 'edit' ? {opacity: 0.6, cursor: 'not-allowed'} : {}}
               >
-                📖 Đọc
+                <BookOpen className="inline-block w-4 h-4 mr-1" /> Đọc
               </button>
               <button 
                 className={`skill-pill ${skillType === 'writing' ? 'active' : ''}`}
@@ -357,7 +357,7 @@ export default function AddQuestionModal({ onClose, onAdd, mode = 'add', initial
                 disabled={mode === 'edit'}
                 style={mode === 'edit' ? {opacity: 0.6, cursor: 'not-allowed'} : {}}
               >
-                ✍️ Viết
+                <PenLine className="inline-block w-4 h-4 mr-1" /> Viết
               </button>
             </div>
           </div>
@@ -447,7 +447,7 @@ export default function AddQuestionModal({ onClose, onAdd, mode = 'add', initial
   function renderListeningForm() {
     return (
       <div className="skill-form-section">
-        <div className="section-title-aq">🎧 Nội dung câu hỏi Nghe</div>
+        <div className="section-title-aq"><Headphones className="inline-block w-5 h-5 mr-2" /> Nội dung câu hỏi Nghe</div>
         
         {/* Audio Upload */}
         <div className="form-group-aq">
