@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "../ui/button";
 import { Card } from "../ui/card";
 import { Badge } from "../ui/badge";
-import { Layers, Check, X, Volume2, Star, GraduationCap, RefreshCw } from "lucide-react";
+import { Layers, Check, X, Volume2, Star, GraduationCap, RefreshCw, BookOpen, PenTool, RotateCcw } from "lucide-react";
 import { Progress } from "../ui/progress";
 import { getFlashcards, saveFlashcardProgress } from "../../services/aiService";
 import { aiUsageAPI } from "../../services/api";
@@ -564,28 +564,28 @@ export function FlashcardAI() {
               </div>
             </div>
             <div className="flex gap-3 rounded-xl border border-pink-200 bg-white p-4 shadow-sm">
-              <div className="text-2xl">📖</div>
+              <div className="text-2xl"><BookOpen className="w-6 h-6" /></div>
               <div>
                 <p className="font-semibold text-gray-900">B1-B2: Phát triển</p>
                 <p className="text-sm text-gray-700">2000-3000 từ thông dụng</p>
               </div>
             </div>
             <div className="flex gap-3 rounded-xl border border-pink-200 bg-white p-4 shadow-sm">
-              <div className="text-2xl">🎓</div>
+              <div className="text-2xl"><GraduationCap className="w-6 h-6" /></div>
               <div>
                 <p className="font-semibold text-gray-900">C1-C2: Chuyên sâu</p>
                 <p className="text-sm text-gray-700">5000+ từ học thuật</p>
               </div>
             </div>
             <div className="flex gap-3 rounded-xl border border-pink-200 bg-white p-4 shadow-sm">
-              <div className="text-2xl">🔄</div>
+              <div className="text-2xl"><RotateCcw className="w-6 h-6" /></div>
               <div>
                 <p className="font-semibold text-gray-900">Ôn tập đều đặn</p>
                 <p className="text-sm text-gray-700">Học 15-20 từ/ngày</p>
               </div>
             </div>
             <div className="flex gap-3 rounded-xl border border-pink-200 bg-white p-4 shadow-sm">
-              <div className="text-2xl">✍️</div>
+              <div className="text-2xl"><PenTool className="w-6 h-6" /></div>
               <div>
                 <p className="font-semibold text-gray-900">Tạo câu ví dụ</p>
                 <p className="text-sm text-gray-700">Áp dụng vào thực tế</p>
