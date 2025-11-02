@@ -5,7 +5,7 @@ import Navbar from '../../../components/Navbar/Navbar';
 import {
   ArrowLeft, Sparkles, CheckCircle, PlayCircle, FileAudio, FileImage,
   User, Clock, Award, AlertCircle, Loader2, BookOpen, PencilLine, 
-  BookMarked, Building2, XCircle, AlertTriangle, Check, X
+  BookMarked, Building2, XCircle, AlertTriangle, Check, X, Headphones, Mic, PenTool
 } from 'lucide-react';
 import './SubmissionGradingPage.css';
 
@@ -374,7 +374,7 @@ export default function SubmissionGradingPage() {
                 {listeningSection && (
                   <div className="gp-card">
                     <div className="gp-card-header">
-                      <div className="gp-card-title">🎧 PHẦN 1: NGHE HIỂU</div>
+                      <div className="gp-card-title"><Headphones className="inline-block w-5 h-5 mr-2" /> PHẦN 1: NGHE HIỂU</div>
                       <div className="gp-section-score">
                         {listeningSection.total_points?.toFixed(1) || 0}/2.5 điểm
                       </div>
