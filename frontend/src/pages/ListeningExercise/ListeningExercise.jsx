@@ -167,6 +167,7 @@ const ListeningExercise = () => {
 
         // Determine audio/transcript from unit/question data
         const getBackendBaseUrl = () => {
+          // Ưu tiên biến môi trường
           const envUrl = import.meta.env.VITE_MEDIA_BASE_URL || import.meta.env.VITE_API_BASE_URL;
           if (envUrl) {
             try {
@@ -175,19 +176,26 @@ const ListeningExercise = () => {
               const pathname = parsed.pathname.replace(/\/?api\/?v1\/?$/i, '').replace(/\/$/, '');
               return `${origin}${pathname}`;
             } catch (err) {
-
+              console.warn('Failed to parse env URL:', err);
             }
           }
 
+          // Fallback: tự động detect từ window.location (cho production)
           if (typeof window !== 'undefined') {
             const { protocol, hostname, port } = window.location;
-            if (port && port !== '3000') {
-              return `${protocol}//${hostname}${port ? `:${port}` : ''}`;
+            // Nếu đang chạy trên server production (không phải localhost)
+            if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+              // Production: backend qua nginx proxy tại /api
+              return `${protocol}//${hostname}/api`;
             }
-            // Mặc định backend cổng 8000 khi chạy dev
-            return `${protocol}//${hostname}:8000`;
+            // Dev mode: frontend port 3000/5173, backend port 8000
+            if (port && (port === '3000' || port === '5173')) {
+              return `${protocol}//${hostname}:8000`;
+            }
+            return `${protocol}//${hostname}${port ? `:${port}` : ''}`;
           }
 
+          // Fallback cuối cùng chỉ dùng khi dev
           return 'http://localhost:8000';
         };
 
