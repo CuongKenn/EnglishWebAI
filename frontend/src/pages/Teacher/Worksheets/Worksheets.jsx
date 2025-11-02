@@ -17,6 +17,7 @@ import {
   BookOpenIcon,
   CpuChipIcon
 } from '@heroicons/react/24/outline';
+import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import Toast from '../../../components/Toast/Toast';
 import useToast from '../../../hooks/useToast';
 import './Worksheets.css';
@@ -549,9 +550,9 @@ const Worksheets = () => {
                 >
                   {difficultyOptions.find(d => d.value === selectedWorksheet.difficulty_level)?.label}
                 </span>
-                <span>⏱️ {selectedWorksheet.duration} phút</span>
-                {selectedWorksheet.total_points && <span>⭐ {selectedWorksheet.total_points} điểm</span>}
-                {selectedWorksheet.ai_generated === 1 && <span className="ws-detail-ai-badge">🤖 AI Generated</span>}
+                <span className="flex items-center gap-1"><ClockIcon className="w-4 h-4" /> {selectedWorksheet.duration} phút</span>
+                {selectedWorksheet.total_points && <span className="flex items-center gap-1"><StarIconSolid className="w-4 h-4" /> {selectedWorksheet.total_points} điểm</span>}
+                {selectedWorksheet.ai_generated === 1 && <span className="ws-detail-ai-badge flex items-center gap-1"><CpuChipIcon className="w-4 h-4" /> AI Generated</span>}
               </div>
               
               {selectedWorksheet.unit && (

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { 
-  ClipboardList, Sparkles, Calendar, BookOpen, Headphones, PenTool, MessageSquare, 
-  Plus, Trash2, Eye, Download, FileSpreadsheet, Users, TrendingUp, Award, Filter
-} from 'lucide-react';
+  ClipboardDocumentListIcon, SparklesIcon, CalendarIcon, BookOpenIcon, SpeakerWaveIcon, PencilSquareIcon, ChatBubbleLeftRightIcon, 
+  PlusIcon, TrashIcon, EyeIcon, ArrowDownTrayIcon, DocumentChartBarIcon, UserGroupIcon, ArrowTrendingUpIcon, TrophyIcon, FunnelIcon
+} from '@heroicons/react/24/outline';
 import { Card } from '../../../components/ui/card';
 import { apiV1 } from '../../../services/api';
 import Toast from '../../../components/Toast/Toast';
@@ -155,12 +155,12 @@ export default function WeeklyAssessments() {
 
   const getSkillIcon = (skill) => {
     const icons = {
-      reading: BookOpen,
-      writing: PenTool,
-      listening: Headphones,
-      speaking: MessageSquare
+      reading: BookOpenIcon,
+      writing: PencilSquareIcon,
+      listening: SpeakerWaveIcon,
+      speaking: ChatBubbleLeftRightIcon
     };
-    return icons[skill] || ClipboardList;
+    return icons[skill] || ClipboardDocumentListIcon;
   };
 
   const getSkillColor = (skill) => {
@@ -210,7 +210,7 @@ export default function WeeklyAssessments() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center gap-3">
               <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-3 rounded-xl shadow-lg">
-                <ClipboardList className="w-8 h-8 text-white" />
+                <ClipboardDocumentListIcon className="w-8 h-8 text-white" />
               </div>
               Phiếu Đánh Giá Kỹ Năng Hàng Tuần
             </h1>
@@ -230,7 +230,7 @@ export default function WeeklyAssessments() {
               </>
             ) : (
               <>
-                <FileSpreadsheet className="w-5 h-5" />
+                <DocumentChartBarIcon className="w-5 h-5" />
                 Xuất Phân Tích Lỗi Excel
               </>
             )}
@@ -248,7 +248,7 @@ export default function WeeklyAssessments() {
               <p className="text-xs text-gray-500 mt-1">Tất cả kỹ năng</p>
             </div>
             <div className="bg-purple-500 p-3 rounded-xl shadow-md">
-              <ClipboardList className="w-7 h-7 text-white" />
+              <ClipboardDocumentListIcon className="w-7 h-7 text-white" />
             </div>
           </div>
         </Card>
@@ -261,7 +261,7 @@ export default function WeeklyAssessments() {
               <p className="text-xs text-gray-500 mt-1">Phiếu đánh giá</p>
             </div>
             <div className="bg-blue-500 p-3 rounded-xl shadow-md">
-              <BookOpen className="w-7 h-7 text-white" />
+              <BookOpenIcon className="w-7 h-7 text-white" />
             </div>
           </div>
         </Card>
@@ -274,7 +274,7 @@ export default function WeeklyAssessments() {
               <p className="text-xs text-gray-500 mt-1">Phiếu đánh giá</p>
             </div>
             <div className="bg-purple-500 p-3 rounded-xl shadow-md">
-              <PenTool className="w-7 h-7 text-white" />
+              <PencilSquareIcon className="w-7 h-7 text-white" />
             </div>
           </div>
         </Card>
@@ -287,7 +287,7 @@ export default function WeeklyAssessments() {
               <p className="text-xs text-gray-500 mt-1">Phiếu đánh giá</p>
             </div>
             <div className="bg-green-500 p-3 rounded-xl shadow-md">
-              <Headphones className="w-7 h-7 text-white" />
+              <SpeakerWaveIcon className="w-7 h-7 text-white" />
             </div>
           </div>
         </Card>
@@ -297,7 +297,7 @@ export default function WeeklyAssessments() {
       <Card className="p-6 mb-8 border-2 border-purple-100 shadow-lg">
         <div className="flex items-center gap-3 mb-6">
           <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-2 rounded-lg">
-            <Sparkles className="w-6 h-6 text-white" />
+            <SparklesIcon className="w-6 h-6 text-white" />
           </div>
           <h2 className="text-xl font-bold text-gray-900">Tạo Phiếu Đánh Giá Mới bằng AI</h2>
         </div>
@@ -305,7 +305,7 @@ export default function WeeklyAssessments() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              <Users className="w-4 h-4 inline mr-1" />
+              <UserGroupIcon className="w-4 h-4 inline mr-1" />
               Lớp học
             </label>
             <select
@@ -330,7 +330,7 @@ export default function WeeklyAssessments() {
 
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              <Calendar className="w-4 h-4 inline mr-1" />
+              <CalendarIcon className="w-4 h-4 inline mr-1" />
               Tuần học
             </label>
             <input
@@ -345,7 +345,7 @@ export default function WeeklyAssessments() {
 
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              <Award className="w-4 h-4 inline mr-1" />
+              <TrophyIcon className="w-4 h-4 inline mr-1" />
               Kỹ năng
             </label>
             <select
@@ -353,10 +353,10 @@ export default function WeeklyAssessments() {
               value={skillType}
               onChange={(e) => setSkillType(e.target.value)}
             >
-              <option value="reading">📖 Reading (Đọc)</option>
-              <option value="writing">✍️ Writing (Viết)</option>
-              <option value="listening">🎧 Listening (Nghe)</option>
-              <option value="speaking">🗣️ Speaking (Nói)</option>
+              <option value="reading">Reading (Đọc)</option>
+              <option value="writing">Writing (Viết)</option>
+              <option value="listening">Listening (Nghe)</option>
+              <option value="speaking">Speaking (Nói)</option>
             </select>
           </div>
 
@@ -373,7 +373,7 @@ export default function WeeklyAssessments() {
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-5 h-5" />
+                  <SparklesIcon className="w-5 h-5" />
                   Tạo Phiếu AI
                 </>
               )}
@@ -383,7 +383,7 @@ export default function WeeklyAssessments() {
 
         {error && (
           <div className="bg-red-100 border-2 border-red-200 text-red-800 px-4 py-3 rounded-lg mb-4 flex items-center gap-2">
-            <span className="text-2xl">❌</span>
+            <span className="text-2xl">⚠️</span>
             <span>{error}</span>
           </div>
         )}
@@ -391,8 +391,8 @@ export default function WeeklyAssessments() {
         {generatedAssessment && (
           <div className="bg-gradient-to-r from-green-100 to-emerald-100 border-2 border-green-300 p-4 rounded-lg">
             <div className="flex items-center gap-2 mb-2">
-              <Sparkles className="w-5 h-5 text-green-600 animate-pulse" />
-              <h3 className="font-bold text-green-900">✅ Phiếu đánh giá đã được tạo thành công!</h3>
+              <SparklesIcon className="w-5 h-5 text-green-600 animate-pulse" />
+              <h3 className="font-bold text-green-900">Phiếu đánh giá đã được tạo thành công!</h3>
             </div>
             <p className="text-sm text-green-800 font-medium">{generatedAssessment.title}</p>
           </div>
@@ -402,7 +402,7 @@ export default function WeeklyAssessments() {
       {/* Filters */}
       <div className="mb-6 flex items-center gap-4">
         <div className="flex items-center gap-2">
-          <Filter className="w-5 h-5 text-gray-600" />
+          <FunnelIcon className="w-5 h-5 text-gray-600" />
           <span className="font-semibold text-gray-700">Lọc:</span>
         </div>
         
@@ -412,10 +412,10 @@ export default function WeeklyAssessments() {
           onChange={(e) => setFilterSkill(e.target.value)}
         >
           <option value="all">Tất cả kỹ năng</option>
-          <option value="reading">📖 Reading</option>
-          <option value="writing">✍️ Writing</option>
-          <option value="listening">🎧 Listening</option>
-          <option value="speaking">🗣️ Speaking</option>
+          <option value="reading">Reading</option>
+          <option value="writing">Writing</option>
+          <option value="listening">Listening</option>
+          <option value="speaking">Speaking</option>
         </select>
 
         <select
@@ -437,14 +437,14 @@ export default function WeeklyAssessments() {
       {/* Assessments List */}
       <div className="mb-6">
         <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-          <Calendar className="w-6 h-6 text-purple-600" />
+          <CalendarIcon className="w-6 h-6 text-purple-600" />
           Danh sách phiếu đánh giá ({filteredAssessments.length})
         </h2>
 
         {filteredAssessments.length === 0 ? (
           <Card className="p-12 border-2 border-dashed border-gray-300">
             <div className="text-center">
-              <ClipboardList className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <ClipboardDocumentListIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-500 mb-2 font-semibold text-lg">Chưa có phiếu đánh giá nào</p>
               <p className="text-sm text-gray-400">Chọn lớp học và tạo phiếu đánh giá đầu tiên bằng AI</p>
             </div>
@@ -474,7 +474,7 @@ export default function WeeklyAssessments() {
                       className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                       title="Xóa phiếu đánh giá"
                     >
-                      <Trash2 size={18} />
+                      <TrashIcon className="w-4.5 h-4.5" />
                     </button>
                   </div>
 
@@ -482,7 +482,7 @@ export default function WeeklyAssessments() {
                     <div className="flex items-center gap-2 mb-2">
                       <SkillIcon className="w-5 h-5 text-gray-600" />
                       <span className="text-sm font-semibold text-gray-600">
-                        {assessment.ai_generated ? '🤖 AI Generated' : '✍️ Manual'}
+                        {assessment.ai_generated ? 'AI Generated' : 'Manual'}
                       </span>
                     </div>
                     <h3 className="text-gray-900 text-base font-bold leading-relaxed mb-2">
@@ -495,7 +495,7 @@ export default function WeeklyAssessments() {
 
                   <div className="flex items-center justify-between text-xs text-gray-500 mb-3 pb-3 border-t pt-3">
                     <span className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
+                      <CalendarIcon className="w-3 h-3" />
                       {new Date(assessment.created_at).toLocaleDateString('vi-VN')}
                     </span>
                     {assessment.max_score && (
@@ -507,11 +507,11 @@ export default function WeeklyAssessments() {
 
                   <div className="flex gap-2">
                     <button className="flex-1 bg-gradient-to-r from-blue-500 to-cyan-500 text-white py-2 px-3 rounded-lg hover:from-blue-600 hover:to-cyan-600 transition-all duration-200 flex items-center justify-center gap-1 text-sm font-semibold">
-                      <Eye className="w-4 h-4" />
+                      <EyeIcon className="w-4 h-4" />
                       Xem
                     </button>
                     <button className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white py-2 px-3 rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-200 flex items-center justify-center gap-1 text-sm font-semibold">
-                      <Users className="w-4 h-4" />
+                      <UserGroupIcon className="w-4 h-4" />
                       Bài nộp
                     </button>
                   </div>
