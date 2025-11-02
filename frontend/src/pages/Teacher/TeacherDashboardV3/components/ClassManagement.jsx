@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Users, UserPlus, Upload, Download, Search, Trash2, Mail, User, CheckCircle, XCircle, FileText, Presentation } from 'lucide-react';
+import { Users, UserPlus, Upload, Download, Search, Trash2, Mail, User, CheckCircle, XCircle, FileText, Presentation, FolderOpen, Book } from 'lucide-react';
+import { PresentationChartBarIcon } from '@heroicons/react/24/outline';
 import { apiV1 } from '../../../../services/api';
 import Toast from '../../../../components/Toast/Toast';
 import useToast from '../../../../hooks/useToast';
@@ -307,7 +308,10 @@ export default function ClassManagement() {
     }}>
       <div className="class-modal large-modal" onClick={(e) => e.stopPropagation()} style={{maxWidth: '900px'}}>
         <div className="class-modal-header">
-          <h2>📊 Import Học sinh từ Excel (.xls, .xlsx, .csv)</h2>
+          <h2>
+            <PresentationChartBarIcon className="w-5 h-5 inline-block mr-2" />
+            Import Học sinh từ Excel (.xls, .xlsx, .csv)
+          </h2>
           <button className="modal-close-btn" onClick={() => {
             setShowImportModal(false);
             setImportFile(null);
@@ -478,7 +482,10 @@ export default function ClassManagement() {
                 {importResults.failed_count > 0 && (
                   <div>❌ Thất bại: <strong>{importResults.failed_count}</strong> học sinh</div>
                 )}
-                <div>📊 Tổng: <strong>{importResults.success_count + importResults.failed_count}</strong> dòng</div>
+                <div>
+                  <PresentationChartBarIcon className="w-4 h-4 inline-block mr-1" />
+                  Tổng: <strong>{importResults.success_count + importResults.failed_count}</strong> dòng
+                </div>
               </div>
               {importResults.failed_students && importResults.failed_students.length > 0 && (
                 <div>
@@ -513,7 +520,8 @@ export default function ClassManagement() {
             border: '1px solid #86efac'
           }}>
             <h4 style={{margin: '0 0 15px 0', fontSize: '15px', fontWeight: '600', color: '#166534'}}>
-              📊 Định dạng file Excel (hỗ trợ .xls và .xlsx):
+              <PresentationChartBarIcon className="w-4 h-4 inline-block mr-1" />
+              Định dạng file Excel (hỗ trợ .xls và .xlsx):
             </h4>
             <table className="format-table" style={{
               width: '100%',
@@ -674,7 +682,10 @@ export default function ClassManagement() {
     <div className="class-modal-overlay" onClick={() => setShowMaterialsModal(false)}>
       <div className="class-modal large-modal" onClick={(e) => e.stopPropagation()} style={{maxWidth: '900px'}}>
         <div className="class-modal-header">
-          <h2>📁 Tài liệu lớp học - {selectedClass?.name}</h2>
+          <h2>
+            <FolderOpen size={20} className="inline-block mr-2" />
+            Tài liệu lớp học - {selectedClass?.name}
+          </h2>
           <button className="modal-close-btn" onClick={() => setShowMaterialsModal(false)}>×</button>
         </div>
 
@@ -851,7 +862,8 @@ export default function ClassManagement() {
           {/* Materials List */}
           <div className="materials-list-section">
             <h3 style={{marginBottom: '15px', fontSize: '16px', fontWeight: '600'}}>
-              📚 Danh sách tài liệu ({materials.length})
+              <Book size={18} className="inline-block mr-2" />
+              Danh sách tài liệu ({materials.length})
             </h3>
             {loading && materials.length === 0 ? (
               <div style={{padding: '40px', textAlign: 'center', color: '#666'}}>
@@ -890,7 +902,10 @@ export default function ClassManagement() {
                         {material.description || 'Không có mô tả'}
                       </p>
                       <div style={{display: 'flex', gap: '12px', fontSize: '12px', color: '#9ca3af'}}>
-                        <span>📁 {material.type}</span>
+                        <span>
+                          <FolderOpen size={14} className="inline-block mr-1" />
+                          {material.type}
+                        </span>
                         <span>📅 {new Date(material.created_at).toLocaleDateString('vi-VN')}</span>
                       </div>
                     </div>
