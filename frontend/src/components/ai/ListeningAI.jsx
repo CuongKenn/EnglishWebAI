@@ -314,7 +314,7 @@ export function ListeningAI() {
             <Headphones className="h-5 w-5" />
             <span className="font-medium">Luyện nghe AI thông minh</span>
           </div>
-          <h1 className="mb-2">Luyện nghe AI 🎧</h1>
+          <h1 className="mb-2">Luyện nghe AI <Headphones className="inline-block w-6 h-6 ml-1" /></h1>
           <p className="text-gray-600">
             Cải thiện kỹ năng nghe hiểu với âm thanh tự nhiên từ AI
           </p>
@@ -422,7 +422,7 @@ export function ListeningAI() {
           <Headphones className="h-5 w-5" />
           <span className="font-medium">Luyện nghe AI thông minh</span>
         </div>
-        <h1 className="mb-2">Luyện nghe AI 🎧</h1>
+        <h1 className="mb-2">Luyện nghe AI <Headphones className="inline-block w-6 h-6 ml-1" /></h1>
         <p className="text-gray-600">
           Cải thiện kỹ năng nghe hiểu với âm thanh tự nhiên từ AI
         </p>
