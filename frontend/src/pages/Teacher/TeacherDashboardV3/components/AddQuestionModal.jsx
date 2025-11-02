@@ -573,7 +573,7 @@ export default function AddQuestionModal({ onClose, onAdd, mode = 'add', initial
   function renderSpeakingForm() {
     return (
       <div className="skill-form-section">
-        <div className="section-title-aq">🗣️ Nội dung câu hỏi Nói</div>
+        <div className="section-title-aq"><Mic className="inline-block w-5 h-5 mr-2" /> Nội dung câu hỏi Nói</div>
         
         <div className="form-group-aq">
           <label>Đề bài *</label>
@@ -641,7 +641,7 @@ export default function AddQuestionModal({ onClose, onAdd, mode = 'add', initial
   function renderReadingForm() {
     return (
       <div className="skill-form-section">
-        <div className="section-title-aq">📖 Nội dung câu hỏi Đọc</div>
+        <div className="section-title-aq"><BookOpen className="inline-block w-5 h-5 mr-2" /> Nội dung câu hỏi Đọc</div>
         
         <div className="form-group-aq">
           <label>Đoạn văn</label>
@@ -770,7 +770,7 @@ export default function AddQuestionModal({ onClose, onAdd, mode = 'add', initial
   function renderWritingForm() {
     return (
       <div className="skill-form-section">
-        <div className="section-title-aq">✍️ Nội dung câu hỏi Viết</div>
+        <div className="section-title-aq"><PenLine className="inline-block w-5 h-5 mr-2" /> Nội dung câu hỏi Viết</div>
         
         <div className="form-group-aq">
           <label>Đề bài *</label>
