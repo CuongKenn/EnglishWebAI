@@ -1,6 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import './StatisticsReports.css';
 import apiClient from '../../../services/api';
+import { 
+  UserGroupIcon, 
+  StarIcon, 
+  CheckCircleIcon, 
+  ChartBarIcon,
+  ArrowTrendingUpIcon,
+  DocumentArrowDownIcon,
+  ExclamationTriangleIcon,
+  CalendarIcon,
+  DocumentTextIcon
+} from '@heroicons/react/24/outline';
 
 const StatisticsReports = () => {
   const [selectedClass, setSelectedClass] = useState('all');
@@ -56,11 +67,13 @@ const StatisticsReports = () => {
     <div className="statistics-reports">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Thống kê & Báo cáo 📈</h1>
+          <h1 className="page-title">
+            Thống kê & Báo cáo <ArrowTrendingUpIcon className="w-8 h-8 inline" />
+          </h1>
           <p className="page-subtitle">Theo dõi hiệu suất học tập và tiến độ của học sinh</p>
         </div>
         <button className="btn-primary" onClick={exportReport}>
-          📥 Xuất báo cáo
+          <DocumentArrowDownIcon className="w-5 h-5 inline" /> Xuất báo cáo
         </button>
       </div>
 
@@ -91,7 +104,9 @@ const StatisticsReports = () => {
       {/* Key Metrics */}
       <div className="metrics-grid">
         <div className="metric-card blue">
-          <div className="metric-icon">👥</div>
+          <div className="metric-icon">
+            <UserGroupIcon className="w-6 h-6" />
+          </div>
           <div className="metric-content">
             <div className="metric-label">Tổng học sinh</div>
             <div className="metric-value">{statistics.totalStudents}</div>
@@ -100,7 +115,9 @@ const StatisticsReports = () => {
         </div>
 
         <div className="metric-card green">
-          <div className="metric-icon">⭐</div>
+          <div className="metric-icon">
+            <StarIcon className="w-6 h-6" />
+          </div>
           <div className="metric-content">
             <div className="metric-label">Điểm trung bình</div>
             <div className="metric-value">{statistics.averageScore.toFixed(1)}/10</div>
@@ -109,7 +126,9 @@ const StatisticsReports = () => {
         </div>
 
         <div className="metric-card orange">
-          <div className="metric-icon">✓</div>
+          <div className="metric-icon">
+            <CheckCircleIcon className="w-6 h-6" />
+          </div>
           <div className="metric-content">
             <div className="metric-label">Tỷ lệ điểm danh</div>
             <div className="metric-value">{statistics.attendanceRate}%</div>
@@ -118,7 +137,9 @@ const StatisticsReports = () => {
         </div>
 
         <div className="metric-card purple">
-          <div className="metric-icon">📊</div>
+          <div className="metric-icon">
+            <ChartBarIcon className="w-6 h-6" />
+          </div>
           <div className="metric-content">
             <div className="metric-label">Tỷ lệ hoàn thành BT</div>
             <div className="metric-value">{statistics.completionRate}%</div>
@@ -132,7 +153,9 @@ const StatisticsReports = () => {
         {/* Performance Chart */}
         <div className="chart-card">
           <div className="chart-header">
-            <h3>📊 Biểu đồ điểm trung bình theo tuần</h3>
+            <h3>
+              <ChartBarIcon className="w-5 h-5 inline" /> Biểu đồ điểm trung bình theo tuần
+            </h3>
             <select className="chart-select">
               <option>4 tuần gần nhất</option>
               <option>8 tuần gần nhất</option>
@@ -152,7 +175,9 @@ const StatisticsReports = () => {
         {/* Attendance Chart */}
         <div className="chart-card">
           <div className="chart-header">
-            <h3>✓ Tỷ lệ điểm danh theo lớp</h3>
+            <h3>
+              <CheckCircleIcon className="w-5 h-5 inline" /> Tỷ lệ điểm danh theo lớp
+            </h3>
           </div>
           <div className="chart-placeholder">
             <div className="attendance-bars">
@@ -187,7 +212,9 @@ const StatisticsReports = () => {
         {/* Assignment Completion */}
         <div className="chart-card">
           <div className="chart-header">
-            <h3>📝 Tình trạng hoàn thành bài tập</h3>
+            <h3>
+              <DocumentTextIcon className="w-5 h-5 inline" /> Tình trạng hoàn thành bài tập
+            </h3>
           </div>
           <div className="chart-placeholder">
             <div className="pie-chart-mockup">
@@ -214,7 +241,9 @@ const StatisticsReports = () => {
         {/* Grade Distribution */}
         <div className="chart-card">
           <div className="chart-header">
-            <h3>📊 Phân bố điểm số</h3>
+            <h3>
+              <ChartBarIcon className="w-5 h-5 inline" /> Phân bố điểm số
+            </h3>
           </div>
           <div className="chart-placeholder">
             <div className="distribution-chart">
@@ -232,7 +261,9 @@ const StatisticsReports = () => {
         {/* Top Performers */}
         <div className="students-card">
           <div className="card-header">
-            <h3>⭐ Học sinh xuất sắc</h3>
+            <h3>
+              <StarIcon className="w-5 h-5 inline" /> Học sinh xuất sắc
+            </h3>
           </div>
           <div className="students-list">
             {statistics.topPerformers.map((student, index) => (
@@ -243,8 +274,12 @@ const StatisticsReports = () => {
                   <div className="student-class">{student.class}</div>
                 </div>
                 <div className="student-stats">
-                  <span className="stat-badge green">⭐ {student.avgScore}</span>
-                  <span className="stat-badge blue">✓ {student.attendance}%</span>
+                  <span className="stat-badge green">
+                    <StarIcon className="w-3 h-3 inline" /> {student.avgScore}
+                  </span>
+                  <span className="stat-badge blue">
+                    <CheckCircleIcon className="w-3 h-3 inline" /> {student.attendance}%
+                  </span>
                 </div>
               </div>
             ))}
@@ -254,19 +289,27 @@ const StatisticsReports = () => {
         {/* Needs Attention */}
         <div className="students-card">
           <div className="card-header">
-            <h3>⚠️ Cần quan tâm</h3>
+            <h3>
+              <ExclamationTriangleIcon className="w-5 h-5 inline" /> Cần quan tâm
+            </h3>
           </div>
           <div className="students-list">
             {statistics.needsAttention.map((student, index) => (
               <div key={index} className="student-item warning">
-                <div className="student-icon">⚠️</div>
+                <div className="student-icon">
+                  <ExclamationTriangleIcon className="w-5 h-5" />
+                </div>
                 <div className="student-info">
                   <div className="student-name">{student.name}</div>
                   <div className="student-class">{student.class}</div>
                 </div>
                 <div className="student-stats">
-                  <span className="stat-badge orange">⭐ {student.avgScore}</span>
-                  <span className="stat-badge red">✓ {student.attendance}%</span>
+                  <span className="stat-badge orange">
+                    <StarIcon className="w-3 h-3 inline" /> {student.avgScore}
+                  </span>
+                  <span className="stat-badge red">
+                    <CheckCircleIcon className="w-3 h-3 inline" /> {student.attendance}%
+                  </span>
                 </div>
               </div>
             ))}
@@ -277,7 +320,9 @@ const StatisticsReports = () => {
       {/* Recent Activity Timeline */}
       <div className="activity-timeline-card">
         <div className="card-header">
-          <h3>📅 Hoạt động gần đây</h3>
+          <h3>
+            <CalendarIcon className="w-5 h-5 inline" /> Hoạt động gần đây
+          </h3>
         </div>
         <div className="timeline">
           <div className="timeline-item">
