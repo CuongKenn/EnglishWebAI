@@ -72,6 +72,9 @@
   font-size: 80px;
   margin-bottom: 20px;
   animation: bounce 1s ease infinite;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 @keyframes bounce {
@@ -167,6 +170,9 @@
 .feature-icon {
   font-size: 24px;
   margin-bottom: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .feature-label {

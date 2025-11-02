@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import './WelcomeNotification.css';
+import { 
+  UserGroupIcon, 
+  BookOpenIcon, 
+  ChartBarIcon,
+  AcademicCapIcon,
+  PencilSquareIcon,
+  ChatBubbleLeftRightIcon,
+  BellIcon,
+  UsersIcon
+} from '@heroicons/react/24/outline';
 
 const WelcomeNotification = ({ isVisible, onClose, userRole }) => {
   const [countdown, setCountdown] = useState(3);
@@ -36,50 +46,50 @@ const WelcomeNotification = ({ isVisible, onClose, userRole }) => {
     switch (userRole) {
       case 'admin':
         return {
-          icon: '👑',
+          icon: <UserGroupIcon className="w-12 h-12" />,
           title: 'Chào mừng Super Admin!',
           message: 'Bạn có toàn quyền quản lý hệ thống',
           badge: 'Quản trị viên',
           features: [
-            { icon: '👥', label: 'Quản lý Users' },
-            { icon: '📚', label: 'Quản lý Lớp' },
-            { icon: '📊', label: 'Thống kê' }
+            { icon: <UserGroupIcon className="w-6 h-6" />, label: 'Quản lý Users' },
+            { icon: <BookOpenIcon className="w-6 h-6" />, label: 'Quản lý Lớp' },
+            { icon: <ChartBarIcon className="w-6 h-6" />, label: 'Thống kê' }
           ]
         };
       case 'teacher':
         return {
-          icon: '👨‍🏫',
+          icon: <AcademicCapIcon className="w-12 h-12" />,
           title: 'Chào mừng Giáo viên!',
           message: 'Sẵn sàng để chia sẻ kiến thức',
           badge: 'Giáo viên',
           features: [
-            { icon: '📖', label: 'Lớp học' },
-            { icon: '✍️', label: 'Bài tập' },
-            { icon: '📈', label: 'Tiến độ' }
+            { icon: <BookOpenIcon className="w-6 h-6" />, label: 'Lớp học' },
+            { icon: <PencilSquareIcon className="w-6 h-6" />, label: 'Bài tập' },
+            { icon: <ChartBarIcon className="w-6 h-6" />, label: 'Tiến độ' }
           ]
         };
       case 'parent':
         return {
-          icon: '👨‍👩‍👧',
+          icon: <UsersIcon className="w-12 h-12" />,
           title: 'Chào mừng Phụ huynh!',
           message: 'Theo dõi con em học tập',
           badge: 'Phụ huynh',
           features: [
-            { icon: '📊', label: 'Kết quả' },
-            { icon: '🔔', label: 'Thông báo' },
-            { icon: '💬', label: 'Trao đổi' }
+            { icon: <ChartBarIcon className="w-6 h-6" />, label: 'Kết quả' },
+            { icon: <BellIcon className="w-6 h-6" />, label: 'Thông báo' },
+            { icon: <ChatBubbleLeftRightIcon className="w-6 h-6" />, label: 'Trao đổi' }
           ]
         };
       default: // student
         return {
-          icon: '🎓',
+          icon: <AcademicCapIcon className="w-12 h-12" />,
           title: 'Chào mừng Học sinh!',
           message: 'Chúc bạn học tập hiệu quả',
           badge: 'Học sinh',
           features: [
-            { icon: '📚', label: 'Học bài' },
-            { icon: '✏️', label: 'Bài tập' },
-            { icon: '💬', label: 'Hỏi đáp' }
+            { icon: <BookOpenIcon className="w-6 h-6" />, label: 'Học bài' },
+            { icon: <PencilSquareIcon className="w-6 h-6" />, label: 'Bài tập' },
+            { icon: <ChatBubbleLeftRightIcon className="w-6 h-6" />, label: 'Hỏi đáp' }
           ]
         };
     }
