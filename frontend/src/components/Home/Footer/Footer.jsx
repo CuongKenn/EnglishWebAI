@@ -78,7 +78,7 @@ const Footer = () => {
 
       {/* Copyright */}
       <div className="footer-bottom">
-        <p>© 2013 - 2025 EnglishAI.vn - Email: contact@englishai.vn</p>
+        <p>© 2013 - 2025 Smart Learn - Email: contact@smartlearn.vn</p>
       </div>
     </footer>
   );

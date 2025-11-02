@@ -660,7 +660,7 @@ import './HomeStudent.css';const HomeStudent = () => {
             </div>
           </div>
           <div className="footer-bottom">
-            <p className="footer-copyright"> 2025 English Web AI. All rights reserved.</p>
+            <p className="footer-copyright"> 2025 Smart Learn. All rights reserved.</p>
             <div className="footer-bottom-links">
               <a href="#">Điều khoản</a>
               <a href="#">Bảo mật</a>
