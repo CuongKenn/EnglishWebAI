@@ -11,21 +11,97 @@ const AboutUs = () => {
   useEffect(() => {
     const originalBodyBg = document.body.style.background;
     const originalHtmlBg = document.documentElement.style.background;
+    const originalBodyOverflowX = document.body.style.overflowX;
+    const originalHtmlOverflowX = document.documentElement.style.overflowX;
+    const root = document.getElementById('root');
+    const originalRootBg = root?.style.background ?? '';
+    const originalRootWidth = root?.style.width ?? '';
     const layout = document.querySelector('.layout');
     const mainContent = document.querySelector('.main-content');
+    const originalLayoutBg = layout?.style.background ?? '';
+    const originalLayoutPadding = layout?.style.padding ?? '';
+    const originalLayoutMargin = layout?.style.margin ?? '';
+    const originalLayoutMinHeight = layout?.style.minHeight ?? '';
+    const originalLayoutWidth = layout?.style.width ?? '';
+    const originalLayoutMaxWidth = layout?.style.maxWidth ?? '';
+    const originalLayoutBorderRadius = layout?.style.borderRadius ?? '';
+    const originalLayoutBoxShadow = layout?.style.boxShadow ?? '';
+    const originalMainBg = mainContent?.style.background ?? '';
+    const originalMainPadding = mainContent?.style.padding ?? '';
+    const originalMainMargin = mainContent?.style.margin ?? '';
+    const originalMainMinHeight = mainContent?.style.minHeight ?? '';
+    const originalMainWidth = mainContent?.style.width ?? '';
+    const originalMainBorderRadius = mainContent?.style.borderRadius ?? '';
+    const originalMainBoxShadow = mainContent?.style.boxShadow ?? '';
     
-    // Set dark background
-    document.body.style.background = '#0a0e27';
+    // Apply global dark shell to remove white borders
     document.documentElement.style.background = '#0a0e27';
-    if (layout) layout.style.background = '#0a0e27';
-    if (mainContent) mainContent.style.background = '#0a0e27';
+    document.documentElement.style.overflowX = 'hidden';
+    document.documentElement.classList.add('about-page-active');
+    document.body.style.background = '#0a0e27';
+    document.body.style.overflowX = 'hidden';
+    document.body.classList.add('about-page-active');
+    if (root) {
+      root.style.background = '#0a0e27';
+      root.style.width = '100%';
+      root.classList.add('about-page-root');
+    }
+    if (layout) {
+      layout.style.background = '#0a0e27';
+      layout.style.padding = '0';
+      layout.style.margin = '0';
+      layout.style.minHeight = '100vh';
+      layout.style.width = '100%';
+      layout.style.maxWidth = '100%';
+      layout.style.borderRadius = '0';
+      layout.style.boxShadow = 'none';
+      layout.classList.add('about-layout');
+    }
+    if (mainContent) {
+      mainContent.style.background = '#0a0e27';
+      mainContent.style.padding = '0';
+      mainContent.style.margin = '0';
+      mainContent.style.minHeight = '100vh';
+      mainContent.style.width = '100%';
+      mainContent.style.borderRadius = '0';
+      mainContent.style.boxShadow = 'none';
+      mainContent.classList.add('about-layout-content');
+    }
     
     return () => {
-      // Restore original backgrounds
-      document.body.style.background = originalBodyBg;
+      // Restore original backgrounds and spacing
       document.documentElement.style.background = originalHtmlBg;
-      if (layout) layout.style.background = '';
-      if (mainContent) mainContent.style.background = '';
+      document.documentElement.style.overflowX = originalHtmlOverflowX;
+      document.documentElement.classList.remove('about-page-active');
+      document.body.style.background = originalBodyBg;
+      document.body.style.overflowX = originalBodyOverflowX;
+      document.body.classList.remove('about-page-active');
+      if (root) {
+        root.style.background = originalRootBg;
+        root.style.width = originalRootWidth;
+        root.classList.remove('about-page-root');
+      }
+      if (layout) {
+        layout.style.background = originalLayoutBg;
+        layout.style.padding = originalLayoutPadding;
+        layout.style.margin = originalLayoutMargin;
+        layout.style.minHeight = originalLayoutMinHeight;
+        layout.style.width = originalLayoutWidth;
+        layout.style.maxWidth = originalLayoutMaxWidth;
+        layout.style.borderRadius = originalLayoutBorderRadius;
+        layout.style.boxShadow = originalLayoutBoxShadow;
+        layout.classList.remove('about-layout');
+      }
+      if (mainContent) {
+        mainContent.style.background = originalMainBg;
+        mainContent.style.padding = originalMainPadding;
+        mainContent.style.margin = originalMainMargin;
+        mainContent.style.minHeight = originalMainMinHeight;
+        mainContent.style.width = originalMainWidth;
+        mainContent.style.borderRadius = originalMainBorderRadius;
+        mainContent.style.boxShadow = originalMainBoxShadow;
+        mainContent.classList.remove('about-layout-content');
+      }
     };
   }, []);
 
@@ -422,7 +498,7 @@ const AboutUs = () => {
               <h4>Địa chỉ</h4>
               <div>
                 <p>123 Đường ABC, Quận XYZ</p>
-                <p>Thành phố Hồ Chí Minh</p>
+                <p>Thành phố Thái Nguyên</p>
               </div>
             </div>
 

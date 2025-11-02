@@ -113,9 +113,13 @@
 /* Section Title */
 .section-title {
   font-size: 22px;
-  font-weight: 700;
+  font-weight: 800;
   color: #0f172a;
   margin: 0 0 16px 0;
+  background: none !important;
+  -webkit-background-clip: initial !important;
+  -webkit-text-fill-color: inherit !important;
+  background-clip: initial !important;
 }
 
 /* Today's Goal Section */
@@ -124,6 +128,8 @@
   border-radius: 16px;
   padding: 24px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  position: relative;
+  overflow: hidden;
 }
 
 .today-goal-card {
