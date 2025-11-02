@@ -92,7 +92,7 @@ export function WritingAI() {
           <PenTool className="h-5 w-5" />
           <span className="font-medium">Luyện viết AI thông minh</span>
         </div>
-        <h1 className="mb-2">Luyện viết AI ✍️</h1>
+        <h1 className="mb-2">Luyện viết AI <PenTool className="inline-block w-6 h-6 ml-1" /></h1>
         <p className="text-gray-600">
           Viết tiếng Anh và nhận phản hồi chi tiết từ AI về ngữ pháp, từ vựng và cấu trúc
         </p>
