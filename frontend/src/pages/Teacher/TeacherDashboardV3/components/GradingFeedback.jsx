@@ -133,10 +133,10 @@ export default function GradingFeedback() {
 
   const getStatusBadge = (status) => {
     const statuses = {
-      submitted: { label: 'Chờ chấm', color: '#f59e0b', icon: Clock },
-      pending_review: { label: 'AI đã chấm', color: '#3b82f6', icon: Sparkles },
-      graded: { label: 'Đã chấm', color: '#10b981', icon: CheckCircle },
-      late: { label: 'Nộp muộn', color: '#ef4444', icon: AlertCircle }
+      submitted: { label: 'Chờ chấm', color: '#f59e0b', icon: ClockIcon },
+      pending_review: { label: 'AI đã chấm', color: '#3b82f6', icon: SparklesIcon },
+      graded: { label: 'Đã chấm', color: '#10b981', icon: CheckCircleIcon },
+      late: { label: 'Nộp muộn', color: '#ef4444', icon: ExclamationCircleIcon }
     };
     const statusInfo = statuses[status] || statuses.submitted;
     const Icon = statusInfo.icon;
