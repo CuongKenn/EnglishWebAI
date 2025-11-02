@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { X, FileAudio, File, Plus, Trash2, Database, FileText, Upload } from 'lucide-react';
+import { X, FileAudio, File, Plus, Trash2, Database, FileText, Upload, Headphones, Mic, BookOpen, PenLine, BarChart3 } from 'lucide-react';
 import '../ExerciseManagement/ExerciseManagement.css';
 import QuestionBankSelectorModal from '../ExerciseManagement/QuestionBankSelectorModal';
 
@@ -178,7 +178,7 @@ export default function AddLessonContentModal({ lessonId, courseId, onClose, onA
                   checked={selectedSkill === 'listening'}
                   onChange={(e) => setSelectedSkill(e.target.value)}
                 />
-                <span>🎧 Nghe</span>
+                <span><Headphones className="inline-block w-4 h-4 mr-1" /> Nghe</span>
               </label>
               <label className="skill-option-ex">
                 <input 
@@ -188,7 +188,7 @@ export default function AddLessonContentModal({ lessonId, courseId, onClose, onA
                   checked={selectedSkill === 'speaking'}
                   onChange={(e) => setSelectedSkill(e.target.value)}
                 />
-                <span>🗣️ Nói</span>
+                <span><Mic className="inline-block w-4 h-4 mr-1" /> Nói</span>
               </label>
               <label className="skill-option-ex">
                 <input 
@@ -198,7 +198,7 @@ export default function AddLessonContentModal({ lessonId, courseId, onClose, onA
                   checked={selectedSkill === 'reading'}
                   onChange={(e) => setSelectedSkill(e.target.value)}
                 />
-                <span>📖 Đọc</span>
+                <span><BookOpen className="inline-block w-4 h-4 mr-1" /> Đọc</span>
               </label>
               <label className="skill-option-ex">
                 <input 
@@ -208,7 +208,7 @@ export default function AddLessonContentModal({ lessonId, courseId, onClose, onA
                   checked={selectedSkill === 'writing'}
                   onChange={(e) => setSelectedSkill(e.target.value)}
                 />
-                <span>✍️ Viết</span>
+                <span><PenLine className="inline-block w-4 h-4 mr-1" /> Viết</span>
               </label>
             </div>
           </div>
@@ -216,7 +216,7 @@ export default function AddLessonContentModal({ lessonId, courseId, onClose, onA
           {/* Conditional content based on skill - Use same render functions */}
           {selectedSkill === 'listening' && (
             <div className="listening-form-content">
-              <h4 className="section-title">🎧 Nội dung bài Nghe</h4>
+              <h4 className="section-title"><Headphones className="inline-block w-5 h-5 mr-2" /> Nội dung bài Nghe</h4>
               <div className="form-section-ex">
                 <label className="form-label-ex">File Audio *</label>
                 <div className="file-upload-zone" onClick={() => audioInputRef.current?.click()}>
@@ -268,7 +268,7 @@ export default function AddLessonContentModal({ lessonId, courseId, onClose, onA
           
           {selectedSkill === 'speaking' && (
             <div className="speaking-form-content">
-              <h4 className="section-title">🗣️ Nội dung bài Nói</h4>
+              <h4 className="section-title"><Mic className="inline-block w-5 h-5 mr-2" /> Nội dung bài Nói</h4>
               <div className="form-section-ex">
                 <label className="form-label-ex">Đề bài *</label>
                 <textarea 
@@ -326,7 +326,7 @@ export default function AddLessonContentModal({ lessonId, courseId, onClose, onA
           
           {selectedSkill === 'reading' && (
             <div className="reading-form-content">
-              <h4 className="section-title">📖 Nội dung bài Đọc</h4>
+              <h4 className="section-title"><BookOpen className="inline-block w-5 h-5 mr-2" /> Nội dung bài Đọc</h4>
               <div className="input-method-tabs">
                 <button 
                   className={`method-tab ${readingInputMethod === 'text' ? 'active' : ''}`}
@@ -351,7 +351,7 @@ export default function AddLessonContentModal({ lessonId, courseId, onClose, onA
                     onChange={(e) => setPassageText(e.target.value)}
                   />
                   <div className="text-stats">
-                    📊 {passageText.split(/\s+/).filter(w => w).length} từ
+                    <BarChart3 className="inline-block w-4 h-4 mr-1" /> {passageText.split(/\s+/).filter(w => w).length} từ
                   </div>
                 </div>
               ) : (
@@ -388,7 +388,7 @@ export default function AddLessonContentModal({ lessonId, courseId, onClose, onA
           
           {selectedSkill === 'writing' && (
             <div className="writing-form-content">
-              <h4 className="section-title">✍️ Nội dung bài Viết</h4>
+              <h4 className="section-title"><PenLine className="inline-block w-5 h-5 mr-2" /> Nội dung bài Viết</h4>
               <div className="form-section-ex">
                 <label className="form-label-ex">Đề bài *</label>
                 <textarea 
