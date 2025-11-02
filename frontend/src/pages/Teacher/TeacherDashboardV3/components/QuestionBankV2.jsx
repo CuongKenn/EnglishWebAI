@@ -1217,8 +1217,8 @@ export default function QuestionBankV2() {
                 <h3 className="text-lg font-semibold text-gray-900">Cấu hình đề thi</h3>
               </div>
               {generatedTest && (
-                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
-                  ✅ Đã sinh
+                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded flex items-center gap-1">
+                  <Check className="w-3 h-3" /> Đã sinh
                 </span>
               )}
             </div>
@@ -1226,8 +1226,8 @@ export default function QuestionBankV2() {
             <div className="space-y-6">
               {/* Quick Templates */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  📋 Mẫu nhanh
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
+                  <FileText className="w-4 h-4" /> Mẫu nhanh
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   {templates.map((template) => (
@@ -1357,8 +1357,8 @@ export default function QuestionBankV2() {
                   ))}
                 </div>
                 {Object.values(aiGenerationConfig.skillDistribution).reduce((sum, val) => sum + val, 0) !== 100 && (
-                  <p className="text-xs text-red-600 mt-2">
-                    ⚠️ Tổng phần trăm phải bằng 100%
+                  <p className="text-xs text-red-600 mt-2 flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3" /> Tổng phần trăm phải bằng 100%
                   </p>
                 )}
               </div>
@@ -1652,13 +1652,13 @@ export default function QuestionBankV2() {
                             </p>
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className={`text-xs px-2 py-1 rounded font-medium ${getDifficultyColor(question.difficulty)}`}>
-                                {question.difficulty === 'easy' ? '🟢 Dễ' : 
-                                 question.difficulty === 'medium' ? '🟡 TB' : '🔴 Khó'}
+                                {question.difficulty === 'easy' ? 'Dễ' : 
+                                 question.difficulty === 'medium' ? 'TB' : 'Khó'}
                               </span>
-                              <span className={`text-xs px-2 py-1 rounded font-medium ${getSkillColor(question.skill_type)}`}>
-                                {question.skill_type === 'listening' ? '🎧 Nghe' : 
-                                 question.skill_type === 'speaking' ? '🗣️ Nói' :
-                                 question.skill_type === 'reading' ? '📖 Đọc' : '✍️ Viết'}
+                              <span className={`text-xs px-2 py-1 rounded font-medium flex items-center gap-1 ${getSkillColor(question.skill_type)}`}>
+                                {question.skill_type === 'listening' ? <><SpeakerWaveIcon className="w-3 h-3" /> Nghe</> : 
+                                 question.skill_type === 'speaking' ? <><ChatBubbleLeftRightIcon className="w-3 h-3" /> Nói</> :
+                                 question.skill_type === 'reading' ? <><BookOpenIcon className="w-3 h-3" /> Đọc</> : <><PencilSquareIcon className="w-3 h-3" /> Viết</>}
                               </span>
                               {question.topic && (
                                 <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded">
@@ -1893,10 +1893,10 @@ export default function QuestionBankV2() {
                   <div className="flex gap-2 flex-wrap">
                     {Object.entries(selectedTestSet.skillDistribution).map(([skill, percentage]) => (
                       percentage > 0 && (
-                        <span key={skill} className={`px-2 py-1 rounded text-xs font-medium ${getSkillColor(skill)}`}>
-                          {skill === 'listening' ? '🎧 Nghe' : 
-                           skill === 'speaking' ? '🗣️ Nói' :
-                           skill === 'reading' ? '📖 Đọc' : '✍️ Viết'}: {percentage}%
+                        <span key={skill} className={`px-2 py-1 rounded text-xs font-medium flex items-center gap-1 ${getSkillColor(skill)}`}>
+                          {skill === 'listening' ? <><SpeakerWaveIcon className="w-3 h-3" /> Nghe</> : 
+                           skill === 'speaking' ? <><ChatBubbleLeftRightIcon className="w-3 h-3" /> Nói</> :
+                           skill === 'reading' ? <><BookOpenIcon className="w-3 h-3" /> Đọc</> : <><PencilSquareIcon className="w-3 h-3" /> Viết</>}: {percentage}%
                         </span>
                       )
                     ))}
