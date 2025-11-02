@@ -4,7 +4,7 @@ import { adminAPI } from '../../../services/api';
 
 const Settings = () => {
   const [settings, setSettings] = useState({
-    siteName: 'English AI',
+    siteName: 'Smart Learn',
     siteEmail: 'admin@englishai.com',
     maintenanceMode: false,
     allowRegistration: true,
@@ -33,7 +33,7 @@ const Settings = () => {
       
       // Map backend settings to frontend format
       setSettings({
-        siteName: data.site_name || 'English AI',
+        siteName: data.site_name || 'Smart Learn',
         siteEmail: data.email_from || 'admin@englishai.com',
         maintenanceMode: data.maintenance_mode || false,
         allowRegistration: data.registration_enabled ?? true,

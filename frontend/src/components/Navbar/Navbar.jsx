@@ -121,7 +121,7 @@ const Navbar = ({ userRole = 'student', isLoggedIn: isLoggedInProp = false, onLo
         <div className="navbar-brand">
           <Link to="/" className="brand-link">
             <div className="brand-icon">🎓</div>
-            <span className="brand-text">English AI</span>
+            <span className="brand-text">Smart Learn</span>
           </Link>
         </div>
 

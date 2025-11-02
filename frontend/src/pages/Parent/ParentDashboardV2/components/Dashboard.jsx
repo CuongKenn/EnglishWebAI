@@ -264,7 +264,7 @@ const Dashboard = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* Thông tin quan trọng - Dành cho dự án English AI */}
+      {/* Thông tin quan trọng - Dành cho dự án Smart Learn */}
       <div className="important-info-grid">
         <div className="info-card progress-card">
           <div className="info-card-header">

@@ -18,7 +18,7 @@ const InviteFriends = () => {
       <div className="invite-header">
         <UserPlus size={48} />
         <h1>Giới thiệu bạn bè</h1>
-        <p>Chia sẻ English AI với bạn bè và nhận ưu đãi!</p>
+        <p>Chia sẻ Smart Learn với bạn bè và nhận ưu đãi!</p>
       </div>
 
       <div className="invite-content">
