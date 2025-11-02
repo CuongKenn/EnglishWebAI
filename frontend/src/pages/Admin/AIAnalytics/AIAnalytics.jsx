@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { BarChart3, Users, Zap, RefreshCw, Calendar } from 'lucide-react';
+import { BarChart3, Users, Zap, RefreshCw, Calendar, Globe, MessageCircle, Headphones, PenLine, BookOpen, CreditCard, Lightbulb } from 'lucide-react';
 import { adminGetAIAnalytics } from '../../../services/adminService';
 import './AIAnalytics.css';
 
@@ -41,12 +41,12 @@ const AIAnalytics = () => {
   };
 
   const features = [
-    { id: 'translate', name: 'Dịch bằng AI', icon: '🌐', color: 'blue' },
-    { id: 'conversation', name: 'Conversation AI', icon: '💬', color: 'purple' },
-    { id: 'listening', name: 'Luyện nghe AI', icon: '🎧', color: 'green' },
-    { id: 'writing', name: 'Luyện viết AI', icon: '✍️', color: 'orange' },
-    { id: 'reading', name: 'Luyện đọc AI', icon: '📖', color: 'indigo' },
-    { id: 'flashcard', name: 'Flashcard AI', icon: '🃏', color: 'pink' },
+    { id: 'translate', name: 'Dịch bằng AI', icon: <Globe className="inline-block w-5 h-5" />, color: 'blue' },
+    { id: 'conversation', name: 'Conversation AI', icon: <MessageCircle className="inline-block w-5 h-5" />, color: 'purple' },
+    { id: 'listening', name: 'Luyện nghe AI', icon: <Headphones className="inline-block w-5 h-5" />, color: 'green' },
+    { id: 'writing', name: 'Luyện viết AI', icon: <PenLine className="inline-block w-5 h-5" />, color: 'orange' },
+    { id: 'reading', name: 'Luyện đọc AI', icon: <BookOpen className="inline-block w-5 h-5" />, color: 'indigo' },
+    { id: 'flashcard', name: 'Flashcard AI', icon: <CreditCard className="inline-block w-5 h-5" />, color: 'pink' },
   ];
 
   const days = useMemo(
@@ -252,7 +252,7 @@ const AIAnalytics = () => {
       {/* Info Footer */}
       <div className="analytics-footer">
         <div className="info-box">
-          <span className="info-icon">💡</span>
+          <span className="info-icon"><Lightbulb className="inline-block w-5 h-5" /></span>
           <div>
             <strong>Lưu ý:</strong> Dữ liệu từ backend; nếu chưa ghi nhận usage, các số liệu có thể bằng 0.
           </div>
