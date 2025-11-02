@@ -2,12 +2,12 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { parentAPI } from '../../../../services/parentService';
 import { 
-  BookOpen, TrendingUp, Award, Calendar, Clock, Users,
-  Bell, MessageCircle, ChevronRight, BarChart3, Star, Target,
-  DollarSign, FileText, GraduationCap, Activity, TrendingDown,
-  CheckCircle, AlertTriangle, BookMarked, CalendarDays, Wallet,
-  CreditCard, Info, UserPlus, Eye, FileSpreadsheet, Download, X
-} from 'lucide-react';
+  BookOpenIcon, ArrowTrendingUpIcon, TrophyIcon, CalendarIcon, ClockIcon, UserGroupIcon,
+  BellIcon, ChatBubbleLeftRightIcon, ChevronRightIcon, ChartBarIcon, StarIcon, ChartPieIcon,
+  CurrencyDollarIcon, DocumentTextIcon, AcademicCapIcon, BoltIcon, ArrowTrendingDownIcon,
+  CheckCircleIcon, ExclamationTriangleIcon, BookmarkIcon, CalendarDaysIcon, CreditCardIcon,
+  CreditCardIcon as WalletIcon, InformationCircleIcon, UserPlusIcon, EyeIcon, DocumentChartBarIcon, ArrowDownTrayIcon, XMarkIcon
+} from '@heroicons/react/24/outline';
 import Modal from './Modal';
 import './Dashboard.css';
 import Toast from '../../../../components/Toast/Toast';
@@ -256,7 +256,7 @@ const Dashboard = ({ onNavigate }) => {
           <p className="welcome-subtitle-modern">Theo dõi và quản lý quá trình học tập của con em bạn</p>
         </div>
         <div className="current-date-card">
-          <Calendar className="date-icon-card" />
+          <CalendarIcon className="date-icon-card" />
           <div className="date-info-card">
             <span className="date-day-card">{new Date().toLocaleDateString('vi-VN', { weekday: 'long' })}</span>
             <span className="date-full-card">{new Date().toLocaleDateString('vi-VN', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
@@ -269,7 +269,7 @@ const Dashboard = ({ onNavigate }) => {
         <div className="info-card progress-card">
           <div className="info-card-header">
             <div className="info-icon-wrapper progress">
-              <TrendingUp className="info-icon" />
+              <ArrowTrendingUpIcon className="info-icon" />
             </div>
             <span className="info-badge success">{summaryData?.avgProgress}% hoàn thành</span>
           </div>
@@ -277,21 +277,21 @@ const Dashboard = ({ onNavigate }) => {
             <p className="info-label">Tiến độ học tập</p>
             <h3 className="info-value">{summaryData?.completedExercises}/{summaryData?.totalExercises} bài</h3>
             <div className="info-footer">
-              <Target className="footer-icon" />
+              <ChartPieIcon className="footer-icon" />
               <span className="footer-text">Con em đang học tốt</span>
             </div>
           </div>
           <button className="info-action-btn" onClick={() => navigate('/track-progress')}>
-            <TrendingUp className="btn-icon-left" />
+            <ArrowTrendingUpIcon className="btn-icon-left" />
             Xem chi tiết
-            <ChevronRight className="btn-arrow-small" />
+            <ChevronRightIcon className="btn-arrow-small" />
           </button>
         </div>
 
         <div className="info-card pending-card">
           <div className="info-card-header">
             <div className="info-icon-wrapper pending">
-              <BookMarked className="info-icon" />
+              <BookmarkIcon className="info-icon" />
             </div>
             <span className="info-badge warning">{summaryData?.pendingExercises} bài</span>
           </div>
@@ -299,7 +299,7 @@ const Dashboard = ({ onNavigate }) => {
             <p className="info-label">Bài tập chưa hoàn thành</p>
             <h3 className="info-value">Cần làm thêm</h3>
             <div className="info-footer">
-              <Clock className="footer-icon" />
+              <ClockIcon className="footer-icon" />
               <span className="footer-text">Nhắc nhở con em hoàn thành</span>
             </div>
           </div>
@@ -308,16 +308,16 @@ const Dashboard = ({ onNavigate }) => {
             await loadPendingExercises();
             setShowPendingExercisesModal(true);
           }}>
-            <Eye className="btn-icon-left" />
+            <EyeIcon className="btn-icon-left" />
             Xem danh sách
-            <ChevronRight className="btn-arrow-small" />
+            <ChevronRightIcon className="btn-arrow-small" />
           </button>
         </div>
 
         <div className="info-card report-card">
           <div className="info-card-header">
             <div className="info-icon-wrapper report">
-              <FileText className="info-icon" />
+              <DocumentTextIcon className="info-icon" />
             </div>
             <span className="info-badge new">{summaryData?.reportsAvailable} mới</span>
           </div>
@@ -325,7 +325,7 @@ const Dashboard = ({ onNavigate }) => {
             <p className="info-label">Báo cáo học tập</p>
             <h3 className="info-value">Báo cáo tháng 10</h3>
             <div className="info-footer">
-              <BarChart3 className="footer-icon" />
+              <ChartBarIcon className="footer-icon" />
               <span className="footer-text">Kết quả xuất sắc</span>
             </div>
           </div>
@@ -334,9 +334,9 @@ const Dashboard = ({ onNavigate }) => {
             await loadMonthlyReport(parseInt(selectedMonth), selectedTimeRange);
             setShowReportDetailModal(true);
           }}>
-            <FileText className="btn-icon-left" />
+            <DocumentTextIcon className="btn-icon-left" />
             Xem báo cáo
-            <ChevronRight className="btn-arrow-small" />
+            <ChevronRightIcon className="btn-arrow-small" />
           </button>
         </div>
       </div>
@@ -344,7 +344,7 @@ const Dashboard = ({ onNavigate }) => {
       {/* Summary Stats - Compact */}
       <div className="summary-stats-compact">
         <div className="stat-compact stat-children">
-          <Users className="stat-compact-icon" />
+          <UserGroupIcon className="stat-compact-icon" />
           <div className="stat-compact-info">
             <h3 className="stat-compact-value">{summaryData?.totalChildren || 0}</h3>
             <p className="stat-compact-label">Con em</p>
@@ -352,7 +352,7 @@ const Dashboard = ({ onNavigate }) => {
         </div>
 
         <div className="stat-compact stat-classes">
-          <BookOpen className="stat-compact-icon" />
+          <BookOpenIcon className="stat-compact-icon" />
           <div className="stat-compact-info">
             <h3 className="stat-compact-value">{summaryData?.totalClasses || 0}</h3>
             <p className="stat-compact-label">Lớp học</p>
@@ -360,7 +360,7 @@ const Dashboard = ({ onNavigate }) => {
         </div>
 
         <div className="stat-compact stat-score">
-          <Award className="stat-compact-icon" />
+          <TrophyIcon className="stat-compact-icon" />
           <div className="stat-compact-info">
             <h3 className="stat-compact-value">{summaryData?.avgScore || 'N/A'}</h3>
             <p className="stat-compact-label">Điểm TB</p>
@@ -368,7 +368,7 @@ const Dashboard = ({ onNavigate }) => {
         </div>
 
         <div className="stat-compact stat-notifications">
-          <Bell className="stat-compact-icon" />
+          <BellIcon className="stat-compact-icon" />
           <div className="stat-compact-info">
             <h3 className="stat-compact-value">{summaryData?.notifications || 0}</h3>
             <p className="stat-compact-label">Thông báo</p>
@@ -376,7 +376,7 @@ const Dashboard = ({ onNavigate }) => {
         </div>
 
         <div className="stat-compact stat-messages">
-          <MessageCircle className="stat-compact-icon" />
+          <ChatBubbleLeftRightIcon className="stat-compact-icon" />
           <div className="stat-compact-info">
             <h3 className="stat-compact-value">{summaryData?.messages || 0}</h3>
             <p className="stat-compact-label">Tin nhắn</p>
@@ -389,16 +389,16 @@ const Dashboard = ({ onNavigate }) => {
         <div className="children-section-modern">
           <div className="section-header-dashboard">
             <div className="section-header-left-dash">
-              <GraduationCap className="section-icon-dash" />
+              <AcademicCapIcon className="section-icon-dash" />
               <div>
                 <h2 className="section-title-dash">Con em của bạn</h2>
                 <p className="section-subtitle-dash">Theo dõi từng con một cách chi tiết</p>
               </div>
             </div>
             <button className="section-action-btn" onClick={() => navigate('/track-progress')}>
-              <Users className="btn-icon-left" />
+              <UserGroupIcon className="btn-icon-left" />
               Xem tất cả
-              <ChevronRight className="btn-arrow-section" />
+              <ChevronRightIcon className="btn-arrow-section" />
             </button>
           </div>
 
@@ -408,7 +408,7 @@ const Dashboard = ({ onNavigate }) => {
                 <div className="child-card-top">
                   <div className="child-avatar-premium">{child.avatar}</div>
                   <div className="child-badge-premium">
-                    <Star className="badge-star" />
+                    <StarIcon className="badge-star" />
                     <span>Học sinh giỏi</span>
                   </div>
                 </div>
@@ -420,7 +420,7 @@ const Dashboard = ({ onNavigate }) => {
                   <div className="child-quick-stats">
                     <div className="quick-stat">
                       <div className="quick-stat-header">
-                        <BookOpen className="quick-stat-icon" />
+                        <BookOpenIcon className="quick-stat-icon" />
                         <span className="quick-stat-label">Lớp học</span>
                       </div>
                       <span className="quick-stat-value">{child.totalClasses}</span>
@@ -428,7 +428,7 @@ const Dashboard = ({ onNavigate }) => {
                     
                     <div className="quick-stat">
                       <div className="quick-stat-header">
-                        <Award className="quick-stat-icon" />
+                        <TrophyIcon className="quick-stat-icon" />
                         <span className="quick-stat-label">Điểm TB</span>
                       </div>
                       <span className="quick-stat-value">{child.averageScore}</span>
@@ -436,7 +436,7 @@ const Dashboard = ({ onNavigate }) => {
                     
                     <div className="quick-stat">
                       <div className="quick-stat-header">
-                        <CheckCircle className="quick-stat-icon" />
+                        <CheckCircleIcon className="quick-stat-icon" />
                         <span className="quick-stat-label">Chuyên cần</span>
                       </div>
                       <span className="quick-stat-value">{child.attendance}%</span>
@@ -444,7 +444,7 @@ const Dashboard = ({ onNavigate }) => {
                   </div>
                   
                   <div className="child-recent-activity">
-                    <Activity className="activity-icon-small" />
+                    <BoltIcon className="activity-icon-small" />
                     <span className="activity-text">{child.recentActivity}</span>
                     </div>
                   </div>
@@ -455,7 +455,7 @@ const Dashboard = ({ onNavigate }) => {
                   >
                   <Eye className="btn-icon-left" />
                     Xem chi tiết
-                  <ChevronRight className="btn-arrow-detail" />
+                  <ChevronRightIcon className="btn-arrow-detail" />
                   </button>
               </div>
             ))}
@@ -464,7 +464,7 @@ const Dashboard = ({ onNavigate }) => {
       ) : (
         <div className="empty-children-modern">
           <div className="empty-icon-wrapper">
-            <Users className="empty-icon-users" />
+            <UserGroupIcon className="empty-icon-users" />
           </div>
           <h3 className="empty-title-children">Chưa có con em nào</h3>
           <p className="empty-description-children">Hãy liên kết tài khoản con em để theo dõi tiến độ học tập</p>
@@ -472,7 +472,7 @@ const Dashboard = ({ onNavigate }) => {
             closeAllModals();
             setShowAddChildModal(true);
           }}>
-            <UserPlus className="btn-icon-left" />
+            <UserPlusIcon className="btn-icon-left" />
             Thêm con em
           </button>
         </div>
@@ -506,7 +506,7 @@ const Dashboard = ({ onNavigate }) => {
               onClick={() => handleExportTypeSelect('excel')}
             >
               <div className="export-option-icon-wrapper excel">
-                <FileSpreadsheet className="export-option-icon" />
+                <DocumentChartBarIcon className="export-option-icon" />
               </div>
               <h3 className="export-option-title">Xuất dữ liệu Excel</h3>
               <p className="export-option-description">Định dạng Excel, dễ phân tích dữ liệu</p>
@@ -514,7 +514,7 @@ const Dashboard = ({ onNavigate }) => {
           </div>
 
           <div className="export-info-box">
-            <Info className="export-info-icon" />
+            <InformationCircleIcon className="export-info-icon" />
             <div className="export-info-content">
               <h4 className="export-info-title">Danh sách bao gồm:</h4>
               <ul className="export-info-list">
@@ -555,7 +555,7 @@ const Dashboard = ({ onNavigate }) => {
             </div>
             
             <div className="form-info">
-              <Info className="info-icon-small" />
+              <InformationCircleIcon className="info-icon-small" />
               <div>
                 <p><strong>Lưu ý:</strong></p>
                 <ul style={{ marginLeft: '20px', marginTop: '8px' }}>
@@ -589,7 +589,7 @@ const Dashboard = ({ onNavigate }) => {
                   </>
                 ) : (
                   <>
-                    <UserPlus size={18} />
+                    <UserPlusIcon className="w-4.5 h-4.5" />
                     Gửi yêu cầu
                   </>
                 )}
@@ -616,7 +616,7 @@ const Dashboard = ({ onNavigate }) => {
               onClick={() => handleExportOptionToggle('title')}
             >
               <div className="export-checkbox">
-                {exportOptions.title && <CheckCircle className="check-icon" />}
+                {exportOptions.title && <CheckCircleIcon className="check-icon" />}
               </div>
               <div className="export-checkbox-content">
                 <span className="export-checkbox-label">Điểm số các môn học</span>
@@ -629,7 +629,7 @@ const Dashboard = ({ onNavigate }) => {
               onClick={() => handleExportOptionToggle('content')}
             >
               <div className="export-checkbox">
-                {exportOptions.content && <CheckCircle className="check-icon" />}
+                {exportOptions.content && <CheckCircleIcon className="check-icon" />}
               </div>
               <div className="export-checkbox-content">
                 <span className="export-checkbox-label">Nhận xét của giáo viên</span>
@@ -642,7 +642,7 @@ const Dashboard = ({ onNavigate }) => {
               onClick={() => handleExportOptionToggle('marks')}
             >
               <div className="export-checkbox">
-                {exportOptions.marks && <CheckCircle className="check-icon" />}
+                {exportOptions.marks && <CheckCircleIcon className="check-icon" />}
               </div>
               <div className="export-checkbox-content">
                 <span className="export-checkbox-label">Tiến độ học tập</span>
@@ -655,7 +655,7 @@ const Dashboard = ({ onNavigate }) => {
               onClick={() => handleExportOptionToggle('attendance')}
             >
               <div className="export-checkbox">
-                {exportOptions.attendance && <CheckCircle className="check-icon" />}
+                {exportOptions.attendance && <CheckCircleIcon className="check-icon" />}
               </div>
               <div className="export-checkbox-content">
                 <span className="export-checkbox-label">Chuyên cần</span>
@@ -668,7 +668,7 @@ const Dashboard = ({ onNavigate }) => {
               onClick={() => handleExportOptionToggle('sender')}
             >
               <div className="export-checkbox">
-                {exportOptions.sender && <CheckCircle className="check-icon" />}
+                {exportOptions.sender && <CheckCircleIcon className="check-icon" />}
               </div>
               <div className="export-checkbox-content">
                 <span className="export-checkbox-label">Thông tin giáo viên</span>
@@ -681,7 +681,7 @@ const Dashboard = ({ onNavigate }) => {
               onClick={() => handleExportOptionToggle('time')}
             >
               <div className="export-checkbox">
-                {exportOptions.time && <CheckCircle className="check-icon" />}
+                {exportOptions.time && <CheckCircleIcon className="check-icon" />}
               </div>
               <div className="export-checkbox-content">
                 <span className="export-checkbox-label">Khoảng thời gian</span>
@@ -691,7 +691,7 @@ const Dashboard = ({ onNavigate }) => {
           </div>
 
           <div className="export-summary-box">
-            <Info className="export-info-icon" />
+            <InformationCircleIcon className="export-info-icon" />
             <div className="export-summary-content">
               <span className="export-summary-text">
                 Đã chọn {Object.values(exportOptions).filter(v => v).length}/6 tùy chọn
@@ -708,14 +708,14 @@ const Dashboard = ({ onNavigate }) => {
                 setSelectedExportType(null);
               }}
             >
-              <ChevronRight className="btn-icon-back" style={{ transform: 'rotate(180deg)' }} />
+              <ChevronRightIcon className="btn-icon-back" style={{ transform: 'rotate(180deg)' }} />
               Quay lại
             </button>
             <button 
               className="modal-btn-primary"
               onClick={handleExportConfirm}
             >
-              <Download className="btn-icon-modal" />
+              <ArrowDownTrayIcon className="btn-icon-modal" />
               Xuất {selectedExportType === 'pdf' ? 'PDF' : 'Excel'}
             </button>
           </div>
@@ -740,7 +740,7 @@ const Dashboard = ({ onNavigate }) => {
                 <div key={exercise.exercise_id || index} className="pending-exercise-item">
                   <div className="pending-exercise-header">
                     <div className="pending-exercise-info">
-                      <BookOpen className="pending-exercise-icon" />
+                      <BookOpenIcon className="pending-exercise-icon" />
                       <div>
                         <h4 className="pending-exercise-title">{exercise.title}</h4>
                         <p className="pending-exercise-meta">
@@ -763,7 +763,7 @@ const Dashboard = ({ onNavigate }) => {
               ))
             ) : (
               <div className="empty-pending-exercises">
-                <BookOpen className="empty-icon" />
+                <BookOpenIcon className="empty-icon" />
                 <p>Không có bài tập chưa hoàn thành</p>
                 <span>Tất cả bài tập đã được hoàn thành!</span>
               </div>
@@ -771,7 +771,7 @@ const Dashboard = ({ onNavigate }) => {
           </div>
 
           <div className="export-info-box">
-            <Info className="export-info-icon" />
+            <InformationCircleIcon className="export-info-icon" />
             <div className="export-info-content">
               <h4 className="export-info-title">Lưu ý:</h4>
               <ul className="export-info-list">
@@ -784,7 +784,7 @@ const Dashboard = ({ onNavigate }) => {
 
           <div className="modal-footer">
             <button className="modal-btn-secondary" onClick={() => setShowPendingExercisesModal(false)}>
-              <X className="btn-icon-modal" />
+              <XMarkIcon className="btn-icon-modal" />
               Đóng
             </button>
             <button className="modal-btn-primary" onClick={() => navigate('/track-progress')}>
@@ -895,7 +895,7 @@ const Dashboard = ({ onNavigate }) => {
             <>
               <div className="report-summary-stats">
                 <div className="report-stat-card excellent">
-                  <Award className="report-stat-icon" />
+                  <TrophyIcon className="report-stat-icon" />
                   <div className="report-stat-info">
                     <h4 className="report-stat-value">{monthlyReport.overall_average}/10</h4>
                     <p className="report-stat-label">Điểm trung bình</p>
@@ -903,7 +903,7 @@ const Dashboard = ({ onNavigate }) => {
                 </div>
 
                 <div className="report-stat-card good">
-                  <CheckCircle className="report-stat-icon" />
+                  <CheckCircleIcon className="report-stat-icon" />
                   <div className="report-stat-info">
                     <h4 className="report-stat-value">{monthlyReport.total_completed}/{monthlyReport.total_exercises}</h4>
                     <p className="report-stat-label">Bài tập hoàn thành</p>
@@ -911,7 +911,7 @@ const Dashboard = ({ onNavigate }) => {
                 </div>
 
                 <div className="report-stat-card normal">
-                  <TrendingUp className="report-stat-icon" />
+                  <ArrowTrendingUpIcon className="report-stat-icon" />
                   <div className="report-stat-info">
                     <h4 className="report-stat-value">{monthlyReport.attendance_rate}%</h4>
                     <p className="report-stat-label">Chuyên cần</p>
@@ -940,7 +940,7 @@ const Dashboard = ({ onNavigate }) => {
                     <div className="report-subject-header">
                       <div className="report-subject-info">
                         <div className={`report-subject-icon-wrapper ${iconClass}`}>
-                          <BookOpen className="report-subject-icon" />
+                          <BookOpenIcon className="report-subject-icon" />
                         </div>
                         <div>
                           <h4 className="report-subject-name">{subject.subject}</h4>
@@ -971,7 +971,7 @@ const Dashboard = ({ onNavigate }) => {
 
           {monthlyReport && monthlyReport.general_comment && (
             <div className="export-info-box">
-              <Info className="export-info-icon" />
+              <InformationCircleIcon className="export-info-icon" />
               <div className="export-info-content">
                 <h4 className="export-info-title">Nhận xét chung của giáo viên:</h4>
                 <p style={{ fontSize: '0.875rem', color: '#1e40af', margin: '0.5rem 0 0 0', lineHeight: '1.6' }}>
@@ -983,14 +983,14 @@ const Dashboard = ({ onNavigate }) => {
 
           <div className="modal-footer">
             <button className="modal-btn-secondary" onClick={() => closeAllModals()}>
-              <X className="btn-icon-modal" />
+              <XMarkIcon className="btn-icon-modal" />
               Đóng
             </button>
             <button className="modal-btn-primary" onClick={async () => {
               closeAllModals();
               setShowReportModal(true);
             }}>
-              <Download className="btn-icon-modal" />
+              <ArrowDownTrayIcon className="btn-icon-modal" />
               Xuất báo cáo
             </button>
           </div>
@@ -1015,11 +1015,11 @@ const Dashboard = ({ onNavigate }) => {
             onClick={() => navigate('/track-progress')}
           >
             <div className="quick-card-icon-wrapper progress">
-              <TrendingUp className="quick-card-icon" />
+              <ArrowTrendingUpIcon className="quick-card-icon" />
             </div>
             <h3 className="quick-card-title">Theo dõi tiến độ</h3>
             <p className="quick-card-description">Xem chi tiết quá trình học tập</p>
-            <ChevronRight className="quick-card-arrow" />
+            <ChevronRightIcon className="quick-card-arrow" />
           </button>
 
           <button 
@@ -1034,7 +1034,7 @@ const Dashboard = ({ onNavigate }) => {
               {summaryData?.notifications > 0 && (
               <span className="quick-card-badge">{summaryData.notifications}</span>
               )}
-            <ChevronRight className="quick-card-arrow" />
+            <ChevronRightIcon className="quick-card-arrow" />
           </button>
 
           <button 
@@ -1049,7 +1049,7 @@ const Dashboard = ({ onNavigate }) => {
               {summaryData?.messages > 0 && (
               <span className="quick-card-badge">{summaryData.messages}</span>
               )}
-            <ChevronRight className="quick-card-arrow" />
+            <ChevronRightIcon className="quick-card-arrow" />
           </button>
         </div>
       </div>
