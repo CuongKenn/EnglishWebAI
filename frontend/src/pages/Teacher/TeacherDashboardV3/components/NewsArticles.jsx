@@ -1,4 +1,18 @@
 import { useState, useEffect } from 'react';
+import { 
+  MegaphoneIcon, 
+  GiftIcon, 
+  LightBulbIcon, 
+  BookOpenIcon, 
+  CalendarIcon, 
+  SparklesIcon,
+  NewspaperIcon,
+  RocketLaunchIcon,
+  FireIcon,
+  StarIcon,
+  FlagIcon,
+  AcademicCapIcon
+} from '@heroicons/react/24/outline';
 import { newsAPI } from '../../../../services/api';
 import Toast from '../../../../components/Toast/Toast';
 import useToast from '../../../../hooks/useToast';
@@ -15,7 +29,7 @@ const NewsArticles = () => {
     description: '',
     content: '',
     category: 'Thông báo',
-    icon: '📰',
+    icon: 'newspaper',
     type: 'announcement',
     image: '',
     status: 'published'
@@ -23,15 +37,28 @@ const NewsArticles = () => {
 
   const categories = ['Thông báo', 'Khuyến mãi', 'Học tập', 'Hướng dẫn', 'Sự kiện', 'Tính năng mới'];
   const types = [
-    { value: 'announcement', label: 'Thông báo', icon: '📢' },
-    { value: 'promotion', label: 'Khuyến mãi', icon: '🎁' },
-    { value: 'tips', label: 'Mẹo học tập', icon: '💡' },
-    { value: 'guide', label: 'Hướng dẫn', icon: '📖' },
-    { value: 'event', label: 'Sự kiện', icon: '🎉' },
-    { value: 'feature', label: 'Tính năng mới', icon: '✨' }
+    { value: 'announcement', label: 'Thông báo', icon: MegaphoneIcon },
+    { value: 'promotion', label: 'Khuyến mãi', icon: GiftIcon },
+    { value: 'tips', label: 'Mẹo học tập', icon: LightBulbIcon },
+    { value: 'guide', label: 'Hướng dẫn', icon: BookOpenIcon },
+    { value: 'event', label: 'Sự kiện', icon: CalendarIcon },
+    { value: 'feature', label: 'Tính năng mới', icon: SparklesIcon }
   ];
 
-  const icons = ['📰', '📢', '🎁', '💡', '📖', '🎉', '✨', '🚀', '🔥', '⭐', '🎯', '📚'];
+  const iconOptions = [
+    { name: 'newspaper', icon: NewspaperIcon },
+    { name: 'megaphone', icon: MegaphoneIcon },
+    { name: 'gift', icon: GiftIcon },
+    { name: 'lightbulb', icon: LightBulbIcon },
+    { name: 'book', icon: BookOpenIcon },
+    { name: 'calendar', icon: CalendarIcon },
+    { name: 'sparkles', icon: SparklesIcon },
+    { name: 'rocket', icon: RocketLaunchIcon },
+    { name: 'fire', icon: FireIcon },
+    { name: 'star', icon: StarIcon },
+    { name: 'flag', icon: FlagIcon },
+    { name: 'academic', icon: AcademicCapIcon }
+  ];
 
   useEffect(() => {
     loadNews();

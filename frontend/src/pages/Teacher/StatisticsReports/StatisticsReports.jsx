@@ -278,7 +278,10 @@ const StatisticsReports = () => {
       {/* Recent Activity Timeline */}
       <div className="activity-timeline-card">
         <div className="card-header">
-          <h3>📅 Hoạt động gần đây</h3>
+          <h3>
+            <CalendarDaysIcon className="w-5 h-5 inline-block mr-2" />
+            Hoạt động gần đây
+          </h3>
         </div>
         <div className="timeline">
           <div className="timeline-item">

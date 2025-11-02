@@ -6,6 +6,17 @@ import {
   Bot, Settings, Play, Clock, Target, FileText, Wand2, Mic,
   RotateCcw, Save, Loader2
 } from 'lucide-react';
+import { 
+  BookOpenIcon as HeroBookOpenIcon, 
+  SignalIcon, 
+  MicrophoneIcon, 
+  SparklesIcon,
+  FlagIcon,
+  LightBulbIcon,
+  DocumentTextIcon,
+  Bars3BottomLeftIcon,
+  PencilIcon
+} from '@heroicons/react/24/outline';
 import { Card } from '../../../../components/ui/card';
 import AddQuestionModal from './AddQuestionModal';
 import { questionBankAPI } from '../../../../services/api';
@@ -464,7 +475,8 @@ export default function QuestionBankV2() {
     },
     {
       id: 'reading_focus',
-      name: '📖 Tập trung Đọc',
+      name: 'Tập trung Đọc',
+      icon: HeroBookOpenIcon,
       description: '60% Reading, 40% các kỹ năng khác',
       config: {
         skillDistribution: { listening: 15, speaking: 10, reading: 60, writing: 15 },
@@ -475,7 +487,8 @@ export default function QuestionBankV2() {
     },
     {
       id: 'listening_speaking',
-      name: '🎧🗣️ Nghe - Nói',
+      name: 'Nghe - Nói',
+      icon: SignalIcon,
       description: 'Tập trung vào kỹ năng giao tiếp',
       config: {
         skillDistribution: { listening: 45, speaking: 45, reading: 5, writing: 5 },
@@ -486,7 +499,8 @@ export default function QuestionBankV2() {
     },
     {
       id: 'comprehensive',
-      name: '🎯 Toàn diện',
+      name: 'Toàn diện',
+      icon: FlagIcon,
       description: 'Đề thi đầy đủ, khó cao',
       config: {
         skillDistribution: { listening: 30, speaking: 20, reading: 30, writing: 20 },
@@ -497,7 +511,8 @@ export default function QuestionBankV2() {
     },
     {
       id: 'beginner',
-      name: '🌱 Người mới',
+      name: 'Người mới',
+      icon: SparklesIcon,
       description: 'Đề dễ cho học sinh mới',
       config: {
         skillDistribution: { listening: 30, speaking: 20, reading: 30, writing: 20 },
@@ -1000,8 +1015,9 @@ export default function QuestionBankV2() {
                         </div>
                       )}
                       {question.transcript && (
-                        <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded line-clamp-2">
-                          📝 Transcript: {question.transcript}
+                        <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded line-clamp-2 flex items-start gap-1">
+                          <DocumentTextIcon className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                          <span>Transcript: {question.transcript}</span>
                         </div>
                       )}
                     </div>
@@ -1010,8 +1026,9 @@ export default function QuestionBankV2() {
                   {question.skill_type === 'reading' && (
                     <div className="mt-2">
                       {(question.passage_text || question.passage_url) && (
-                        <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded line-clamp-3">
-                          📖 {question.passage_text ? question.passage_text : 'Có file đoạn văn'}
+                        <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded line-clamp-3 flex items-start gap-1">
+                          <HeroBookOpenIcon className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                          <span>{question.passage_text ? question.passage_text : 'Có file đoạn văn'}</span>
                         </div>
                       )}
                     </div>
@@ -1020,8 +1037,9 @@ export default function QuestionBankV2() {
                   {question.skill_type === 'speaking' && (
                     <div className="mt-2">
                       {question.requirements && question.requirements.length > 0 && (
-                        <div className="text-xs text-gray-600">
-                          💡 {question.requirements.length} yêu cầu
+                        <div className="text-xs text-gray-600 flex items-center gap-1">
+                          <LightBulbIcon className="w-3 h-3" />
+                          <span>{question.requirements.length} yêu cầu</span>
                         </div>
                       )}
                     </div>
@@ -1030,13 +1048,15 @@ export default function QuestionBankV2() {
                   {question.skill_type === 'writing' && (
                     <div className="mt-2">
                       {question.word_limit && (
-                        <div className="text-xs text-gray-600">
-                          📏 {question.word_limit.min}-{question.word_limit.max} từ
+                        <div className="text-xs text-gray-600 flex items-center gap-1">
+                          <Bars3BottomLeftIcon className="w-3 h-3" />
+                          <span>{question.word_limit.min}-{question.word_limit.max} từ</span>
                         </div>
                       )}
                       {question.requirements && question.requirements.length > 0 && (
-                        <div className="text-xs text-gray-600">
-                          💡 {question.requirements.length} yêu cầu
+                        <div className="text-xs text-gray-600 flex items-center gap-1">
+                          <LightBulbIcon className="w-3 h-3" />
+                          <span>{question.requirements.length} yêu cầu</span>
                         </div>
                       )}
                     </div>
@@ -1612,8 +1632,9 @@ export default function QuestionBankV2() {
                 {/* Enhanced Question List */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <h5 className="text-sm font-medium text-gray-700">
-                      📝 Danh sách câu hỏi
+                    <h5 className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                      <DocumentTextIcon className="w-4 h-4" />
+                      Danh sách câu hỏi
                     </h5>
                     <div className="flex gap-2 text-xs">
                       <span className="px-2 py-1 bg-green-100 text-green-700 rounded">
@@ -1643,14 +1664,24 @@ export default function QuestionBankV2() {
                               {question.question_text}
                             </p>
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className={`text-xs px-2 py-1 rounded font-medium ${getDifficultyColor(question.difficulty)}`}>
-                                {question.difficulty === 'easy' ? '🟢 Dễ' : 
-                                 question.difficulty === 'medium' ? '🟡 TB' : '🔴 Khó'}
+                              <span className={`text-xs px-2 py-1 rounded font-medium flex items-center gap-1 ${getDifficultyColor(question.difficulty)}`}>
+                                <span className={`w-2 h-2 rounded-full ${
+                                  question.difficulty === 'easy' ? 'bg-green-500' : 
+                                  question.difficulty === 'medium' ? 'bg-yellow-500' : 'bg-red-500'
+                                }`} />
+                                {question.difficulty === 'easy' ? 'Dễ' : 
+                                 question.difficulty === 'medium' ? 'TB' : 'Khó'}
                               </span>
-                              <span className={`text-xs px-2 py-1 rounded font-medium ${getSkillColor(question.skill_type)}`}>
-                                {question.skill_type === 'listening' ? '🎧 Nghe' : 
-                                 question.skill_type === 'speaking' ? '🗣️ Nói' :
-                                 question.skill_type === 'reading' ? '📖 Đọc' : '✍️ Viết'}
+                              <span className={`text-xs px-2 py-1 rounded font-medium flex items-center gap-1 ${getSkillColor(question.skill_type)}`}>
+                                {question.skill_type === 'listening' ? (
+                                  <><SignalIcon className="w-3 h-3" /> Nghe</>
+                                ) : question.skill_type === 'speaking' ? (
+                                  <><MicrophoneIcon className="w-3 h-3" /> Nói</>
+                                ) : question.skill_type === 'reading' ? (
+                                  <><HeroBookOpenIcon className="w-3 h-3" /> Đọc</>
+                                ) : (
+                                  <><PencilIcon className="w-3 h-3" /> Viết</>
+                                )}
                               </span>
                               {question.topic && (
                                 <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded">
@@ -1885,10 +1916,16 @@ export default function QuestionBankV2() {
                   <div className="flex gap-2 flex-wrap">
                     {Object.entries(selectedTestSet.skillDistribution).map(([skill, percentage]) => (
                       percentage > 0 && (
-                        <span key={skill} className={`px-2 py-1 rounded text-xs font-medium ${getSkillColor(skill)}`}>
-                          {skill === 'listening' ? '🎧 Nghe' : 
-                           skill === 'speaking' ? '🗣️ Nói' :
-                           skill === 'reading' ? '📖 Đọc' : '✍️ Viết'}: {percentage}%
+                        <span key={skill} className={`px-2 py-1 rounded text-xs font-medium flex items-center gap-1 ${getSkillColor(skill)}`}>
+                          {skill === 'listening' ? (
+                            <><SignalIcon className="w-3 h-3" /> Nghe</>
+                          ) : skill === 'speaking' ? (
+                            <><MicrophoneIcon className="w-3 h-3" /> Nói</>
+                          ) : skill === 'reading' ? (
+                            <><HeroBookOpenIcon className="w-3 h-3" /> Đọc</>
+                          ) : (
+                            <><PencilIcon className="w-3 h-3" /> Viết</>
+                          )}: {percentage}%
                         </span>
                       )
                     ))}

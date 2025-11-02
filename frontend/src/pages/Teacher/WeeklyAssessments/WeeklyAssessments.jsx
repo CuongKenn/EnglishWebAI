@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { 
   ClipboardDocumentListIcon, SparklesIcon, CalendarIcon, BookOpenIcon, SpeakerWaveIcon, PencilSquareIcon, ChatBubbleLeftRightIcon, 
-  PlusIcon, TrashIcon, EyeIcon, ArrowDownTrayIcon, DocumentChartBarIcon, UserGroupIcon, ArrowTrendingUpIcon, TrophyIcon, FunnelIcon
+  PlusIcon, TrashIcon, EyeIcon, ArrowDownTrayIcon, DocumentChartBarIcon, UserGroupIcon, ArrowTrendingUpIcon, TrophyIcon, FunnelIcon,
+  CalendarDaysIcon
 } from '@heroicons/react/24/outline';
 import { Card } from '../../../components/ui/card';
 import { apiV1 } from '../../../services/api';
@@ -465,8 +466,9 @@ export default function WeeklyAssessments() {
                         <SkillIcon className="w-3 h-3 inline mr-1" />
                         {getSkillName(assessment.skill_type).toUpperCase()}
                       </span>
-                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-500 text-white border-2 border-blue-600">
-                        📅 Tuần {assessment.week_number}
+                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-500 text-white border-2 border-blue-600 flex items-center gap-1">
+                        <CalendarDaysIcon className="w-3 h-3" />
+                        Tuần {assessment.week_number}
                       </span>
                     </div>
                     <button

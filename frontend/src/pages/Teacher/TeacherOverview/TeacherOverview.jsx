@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BellIcon, MagnifyingGlassIcon, BuildingLibraryIcon, UserGroupIcon, ClipboardDocumentListIcon, ChartBarIcon, ClockIcon, PlusIcon, CheckCircleIcon, BookOpenIcon } from '@heroicons/react/24/outline';
+import { BellIcon, MagnifyingGlassIcon, BuildingLibraryIcon, UserGroupIcon, ClipboardDocumentListIcon, ChartBarIcon, ClockIcon, PlusIcon, CheckCircleIcon, BookOpenIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
 import './TeacherOverview.css';
 import apiClient from '../../../services/api';
@@ -119,7 +119,10 @@ const TeacherOverview = () => {
           <div className="stat-content">
             <div className="stat-label">Bài kiểm tra sắp tới</div>
             <div className="stat-value">{stats.upcomingTests}</div>
-            <div className="stat-trend">📅 Tuần này</div>
+            <div className="stat-trend">
+              <CalendarDaysIcon className="w-4 h-4 inline-block mr-1" />
+              Tuần này
+            </div>
           </div>
         </div>
       </div>
