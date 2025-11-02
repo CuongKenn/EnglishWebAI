@@ -1,15 +1,23 @@
 import { Eye, Edit, Trash2, Users, Calendar, Award, FileText, Clock } from 'lucide-react';
+import { 
+  SpeakerWaveIcon, 
+  ChatBubbleLeftRightIcon, 
+  BookOpenIcon, 
+  PencilSquareIcon,
+  DocumentTextIcon
+} from '@heroicons/react/24/outline';
 import './ExerciseManagement.css';
 
 export default function ExerciseList({ exercises, onViewDetail, onDelete }) {
   const getSkillIcon = (skill) => {
+    const iconClass = "w-4 h-4 inline";
     const icons = {
-      listening: '🎧',
-      speaking: '🗣️',
-      reading: '📖',
-      writing: '✍️'
+      listening: <SpeakerWaveIcon className={iconClass} />,
+      speaking: <ChatBubbleLeftRightIcon className={iconClass} />,
+      reading: <BookOpenIcon className={iconClass} />,
+      writing: <PencilSquareIcon className={iconClass} />
     };
-    return icons[skill] || '📝';
+    return icons[skill] || <DocumentTextIcon className={iconClass} />;
   };
   
   const getTypeLabel = (type) => {
