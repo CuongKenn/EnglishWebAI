@@ -1,5 +1,5 @@
 import { Card } from '../../../../components/ui/card';
-import { Users, FileCheck, Brain, TrendingUp, Clock, CheckCircle, Sun, Moon, Coffee, Loader2 } from 'lucide-react';
+import { UserGroupIcon, DocumentCheckIcon, CpuChipIcon, ArrowTrendingUpIcon, ClockIcon, CheckCircleIcon, SunIcon, MoonIcon, CakeIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { useState, useEffect } from 'react';
 import { apiV1 } from '../../../../services/api';
 
@@ -13,13 +13,13 @@ const Dashboard = () => {
     const hour = new Date().getHours();
     if (hour < 12) {
       setGreeting('Chào buổi sáng');
-      setGreetingIcon(Sun);
+      setGreetingIcon(SunIcon);
     } else if (hour < 18) {
       setGreeting('Chào buổi chiều');
-      setGreetingIcon(Coffee);
+      setGreetingIcon(CakeIcon);
     } else {
       setGreeting('Chào buổi tối');
-      setGreetingIcon(Moon);
+      setGreetingIcon(MoonIcon);
     }
 
     // Fetch dashboard data
@@ -72,7 +72,7 @@ const Dashboard = () => {
     return (
       <div className="p-8 flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4 text-purple-600" />
+          <ArrowPathIcon className="w-12 h-12 animate-spin mx-auto mb-4 text-purple-600" />
           <p className="text-gray-600">Đang tải dữ liệu dashboard...</p>
         </div>
       </div>
@@ -126,7 +126,7 @@ const Dashboard = () => {
         {/* Recent Activities */}
         <Card className="p-6">
           <div className="flex items-center gap-2 mb-4">
-            <Clock className="w-5 h-5 text-purple-600" />
+            <ClockIcon className="w-5 h-5 text-purple-600" />
             <h2 className="text-xl font-semibold text-gray-900">Hoạt động gần đây</h2>
           </div>
           <div className="space-y-4">
@@ -154,7 +154,7 @@ const Dashboard = () => {
         {/* Upcoming Tests */}
         <Card className="p-6">
           <div className="flex items-center gap-2 mb-4">
-            <FileCheck className="w-5 h-5 text-purple-600" />
+            <DocumentCheckIcon className="w-5 h-5 text-purple-600" />
             <h2 className="text-xl font-semibold text-gray-900">Bài kiểm tra sắp tới</h2>
           </div>
           <div className="space-y-4">

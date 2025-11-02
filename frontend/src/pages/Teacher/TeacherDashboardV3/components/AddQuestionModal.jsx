@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { X, Plus, Trash2, FileAudio, Upload, Check, FileText } from 'lucide-react';
+import { XMarkIcon, PlusIcon, TrashIcon, MusicalNoteIcon, ArrowUpTrayIcon, CheckIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
 import './AddQuestionModal.css';
 import Toast from '../../../../components/Toast/Toast';
 import useToast from '../../../../hooks/useToast';
@@ -427,7 +427,7 @@ export default function AddQuestionModal({ onClose, onAdd, mode = 'add', initial
         <div className="add-question-modal-footer">
           <button onClick={onClose} className="btn-cancel-aq">Hủy</button>
           <button onClick={handleSubmit} className="btn-submit-aq">
-            <Check size={18} />
+            <CheckIcon size={18} />
             {mode === 'edit' ? 'Cập nhật câu hỏi' : 'Thêm câu hỏi'}
           </button>
         </div>
@@ -462,13 +462,13 @@ export default function AddQuestionModal({ onClose, onAdd, mode = 'add', initial
             />
             {!audioFile ? (
               <>
-                <FileAudio size={40} className="upload-icon-aq" />
+                <MusicalNoteIcon size={40} className="upload-icon-aq" />
                 <p>Click để chọn file audio</p>
                 <span className="upload-hint-aq">Tối đa 50MB</span>
               </>
             ) : (
               <div className="file-preview-aq">
-                <FileAudio size={24} />
+                <MusicalNoteIcon size={24} />
                 <div className="file-info-aq">
                   <span className="file-name-aq">{audioFile.name}</span>
                   <span className="file-size-aq">{(audioFile.size / 1024 / 1024).toFixed(2)} MB</span>
@@ -478,7 +478,7 @@ export default function AddQuestionModal({ onClose, onAdd, mode = 'add', initial
                   onClick={(e) => { e.stopPropagation(); setAudioFile(null); }}
                   className="btn-remove-file-aq"
                 >
-                  <Trash2 size={16} />
+                  <TrashIcon size={16} />
                 </button>
               </div>
             )}
@@ -602,13 +602,13 @@ export default function AddQuestionModal({ onClose, onAdd, mode = 'add', initial
                   onClick={() => removeSpeakingInstruction(idx)}
                   className="btn-remove-item-aq"
                 >
-                  <X size={16} />
+                  <XMarkIcon size={16} />
                 </button>
               )}
             </div>
           ))}
           <button onClick={addSpeakingInstruction} className="btn-add-item-aq">
-            <Plus size={14} />
+            <PlusIcon size={14} />
             Thêm hướng dẫn
           </button>
         </div>
@@ -687,13 +687,13 @@ export default function AddQuestionModal({ onClose, onAdd, mode = 'add', initial
               />
               {!passageFile ? (
                 <>
-                  <FileText size={40} className="upload-icon-aq" />
+                  <DocumentTextIcon size={40} className="upload-icon-aq" />
                   <p>Click để chọn file</p>
                   <span className="upload-hint-aq">PDF, Word, hoặc Text - Tối đa 10MB</span>
                 </>
               ) : (
                 <div className="file-preview-aq">
-                  <FileText size={24} />
+                  <DocumentTextIcon size={24} />
                   <div className="file-info-aq">
                     <span className="file-name-aq">{passageFile.name}</span>
                     <span className="file-size-aq">{(passageFile.size / 1024 / 1024).toFixed(2)} MB</span>
@@ -702,7 +702,7 @@ export default function AddQuestionModal({ onClose, onAdd, mode = 'add', initial
                     onClick={(e) => { e.stopPropagation(); setPassageFile(null); }}
                     className="btn-remove-file-aq"
                   >
-                    <Trash2 size={16} />
+                    <TrashIcon size={16} />
                   </button>
                 </div>
               )}
@@ -838,13 +838,13 @@ export default function AddQuestionModal({ onClose, onAdd, mode = 'add', initial
                   onClick={() => removeWritingRequirement(idx)}
                   className="btn-remove-item-aq"
                 >
-                  <X size={16} />
+                  <XMarkIcon size={16} />
                 </button>
               )}
             </div>
           ))}
           <button onClick={addWritingRequirement} className="btn-add-item-aq">
-            <Plus size={14} />
+            <PlusIcon size={14} />
             Thêm yêu cầu
           </button>
         </div>

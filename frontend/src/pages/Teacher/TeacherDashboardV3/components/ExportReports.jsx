@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Download, FileSpreadsheet, Calendar, Users, Filter, CheckCircle, FileText, Layers } from 'lucide-react';
+import { ArrowDownTrayIcon, DocumentChartBarIcon, CalendarIcon, UserGroupIcon, FunnelIcon, CheckCircleIcon, DocumentTextIcon, RectangleStackIcon } from '@heroicons/react/24/outline';
 import exportService from '../../../../services/exportService';
 import { apiV1 } from '../../../../services/api';
 import { getClasses } from '../../../../services/classService';
@@ -13,7 +13,7 @@ const EXPORT_TYPE_CARDS = [
     title: '1 Bài tập',
     description: 'Xuất báo cáo chi tiết cho một bài tập cụ thể',
     label: 'Đơn giản',
-    Icon: FileText,
+    Icon: DocumentTextIcon,
     variant: 'single'
   },
   {
@@ -21,7 +21,7 @@ const EXPORT_TYPE_CARDS = [
     title: 'Nhiều Bài tập',
     description: 'Tổng hợp báo cáo từ nhiều bài tập khác nhau',
     label: 'Tổng hợp',
-    Icon: Layers,
+    Icon: RectangleStackIcon,
     variant: 'multiple'
   },
   {
@@ -29,7 +29,7 @@ const EXPORT_TYPE_CARDS = [
     title: 'Theo Lớp',
     description: 'Xuất báo cáo tổng quan theo từng lớp học',
     label: 'Chi tiết',
-    Icon: Users,
+    Icon: UserGroupIcon,
     variant: 'class'
   }
 ];
@@ -238,7 +238,7 @@ export default function ExportReports() {
                 <h3>{title}</h3>
                 <p>{description}</p>
                 <span className="export-type-cta">
-                  <Download size={16} />
+                  <ArrowDownTrayIcon size={16} />
                   <span>{label}</span>
                 </span>
               </button>
@@ -259,7 +259,7 @@ export default function ExportReports() {
             
             {sortedExercises.length === 0 ? (
               <div className="empty-state" style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
-                <FileText size={48} style={{ opacity: 0.3, margin: '0 auto 16px' }} />
+                <DocumentTextIcon size={48} style={{ opacity: 0.3, margin: '0 auto 16px' }} />
                 <p>Chưa có bài tập nào. Vui lòng tạo bài tập trước!</p>
               </div>
             ) : (
@@ -274,7 +274,7 @@ export default function ExportReports() {
                 >
                   <div className="exercise-card-header">
                     <div className="checkbox-custom">
-                      {selectedExercises.includes(exercise.id) && <CheckCircle size={20} />}
+                      {selectedExercises.includes(exercise.id) && <CheckCircleIcon size={20} />}
                     </div>
                     <div className="exercise-info-export">
                       <h4>{exercise.title}</h4>
@@ -287,11 +287,11 @@ export default function ExportReports() {
                   </div>
                   <div className="exercise-stats-export">
                     <div className="stat-item">
-                      <Users size={14} />
+                      <UserGroupIcon size={14} />
                       <span>{exercise.students} HS</span>
                     </div>
                     <div className="stat-item">
-                      <CheckCircle size={14} />
+                      <CheckCircleIcon size={14} />
                       <span>{exercise.graded} đã chấm</span>
                     </div>
                   </div>
@@ -336,7 +336,7 @@ export default function ExportReports() {
                 ))}
               </select>
               <div className="date-range-filter">
-                <Calendar size={16} />
+                <CalendarIcon size={16} />
                 <input
                   type="date"
                   placeholder="Từ ngày"
@@ -370,7 +370,7 @@ export default function ExportReports() {
                 >
                   <div className="exercise-card-header">
                     <div className="checkbox-custom">
-                      {selectedExercises.includes(exercise.id) && <CheckCircle size={20} />}
+                      {selectedExercises.includes(exercise.id) && <CheckCircleIcon size={20} />}
                     </div>
                     <div className="exercise-info-export">
                       <h4>{exercise.title}</h4>
@@ -383,11 +383,11 @@ export default function ExportReports() {
                   </div>
                   <div className="exercise-stats-export">
                     <div className="stat-item">
-                      <Users size={14} />
+                      <UserGroupIcon size={14} />
                       <span>{exercise.students} HS</span>
                     </div>
                     <div className="stat-item">
-                      <CheckCircle size={14} />
+                      <CheckCircleIcon size={14} />
                       <span>{exercise.graded} đã chấm</span>
                     </div>
                   </div>
@@ -426,10 +426,10 @@ export default function ExportReports() {
                 >
                   <div className="class-card-left">
                     <div className="checkbox-custom">
-                      {selectedClasses.includes(cls.id) && <CheckCircle size={20} />}
+                      {selectedClasses.includes(cls.id) && <CheckCircleIcon size={20} />}
                     </div>
                     <div className="class-info-export">
-                      <Users size={24} />
+                      <UserGroupIcon size={24} />
                       <div>
                         <h4>{cls.name}</h4>
                         <p>{cls.students} học sinh</p>
@@ -475,7 +475,7 @@ export default function ExportReports() {
       {/* Preview & Export */}
       <div className="preview-export-section">
         <div className="preview-box">
-          <FileSpreadsheet size={48} />
+          <DocumentChartBarIcon size={48} />
           <h3>Xem trước file Excel</h3>
           <div className="preview-info">
             {exportType === 'single' && selectedExercises.length > 0 && (
@@ -519,14 +519,14 @@ export default function ExportReports() {
                 className={`format-btn ${format === 'xlsx' ? 'active' : ''}`}
                 onClick={() => setFormat('xlsx')}
               >
-                <FileSpreadsheet size={18} />
+                <DocumentChartBarIcon size={18} />
                 Excel (.xlsx)
               </button>
               <button
                 className={`format-btn ${format === 'csv' ? 'active' : ''}`}
                 onClick={() => setFormat('csv')}
               >
-                <FileText size={18} />
+                <DocumentTextIcon size={18} />
                 CSV (.csv)
               </button>
             </div>
@@ -543,7 +543,7 @@ export default function ExportReports() {
             (exportType === 'class' && selectedClasses.length === 0)
           }
         >
-          <Download size={20} />
+          <ArrowDownTrayIcon size={20} />
           {loading ? 'Đang xuất...' : `Xuất file ${format.toUpperCase()}`}
         </button>
       </div>
@@ -551,7 +551,7 @@ export default function ExportReports() {
       {/* Info Box */}
       <div className="info-box-export">
         <div className="info-icon-export">
-          <FileSpreadsheet size={24} />
+          <DocumentChartBarIcon size={24} />
         </div>
         <div className="info-content-export">
           <h4>💡 Hướng dẫn xuất báo cáo</h4>

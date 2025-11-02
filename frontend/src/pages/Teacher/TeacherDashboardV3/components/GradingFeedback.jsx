@@ -2,11 +2,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  FileText, Clock, User, CheckCircle, XCircle, Eye, Edit, 
-  Sparkles, Download, Filter, Search, Award, MessageSquare,
-  TrendingUp, AlertCircle, PlayCircle, FileAudio, FileImage, Loader2,
-  BookOpen, Users
-} from 'lucide-react';
+  DocumentTextIcon, ClockIcon, UserIcon, CheckCircleIcon, XCircleIcon, EyeIcon, PencilSquareIcon, 
+  SparklesIcon, ArrowDownTrayIcon, FunnelIcon, MagnifyingGlassIcon, TrophyIcon, ChatBubbleLeftRightIcon,
+  ArrowTrendingUpIcon, ExclamationCircleIcon, PlayCircleIcon, MusicalNoteIcon, PhotoIcon, ArrowPathIcon,
+  BookOpenIcon, UserGroupIcon
+} from '@heroicons/react/24/outline';
 import './GradingFeedback.css';
 import { apiV1 } from '../../../../services/api';
 import Toast from '../../../../components/Toast/Toast';
@@ -188,14 +188,14 @@ export default function GradingFeedback() {
             <div className="student-info-card">
               <div className="student-row">
                 <div className="student-avatar-grading">
-                  <User size={24} />
+                  <UserIcon size={24} />
                 </div>
                 <div className="student-details">
                   <h4>{selectedSubmission.student_name}</h4>
                   <p>ID: {selectedSubmission.student_id}</p>
                 </div>
                 <div className="submission-time">
-                  <Clock size={16} />
+                  <ClockIcon size={16} />
                   <span>Nộp lúc: {new Date(selectedSubmission.submitted_at).toLocaleString('vi-VN')}</span>
                 </div>
               </div>
@@ -225,12 +225,12 @@ export default function GradingFeedback() {
                     <div className="content-file-box">
                       {selectedSubmission.content_url.endsWith('.mp3') || selectedSubmission.content_url.endsWith('.wav') ? (
                         <div className="file-line">
-                          <FileAudio size={20} />
+                          <MusicalNoteIcon size={20} />
                           <audio controls src={selectedSubmission.content_url} className="audio-player" />
                         </div>
                       ) : (
                         <div className="file-line">
-                          <FileImage size={20} />
+                          <PhotoIcon size={20} />
                           <a href={selectedSubmission.content_url} target="_blank" rel="noopener noreferrer">
                             Xem file đính kèm
                           </a>
@@ -260,7 +260,7 @@ export default function GradingFeedback() {
               {selectedSubmission.rubrics_scores?.speaking_assessment && (
                 <div className="speaking-assessment-section card">
                 <div className="assessment-header">
-                  <Sparkles size={18} style={{ color: '#8b5cf6' }} />
+                  <SparklesIcon size={18} style={{ color: '#8b5cf6' }} />
                   <span>Đánh giá Speaking (Azure Speech API)</span>
                 </div>
 
@@ -271,7 +271,7 @@ export default function GradingFeedback() {
                     {selectedSubmission.content_url && !selectedSubmission.content_url.startsWith('blob:') && (
                       <div className="speaking-audio-player">
                         <div className="audio-player-header">
-                          <PlayCircle size={20} style={{ color: '#8b5cf6' }} />
+                          <PlayCircleIcon size={20} style={{ color: '#8b5cf6' }} />
                           <span>Bài nói của học sinh</span>
                         </div>
                         <audio controls src={selectedSubmission.content_url} className="audio-player-control" controlsList="nodownload">
@@ -293,10 +293,10 @@ export default function GradingFeedback() {
                         </div>
                         <div className="overall-actions">
                           <button className="btn-mini" onClick={applyAIResultToForm}>
-                            <CheckCircle size={14} /> Dùng điểm AI
+                            <CheckCircleIcon size={14} /> Dùng điểm AI
                           </button>
                           <button className={`btn-mini outline ${aiLoading ? 'loading' : ''}`} onClick={runAutoGrade} disabled={loading}>
-                            {aiLoading ? <><Loader2 className="spinner" size={14} /> Đang chấm...</> : <><Sparkles size={14} /> Chấm lại</>}
+                            {aiLoading ? <><ArrowPathIcon className="spinner" size={14} /> Đang chấm...</> : <><SparklesIcon size={14} /> Chấm lại</>}
                           </button>
                         </div>
                       </div>
@@ -351,7 +351,7 @@ export default function GradingFeedback() {
               {selectedSubmission.rubrics_scores?.writing_assessment && (
                 <div className="writing-assessment-section card">
                 <div className="assessment-header">
-                  <Edit size={18} style={{ color: '#f59e0b' }} />
+                  <PencilSquareIcon size={18} style={{ color: '#f59e0b' }} />
                   <span>Đánh giá Writing (ChatGPT AI)</span>
                 </div>
                 
@@ -512,7 +512,7 @@ export default function GradingFeedback() {
                 {hasAI && (
                   <div className="ai-summary">
                     <div className="ai-score-pill">
-                      <Sparkles size={14} />
+                      <SparklesIcon size={14} />
                       <span>{selectedSubmission.ai_score}/10</span>
                     </div>
                     {selectedSubmission.ai_feedback && (
@@ -532,7 +532,7 @@ export default function GradingFeedback() {
                   <label>Nhận xét</label>
                   <textarea value={feedbackInput} onChange={(e)=>setFeedbackInput(e.target.value)} />
                   <button className="btn-save-grade full" onClick={() => handleManualSave(parseFloat(scoreInput), feedbackInput)} disabled={loading}>
-                    <CheckCircle size={18} /> Xác nhận & lưu điểm
+                    <CheckCircleIcon size={18} /> Xác nhận & lưu điểm
                   </button>
                 </div>
               </div>
@@ -563,7 +563,7 @@ export default function GradingFeedback() {
         {/* Class List Sidebar */}
         <div className="exercise-list-sidebar">
           <div className="sidebar-title-grading">
-            <FileText size={20} />
+            <DocumentTextIcon size={20} />
             <span>Danh sách lớp</span>
           </div>
           
@@ -588,11 +588,11 @@ export default function GradingFeedback() {
                     </div>
                     <div className="exercise-item-stats">
                       <div className="stat-item-grading pending">
-                        <Clock size={14} />
+                        <ClockIcon size={14} />
                         <span>{pending} chờ chấm</span>
                       </div>
                       <div className="stat-item-grading graded">
-                        <CheckCircle size={14} />
+                        <CheckCircleIcon size={14} />
                         <span>{graded} đã chấm</span>
                       </div>
                     </div>
@@ -607,7 +607,7 @@ export default function GradingFeedback() {
         <div className="submissions-panel">
           {!selectedClass ? (
             <div className="empty-state-grading">
-              <FileText size={80} strokeWidth={1} />
+              <DocumentTextIcon size={80} strokeWidth={1} />
               <h3>Chọn lớp học</h3>
               <p>Chọn một lớp học bên trái để xem danh sách bài nộp</p>
             </div>
@@ -628,7 +628,7 @@ export default function GradingFeedback() {
                 </div>
                 <div className="panel-header-actions">
                   <button className="btn-action-grading">
-                    <Download size={18} />
+                    <ArrowDownTrayIcon size={18} />
                     Xuất Excel
                   </button>
                 </div>
@@ -637,7 +637,7 @@ export default function GradingFeedback() {
               {/* Search & Filter */}
               <div className="search-filter-bar">
                 <div className="search-box-grading">
-                  <Search size={18} />
+                  <MagnifyingGlassIcon size={18} />
                   <input type="text" placeholder="Tìm kiếm học sinh..." />
                 </div>
                 <select className="filter-select-grading">
@@ -652,7 +652,7 @@ export default function GradingFeedback() {
               <div className="submissions-table">
                 {submissions.length === 0 ? (
                   <div className="empty-submissions">
-                    <AlertCircle size={48} strokeWidth={1} />
+                    <ExclamationCircleIcon size={48} strokeWidth={1} />
                     <p>Chưa có bài nộp nào</p>
                   </div>
                 ) : (
@@ -664,16 +664,16 @@ export default function GradingFeedback() {
                       <div key={submission.id} className="submission-row">
                         <div className="submission-row-left">
                           <div className="student-avatar-small">
-                            <User size={20} />
+                            <UserIcon size={20} />
                           </div>
                           <div className="submission-info">
                             <h4>{submission.student_name}</h4>
                             <p className="exercise-title-small">
-                              <FileText size={12} />
+                              <DocumentTextIcon size={12} />
                               {exerciseTitle}
                             </p>
                             <p>
-                              <Clock size={12} />
+                              <ClockIcon size={12} />
                               {new Date(submission.submitted_at).toLocaleString('vi-VN')}
                             </p>
                           </div>
@@ -682,13 +682,13 @@ export default function GradingFeedback() {
                           {getStatusBadge(submission.status)}
                           {submission.status === 'graded' && submission.score !== null && (
                             <div className="score-display">
-                              <Award size={16} />
+                              <TrophyIcon size={16} />
                               <span>{submission.score}/10</span>
                             </div>
                           )}
                           {typeof submission.ai_score === 'number' && submission.status === 'pending_review' && (
                             <div className="ai-score-badge">
-                              <Sparkles size={14} />
+                              <SparklesIcon size={14} />
                               AI: {submission.ai_score}/10
                             </div>
                           )}
@@ -700,12 +700,12 @@ export default function GradingFeedback() {
                           >
                             {submission.status === 'graded' ? (
                               <>
-                                <Eye size={16} />
+                                <EyeIcon size={16} />
                                 Xem chi tiết
                               </>
                             ) : (
                               <>
-                                <Edit size={16} />
+                                <PencilSquareIcon size={16} />
                                 Chấm điểm
                               </>
                             )}
@@ -727,7 +727,7 @@ export default function GradingFeedback() {
       {/* Info Box */}
       <div className="info-box-grading">
         <div className="info-icon-grading">
-          <Sparkles size={24} />
+          <SparklesIcon size={24} />
         </div>
         <div className="info-content-grading">
           <h4>💡 Hướng dẫn chấm điểm</h4>

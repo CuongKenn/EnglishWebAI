@@ -4,7 +4,7 @@ import { Button } from '../../../../components/ui/button';
 import { Badge } from '../../../../components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../../components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../../components/ui/tabs';
-import { Sparkles, CheckCircle, Clock, Edit2, Send, BarChart3 } from 'lucide-react';
+import { SparklesIcon, CheckCircleIcon, ClockIcon, PencilIcon, PaperAirplaneIcon, ChartBarIcon } from '@heroicons/react/24/outline';
 import { apiV1 } from '../../../../services/api';
 import { Textarea } from '../../../../components/ui/textarea';
 
@@ -103,7 +103,7 @@ const AIGrading = () => {
     <div className="p-8">
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
-          <Sparkles className="w-8 h-8 text-purple-600" />
+          <SparklesIcon className="w-8 h-8 text-purple-600" />
           <h1 className="text-3xl font-bold text-gray-900">AI Chấm điểm</h1>
         </div>
         <p className="text-gray-600">Sử dụng AI để chấm điểm tự động và đánh giá bài làm của học sinh</p>
@@ -137,7 +137,7 @@ const AIGrading = () => {
               <p className="text-sm text-gray-600">Chờ AI chấm</p>
               <p className="text-2xl font-bold text-gray-900">{submissions.filter(s => !s.ai_score).length}</p>
             </div>
-            <Clock className="w-8 h-8 text-orange-500" />
+            <ClockIcon className="w-8 h-8 text-orange-500" />
           </div>
         </Card>
         
@@ -147,7 +147,7 @@ const AIGrading = () => {
               <p className="text-sm text-gray-600">AI đã chấm</p>
               <p className="text-2xl font-bold text-gray-900">{submissions.filter(s => s.ai_score && !s.score).length}</p>
             </div>
-            <Sparkles className="w-8 h-8 text-purple-500" />
+            <SparklesIcon className="w-8 h-8 text-purple-500" />
           </div>
         </Card>
         
@@ -157,7 +157,7 @@ const AIGrading = () => {
               <p className="text-sm text-gray-600">Đã phê duyệt</p>
               <p className="text-2xl font-bold text-gray-900">{submissions.filter(s => s.score).length}</p>
             </div>
-            <CheckCircle className="w-8 h-8 text-green-500" />
+            <CheckCircleIcon className="w-8 h-8 text-green-500" />
           </div>
         </Card>
         
@@ -167,7 +167,7 @@ const AIGrading = () => {
               <p className="text-sm text-gray-600">Tổng bài nộp</p>
               <p className="text-2xl font-bold text-gray-900">{submissions.length}</p>
             </div>
-            <BarChart3 className="w-8 h-8 text-blue-500" />
+            <ChartBarIcon className="w-8 h-8 text-blue-500" />
           </div>
         </Card>
       </div>
@@ -184,7 +184,7 @@ const AIGrading = () => {
           <div className="space-y-4">
             {submissions.filter(s => !s.ai_score).length === 0 ? (
               <Card className="p-12 text-center">
-                <CheckCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <CheckCircleIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <p className="text-gray-600">Không có bài nộp nào chờ chấm</p>
               </Card>
             ) : (
@@ -200,7 +200,7 @@ const AIGrading = () => {
                     </div>
                     <div className="flex gap-2">
                       <Button onClick={() => handleRunAIGrading(submission.id)} className="gap-2">
-                        <Sparkles size={16} />
+                        <SparklesIcon size={16} />
                         Chấm bằng AI
                       </Button>
                       <Button variant="outline" onClick={() => openSubmissionDetail(submission)}>
@@ -218,7 +218,7 @@ const AIGrading = () => {
           <div className="space-y-4">
             {submissions.filter(s => s.ai_score && !s.score).length === 0 ? (
               <Card className="p-12 text-center">
-                <Sparkles className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <SparklesIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <p className="text-gray-600">Không có bài nào đang chờ phê duyệt</p>
               </Card>
             ) : (
@@ -260,7 +260,7 @@ const AIGrading = () => {
                     </div>
                     <div className="flex flex-col gap-2">
                       <Button onClick={() => openSubmissionDetail(submission)} className="gap-2">
-                        <Edit2 size={16} />
+                        <PencilIcon size={16} />
                         Chỉnh sửa & Phê duyệt
                       </Button>
                       <Button variant="outline" onClick={() => handleSaveFeedback()}>
@@ -278,7 +278,7 @@ const AIGrading = () => {
           <div className="space-y-4">
             {submissions.filter(s => s.score).length === 0 ? (
               <Card className="p-12 text-center">
-                <CheckCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <CheckCircleIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <p className="text-gray-600">Chưa có bài nào được phê duyệt</p>
               </Card>
             ) : (
@@ -368,7 +368,7 @@ const AIGrading = () => {
                 Hủy
               </Button>
               <Button onClick={handleSaveFeedback} className="gap-2">
-                <Send size={16} />
+                <PaperAirplaneIcon size={16} />
                 Lưu và gửi cho học sinh
               </Button>
             </div>

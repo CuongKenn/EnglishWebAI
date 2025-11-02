@@ -7,7 +7,7 @@ import { Switch } from '../../../../components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../../components/ui/tabs';
 import { Avatar, AvatarFallback } from '../../../../components/ui/avatar';
 import { Badge } from '../../../../components/ui/badge';
-import { User, Bell, Lock, Mail, Globe, Save, Camera } from 'lucide-react';
+import { UserIcon, BellIcon, LockClosedIcon, EnvelopeIcon, GlobeAltIcon, CheckIcon, CameraIcon } from '@heroicons/react/24/outline';
 import { Textarea } from '../../../../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
 
@@ -28,19 +28,19 @@ const Settings = () => {
       <Tabs defaultValue="profile" className="space-y-6">
         <TabsList>
           <TabsTrigger value="profile" className="gap-2">
-            <User className="w-4 h-4" />
+            <UserIcon className="w-4 h-4" />
             Thông tin cá nhân
           </TabsTrigger>
           <TabsTrigger value="notifications" className="gap-2">
-            <Bell className="w-4 h-4" />
+            <BellIcon className="w-4 h-4" />
             Thông báo
           </TabsTrigger>
           <TabsTrigger value="security" className="gap-2">
-            <Lock className="w-4 h-4" />
+            <LockClosedIcon className="w-4 h-4" />
             Bảo mật
           </TabsTrigger>
           <TabsTrigger value="preferences" className="gap-2">
-            <Globe className="w-4 h-4" />
+            <GlobeAltIcon className="w-4 h-4" />
             Tùy chỉnh
           </TabsTrigger>
         </TabsList>
@@ -58,7 +58,7 @@ const Settings = () => {
                   </AvatarFallback>
                 </Avatar>
                 <Button size="sm" className="absolute bottom-0 right-0 rounded-full p-2">
-                  <Camera className="w-4 h-4" />
+                  <CameraIcon className="w-4 h-4" />
                 </Button>
               </div>
               <div className="flex-1">
@@ -114,7 +114,7 @@ const Settings = () => {
               <div className="flex justify-end gap-2 pt-4">
                 <Button variant="outline">Hủy</Button>
                 <Button className="gap-2">
-                  <Save className="w-4 h-4" />
+                  <CheckIcon className="w-4 h-4" />
                   Lưu thay đổi
                 </Button>
               </div>
@@ -177,7 +177,7 @@ const Settings = () => {
               <div className="flex justify-end gap-2 pt-4">
                 <Button variant="outline">Hủy</Button>
                 <Button className="gap-2">
-                  <Save className="w-4 h-4" />
+                  <CheckIcon className="w-4 h-4" />
                   Lưu thay đổi
                 </Button>
               </div>
@@ -207,7 +207,7 @@ const Settings = () => {
                     <Input type="password" placeholder="Nhập lại mật khẩu mới" />
                   </div>
                   <Button className="gap-2">
-                    <Lock className="w-4 h-4" />
+                    <LockClosedIcon className="w-4 h-4" />
                     Đổi mật khẩu
                   </Button>
                 </div>
@@ -324,7 +324,7 @@ const Settings = () => {
               <div className="flex justify-end gap-2 pt-4">
                 <Button variant="outline">Hủy</Button>
                 <Button className="gap-2">
-                  <Save className="w-4 h-4" />
+                  <CheckIcon className="w-4 h-4" />
                   Lưu thay đổi
                 </Button>
               </div>

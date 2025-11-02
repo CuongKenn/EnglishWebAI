@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card } from '../../../../components/ui/card';
 import { Button } from '../../../../components/ui/button';
 import { Badge } from '../../../../components/ui/badge';
-import { Users, AlertCircle, TrendingDown } from 'lucide-react';
+import { UserGroupIcon, ExclamationCircleIcon, ArrowTrendingDownIcon } from '@heroicons/react/24/outline';
 import { apiV1 } from '../../../../services/api';
 
 const SupportGroups = () => {
@@ -50,7 +50,7 @@ const SupportGroups = () => {
     <div className="p-8">
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
-          <Users className="w-8 h-8 text-purple-600" />
+          <UserGroupIcon className="w-8 h-8 text-purple-600" />
           <h1 className="text-3xl font-bold text-gray-900">Nhóm học sinh cần hỗ trợ</h1>
         </div>
         <p className="text-gray-600">Xác định và hỗ trợ các học sinh cần quan tâm đặc biệt</p>
@@ -107,7 +107,7 @@ const SupportGroups = () => {
                 <p className="text-sm text-gray-600">Tổng học sinh</p>
                 <p className="text-2xl font-bold text-gray-900">{supportData.total_students}</p>
               </div>
-              <Users className="w-8 h-8 text-blue-500" />
+              <UserGroupIcon className="w-8 h-8 text-blue-500" />
             </div>
           </Card>
 
@@ -117,7 +117,7 @@ const SupportGroups = () => {
                 <p className="text-sm text-gray-600">Cần hỗ trợ</p>
                 <p className="text-2xl font-bold text-orange-500">{supportData.students_need_support}</p>
               </div>
-              <AlertCircle className="w-8 h-8 text-orange-500" />
+              <ExclamationCircleIcon className="w-8 h-8 text-orange-500" />
             </div>
           </Card>
 
@@ -129,7 +129,7 @@ const SupportGroups = () => {
                   {((supportData.students_need_support / supportData.total_students) * 100).toFixed(1)}%
                 </p>
               </div>
-              <TrendingDown className="w-8 h-8 text-purple-500" />
+              <ArrowTrendingDownIcon className="w-8 h-8 text-purple-500" />
             </div>
           </Card>
         </div>
@@ -139,7 +139,7 @@ const SupportGroups = () => {
       <div className="space-y-4">
         {!supportData || supportData.students.length === 0 ? (
           <Card className="p-12 text-center">
-            <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <UserGroupIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-600">Không có học sinh nào cần hỗ trợ đặc biệt</p>
             <p className="text-sm text-gray-500 mt-2">Tất cả học sinh đang học tập tốt!</p>
           </Card>

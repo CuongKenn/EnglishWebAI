@@ -5,7 +5,7 @@ import { Input } from '../../../../components/ui/input';
 import { Badge } from '../../../../components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../../../../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
-import { Video, Plus, Search, Users, Clock, Calendar, ExternalLink, Settings, Copy, Share2, Play, Pause } from 'lucide-react';
+import { VideoCameraIcon, PlusIcon, MagnifyingGlassIcon, UserGroupIcon, ClockIcon, CalendarIcon, ArrowTopRightOnSquareIcon, Cog6ToothIcon, ClipboardDocumentIcon, ShareIcon, PlayIcon, PauseIcon } from '@heroicons/react/24/outline';
 import { Label } from '../../../../components/ui/label';
 import { Textarea } from '../../../../components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../../components/ui/tabs';
@@ -126,7 +126,7 @@ const OnlineTeaching = () => {
         <Card className="p-6">
           <div className="flex items-center gap-4">
             <div className="bg-red-500 p-3 rounded-lg">
-              <Video className="w-6 h-6 text-white" />
+              <VideoCameraIcon className="w-6 h-6 text-white" />
             </div>
             <div>
               <p className="text-gray-600 text-sm">Đang live</p>
@@ -139,7 +139,7 @@ const OnlineTeaching = () => {
         <Card className="p-6">
           <div className="flex items-center gap-4">
             <div className="bg-blue-500 p-3 rounded-lg">
-              <Calendar className="w-6 h-6 text-white" />
+              <CalendarIcon className="w-6 h-6 text-white" />
             </div>
             <div>
               <p className="text-gray-600 text-sm">Đã lên lịch</p>
@@ -152,7 +152,7 @@ const OnlineTeaching = () => {
         <Card className="p-6">
           <div className="flex items-center gap-4">
             <div className="bg-green-500 p-3 rounded-lg">
-              <Play className="w-6 h-6 text-white" />
+              <PlayIcon className="w-6 h-6 text-white" />
             </div>
             <div>
               <p className="text-gray-600 text-sm">Đã hoàn thành</p>
@@ -165,7 +165,7 @@ const OnlineTeaching = () => {
         <Card className="p-6">
           <div className="flex items-center gap-4">
             <div className="bg-purple-500 p-3 rounded-lg">
-              <Users className="w-6 h-6 text-white" />
+              <UserGroupIcon className="w-6 h-6 text-white" />
             </div>
             <div>
               <p className="text-gray-600 text-sm">Tổng học sinh</p>
@@ -189,7 +189,7 @@ const OnlineTeaching = () => {
           <Card className="p-4">
             <div className="flex gap-4">
               <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
                   placeholder="Tìm kiếm phòng học..."
                   className="pl-10"
@@ -200,7 +200,7 @@ const OnlineTeaching = () => {
               <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
                 <DialogTrigger asChild>
                   <Button className="gap-2">
-                    <Plus className="w-4 h-4" />
+                    <PlusIcon className="w-4 h-4" />
                     Tạo phòng học
                   </Button>
                 </DialogTrigger>
@@ -274,7 +274,7 @@ const OnlineTeaching = () => {
                     session.status === 'live' ? 'bg-red-100' :
                     session.status === 'scheduled' ? 'bg-blue-100' : 'bg-green-100'
                   }`}>
-                    <Video className={`w-8 h-8 ${
+                    <VideoCameraIcon className={`w-8 h-8 ${
                       session.status === 'live' ? 'text-red-600' :
                       session.status === 'scheduled' ? 'text-blue-600' : 'text-green-600'
                     }`} />
@@ -285,15 +285,15 @@ const OnlineTeaching = () => {
                         <h3 className="text-lg font-semibold text-gray-900 mb-1">{session.title}</h3>
                         <div className="flex items-center gap-3 text-sm text-gray-600">
                           <span className="flex items-center gap-1">
-                            <Users className="w-4 h-4" />
+                            <UserGroupIcon className="w-4 h-4" />
                             Lớp {session.class}
                           </span>
                           <span className="flex items-center gap-1">
-                            <Calendar className="w-4 h-4" />
+                            <CalendarIcon className="w-4 h-4" />
                             {session.date}
                           </span>
                           <span className="flex items-center gap-1">
-                            <Clock className="w-4 h-4" />
+                            <ClockIcon className="w-4 h-4" />
                             {session.time}
                           </span>
                         </div>
@@ -309,7 +309,7 @@ const OnlineTeaching = () => {
                         </span>
                         {session.recording && (
                           <Badge variant="outline" className="gap-1">
-                            <Video className="w-3 h-3" />
+                            <VideoCameraIcon className="w-3 h-3" />
                             Đang ghi hình
                           </Badge>
                         )}
@@ -317,30 +317,30 @@ const OnlineTeaching = () => {
                       <div className="flex gap-2">
                         {session.status === 'live' && (
                           <Button className="gap-2 bg-red-500 hover:bg-red-600">
-                            <Video className="w-4 h-4" />
+                            <VideoCameraIcon className="w-4 h-4" />
                             Tham gia
                           </Button>
                         )}
                         {session.status === 'scheduled' && (
                           <>
                             <Button variant="outline" className="gap-2">
-                              <Copy className="w-4 h-4" />
+                              <ClipboardDocumentIcon className="w-4 h-4" />
                               Sao chép link
                             </Button>
                             <Button variant="outline" className="gap-2">
-                              <Share2 className="w-4 h-4" />
+                              <ShareIcon className="w-4 h-4" />
                               Chia sẻ
                             </Button>
                           </>
                         )}
                         {session.status === 'completed' && session.recordingUrl && (
                           <Button variant="outline" className="gap-2">
-                            <Play className="w-4 h-4" />
+                            <PlayIcon className="w-4 h-4" />
                             Xem lại
                           </Button>
                         )}
                         <Button size="sm" variant="outline">
-                          <Settings className="w-4 h-4" />
+                          <Cog6ToothIcon className="w-4 h-4" />
                         </Button>
                       </div>
                     </div>
@@ -359,7 +359,7 @@ const OnlineTeaching = () => {
               {recordings.map((recording) => (
                 <div key={recording.id} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-gray-50 transition-colors">
                   <div className="flex-shrink-0 w-32 h-20 bg-gradient-to-br from-purple-100 to-blue-100 rounded flex items-center justify-center">
-                    <Play className="w-8 h-8 text-purple-600" />
+                    <PlayIcon className="w-8 h-8 text-purple-600" />
                   </div>
                   <div className="flex-1">
                     <h4 className="text-base font-semibold text-gray-900 mb-1">{recording.title}</h4>
@@ -373,11 +373,11 @@ const OnlineTeaching = () => {
                   </div>
                   <div className="flex gap-2">
                     <Button size="sm" variant="outline" className="gap-2">
-                      <Play className="w-4 h-4" />
+                      <PlayIcon className="w-4 h-4" />
                       Xem
                     </Button>
                     <Button size="sm" variant="outline" className="gap-2">
-                      <ExternalLink className="w-4 h-4" />
+                      <ArrowTopRightOnSquareIcon className="w-4 h-4" />
                       Tải xuống
                     </Button>
                   </div>
@@ -425,7 +425,7 @@ const OnlineTeaching = () => {
               </div>
               <div className="flex justify-end">
                 <Button className="gap-2">
-                  <Settings className="w-4 h-4" />
+                  <Cog6ToothIcon className="w-4 h-4" />
                   Lưu cài đặt
                 </Button>
               </div>

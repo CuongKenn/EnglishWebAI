@@ -5,7 +5,7 @@ import { Input } from '../../../../components/ui/input';
 import { Badge } from '../../../../components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../../../../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
-import { Upload, Plus, Search, Eye, Download, Trash2, FileText, Image, Video, Music, File, Folder } from 'lucide-react';
+import { ArrowUpTrayIcon, PlusIcon, MagnifyingGlassIcon, EyeIcon, ArrowDownTrayIcon, TrashIcon, DocumentTextIcon, PhotoIcon, VideoCameraIcon, MusicalNoteIcon, DocumentIcon, FolderIcon } from '@heroicons/react/24/outline';
 import { Label } from '../../../../components/ui/label';
 import { Textarea } from '../../../../components/ui/textarea';
 
@@ -79,12 +79,12 @@ const Materials = () => {
 
   const getFileIcon = (type) => {
     switch (type) {
-      case 'audio': return <Music className="w-5 h-5 text-purple-500" />;
-      case 'video': return <Video className="w-5 h-5 text-red-500" />;
-      case 'image': return <Image className="w-5 h-5 text-blue-500" />;
-      case 'document': return <FileText className="w-5 h-5 text-green-500" />;
-      case 'presentation': return <FileText className="w-5 h-5 text-orange-500" />;
-      default: return <File className="w-5 h-5 text-gray-500" />;
+      case 'audio': return <MusicalNoteIcon className="w-5 h-5 text-purple-500" />;
+      case 'video': return <VideoCameraIcon className="w-5 h-5 text-red-500" />;
+      case 'image': return <PhotoIcon className="w-5 h-5 text-blue-500" />;
+      case 'document': return <DocumentTextIcon className="w-5 h-5 text-green-500" />;
+      case 'presentation': return <DocumentTextIcon className="w-5 h-5 text-orange-500" />;
+      default: return <DocumentIcon className="w-5 h-5 text-gray-500" />;
     }
   };
 
@@ -118,7 +118,7 @@ const Materials = () => {
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <Folder className="w-8 h-8 text-blue-500" />
+            <FolderIcon className="w-8 h-8 text-blue-500" />
             <div>
               <p className="text-sm text-gray-600">Thư mục</p>
               <p className="text-xl font-bold text-gray-900">{folders.length}</p>
@@ -127,7 +127,7 @@ const Materials = () => {
         </Card>
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <FileText className="w-8 h-8 text-green-500" />
+            <DocumentTextIcon className="w-8 h-8 text-green-500" />
             <div>
               <p className="text-sm text-gray-600">Tài liệu</p>
               <p className="text-xl font-bold text-gray-900">{materials.filter(m => m.type === 'document').length}</p>
@@ -136,7 +136,7 @@ const Materials = () => {
         </Card>
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <Video className="w-8 h-8 text-red-500" />
+            <VideoCameraIcon className="w-8 h-8 text-red-500" />
             <div>
               <p className="text-sm text-gray-600">Video</p>
               <p className="text-xl font-bold text-gray-900">{materials.filter(m => m.type === 'video').length}</p>
@@ -145,7 +145,7 @@ const Materials = () => {
         </Card>
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <Music className="w-8 h-8 text-purple-500" />
+            <MusicalNoteIcon className="w-8 h-8 text-purple-500" />
             <div>
               <p className="text-sm text-gray-600">Audio</p>
               <p className="text-xl font-bold text-gray-900">{materials.filter(m => m.type === 'audio').length}</p>
@@ -154,7 +154,7 @@ const Materials = () => {
         </Card>
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <Image className="w-8 h-8 text-blue-500" />
+            <PhotoIcon className="w-8 h-8 text-blue-500" />
             <div>
               <p className="text-sm text-gray-600">Hình ảnh</p>
               <p className="text-xl font-bold text-gray-900">{materials.filter(m => m.type === 'image').length}</p>
@@ -167,7 +167,7 @@ const Materials = () => {
       <Card className="p-4 mb-6">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <Input
               placeholder="Tìm kiếm tài liệu..."
               className="pl-10"
@@ -202,7 +202,7 @@ const Materials = () => {
           <Dialog open={isCreateFolderOpen} onOpenChange={setIsCreateFolderOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" className="gap-2">
-                <Folder className="w-4 h-4" />
+                <FolderIcon className="w-4 h-4" />
                 Tạo thư mục
               </Button>
             </DialogTrigger>
@@ -229,7 +229,7 @@ const Materials = () => {
           <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
             <DialogTrigger asChild>
               <Button className="gap-2">
-                <Upload className="w-4 h-4" />
+                <ArrowUpTrayIcon className="w-4 h-4" />
                 Tải lên
               </Button>
             </DialogTrigger>
@@ -239,7 +239,7 @@ const Materials = () => {
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center hover:border-purple-400 transition-colors cursor-pointer">
-                  <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <ArrowUpTrayIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                   <p className="text-base text-gray-600 mb-2">Kéo thả file hoặc click để chọn</p>
                   <p className="text-sm text-gray-500 mb-4">Hỗ trợ: PDF, DOCX, PPTX, MP3, MP4, JPG, PNG (tối đa 100MB)</p>
                   <Button variant="outline">Chọn file</Button>
@@ -295,7 +295,7 @@ const Materials = () => {
           {folders.map((folder) => (
             <Card key={folder.id} className="p-4 hover:shadow-md transition-shadow cursor-pointer">
               <div className="flex flex-col items-center text-center">
-                <Folder className="w-16 h-16 text-blue-500 mb-3" />
+                <FolderIcon className="w-16 h-16 text-blue-500 mb-3" />
                 <h4 className="text-sm font-medium text-gray-900 mb-2 line-clamp-2">{folder.name}</h4>
                 <p className="text-xs text-gray-500">{folder.count} file</p>
               </div>
@@ -340,13 +340,13 @@ const Materials = () => {
                 </div>
                 <div className="flex gap-2">
                   <Button size="sm" variant="outline">
-                    <Eye className="w-4 h-4" />
+                    <EyeIcon className="w-4 h-4" />
                   </Button>
                   <Button size="sm" variant="outline">
-                    <Download className="w-4 h-4" />
+                    <ArrowDownTrayIcon className="w-4 h-4" />
                   </Button>
                   <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700">
-                    <Trash2 className="w-4 h-4" />
+                    <TrashIcon className="w-4 h-4" />
                   </Button>
                 </div>
               </div>

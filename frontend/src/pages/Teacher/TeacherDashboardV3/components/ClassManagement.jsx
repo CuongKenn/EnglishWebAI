@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, UserPlus, Upload, Download, Search, Trash2, Mail, User, CheckCircle, XCircle, FileText, Presentation } from 'lucide-react';
+import { UserGroupIcon, UserPlusIcon, ArrowUpTrayIcon, ArrowDownTrayIcon, MagnifyingGlassIcon, TrashIcon, EnvelopeIcon, UserIcon, CheckCircleIcon, XCircleIcon, DocumentTextIcon, PresentationChartBarIcon } from '@heroicons/react/24/outline';
 import { apiV1 } from '../../../../services/api';
 import Toast from '../../../../components/Toast/Toast';
 import useToast from '../../../../hooks/useToast';
@@ -291,7 +291,7 @@ export default function ClassManagement() {
             onClick={handleAddStudent}
             disabled={loading}
           >
-            <UserPlus size={18} />
+            <UserPlusIcon size={18} />
             {loading ? 'Đang thêm...' : 'Thêm học sinh'}
           </button>
         </div>
@@ -333,7 +333,7 @@ export default function ClassManagement() {
                 padding: '12px',
                 borderRadius: '10px'
               }}>
-                <Download size={28} />
+                <ArrowDownTrayIcon size={28} />
               </div>
               <div>
                 <h4 style={{margin: 0, fontSize: '16px', fontWeight: '600'}}>Bước 1: Tải file mẫu Excel</h4>
@@ -360,7 +360,7 @@ export default function ClassManagement() {
                 boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
               }}
             >
-              <Download size={18} />
+              <ArrowDownTrayIcon size={18} />
               Tải file mẫu
             </button>
           </div>
@@ -394,7 +394,7 @@ export default function ClassManagement() {
               
               {!importFile ? (
                 <>
-                  <Upload size={48} style={{color: '#94a3b8', margin: '0 auto 15px'}} />
+                  <ArrowUpTrayIcon size={48} style={{color: '#94a3b8', margin: '0 auto 15px'}} />
                   <h4 style={{margin: '0 0 8px 0', fontSize: '16px', color: '#1f2937'}}>
                     Kéo thả file Excel (.xls, .xlsx) hoặc CSV vào đây
                   </h4>
@@ -413,7 +413,7 @@ export default function ClassManagement() {
                       transition: 'all 0.3s'
                     }}
                   >
-                    <Upload size={16} style={{display: 'inline', marginRight: '8px'}} />
+                    <ArrowUpTrayIcon size={16} style={{display: 'inline', marginRight: '8px'}} />
                     Chọn file từ máy tính
                   </label>
                   <div style={{marginTop: '12px', fontSize: '13px', color: '#64748b'}}>
@@ -422,7 +422,7 @@ export default function ClassManagement() {
                 </>
               ) : (
                 <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px'}}>
-                  <CheckCircle size={32} style={{color: '#10b981'}} />
+                  <CheckCircleIcon size={32} style={{color: '#10b981'}} />
                   <div style={{textAlign: 'left'}}>
                     <div style={{fontSize: '15px', fontWeight: '600', color: '#1f2937'}}>
                       {importFile.name}
@@ -647,7 +647,7 @@ export default function ClassManagement() {
               </>
             ) : (
               <>
-                <Upload size={18} />
+                <ArrowUpTrayIcon size={18} />
                 Import học sinh
               </>
             )}
@@ -659,15 +659,15 @@ export default function ClassManagement() {
 
   const getFileIcon = (type) => {
     const icons = {
-      presentation: <Presentation size={24} className="file-type-icon presentation" />,
-      document: <FileText size={24} className="file-type-icon document" />,
-      pdf: <FileText size={24} className="file-type-icon pdf" />,
-      image: <FileText size={24} className="file-type-icon image" />,
-      audio: <FileText size={24} className="file-type-icon audio" />,
-      video: <FileText size={24} className="file-type-icon video" />,
-      text: <FileText size={24} className="file-type-icon text" />
+      presentation: <PresentationChartBarIcon size={24} className="file-type-icon presentation" />,
+      document: <DocumentTextIcon size={24} className="file-type-icon document" />,
+      pdf: <DocumentTextIcon size={24} className="file-type-icon pdf" />,
+      image: <DocumentTextIcon size={24} className="file-type-icon image" />,
+      audio: <DocumentTextIcon size={24} className="file-type-icon audio" />,
+      video: <DocumentTextIcon size={24} className="file-type-icon video" />,
+      text: <DocumentTextIcon size={24} className="file-type-icon text" />
     };
-    return icons[type] || <FileText size={24} className="file-type-icon" />;
+    return icons[type] || <DocumentTextIcon size={24} className="file-type-icon" />;
   };
 
   const renderMaterialsModal = () => (
@@ -682,7 +682,7 @@ export default function ClassManagement() {
           {/* Upload Form */}
           <form onSubmit={handleFileUpload} className="material-upload-form" style={{marginBottom: '30px', padding: '24px', background: 'linear-gradient(135deg, #667eea15 0%, #764ba215 100%)', borderRadius: '12px', border: '2px dashed #667eea50'}}>
             <h3 style={{marginBottom: '20px', fontSize: '18px', fontWeight: '700', color: '#667eea', display: 'flex', alignItems: 'center', gap: '8px'}}>
-              <Upload size={22} />
+              <ArrowUpTrayIcon size={22} />
               Tải lên tài liệu mới
             </h3>
             <div style={{display: 'grid', gap: '18px'}}>
@@ -765,7 +765,7 @@ export default function ClassManagement() {
                   <label htmlFor="file-upload-input" style={{cursor: 'pointer', display: 'block'}}>
                     {uploadFile ? (
                       <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px'}}>
-                        <FileText size={32} color="#667eea" />
+                        <DocumentTextIcon size={32} color="#667eea" />
                         <div style={{textAlign: 'left'}}>
                           <div style={{fontWeight: '600', color: '#1f2937', marginBottom: '4px'}}>
                             {uploadFile.name}
@@ -797,7 +797,7 @@ export default function ClassManagement() {
                       </div>
                     ) : (
                       <div>
-                        <Upload size={40} color="#9ca3af" style={{marginBottom: '12px'}} />
+                        <ArrowUpTrayIcon size={40} color="#9ca3af" style={{marginBottom: '12px'}} />
                         <div style={{fontSize: '14px', color: '#374151', fontWeight: '600', marginBottom: '4px'}}>
                           Kéo thả file vào đây hoặc click để chọn
                         </div>
@@ -841,7 +841,7 @@ export default function ClassManagement() {
                 </>
               ) : (
                 <>
-                  <Upload size={18} style={{marginRight: '8px'}} />
+                  <ArrowUpTrayIcon size={18} style={{marginRight: '8px'}} />
                   Tải lên tài liệu
                 </>
               )}
@@ -859,7 +859,7 @@ export default function ClassManagement() {
               </div>
             ) : materials.length === 0 ? (
               <div className="empty-state-class">
-                <FileText size={48} strokeWidth={1} />
+                <DocumentTextIcon size={48} strokeWidth={1} />
                 <p>Chưa có tài liệu nào</p>
               </div>
             ) : (
@@ -902,7 +902,7 @@ export default function ClassManagement() {
                         className="btn-action-class secondary"
                         style={{flexShrink: 0}}
                       >
-                        <Download size={16} />
+                        <ArrowDownTrayIcon size={16} />
                         Tải về
                       </a>
                     )}
@@ -934,7 +934,7 @@ export default function ClassManagement() {
         {/* Classes List */}
         <div className="classes-sidebar">
           <div className="sidebar-title">
-            <Users size={20} />
+            <UserGroupIcon size={20} />
       <span>Lớp học của tôi</span>
           </div>
           <div className="classes-list">
@@ -954,7 +954,7 @@ export default function ClassManagement() {
                   onClick={() => setSelectedClass(cls)}
                 >
                   <div className="class-item-icon">
-                    <Users size={18} />
+                    <UserGroupIcon size={18} />
                   </div>
                   <div className="class-item-info">
                     <div className="class-item-name">{cls.name}</div>
@@ -971,7 +971,7 @@ export default function ClassManagement() {
         <div className="students-panel">
           {!selectedClass ? (
             <div className="empty-state-class">
-              <Users size={80} strokeWidth={1} />
+              <UserGroupIcon size={80} strokeWidth={1} />
               <h3>Chọn lớp học</h3>
               <p>Chọn một lớp học bên trái để xem danh sách học sinh</p>
             </div>
@@ -985,18 +985,18 @@ export default function ClassManagement() {
                 </div>
                 <div className="panel-header-actions">
                   <button className="btn-action-class primary" onClick={() => setShowAddModal(true)}>
-                    <UserPlus size={18} />
+                    <UserPlusIcon size={18} />
                     Thêm học sinh
                   </button>
                   <button className="btn-action-class secondary" onClick={() => setShowImportModal(true)}>
-                    <Upload size={18} />
+                    <ArrowUpTrayIcon size={18} />
                     Import Excel
                   </button>
                   <button className="btn-action-class secondary" onClick={() => {
                     setShowMaterialsModal(true);
                     fetchMaterials(selectedClass.id);
                   }}>
-                    <FileText size={18} />
+                    <DocumentTextIcon size={18} />
                     Tài liệu lớp học
                   </button>
                 </div>
@@ -1004,7 +1004,7 @@ export default function ClassManagement() {
 
               {/* Search Bar */}
               <div className="search-bar-class">
-                <Search size={20} className="search-icon" />
+                <MagnifyingGlassIcon size={20} className="search-icon" />
                 <input
                   type="text"
                   placeholder="Tìm kiếm học sinh theo tên hoặc email..."
@@ -1022,7 +1022,7 @@ export default function ClassManagement() {
                   </div>
                 ) : filteredStudents.length === 0 ? (
                   <div className="empty-search-state">
-                    <Search size={48} strokeWidth={1} />
+                    <MagnifyingGlassIcon size={48} strokeWidth={1} />
           <p>{searchTerm ? 'Không tìm thấy học sinh nào' : 'Chưa có học sinh trong lớp'}</p>
                   </div>
                 ) : (
@@ -1030,12 +1030,12 @@ export default function ClassManagement() {
                     <div key={student.id} className="student-row">
                       <div className="student-row-left">
                         <div className="student-avatar">
-                          <User size={20} />
+                          <UserIcon size={20} />
                         </div>
                         <div className="student-info">
                           <div className="student-name">{student.name}</div>
                           <div className="student-email">
-                            <Mail size={14} />
+                            <EnvelopeIcon size={14} />
                             {student.email}
                           </div>
                         </div>
@@ -1044,12 +1044,12 @@ export default function ClassManagement() {
                         <div className={`student-status ${student.status}`}>
                           {student.status === 'active' ? (
                             <>
-                <CheckCircle size={14} />
+                <CheckCircleIcon size={14} />
                 <span>Đang học</span>
                             </>
                           ) : (
                             <>
-                <XCircle size={14} />
+                <XCircleIcon size={14} />
                 <span>Nghỉ học</span>
                             </>
                           )}
@@ -1059,7 +1059,7 @@ export default function ClassManagement() {
               title="Xóa học sinh"
                           onClick={() => handleRemoveStudent(student.id)}
                         >
-                          <Trash2 size={16} />
+                          <TrashIcon size={16} />
                         </button>
                       </div>
                     </div>
@@ -1079,7 +1079,7 @@ export default function ClassManagement() {
       {/* Info Box */}
       <div className="info-box-class">
         <div className="info-icon-class">
-          <Users size={24} />
+          <UserGroupIcon size={24} />
         </div>
         <div className="info-content-class">
           <h4>Hướng dẫn quản lý học sinh</h4>

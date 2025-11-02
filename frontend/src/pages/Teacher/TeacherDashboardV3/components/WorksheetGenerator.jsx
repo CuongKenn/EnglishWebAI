@@ -5,7 +5,7 @@ import { Input } from '../../../../components/ui/input';
 import { Label } from '../../../../components/ui/label';
 import { Textarea } from '../../../../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
-import { Wand2, Download, Eye } from 'lucide-react';
+import { SparklesIcon, ArrowDownTrayIcon, EyeIcon } from '@heroicons/react/24/outline';
 
 const WorksheetGenerator = () => {
   const [formData, setFormData] = useState({
@@ -49,7 +49,7 @@ const WorksheetGenerator = () => {
     <div className="p-8">
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
-          <Wand2 className="w-8 h-8 text-purple-600" />
+          <SparklesIcon className="w-8 h-8 text-purple-600" />
           <h1 className="text-3xl font-bold text-gray-900">Trợ lý soạn phiếu học tập</h1>
         </div>
         <p className="text-gray-600">Tạo phiếu đánh giá kỹ năng tự động bằng AI theo chương trình học</p>
@@ -136,7 +136,7 @@ const WorksheetGenerator = () => {
             </div>
 
             <Button onClick={handleGenerate} disabled={loading} className="w-full gap-2 h-12">
-              <Wand2 size={20} />
+              <SparklesIcon size={20} />
               {loading ? 'Đang tạo phiếu...' : 'Tạo phiếu bằng AI'}
             </Button>
           </div>
@@ -148,7 +148,7 @@ const WorksheetGenerator = () => {
           
           {!generatedWorksheet ? (
             <div className="flex flex-col items-center justify-center h-96 text-gray-400">
-              <Wand2 size={64} className="mb-4" />
+              <SparklesIcon size={64} className="mb-4" />
               <p>Nhấn "Tạo phiếu bằng AI" để xem kết quả</p>
             </div>
           ) : (
@@ -190,11 +190,11 @@ const WorksheetGenerator = () => {
 
               <div className="flex gap-2 pt-4">
                 <Button className="flex-1 gap-2">
-                  <Download size={16} />
+                  <ArrowDownTrayIcon size={16} />
                   Xuất file
                 </Button>
                 <Button variant="outline" className="flex-1 gap-2">
-                  <Eye size={16} />
+                  <EyeIcon size={16} />
                   Xem đầy đủ
                 </Button>
               </div>
