@@ -1,6 +1,22 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+// Dynamically determine the API base URL based on environment
+const getApiBaseUrl = () => {
+  // If VITE_API_BASE_URL is set, use it
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL;
+  }
+  
+  // In production, use relative path with /api prefix (handled by Nginx proxy)
+  if (import.meta.env.PROD) {
+    return '/api/v1';
+  }
+  
+  // In development, use localhost
+  return 'http://localhost:8000/api/v1';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 // Tạo axios instance với config mặc định
 const aiApiClient = axios.create({

@@ -1,6 +1,22 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+// Dynamically determine the API URL based on environment
+const getApiUrl = () => {
+  // If VITE_API_URL is set, use it
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  
+  // In production, use relative path (handled by Nginx proxy)
+  if (import.meta.env.PROD) {
+    return '';
+  }
+  
+  // In development, use localhost
+  return 'http://localhost:8000';
+};
+
+const API_URL = getApiUrl();
 const TRANSLATION_API = `${API_URL}/api/v1/translation`;
 
 /**
