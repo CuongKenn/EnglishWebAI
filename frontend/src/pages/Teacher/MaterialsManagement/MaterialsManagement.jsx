@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './MaterialsManagement.css';
 import apiClient from '../../../services/api';
+import { DocumentIcon, LinkIcon, FilmIcon, DocumentTextIcon, BookOpenIcon } from '@heroicons/react/24/outline';
 
 const MaterialsManagement = () => {
   const [materials, setMaterials] = useState([]);
@@ -126,11 +127,11 @@ const MaterialsManagement = () => {
 
   const getTypeIcon = (type) => {
     switch(type) {
-      case 'file': return '📄';
-      case 'link': return '🔗';
-      case 'video': return '🎥';
-      case 'text': return '📝';
-      default: return '📚';
+      case 'file': return <DocumentIcon className="w-5 h-5" />;
+      case 'link': return <LinkIcon className="w-5 h-5" />;
+      case 'video': return <FilmIcon className="w-5 h-5" />;
+      case 'text': return <DocumentTextIcon className="w-5 h-5" />;
+      default: return <BookOpenIcon className="w-5 h-5" />;
     }
   };
 
