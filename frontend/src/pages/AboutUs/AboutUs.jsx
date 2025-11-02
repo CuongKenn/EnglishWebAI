@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookMarked, Target, Trophy, Users, Bot, Mic, BarChart, MessageSquare } from 'lucide-react';
+import { 
+  BookOpenIcon, ChartBarIcon, TrophyIcon, UserGroupIcon,
+  CpuChipIcon, MicrophoneIcon, ChartBarIcon as AnalyticsIcon, 
+  ChatBubbleLeftRightIcon 
+} from '@heroicons/react/24/outline';
 import './AboutUs.css';
 
 const AboutUs = () => {
@@ -380,25 +384,25 @@ const AboutUs = () => {
         <div className="tech-content">
           <div className="tech-showcase">
             <div className="tech-item">
-              <div className="tech-icon"><Bot size={32} /></div>
+              <div className="tech-icon"><CpuChipIcon className="w-8 h-8" /></div>
               <h4>OpenAI GPT-4</h4>
               <p>Chấm điểm tự động các dạng bài tập phức tạp, tạo nội dung học tập cá nhân hóa</p>
             </div>
 
             <div className="tech-item">
-              <div className="tech-icon"><Mic size={32} /></div>
+              <div className="tech-icon"><MicrophoneIcon className="w-8 h-8" /></div>
               <h4>Azure Speech SDK</h4>
               <p>Đánh giá phát âm, độ chính xác và độ trôi chảy khi nói tiếng Anh</p>
             </div>
 
             <div className="tech-item">
-              <div className="tech-icon"><BarChart size={32} /></div>
+              <div className="tech-icon"><AnalyticsIcon className="w-8 h-8" /></div>
               <h4>Analytics Dashboard</h4>
               <p>Phân tích chi tiết tiến độ học tập với biểu đồ trực quan và báo cáo thông minh</p>
             </div>
 
             <div className="tech-item">
-              <div className="tech-icon"><MessageSquare size={32} /></div>
+              <div className="tech-icon"><ChatBubbleLeftRightIcon className="w-8 h-8" /></div>
               <h4>Real-time Communication</h4>
               <p>Hệ thống tin nhắn, thông báo và tương tác thời gian thực</p>
             </div>
@@ -443,19 +447,19 @@ const AboutUs = () => {
           <div className="vision-image">
             <div className="floating-elements">
               <div className="floating-card card-1">
-                <span className="card-icon"><BookMarked size={24} /></span>
+                <span className="card-icon"><BookOpenIcon className="w-6 h-6" /></span>
                 <span>Học liệu phong phú</span>
               </div>
               <div className="floating-card card-2">
-                <span className="card-icon"><Target size={24} /></span>
+                <span className="card-icon"><ChartBarIcon className="w-6 h-6" /></span>
                 <span>Mục tiêu rõ ràng</span>
               </div>
               <div className="floating-card card-3">
-                <span className="card-icon"><Trophy size={24} /></span>
+                <span className="card-icon"><TrophyIcon className="w-6 h-6" /></span>
                 <span>Thành tích vượt trội</span>
               </div>
               <div className="floating-card card-4">
-                <span className="card-icon"><Users size={24} /></span>
+                <span className="card-icon"><UserGroupIcon className="w-6 h-6" /></span>
                 <span>Cộng đồng học tập</span>
               </div>
             </div>

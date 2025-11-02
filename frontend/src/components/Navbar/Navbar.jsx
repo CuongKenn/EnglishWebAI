@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, BookOpen, Users, MessageSquare, Mail, Bell, Settings, LogOut, User, Menu, X, ChevronDown, Sparkles, GraduationCap } from 'lucide-react';
+import { 
+  HomeIcon, BookOpenIcon, UserGroupIcon, ChatBubbleLeftRightIcon, 
+  EnvelopeIcon, BellIcon, Cog6ToothIcon, ArrowRightOnRectangleIcon, 
+  UserIcon, Bars3Icon, XMarkIcon, ChevronDownIcon, SparklesIcon, 
+  AcademicCapIcon 
+} from '@heroicons/react/24/outline';
 import ProfileDropdown from '../ProfileDropdown/ProfileDropdown';
 import AuthModal from './AuthModal';
 import authService from '../../services/authService';
@@ -121,7 +126,7 @@ const Navbar = ({ userRole = 'student', isLoggedIn: isLoggedInProp = false, onLo
         {/* Logo */}
         <div className="navbar-brand">
           <Link to="/" className="brand-link">
-            <GraduationCap className="brand-icon" size={28} />
+            <AcademicCapIcon className="brand-icon" style={{width: 28, height: 28}} />
             <span className="brand-text">Smart Learn</span>
           </Link>
         </div>

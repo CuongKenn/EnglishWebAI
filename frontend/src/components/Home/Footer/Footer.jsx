@@ -1,5 +1,5 @@
 import React from 'react';
-import { GraduationCap } from 'lucide-react';
+import { AcademicCapIcon } from '@heroicons/react/24/outline';
 import './Footer.css';
 
 const Footer = () => {
@@ -9,7 +9,7 @@ const Footer = () => {
         {/* Logo và mô tả */}
         <div className="footer-section footer-about">
           <div className="footer-logo">
-            <GraduationCap className="logo-icon" size={32} />
+            <AcademicCapIcon className="logo-icon" style={{width: 32, height: 32}} />
             <h2>Smart Learn</h2>
           </div>
           <p className="footer-description">

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'; 
 import { Link } from 'react-router-dom';
-import { GraduationCap } from 'lucide-react';
+import { AcademicCapIcon } from '@heroicons/react/24/outline';
 import './Header.css';
 
 const Header = ({ userRole = 'student', isLoggedIn = false, onLogout }) => {
@@ -72,7 +72,7 @@ const Header = ({ userRole = 'student', isLoggedIn = false, onLogout }) => {
       {/* Top Header Bar */}
       <div className="header-top">
         <div className="logo">
-          <GraduationCap className="logo-icon" size={32} />
+          <AcademicCapIcon className="logo-icon" style={{width: 32, height: 32}} />
           <span className="logo-text">Smart Learn</span>
         </div>
         <div className="search-bar">

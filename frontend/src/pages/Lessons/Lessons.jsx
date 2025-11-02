@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
-  TrendingUp, Clock, Award, CheckCircle, Circle,
-  Calendar, BarChart3, Sparkles, Play, ChevronRight, BookOpen, Target, GraduationCap
-} from 'lucide-react';
+  ArrowTrendingUpIcon, ClockIcon, TrophyIcon, CheckCircleIcon, 
+  CalendarIcon, ChartBarIcon, SparklesIcon, PlayIcon, 
+  ChevronRightIcon, BookOpenIcon, BoltIcon, AcademicCapIcon
+} from '@heroicons/react/24/outline';
+import { CircleIcon } from '@heroicons/react/24/solid';
 import ConsistentSidebarLayout from '../../components/Layout/ConsistentSidebarLayout';
 import './Lessons.css';
 
@@ -81,9 +83,9 @@ const Lessons = () => {
             </div>
             <div className="mascot-container">
               <div className="mascot">
-                <GraduationCap className="mascot-icon" size={48} strokeWidth={2} />
-                <Sparkles className="sparkle sparkle-1" size={20} />
-                <Sparkles className="sparkle sparkle-2" size={16} />
+                <AcademicCapIcon className="mascot-icon" style={{width: 48, height: 48, strokeWidth: 2}} />
+                <SparklesIcon className="sparkle sparkle-1" style={{width: 20, height: 20}} />
+                <SparklesIcon className="sparkle sparkle-2" style={{width: 16, height: 16}} />
               </div>
             </div>
           </div>
@@ -193,18 +195,18 @@ const Lessons = () => {
                   <span>50%</span>
                 </div>
                 <div className={`milestone ${studyProgress.progress >= 75 ? 'achieved' : ''}`}>
-                  <div className="milestone-icon"><Award size={24} /></div>
+                  <div className="milestone-icon"><TrophyIcon className="w-6 h-6" /></div>
                   <span>75%</span>
                 </div>
                 <div className={`milestone ${studyProgress.progress >= 100 ? 'achieved' : ''}`}>
-                  <div className="milestone-icon"><Trophy size={24} /></div>
+                  <div className="milestone-icon"><TrophyIcon className="w-6 h-6" /></div>
                   <span>100%</span>
                 </div>
               </div>
 
               {/* Motivation Box */}
               <div className="motivation-box-modern">
-                <div className="motivation-icon"><Zap size={24} /></div>
+                <div className="motivation-icon"><BoltIcon className="w-6 h-6" /></div>
                 <div className="motivation-content">
                   <p className="motivation-title">Bạn đang làm rất tốt!</p>
                   <p className="motivation-text">
@@ -217,12 +219,12 @@ const Lessons = () => {
               {/* Action Buttons */}
               <div className="progress-actions">
                 <button className="continue-learning-btn-modern">
-                  <Play size={20} />
+                  <PlayIcon className="w-5 h-5" />
                   <span>Tiếp tục học</span>
-                  <ChevronRight size={20} />
+                  <ChevronRightIcon className="w-5 h-5" />
                 </button>
                 <button className="view-details-btn">
-                  <BarChart3 size={20} />
+                  <ChartBarIcon className="w-5 h-5" />
                   <span>Xem chi tiết</span>
                 </button>
               </div>
