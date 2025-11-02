@@ -2,6 +2,22 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './TeacherOverview.css';
 import apiClient from '../../../services/api';
+import { 
+  AcademicCapIcon, 
+  UserGroupIcon, 
+  DocumentTextIcon, 
+  ChartBarIcon,
+  BellIcon,
+  MagnifyingGlassIcon,
+  ClockIcon,
+  PaperAirplaneIcon,
+  CheckCircleIcon,
+  BuildingOffice2Icon,
+  BookOpenIcon,
+  PlusIcon,
+  ExclamationTriangleIcon,
+  CalendarIcon
+} from '@heroicons/react/24/outline';
 
 const TeacherOverview = () => {
   const navigate = useNavigate();
@@ -64,15 +80,17 @@ const TeacherOverview = () => {
     <div className="teacher-overview">
       <div className="overview-header">
         <div>
-          <h1 className="page-title">Xin chào, Giáo viên! 👋</h1>
+          <h1 className="page-title">Xin chào, Giáo viên!</h1>
           <p className="page-subtitle">Đây là tổng quan về hoạt động giảng dạy của bạn</p>
         </div>
         <div className="header-actions">
           <button className="btn-icon" title="Thông báo">
             <span className="notification-badge">3</span>
-            🔔
+            <BellIcon className="w-5 h-5" />
           </button>
-          <button className="btn-icon" title="Tìm kiếm">🔍</button>
+          <button className="btn-icon" title="Tìm kiếm">
+            <MagnifyingGlassIcon className="w-5 h-5" />
+          </button>
         </div>
       </div>
 
@@ -80,7 +98,7 @@ const TeacherOverview = () => {
       <div className="stats-grid">
         <div className="stat-card blue-gradient">
           <div className="stat-icon-wrapper blue">
-            <span className="stat-icon">🏫</span>
+            <BuildingOffice2Icon className="w-8 h-8" />
           </div>
           <div className="stat-content">
             <div className="stat-label">Tổng số lớp học</div>
@@ -91,7 +109,7 @@ const TeacherOverview = () => {
 
         <div className="stat-card orange-gradient">
           <div className="stat-icon-wrapper orange">
-            <span className="stat-icon">👥</span>
+            <UserGroupIcon className="w-8 h-8" />
           </div>
           <div className="stat-content">
             <div className="stat-label">Tổng số học sinh</div>
@@ -102,23 +120,27 @@ const TeacherOverview = () => {
 
         <div className="stat-card purple-gradient">
           <div className="stat-icon-wrapper purple">
-            <span className="stat-icon">📝</span>
+            <DocumentTextIcon className="w-8 h-8" />
           </div>
           <div className="stat-content">
             <div className="stat-label">Bài tập chờ chấm</div>
             <div className="stat-value">{stats.pendingSubmissions}</div>
-            <div className="stat-trend warning">⚠ Cần xử lý</div>
+            <div className="stat-trend warning">
+              <ExclamationTriangleIcon className="w-4 h-4 inline" /> Cần xử lý
+            </div>
           </div>
         </div>
 
         <div className="stat-card green-gradient">
           <div className="stat-icon-wrapper green">
-            <span className="stat-icon">📊</span>
+            <ChartBarIcon className="w-8 h-8" />
           </div>
           <div className="stat-content">
             <div className="stat-label">Bài kiểm tra sắp tới</div>
             <div className="stat-value">{stats.upcomingTests}</div>
-            <div className="stat-trend">📅 Tuần này</div>
+            <div className="stat-trend">
+              <CalendarIcon className="w-4 h-4 inline" /> Tuần này
+            </div>
           </div>
         </div>
       </div>
@@ -139,7 +161,9 @@ const TeacherOverview = () => {
                 <div className={`class-color-bar ${cls.color}`}></div>
                 <div className="class-info">
                   <h4 className="class-name">{cls.name}</h4>
-                  <p className="class-time">⏰ {cls.time}</p>
+                  <p className="class-time">
+                    <ClockIcon className="w-4 h-4 inline" /> {cls.time}
+                  </p>
                 </div>
                 <div className="class-students">
                   <span className="student-count">{cls.students} HS</span>
@@ -159,10 +183,10 @@ const TeacherOverview = () => {
             {recentActivities.map(activity => (
               <div key={activity.id} className="activity-item">
                 <div className={`activity-icon ${activity.type}`}>
-                  {activity.type === 'submission' && '📤'}
-                  {activity.type === 'grade' && '✅'}
-                  {activity.type === 'class' && '🏫'}
-                  {activity.type === 'material' && '📚'}
+                  {activity.type === 'submission' && <PaperAirplaneIcon className="w-5 h-5" />}
+                  {activity.type === 'grade' && <CheckCircleIcon className="w-5 h-5" />}
+                  {activity.type === 'class' && <BuildingOffice2Icon className="w-5 h-5" />}
+                  {activity.type === 'material' && <BookOpenIcon className="w-5 h-5" />}
                 </div>
                 <div className="activity-content">
                   <p className="activity-text">{activity.text}</p>
@@ -183,28 +207,28 @@ const TeacherOverview = () => {
               className="quick-action-btn blue"
               onClick={() => navigate('/teacher-dashboard/assignments')}
             >
-              <span className="action-icon">➕</span>
+              <PlusIcon className="w-5 h-5" />
               <span className="action-text">Tạo bài tập mới</span>
             </button>
             <button 
               className="quick-action-btn green"
               onClick={() => navigate('/teacher-dashboard/grading')}
             >
-              <span className="action-icon">✅</span>
+              <CheckCircleIcon className="w-5 h-5" />
               <span className="action-text">Chấm điểm</span>
             </button>
             <button 
               className="quick-action-btn purple"
               onClick={() => navigate('/teacher-dashboard/materials')}
             >
-              <span className="action-icon">📚</span>
+              <BookOpenIcon className="w-5 h-5" />
               <span className="action-text">Thêm học liệu</span>
             </button>
             <button 
               className="quick-action-btn orange"
               onClick={() => navigate('/teacher-dashboard/statistics')}
             >
-              <span className="action-icon">📊</span>
+              <ChartBarIcon className="w-5 h-5" />
               <span className="action-text">Xem báo cáo</span>
             </button>
           </div>
