@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { 
   ClipboardDocumentListIcon, SparklesIcon, CalendarIcon, BookOpenIcon, SpeakerWaveIcon, PencilSquareIcon, ChatBubbleLeftRightIcon, 
-  PlusIcon, TrashIcon, EyeIcon, ArrowDownTrayIcon, DocumentChartBarIcon, UserGroupIcon, ArrowTrendingUpIcon, TrophyIcon, FunnelIcon
+  PlusIcon, TrashIcon, EyeIcon, ArrowDownTrayIcon, DocumentChartBarIcon, UserGroupIcon, ArrowTrendingUpIcon, TrophyIcon, FunnelIcon,
+  ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import { Card } from '../../../components/ui/card';
 import { apiV1 } from '../../../services/api';
@@ -383,7 +384,7 @@ export default function WeeklyAssessments() {
 
         {error && (
           <div className="bg-red-100 border-2 border-red-200 text-red-800 px-4 py-3 rounded-lg mb-4 flex items-center gap-2">
-            <span className="text-2xl">⚠️</span>
+            <ExclamationTriangleIcon className="w-6 h-6" />
             <span>{error}</span>
           </div>
         )}
