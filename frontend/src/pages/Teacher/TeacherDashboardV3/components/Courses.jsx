@@ -4,7 +4,7 @@ import { Button } from '../../../../components/ui/button';
 import { Input } from '../../../../components/ui/input';
 import { Badge } from '../../../../components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../../../../components/ui/dialog';
-import { Plus, Search, Upload, BookOpen, Users, Clock, Edit, Trash2, Eye, PlayCircle, Loader2 } from 'lucide-react';
+import { Plus, Search, Upload, BookOpen, Users, Clock, Edit, Trash2, Eye, PlayCircle, Loader2, MessageSquare, PenLine, Headphones, BookMarked, FileText } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../../components/ui/tabs';
 import { Label } from '../../../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
@@ -99,17 +99,17 @@ const Courses = () => {
     }
   };
 
-  // Get skill emoji
-  const getSkillEmoji = (skill) => {
-    const emojiMap = {
-      'speaking': '🗣️',
-      'writing': '✍️',
-      'reading': '📖',
-      'listening': '🎧',
-      'vocabulary': '📚',
-      'grammar': '📝'
+  // Get skill icon component
+  const getSkillIcon = (skill, size = 16) => {
+    const iconMap = {
+      'speaking': <MessageSquare size={size} />,
+      'writing': <PenLine size={size} />,
+      'reading': <BookOpen size={size} />,
+      'listening': <Headphones size={size} />,
+      'vocabulary': <BookMarked size={size} />,
+      'grammar': <FileText size={size} />
     };
-    return emojiMap[skill] || '📚';
+    return iconMap[skill] || <BookMarked size={size} />;
   };
 
   // Get skill color
@@ -378,7 +378,7 @@ const Courses = () => {
                     course.category === 'listening' ? 'bg-green-100' :
                     course.category === 'vocabulary' ? 'bg-yellow-100' : 'bg-pink-100'
                   }`}>
-                    {getSkillEmoji(course.category)}
+                    {getSkillIcon(course.category, 24)}
                   </div>
                   <Badge className="absolute top-3 right-3 bg-orange-500 text-white">
                     {course.level}
