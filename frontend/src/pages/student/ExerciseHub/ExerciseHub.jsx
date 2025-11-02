@@ -1,6 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileText, Trophy, BarChart3, CheckCircle, Clock, AlertCircle, Award, Star, Calendar, Eye, Edit3, Headphones, MessageSquare, BookOpen, PenTool, Target } from 'lucide-react';
+import { 
+  DocumentTextIcon, TrophyIcon, ChartBarIcon, CheckCircleIcon, 
+  ClockIcon, ExclamationCircleIcon, CalendarIcon, 
+  EyeIcon, PencilIcon, PhoneIcon as HeadphonesIcon, 
+  ChatBubbleLeftRightIcon, BookOpenIcon, PencilSquareIcon
+} from '@heroicons/react/24/outline';
+import { StarIcon } from '@heroicons/react/24/solid';
 import './ExerciseHub.css';
 import studentService from '../../../services/studentService';
 import examService from '../../../services/examService';
@@ -10,43 +16,43 @@ function ExerciseSidebar({ activeTab, onTabChange }) {
   const menuItems = [
     {
       id: "all",
-      icon: FileText,
+      icon: DocumentTextIcon,
       label: "Tất cả bài tập",
       gradient: "from-blue-500 to-cyan-500",
     },
     {
       id: "listening",
-      icon: Headphones,
+      icon: HeadphonesIcon,
       label: "Bài tập Nghe",
       gradient: "from-green-500 to-emerald-500",
     },
     {
       id: "speaking",
-      icon: MessageSquare,
+      icon: ChatBubbleLeftRightIcon,
       label: "Bài tập Nói",
       gradient: "from-purple-500 to-pink-500",
     },
     {
       id: "reading",
-      icon: BookOpen,
+      icon: BookOpenIcon,
       label: "Bài tập Đọc",
       gradient: "from-indigo-500 to-blue-500",
     },
     {
       id: "writing",
-      icon: PenTool,
+      icon: PencilSquareIcon,
       label: "Bài tập Viết",
       gradient: "from-orange-500 to-red-500",
     },
     {
       id: "tests",
-      icon: AlertCircle,
+      icon: ExclamationCircleIcon,
       label: "Bài kiểm tra",
       gradient: "from-red-500 to-pink-500",
     },
     {
       id: "grades",
-      icon: BarChart3,
+      icon: ChartBarIcon,
       label: "Điểm & Tiến độ",
       gradient: "from-pink-500 to-rose-500",
     },
@@ -58,7 +64,7 @@ function ExerciseSidebar({ activeTab, onTabChange }) {
       <div className="sidebar-header">
         <div className="sidebar-header-content">
           <div className="sidebar-icon-wrapper">
-            <Target className="sidebar-icon" />
+            <ChartBarIcon className="sidebar-icon" />
           </div>
           <div>
             <h2 className="sidebar-title">Exercise Hub</h2>
@@ -84,7 +90,7 @@ function ExerciseSidebar({ activeTab, onTabChange }) {
                 
                 <div className="menu-item-content">
                   <div className={`menu-item-icon ${item.gradient}`}>
-                    <Icon size={20} />
+                    <Icon className="w-5 h-5" />
                   </div>
                   
                   <div className="menu-item-text">
@@ -263,7 +269,7 @@ export default function ExerciseHub() {
           </div>
           {score !== null && score !== undefined && (
             <div className="card-score-badge">
-              <Star size={14} fill="currentColor" />
+              <StarIcon className="w-3.5 h-3.5" style={{fill: 'currentColor'}} />
               <span>{score}/{maxScore}</span>
             </div>
           )}
@@ -284,18 +290,18 @@ export default function ExerciseHub() {
 
         <div className="card-meta-new">
           <div className="meta-item-new">
-            <Calendar size={14} />
+            <CalendarIcon className="w-3.5 h-3.5" />
             <span>{exercise.due_at ? new Date(exercise.due_at).toLocaleDateString('vi-VN') : 'Không có hạn'}</span>
           </div>
           <div className="meta-item-new">
-            <Award size={14} />
+            <TrophyIcon className="w-3.5 h-3.5" />
             <span>{maxScore || 0} điểm</span>
           </div>
         </div>
 
         {hasSubmission && hasSubmission.feedback && (
           <div className="card-feedback-new">
-            <Eye size={14} />
+            <EyeIcon className="w-3.5 h-3.5" />
             <span>{hasSubmission.feedback}</span>
           </div>
         )}
@@ -346,7 +352,7 @@ export default function ExerciseHub() {
                   }
                 }}
               >
-                <Edit3 size={16} />
+                <PencilIcon className="w-4 h-4" />
                 <span>Sửa bài</span>
               </button>
             </>
@@ -358,12 +364,12 @@ export default function ExerciseHub() {
 
   const getSkillIcon = (skill) => {
     const icons = {
-      listening: <Headphones size={20} />,
-      speaking: <MessageSquare size={20} />,
-      reading: <BookOpen size={20} />,
-      writing: <PenTool size={20} />
+      listening: <HeadphonesIcon className="w-5 h-5" />,
+      speaking: <ChatBubbleLeftRightIcon className="w-5 h-5" />,
+      reading: <BookOpenIcon className="w-5 h-5" />,
+      writing: <PencilSquareIcon className="w-5 h-5" />
     };
-    return icons[skill] || <FileText size={20} />;
+    return icons[skill] || <DocumentTextIcon className="w-5 h-5" />;
   };
 
   const getSkillName = (skill) => {
@@ -380,10 +386,10 @@ export default function ExerciseHub() {
     if (!skillStats) return null;
     
     const skills = [
-      { key: 'listening', name: 'Kỹ năng Nghe', color: 'from-green-500 to-emerald-500', icon: Headphones },
-      { key: 'speaking', name: 'Kỹ năng Nói', color: 'from-purple-500 to-pink-500', icon: MessageSquare },
-      { key: 'reading', name: 'Kỹ năng Đọc', color: 'from-indigo-500 to-blue-500', icon: BookOpen },
-      { key: 'writing', name: 'Kỹ năng Viết', color: 'from-orange-500 to-red-500', icon: PenTool }
+      { key: 'listening', name: 'Kỹ năng Nghe', color: 'from-green-500 to-emerald-500', icon: HeadphonesIcon },
+      { key: 'speaking', name: 'Kỹ năng Nói', color: 'from-purple-500 to-pink-500', icon: ChatBubbleLeftRightIcon },
+      { key: 'reading', name: 'Kỹ năng Đọc', color: 'from-indigo-500 to-blue-500', icon: BookOpenIcon },
+      { key: 'writing', name: 'Kỹ năng Viết', color: 'from-orange-500 to-red-500', icon: PencilSquareIcon }
     ];
 
     return (
@@ -451,7 +457,7 @@ export default function ExerciseHub() {
                 <div key={skill.key} className="skill-card-new">
                   <div className="skill-header-new">
                     <div className={`skill-icon-new ${skill.color}`}>
-                      <SkillIcon size={24} />
+                      <SkillIcon className="w-6 h-6" />
                     </div>
                     <div className="skill-info-new">
                       <h4>{skill.name}</h4>
