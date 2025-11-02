@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Calendar, GraduationCap, BookOpen, Target,
   Award, TrendingUp, Clock, CheckCircle, Star, Trophy,
-  Zap, Heart, Book, MessageCircle, ChevronRight, BarChart3
+  Zap, Heart, Book, MessageCircle, ChevronRight, BarChart3,
+  Headphones, Mic, PenLine
 } from 'lucide-react';
 import ConsistentSidebarLayout from '../../components/Layout/ConsistentSidebarLayout';
 
@@ -106,22 +107,22 @@ const LearningProfileSimple = () => {
             <h2 style={{ color: '#1e293b', marginBottom: '16px' }}>Kết quả theo kỹ năng</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
               <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '32px', marginBottom: '8px' }}>🎧</div>
+                <div style={{ fontSize: '32px', marginBottom: '8px' }}><Headphones className="inline-block w-8 h-8" /></div>
                 <h4>Nghe</h4>
                 <p style={{ color: '#3b82f6', fontWeight: 'bold' }}>7.5/10</p>
               </div>
               <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '32px', marginBottom: '8px' }}>🗣️</div>
+                <div style={{ fontSize: '32px', marginBottom: '8px' }}><Mic className="inline-block w-8 h-8" /></div>
                 <h4>Nói</h4>
                 <p style={{ color: '#ec4899', fontWeight: 'bold' }}>6.8/10</p>
               </div>
               <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '32px', marginBottom: '8px' }}>📖</div>
+                <div style={{ fontSize: '32px', marginBottom: '8px' }}><BookOpen className="inline-block w-8 h-8" /></div>
                 <h4>Đọc</h4>
                 <p style={{ color: '#10b981', fontWeight: 'bold' }}>8.2/10</p>
               </div>
               <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '32px', marginBottom: '8px' }}>✍️</div>
+                <div style={{ fontSize: '32px', marginBottom: '8px' }}><PenLine className="inline-block w-8 h-8" /></div>
                 <h4>Viết</h4>
                 <p style={{ color: '#f59e0b', fontWeight: 'bold' }}>7.0/10</p>
               </div>
