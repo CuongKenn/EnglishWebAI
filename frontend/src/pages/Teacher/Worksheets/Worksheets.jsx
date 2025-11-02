@@ -1,6 +1,22 @@
 import { useState, useEffect } from 'react';
 import { worksheetsAPI } from '../../../services/api';
-import { X, Plus, Sparkles, Eye, Edit, Trash2, FileText, Clock, Award, Download, FileDown } from 'lucide-react';
+import {
+  XMarkIcon,
+  PlusIcon,
+  SparklesIcon,
+  EyeIcon,
+  PencilIcon,
+  TrashIcon,
+  DocumentTextIcon,
+  ClockIcon,
+  TrophyIcon,
+  ArrowDownTrayIcon,
+  PencilSquareIcon,
+  SpeakerWaveIcon,
+  ChatBubbleLeftRightIcon,
+  BookOpenIcon,
+  CpuChipIcon
+} from '@heroicons/react/24/outline';
 import Toast from '../../../components/Toast/Toast';
 import useToast from '../../../hooks/useToast';
 import './Worksheets.css';
@@ -37,22 +53,22 @@ const Worksheets = () => {
   const [generating, setGenerating] = useState(false);
 
   const worksheetTypes = [
-    { value: 'multiple_choice', label: 'Trắc nghiệm', icon: '✅' },
-    { value: 'essay', label: 'Tự luận', icon: '✍️' },
-    { value: 'fill_in_blank', label: 'Điền khuyết', icon: '📝' },
-    { value: 'topic_based', label: 'Theo chủ đề', icon: '📚' },
-    { value: 'self_study', label: 'Tự học', icon: '🎯' },
-    { value: 'situational', label: 'Tình huống', icon: '💭' },
-    { value: 'mixed', label: 'Kết hợp', icon: '🔀' }
+    { value: 'multiple_choice', label: 'Trắc nghiệm', icon: <DocumentTextIcon className="w-4 h-4" /> },
+    { value: 'essay', label: 'Tự luận', icon: <PencilSquareIcon className="w-4 h-4" /> },
+    { value: 'fill_in_blank', label: 'Điền khuyết', icon: <PencilIcon className="w-4 h-4" /> },
+    { value: 'topic_based', label: 'Theo chủ đề', icon: <BookOpenIcon className="w-4 h-4" /> },
+    { value: 'self_study', label: 'Tự học', icon: <SparklesIcon className="w-4 h-4" /> },
+    { value: 'situational', label: 'Tình huống', icon: <ChatBubbleLeftRightIcon className="w-4 h-4" /> },
+    { value: 'mixed', label: 'Kết hợp', icon: <DocumentTextIcon className="w-4 h-4" /> }
   ];
 
   const skillOptions = [
-    { value: 'listening', label: 'Listening', icon: '🎧' },
-    { value: 'speaking', label: 'Speaking', icon: '🗣️' },
-    { value: 'reading', label: 'Reading', icon: '📖' },
-    { value: 'writing', label: 'Writing', icon: '✍️' },
-    { value: 'grammar', label: 'Grammar', icon: '📚' },
-    { value: 'vocabulary', label: 'Vocabulary', icon: '📝' }
+    { value: 'listening', label: 'Listening', icon: <SpeakerWaveIcon className="w-4 h-4" /> },
+    { value: 'speaking', label: 'Speaking', icon: <ChatBubbleLeftRightIcon className="w-4 h-4" /> },
+    { value: 'reading', label: 'Reading', icon: <BookOpenIcon className="w-4 h-4" /> },
+    { value: 'writing', label: 'Writing', icon: <PencilSquareIcon className="w-4 h-4" /> },
+    { value: 'grammar', label: 'Grammar', icon: <BookOpenIcon className="w-4 h-4" /> },
+    { value: 'vocabulary', label: 'Vocabulary', icon: <DocumentTextIcon className="w-4 h-4" /> }
   ];
 
   const difficultyOptions = [
@@ -203,11 +219,11 @@ const Worksheets = () => {
   };
 
   const getTypeIcon = (type) => {
-    return worksheetTypes.find(t => t.value === type)?.icon || '📄';
+    return worksheetTypes.find(t => t.value === type)?.icon || <DocumentTextIcon className="w-4 h-4" />;
   };
 
   const getSkillIcon = (skill) => {
-    return skillOptions.find(s => s.value === skill)?.icon || '📚';
+    return skillOptions.find(s => s.value === skill)?.icon || <BookOpenIcon className="w-4 h-4" />;
   };
 
   const getDifficultyColor = (level) => {
@@ -220,7 +236,7 @@ const Worksheets = () => {
       <div className="ws-header">
         <div className="ws-header-left">
           <div className="ws-header-icon">
-            <FileText size={32} />
+            <DocumentTextIcon className="w-8 h-8" />
           </div>
           <div>
             <h1 className="ws-title">Quản lý Phiếu học tập</h1>
@@ -229,7 +245,7 @@ const Worksheets = () => {
         </div>
         <div className="ws-header-actions">
           <button className="ws-btn ws-btn-ai" onClick={() => setShowAIModal(true)}>
-            <Sparkles size={18} />
+            <SparklesIcon className="w-4.5 h-4.5" />
             <span>Tạo bằng AI</span>
           </button>
         </div>
@@ -269,28 +285,28 @@ const Worksheets = () => {
       {/* Stats */}
       <div className="ws-stats">
         <div className="ws-stat-card">
-          <div className="ws-stat-icon">📝</div>
+          <div className="ws-stat-icon"><DocumentTextIcon className="w-6 h-6" /></div>
           <div className="ws-stat-info">
             <div className="ws-stat-value">{worksheets.length}</div>
             <div className="ws-stat-label">Tổng phiếu</div>
           </div>
         </div>
         <div className="ws-stat-card">
-          <div className="ws-stat-icon">🤖</div>
+          <div className="ws-stat-icon"><CpuChipIcon className="w-6 h-6" /></div>
           <div className="ws-stat-info">
             <div className="ws-stat-value">{worksheets.filter(w => w.ai_generated === 1).length}</div>
             <div className="ws-stat-label">Tạo bằng AI</div>
           </div>
         </div>
         <div className="ws-stat-card">
-          <div className="ws-stat-icon">✅</div>
+          <div className="ws-stat-icon"><DocumentTextIcon className="w-6 h-6" /></div>
           <div className="ws-stat-info">
             <div className="ws-stat-value">{worksheets.filter(w => w.worksheet_type === 'multiple_choice').length}</div>
             <div className="ws-stat-label">Trắc nghiệm</div>
           </div>
         </div>
         <div className="ws-stat-card">
-          <div className="ws-stat-icon">✍️</div>
+          <div className="ws-stat-icon"><PencilSquareIcon className="w-6 h-6" /></div>
           <div className="ws-stat-info">
             <div className="ws-stat-value">{worksheets.filter(w => w.worksheet_type === 'essay').length}</div>
             <div className="ws-stat-label">Tự luận</div>
@@ -304,10 +320,10 @@ const Worksheets = () => {
           <div className="ws-loading">Đang tải...</div>
         ) : worksheets.length === 0 ? (
           <div className="ws-empty">
-            <FileText size={64} color="#cbd5e1" />
+            <DocumentTextIcon className="w-16 h-16 text-slate-300" />
             <p>Chưa có phiếu học tập nào</p>
             <button className="ws-btn ws-btn-primary" onClick={() => setShowAIModal(true)}>
-              <Sparkles size={18} />
+              <SparklesIcon className="w-4.5 h-4.5" />
               Tạo phiếu học tập đầu tiên bằng AI
             </button>
           </div>
@@ -316,7 +332,7 @@ const Worksheets = () => {
             <div key={ws.id} className="ws-card">
               {ws.ai_generated === 1 && (
                 <div className="ws-badge-ai">
-                  <Sparkles size={14} />
+                  <SparklesIcon className="w-3.5 h-3.5" />
                   AI
                 </div>
               )}
@@ -327,7 +343,7 @@ const Worksheets = () => {
                 <h3>{ws.title}</h3>
                 <div className="ws-card-meta">
                   <span className="ws-meta-item">
-                    📚 Lớp {ws.grade}
+                    <BookOpenIcon className="w-4 h-4 inline-block mr-1" /> Lớp {ws.grade}
                   </span>
                   {ws.skill_focus && (
                     <span className="ws-meta-item">
@@ -346,17 +362,17 @@ const Worksheets = () => {
               </div>
               
               <div className="ws-card-body">
-                {ws.unit && <div className="ws-card-unit">📖 {ws.unit}</div>}
+                {ws.unit && <div className="ws-card-unit"><BookOpenIcon className="w-4 h-4 inline-block mr-1" /> {ws.unit}</div>}
                 <div className="ws-card-info">
                   {ws.duration && (
                     <span className="ws-info-item">
-                      <Clock size={14} />
+                      <ClockIcon className="w-3.5 h-3.5" />
                       {ws.duration} phút
                     </span>
                   )}
                   {ws.total_points && (
                     <span className="ws-info-item">
-                      <Award size={14} />
+                      <TrophyIcon className="w-3.5 h-3.5" />
                       {ws.total_points} điểm
                     </span>
                   )}
@@ -365,11 +381,11 @@ const Worksheets = () => {
               
               <div className="ws-card-actions">
                 <button className="ws-card-btn" onClick={() => openDetail(ws)}>
-                  <Eye size={16} />
+                  <EyeIcon className="w-4 h-4" />
                   Chi tiết
                 </button>
                 <button className="ws-card-btn ws-card-btn-delete" onClick={() => openDelete(ws)}>
-                  <Trash2 size={16} />
+                  <TrashIcon className="w-4 h-4" />
                   Xóa
                 </button>
               </div>
@@ -384,11 +400,11 @@ const Worksheets = () => {
           <div className="ws-modal ws-modal-large" onClick={e => e.stopPropagation()}>
             <div className="ws-modal-header">
               <div className="ws-modal-title-ai">
-                <Sparkles size={24} />
+                <SparklesIcon className="w-6 h-6" />
                 <h2>Tạo phiếu học tập bằng AI</h2>
               </div>
               <button className="ws-modal-close" onClick={() => setShowAIModal(false)}>
-                <X size={20} />
+                <XMarkIcon className="w-5 h-5" />
               </button>
             </div>
             <div className="ws-modal-body">
@@ -497,7 +513,7 @@ const Worksheets = () => {
                   </>
                 ) : (
                   <>
-                    <Sparkles size={18} />
+                    <SparklesIcon className="w-4.5 h-4.5" />
                     Tạo phiếu học tập
                   </>
                 )}
@@ -514,12 +530,12 @@ const Worksheets = () => {
             <div className="ws-modal-header">
               <h2>{selectedWorksheet.title}</h2>
               <button className="ws-modal-close" onClick={() => setShowDetailModal(false)}>
-                <X size={20} />
+                <XMarkIcon className="w-5 h-5" />
               </button>
             </div>
             <div className="ws-modal-body ws-detail-content">
               <div className="ws-detail-meta">
-                <span>📚 Lớp {selectedWorksheet.grade}</span>
+                <span><BookOpenIcon className="w-4 h-4 inline-block mr-1" /> Lớp {selectedWorksheet.grade}</span>
                 <span>{getTypeIcon(selectedWorksheet.worksheet_type)} {getTypeLabel(selectedWorksheet.worksheet_type)}</span>
                 {selectedWorksheet.skill_focus && <span>{getSkillIcon(selectedWorksheet.skill_focus)} {selectedWorksheet.skill_focus}</span>}
                 <span
@@ -576,11 +592,11 @@ const Worksheets = () => {
             </div>
             <div className="ws-modal-footer">
               <button className="ws-btn ws-btn-primary" onClick={() => handleDownloadWord(selectedWorksheet.id)}>
-                <Download size={18} />
+                <ArrowDownTrayIcon className="w-4.5 h-4.5" />
                 Tải Word
               </button>
               <button className="ws-btn ws-btn-secondary" onClick={() => handleDownloadPdf(selectedWorksheet.id)}>
-                <FileDown size={18} />
+                <ArrowDownTrayIcon className="w-4.5 h-4.5" />
                 Tải PDF
               </button>
               <button className="ws-btn ws-btn-close" onClick={() => setShowDetailModal(false)}>
@@ -598,7 +614,7 @@ const Worksheets = () => {
             <div className="ws-modal-header">
               <h2>Xác nhận xóa</h2>
               <button className="ws-modal-close" onClick={() => setShowDeleteModal(false)}>
-                <X size={20} />
+                <XMarkIcon className="w-5 h-5" />
               </button>
             </div>
             <div className="ws-modal-body">
@@ -610,7 +626,7 @@ const Worksheets = () => {
                 Hủy
               </button>
               <button className="ws-btn ws-btn-danger" onClick={handleDelete}>
-                <Trash2 size={16} />
+                <TrashIcon className="w-4 h-4" />
                 Xóa phiếu
               </button>
             </div>

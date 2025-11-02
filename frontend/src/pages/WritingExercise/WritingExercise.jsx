@@ -1,22 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft,
-  Clock,
-  CheckCircle,
-  RotateCcw,
-  HelpCircle,
-  Target,
-  Award,
-  Star,
-  BookOpen,
-  FileText,
-  Save,
-  AlertCircle,
-  X,
-  Loader,
-  XCircle
-} from 'lucide-react';
+  ArrowLeftIcon,
+  ClockIcon,
+  CheckCircleIcon,
+  ArrowPathIcon,
+  QuestionMarkCircleIcon,
+  ChartBarIcon,
+  TrophyIcon,
+  StarIcon,
+  DocumentTextIcon,
+  ArrowTrendingUpIcon,
+  PencilSquareIcon,
+  BookOpenIcon,
+  DocumentIcon,
+  XMarkIcon,
+  ExclamationCircleIcon,
+  XCircleIcon
+} from '@heroicons/react/24/outline';
+import { ArrowDownTrayIcon as SaveIcon } from '@heroicons/react/24/solid';
 import './WritingExercise.css';
 import { coursesAPI } from '../../services/api';
 import { aiAPI } from '../../services/api';
@@ -294,7 +296,7 @@ const WritingExercise = () => {
         <div className="writing-header">
           <div className="header-left">
             <button className="writing-back-btn" onClick={() => navigate(-1)}>
-              <ArrowLeft size={20} />
+              <ArrowLeftIcon className="w-5 h-5" />
               Quay lại
             </button>
           </div>
@@ -312,13 +314,13 @@ const WritingExercise = () => {
         <div className="writing-header">
           <div className="header-left">
             <button className="writing-back-btn" onClick={() => navigate(-1)}>
-              <ArrowLeft size={20} />
+              <ArrowLeftIcon className="w-5 h-5" />
               Quay lại
             </button>
           </div>
         </div>
         <div style={{ padding: '40px', textAlign: 'center', color: '#ef4444' }}>
-          <AlertCircle size={48} style={{ marginBottom: '16px' }} />
+          <ExclamationCircleIcon className="w-12 h-12 mx-auto mb-4" />
           <p>{error}</p>
         </div>
       </div>
@@ -331,7 +333,7 @@ const WritingExercise = () => {
         <div className="writing-header">
           <div className="header-left">
             <button className="writing-back-btn" onClick={() => navigate(-1)}>
-              <ArrowLeft size={20} />
+              <ArrowLeftIcon className="w-5 h-5" />
               Quay lại
             </button>
           </div>
@@ -352,7 +354,7 @@ const WritingExercise = () => {
             className="writing-back-btn"
             onClick={() => navigate(-1)}
           >
-            <ArrowLeft size={20} />
+            <ArrowLeftIcon className="w-5 h-5" />
             Quay lại
           </button>
         </div>
@@ -364,7 +366,7 @@ const WritingExercise = () => {
 
         <div className="header-right">
           <div className="timer-info">
-            <Clock size={16} />
+            <ClockIcon className="w-4 h-4" />
             <span>{formatTime(timeSpent)}</span>
           </div>
           <div className="difficulty-badge">
@@ -407,7 +409,7 @@ const WritingExercise = () => {
             {showHint && (
               <div className="hint-content">
                 <div className="hint-header">
-                  <AlertCircle size={16} />
+                  <QuestionMarkCircleIcon className="w-4 h-4" />
                   <span>Gợi ý</span>
                 </div>
                 <div className="hint-tips">
@@ -432,7 +434,7 @@ const WritingExercise = () => {
               <span className="sentence-count">{sentenceCount} câu</span>
               {isSaved && (
                 <div className="save-indicator">
-                  <Save size={14} />
+                  <SaveIcon className="w-3.5 h-3.5" />
                   <span>Đã lưu</span>
                 </div>
               )}
@@ -497,31 +499,31 @@ const WritingExercise = () => {
                 setIsCompleted(false); // Allow re-submission
               }}
             >
-              <X size={24} />
+              <XMarkIcon className="w-6 h-6" />
             </button>
 
-            <CheckCircle size={64} color="#10b981" />
+            <CheckCircleIcon className="w-16 h-16 text-emerald-500" />
             <h3>Hoàn thành bài tập!</h3>
             <p>Bài viết của bạn đã được nộp thành công và chấm bởi AI.</p>
 
             <div className="completion-stats">
               <div className="stat-item">
-                <FileText size={16} />
+                <DocumentIcon className="w-4 h-4" />
                 <span>{wordCount} từ</span>
               </div>
               <div className="stat-item">
-                <Clock size={16} />
+                <ClockIcon className="w-4 h-4" />
                 <span>{formatTime(timeSpent)}</span>
               </div>
               <div className="stat-item">
-                <Award size={16} />
+                <TrophyIcon className="w-4 h-4" />
                 <span>{aiResult?.score || calculateScore()} điểm</span>
               </div>
             </div>
 
             {aiResult && (
               <div className="ai-feedback-section">
-                <h4>📝 Phản hồi từ AI</h4>
+                <h4><DocumentTextIcon className="w-5 h-5 inline-block mr-1" /> Phản hồi từ AI</h4>
                 {aiResult.feedback && (
                   <div className="ai-feedback-text">
                     <p><strong>Nhận xét chung:</strong></p>
@@ -542,7 +544,7 @@ const WritingExercise = () => {
                 )}
                 {aiResult.strengths && aiResult.strengths.length > 0 && (
                   <div className="ai-strengths">
-                    <p><strong>✅ Điểm mạnh:</strong></p>
+                    <p><strong><CheckCircleIcon className="w-5 h-5 inline-block mr-1" /> Điểm mạnh:</strong></p>
                     <ul>
                       {aiResult.strengths.map((strength, idx) => (
                         <li key={idx}>{strength}</li>
@@ -552,7 +554,7 @@ const WritingExercise = () => {
                 )}
                 {aiResult.improvements && aiResult.improvements.length > 0 && (
                   <div className="ai-improvements">
-                    <p><strong>📈 Cần cải thiện:</strong></p>
+                    <p><strong><ArrowTrendingUpIcon className="w-5 h-5 inline-block mr-1" /> Cần cải thiện:</strong></p>
                     <ul>
                       {aiResult.improvements.map((improvement, idx) => (
                         <li key={idx}>{improvement}</li>
@@ -562,7 +564,7 @@ const WritingExercise = () => {
                 )}
                 {aiResult.corrections && aiResult.corrections.length > 0 && (
                   <div className="ai-corrections">
-                    <p><strong>✏️ Sửa lỗi:</strong></p>
+                    <p><strong><PencilSquareIcon className="w-5 h-5 inline-block mr-1" /> Sửa lỗi:</strong></p>
                     <ul>
                       {aiResult.corrections.map((correction, idx) => (
                         <li key={idx}>{correction}</li>
@@ -578,7 +580,7 @@ const WritingExercise = () => {
                 className="back-to-profile-btn"
                 onClick={() => navigate('/learning-profile')}
               >
-                <ArrowLeft size={16} />
+                <ArrowLeftIcon className="w-4 h-4" />
                 Quay lại
               </button>
             </div>

@@ -240,22 +240,22 @@ export default function ExerciseHub() {
     if (!hasSubmission) {
       statusClass = isOverdue ? 'status-danger' : 'status-neutral';
       statusText = isOverdue ? 'Quá hạn' : 'Chưa làm';
-      statusIcon = isOverdue ? <AlertCircle size={16} /> : <Clock size={16} />;
+      statusIcon = isOverdue ? <ExclamationCircleIcon className="w-4 h-4" /> : <ClockIcon className="w-4 h-4" />;
     } else if (gradingStatus === 'ai_graded' || gradingStatus === 'graded' || hasSubmission.teacher_reviewed) {
       // AI has graded or teacher has reviewed
       statusClass = 'status-success';
       statusText = hasSubmission.teacher_reviewed ? 'Đã chấm' : 'AI đã chấm';
-      statusIcon = <CheckCircle size={16} />;
+      statusIcon = <CheckCircleIcon className="w-4 h-4" />;
     } else if (gradingStatus === 'grading' || gradingStatus === 'pending') {
       // Currently grading
       statusClass = 'status-warning';
       statusText = 'Đang chấm';
-      statusIcon = <Clock size={16} />;
+      statusIcon = <ClockIcon className="w-4 h-4" />;
     } else {
       // Submitted but not graded
       statusClass = 'status-info';
       statusText = 'Đã nộp';
-      statusIcon = <Clock size={16} />;
+      statusIcon = <ClockIcon className="w-4 h-4" />;
     }
     
     return (
@@ -319,7 +319,7 @@ export default function ExerciseHub() {
                 }
               }}
             >
-              <FileText size={16} />
+              <DocumentTextIcon className="w-4 h-4" />
               <span>Bắt đầu làm</span>
             </button>
           ) : score !== null ? (
@@ -333,13 +333,13 @@ export default function ExerciseHub() {
                 }
               }}
             >
-              <Trophy size={16} />
+              <TrophyIcon className="w-4 h-4" />
               <span>Xem kết quả</span>
             </button>
           ) : (
             <>
               <button className="btn-info-new">
-                <Clock size={16} />
+                <ClockIcon className="w-4 h-4" />
                 <span>Chờ chấm</span>
               </button>
               <button 
@@ -404,7 +404,7 @@ export default function ExerciseHub() {
           <div className="overall-stats-new">
             <div className="stat-card-new total">
               <div className="stat-icon-new from-blue-500 to-cyan-500">
-                <FileText size={24} />
+                <DocumentTextIcon className="w-6 h-6" />
               </div>
               <div className="stat-content-new">
                 <div className="stat-value-new">{statistics.total_exercises}</div>
@@ -414,7 +414,7 @@ export default function ExerciseHub() {
 
             <div className="stat-card-new completed">
               <div className="stat-icon-new from-green-500 to-emerald-500">
-                <CheckCircle size={24} />
+                <CheckCircleIcon className="w-6 h-6" />
               </div>
               <div className="stat-content-new">
                 <div className="stat-value-new">{statistics.completed}</div>
@@ -424,7 +424,7 @@ export default function ExerciseHub() {
 
             <div className="stat-card-new graded">
               <div className="stat-icon-new from-purple-500 to-pink-500">
-                <Trophy size={24} />
+                <TrophyIcon className="w-6 h-6" />
               </div>
               <div className="stat-content-new">
                 <div className="stat-value-new">{statistics.graded}</div>
@@ -434,7 +434,7 @@ export default function ExerciseHub() {
 
             <div className="stat-card-new average">
               <div className="stat-icon-new from-orange-500 to-red-500">
-                <Award size={24} />
+                <TrophyIcon className="w-6 h-6" />
               </div>
               <div className="stat-content-new">
                 <div className="stat-value-new">{statistics.average_score.toFixed(1)}</div>
@@ -490,7 +490,7 @@ export default function ExerciseHub() {
             <div className="test-type-card-new">
               <div className="test-type-header-new">
                 <div className="test-type-icon-new from-yellow-500 to-orange-500">
-                  <Clock size={20} />
+                  <ClockIcon className="w-5 h-5" />
                 </div>
                 <h4>Kiểm tra 15 phút</h4>
               </div>
@@ -509,7 +509,7 @@ export default function ExerciseHub() {
             <div className="test-type-card-new">
               <div className="test-type-header-new">
                 <div className="test-type-icon-new from-blue-500 to-indigo-500">
-                  <FileText size={20} />
+                  <DocumentTextIcon className="w-5 h-5" />
                 </div>
                 <h4>Kiểm tra giữa kì</h4>
               </div>
@@ -528,7 +528,7 @@ export default function ExerciseHub() {
             <div className="test-type-card-new">
               <div className="test-type-header-new">
                 <div className="test-type-icon-new from-red-500 to-pink-500">
-                  <Trophy size={20} />
+                  <TrophyIcon className="w-5 h-5" />
                 </div>
                 <h4>Kiểm tra cuối kì</h4>
               </div>
@@ -547,7 +547,7 @@ export default function ExerciseHub() {
             <div className="test-type-card-new highlight">
               <div className="test-type-header-new">
                 <div className="test-type-icon-new from-purple-500 to-pink-500">
-                  <Award size={20} />
+                  <TrophyIcon className="w-5 h-5" />
                 </div>
                 <h4>Điểm Trung bình Chung</h4>
               </div>
@@ -631,7 +631,7 @@ export default function ExerciseHub() {
     if (!filteredExercises || filteredExercises.length === 0) {
       return (
         <div className="empty-state-new">
-          <FileText size={80} strokeWidth={1} />
+          <DocumentTextIcon className="w-20 h-20" style={{ strokeWidth: 1 }} />
           <h3>Chưa có bài tập nào</h3>
           <p>Bài tập mới sẽ xuất hiện ở đây</p>
         </div>

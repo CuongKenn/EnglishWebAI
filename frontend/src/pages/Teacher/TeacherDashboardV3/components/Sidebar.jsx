@@ -1,55 +1,75 @@
-import { BarChart3, BookOpen, Calendar, FileText, GraduationCap, Home, MessageSquare, Notebook, PenTool, Settings as SettingsIcon, TrendingUp, Video, MessageCircle, Brain, Sparkles, Wand2, Upload, Users, ClipboardList, FileBarChart, Award } from 'lucide-react';
+import {
+  ChartBarIcon,
+  BookOpenIcon,
+  CalendarIcon,
+  DocumentTextIcon,
+  AcademicCapIcon,
+  HomeIcon,
+  ChatBubbleLeftRightIcon,
+  DocumentDuplicateIcon,
+  PencilIcon,
+  Cog6ToothIcon,
+  ArrowTrendingUpIcon,
+  VideoCameraIcon,
+  CpuChipIcon,
+  SparklesIcon,
+  ArrowUpTrayIcon,
+  UserGroupIcon,
+  ClipboardDocumentListIcon,
+  ChartBarSquareIcon,
+  TrophyIcon
+} from '@heroicons/react/24/outline';
 
 const Sidebar = ({ currentPage, onNavigate }) => {
   const menuSections = [
     {
       title: 'TỔNG QUAN',
       items: [
-        { id: 'dashboard', label: 'Dashboard', icon: Home, color: 'bg-purple-500' }
+        { id: 'dashboard', label: 'Dashboard', icon: HomeIcon, color: 'bg-purple-500' }
       ]
     },
     {
       title: 'QUẢN LÝ DẠY HỌC',
       items: [
-        { id: 'class-management', label: 'Quản lý lớp học', icon: GraduationCap },
-        { id: 'courses', label: 'Khóa học', icon: BookOpen },
-        { id: 'question-bank', label: 'Ngân hàng câu hỏi', icon: Brain },
-        { id: 'news-articles', label: 'Tin tức & Bài viết', icon: FileText }
+        { id: 'class-management', label: 'Quản lý lớp học', icon: AcademicCapIcon },
+        { id: 'courses', label: 'Khóa học', icon: BookOpenIcon },
+        { id: 'question-bank', label: 'Ngân hàng câu hỏi', icon: CpuChipIcon },
+        { id: 'news-articles', label: 'Tin tức & Bài viết', icon: DocumentTextIcon }
       ]
     },
     {
       title: 'BÀI TẬP & ĐÁNH GIÁ',
       items: [
-        { id: 'exercises-tests', label: 'Bài tập & Kiểm tra', icon: Notebook },
-        { id: 'grading-feedback', label: 'Chấm điểm & Phản hồi', icon: PenTool },
-        // { id: 'exam-grading', label: 'Chấm thi Giữa/Cuối kỳ', icon: Award }, // Hidden
-        { id: 'weekly-assessments', label: 'Phiếu đánh giá tuần', icon: ClipboardList },
-        { id: 'error-analysis', label: 'Xuất phân tích lỗi', icon: FileBarChart }
+        { id: 'exercises-tests', label: 'Bài tập & Kiểm tra', icon: DocumentDuplicateIcon },
+        { id: 'grading-feedback', label: 'Chấm điểm & Phản hồi', icon: PencilIcon },
+        // { id: 'exam-grading', label: 'Chấm thi Giữa/Cuối kỳ', icon: TrophyIcon }, // Hidden
+        { id: 'weekly-assessments', label: 'Phiếu đánh giá tuần', icon: ClipboardDocumentListIcon },
+        { id: 'error-analysis', label: 'Xuất phân tích lỗi', icon: ChartBarSquareIcon }
       ]
     },
     {
       title: 'TRỢ LÝ AI',
       items: [
-        { id: 'lesson-plans', label: 'Tạo giáo án', icon: Wand2 },
-        { id: 'worksheets', label: 'Tạo phiếu học tập', icon: Sparkles },
-        { id: 'student-analytics', label: 'Phân tích tiến độ', icon: TrendingUp },
-        { id: 'support-groups', label: 'Nhóm cần hỗ trợ', icon: Users }
+        { id: 'lesson-plans', label: 'Tạo giáo án', icon: SparklesIcon },
+        { id: 'worksheets', label: 'Tạo phiếu học tập', icon: SparklesIcon },
+        { id: 'student-analytics', label: 'Phân tích tiến độ', icon: ArrowTrendingUpIcon },
+        { id: 'support-groups', label: 'Nhóm cần hỗ trợ', icon: UserGroupIcon }
       ]
     },
     {
       title: 'BÁO CÁO & CÔNG CỤ',
       items: [
-        { id: 'statistics', label: 'Thống kê & Báo cáo', icon: BarChart3 },
-        { id: 'export-reports', label: 'Xuất báo cáo', icon: Upload },
-        { id: 'online-teaching', label: 'Dạy học trực tuyến', icon: Video }
+        { id: 'statistics', label: 'Thống kê & Báo cáo', icon: ChartBarIcon },
+        { id: 'export-reports', label: 'Xuất báo cáo', icon: ArrowUpTrayIcon },
+        { id: 'online-teaching', label: 'Dạy học trực tuyến', icon: VideoCameraIcon }
       ]
     },
     {
       title: 'TIỆN ÍCH',
       items: [
-        { id: 'schedule', label: 'Lịch giảng dạy', icon: Calendar },
-        { id: 'messages', label: 'Tin nhắn', icon: MessageCircle },
-        { id: 'settings', label: 'Cài đặt', icon: SettingsIcon }
+        { id: 'schedule', label: 'Lịch giảng dạy', icon: CalendarIcon },
+        { id: 'messages', label: 'Tin nhắn', icon: ChatBubbleLeftRightIcon },
+        { id: 'settings', label: 'Cài đặt', icon: Cog6ToothIcon }
       ]
     }
   ];
@@ -60,7 +80,7 @@ const Sidebar = ({ currentPage, onNavigate }) => {
       <div className="p-6 border-b border-gray-200 bg-gradient-to-br from-purple-50 to-indigo-50">
         <div className="flex items-center gap-3 mb-2">
           <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-            <Sparkles className="w-6 h-6 text-white" />
+            <SparklesIcon className="w-6 h-6 text-white" />
           </div>
           <div>
             <h1 className="text-sm font-semibold text-gray-600">Giáo viên</h1>

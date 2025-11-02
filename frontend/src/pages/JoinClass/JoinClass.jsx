@@ -2,7 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { useClasses } from '../../hooks';
 import { classesAPI } from '../../services/api';
-import { BookOpen, BarChart2, Star, ChevronRight, Crown, ArrowUp, Trophy } from 'lucide-react';
+import { 
+  BookOpenIcon,
+  ChartBarIcon,
+  StarIcon,
+  ChevronRightIcon,
+  TrophyIcon,
+  ArrowUpIcon
+} from '@heroicons/react/24/outline';
+import { TrophyIcon as TrophyIconSolid } from '@heroicons/react/24/solid';
 import './JoinClass.css';
 
 // --- [BẮT ĐẦU] CẬP NHẬT DỮ LIỆU MẪU ---
@@ -120,7 +128,7 @@ const JoinClass = () => {
               {gradeList.map(grade => (
                 <li key={grade}>
                   <Link to={`/join-class?grade=${encodeURIComponent(grade)}`} className={selGrade === grade ? 'active' : ''}>
-                    <BookOpen size={16} /><span>{grade}</span><ChevronRight size={16} className="chevron" />
+                    <BookOpenIcon className="w-4 h-4" /><span>{grade}</span><ChevronRightIcon className="w-4 h-4 chevron" />
                   </Link>
                 </li>
               ))}
@@ -173,7 +181,7 @@ const JoinClass = () => {
           <div className="leaderboard-card redesigned">
             <div className="leaderboard-top">
               <div className="card-header">
-                <h4><BarChart2 size={18} /> Bảng vinh danh</h4>
+                <h4><ChartBarIcon className="w-4.5 h-4.5" /> Bảng vinh danh</h4>
                 <Link to="#" className="details-link">Chi tiết</Link>
               </div>
             </div>
@@ -198,14 +206,14 @@ const JoinClass = () => {
                   <li key={user.rank}>
                     <div className="leaderboard-user-info">
                       <div className={`rank-badge rank-${user.rank}`}>
-                        {user.rank <= 3 ? <Trophy size={16} /> : user.rank}
+                        {user.rank <= 3 ? <TrophyIconSolid className="w-4 h-4" /> : user.rank}
                       </div>
                       <span className="name">{user.name}</span>
                     </div>
                     <div className="score-col">
                       <span className="score">{user.score}</span>
                       <span className="change green">
-                        <ArrowUp size={12} /> (+{user.change})
+                        <ArrowUpIcon className="w-3 h-3" /> (+{user.change})
                       </span>
                     </div>
                   </li>
@@ -219,10 +227,10 @@ const JoinClass = () => {
                 <div className="user-avatar">NV</div>
                 <div className="user-details">
                   <span className="user-name">nguyễn văn hoài...</span>
-                  <span className="user-level"><Star size={12} /> Cấp 1</span>
+                  <span className="user-level"><StarIcon className="w-3 h-3" /> Cấp 1</span>
                 </div>
              </div>
-             <div className="user-score"><Crown size={18} /><span>0</span></div>
+             <div className="user-score"><TrophyIconSolid className="w-4.5 h-4.5" /><span>0</span></div>
           </div>
         </aside>
       </div>
