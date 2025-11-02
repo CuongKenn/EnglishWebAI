@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { UserGroupIcon, StarIcon, CheckIcon, ChartBarIcon, DocumentArrowDownIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
+import { UserGroupIcon, StarIcon, CheckIcon, ChartBarIcon, DocumentArrowDownIcon, CalendarDaysIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import './StatisticsReports.css';
 import apiClient from '../../../services/api';
 
@@ -244,8 +244,14 @@ const StatisticsReports = () => {
                   <div className="student-class">{student.class}</div>
                 </div>
                 <div className="student-stats">
-                  <span className="stat-badge green">⭐ {student.avgScore}</span>
-                  <span className="stat-badge blue">✓ {student.attendance}%</span>
+                  <span className="stat-badge green flex items-center gap-1">
+                    <StarIcon className="w-3 h-3" />
+                    {student.avgScore}
+                  </span>
+                  <span className="stat-badge blue flex items-center gap-1">
+                    <CheckIcon className="w-3 h-3" />
+                    {student.attendance}%
+                  </span>
                 </div>
               </div>
             ))}
@@ -260,14 +266,22 @@ const StatisticsReports = () => {
           <div className="students-list">
             {statistics.needsAttention.map((student, index) => (
               <div key={index} className="student-item warning">
-                <div className="student-icon">⚠️</div>
+                <div className="student-icon">
+                  <ExclamationTriangleIcon className="w-5 h-5 text-orange-500" />
+                </div>
                 <div className="student-info">
                   <div className="student-name">{student.name}</div>
                   <div className="student-class">{student.class}</div>
                 </div>
                 <div className="student-stats">
-                  <span className="stat-badge orange">⭐ {student.avgScore}</span>
-                  <span className="stat-badge red">✓ {student.attendance}%</span>
+                  <span className="stat-badge orange flex items-center gap-1">
+                    <StarIcon className="w-3 h-3" />
+                    {student.avgScore}
+                  </span>
+                  <span className="stat-badge red flex items-center gap-1">
+                    <CheckIcon className="w-3 h-3" />
+                    {student.attendance}%
+                  </span>
                 </div>
               </div>
             ))}

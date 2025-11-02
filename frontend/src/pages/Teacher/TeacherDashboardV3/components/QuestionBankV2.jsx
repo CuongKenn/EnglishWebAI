@@ -15,7 +15,10 @@ import {
   LightBulbIcon,
   DocumentTextIcon,
   Bars3BottomLeftIcon,
-  PencilIcon
+  PencilIcon,
+  CheckCircleIcon,
+  ClipboardDocumentListIcon,
+  ChartBarIcon
 } from '@heroicons/react/24/outline';
 import { Card } from '../../../../components/ui/card';
 import AddQuestionModal from './AddQuestionModal';
@@ -1229,8 +1232,9 @@ export default function QuestionBankV2() {
                 <h3 className="text-lg font-semibold text-gray-900">Cấu hình đề thi</h3>
               </div>
               {generatedTest && (
-                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
-                  ✅ Đã sinh
+                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded flex items-center gap-1">
+                  <CheckCircleIcon className="w-3 h-3" />
+                  Đã sinh
                 </span>
               )}
             </div>
@@ -1238,8 +1242,9 @@ export default function QuestionBankV2() {
             <div className="space-y-6">
               {/* Quick Templates */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  📋 Mẫu nhanh
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  <ClipboardDocumentListIcon className="w-4 h-4" />
+                  Mẫu nhanh
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   {templates.map((template) => (
@@ -1391,8 +1396,9 @@ export default function QuestionBankV2() {
                 <div className="space-y-4 animate-fadeIn">
                   {/* Difficulty Distribution */}
                   <div className="rounded-lg bg-gradient-to-r from-blue-50 to-purple-50 p-4 border border-blue-200">
-                    <label className="block text-sm font-medium text-gray-900 mb-3">
-                      📊 Phân bố độ khó (%)
+                    <label className="block text-sm font-medium text-gray-900 mb-3 flex items-center gap-2">
+                      <ChartBarIcon className="w-4 h-4" />
+                      Phân bố độ khó (%)
                     </label>
                     <div className="space-y-2">
                       {Object.entries(aiGenerationConfig.difficultyDistribution).map(([level, percentage]) => (

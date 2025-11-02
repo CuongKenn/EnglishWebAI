@@ -11,7 +11,12 @@ import {
   FireIcon,
   StarIcon,
   FlagIcon,
-  AcademicCapIcon
+  AcademicCapIcon,
+  PlusIcon,
+  EyeIcon,
+  HeartIcon,
+  PencilIcon as HeroPencilIcon,
+  TrashIcon
 } from '@heroicons/react/24/outline';
 import { newsAPI } from '../../../../services/api';
 import Toast from '../../../../components/Toast/Toast';
@@ -167,11 +172,15 @@ const NewsArticles = () => {
     <div className="manage-news-page">
       <div className="page-header">
         <div>
-          <h1 className="page-title">📰 Quản lý Tin tức</h1>
+          <h1 className="page-title flex items-center gap-2">
+            <NewspaperIcon className="w-6 h-6" />
+            Quản lý Tin tức
+          </h1>
           <p className="page-subtitle">Tạo và quản lý tin tức, thông báo cho hệ thống</p>
         </div>
-        <button className="btn-primary" onClick={() => handleOpenModal()}>
-          <span>➕</span> Tạo tin tức mới
+        <button className="btn-primary flex items-center gap-2" onClick={() => handleOpenModal()}>
+          <PlusIcon className="w-5 h-5" />
+          <span>Tạo tin tức mới</span>
         </button>
       </div>
 
@@ -211,8 +220,14 @@ const NewsArticles = () => {
                     <span className="category-badge">{news.category}</span>
                   </td>
                   <td>{getStatusBadge(news.status)}</td>
-                  <td>👁️ {news.views || 0}</td>
-                  <td>❤️ {news.likes || 0}</td>
+                  <td className="flex items-center gap-1">
+                    <EyeIcon className="w-4 h-4" />
+                    {news.views || 0}
+                  </td>
+                  <td className="flex items-center gap-1">
+                    <HeartIcon className="w-4 h-4" />
+                    {news.likes || 0}
+                  </td>
                   <td>{news.author_name}</td>
                   <td>{new Date(news.created_at).toLocaleDateString('vi-VN')}</td>
                   <td>
@@ -222,14 +237,14 @@ const NewsArticles = () => {
                         onClick={() => handleOpenModal(news)}
                         title="Chỉnh sửa"
                       >
-                        ✏️
+                        <HeroPencilIcon className="w-4 h-4" />
                       </button>
                       <button 
                         className="btn-delete" 
                         onClick={() => handleDelete(news.id)}
                         title="Xóa"
                       >
-                        🗑️
+                        <TrashIcon className="w-4 h-4" />
                       </button>
             </div>
                   </td>
@@ -240,7 +255,9 @@ const NewsArticles = () => {
 
           {newsList.length === 0 && (
             <div className="empty-state">
-              <div className="empty-icon">📰</div>
+              <div className="empty-icon">
+                <NewspaperIcon className="w-16 h-16 text-gray-400" />
+              </div>
               <h3>Chưa có tin tức nào</h3>
               <p>Tạo tin tức đầu tiên để bắt đầu</p>
             </div>

@@ -659,7 +659,10 @@ const LessonPlans = () => {
             <div className="lp-modal-body">
               {/* Basic Info */}
               <div className="lp-detail-section">
-                <h3>📋 Thông tin cơ bản</h3>
+                <h3 className="flex items-center gap-2">
+                  <ClipboardDocumentListIcon className="w-5 h-5" />
+                  Thông tin cơ bản
+                </h3>
                 <div className="lp-detail-grid">
                   <div className="lp-detail-item">
                     <span className="lp-detail-label">Khối lớp:</span>
