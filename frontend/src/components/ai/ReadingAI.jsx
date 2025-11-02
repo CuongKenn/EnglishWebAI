@@ -1,5 +1,5 @@
 ﻿import { useState } from 'react';
-import { Book, Loader2, Check, X, Award, TrendingUp, Sparkles, PenTool } from 'lucide-react';
+import { Book, Loader2, Check, X, Award, TrendingUp, Sparkles } from 'lucide-react';
 import { aiAPI, aiUsageAPI } from '../../services/api';
 
 export function ReadingAI() {
@@ -19,11 +19,11 @@ export function ReadingAI() {
   ];
 
   const types = [
-    { value: 'story', label: <><Book className="inline-block w-4 h-4 mr-1" /> Story</>, desc: 'Truyện ngắn' },
-    { value: 'article', label: '📰 Article', desc: 'Bài báo' },
-    { value: 'news', label: '📺 News', desc: 'Tin tức' },
-    { value: 'essay', label: '📝 Essay', desc: 'Tiểu luận' },
-    { value: 'letter', label: '✉️ Letter', desc: 'Thư tín' }
+    { value: 'story', label: 'Story', icon: <Book className="w-4 h-4" />, desc: 'Truyện ngắn' },
+    { value: 'article', label: 'Article', icon: '📰', desc: 'Bài báo' },
+    { value: 'news', label: 'News', icon: '📺', desc: 'Tin tức' },
+    { value: 'essay', label: 'Essay', icon: '📝', desc: 'Tiểu luận' },
+    { value: 'letter', label: 'Letter', icon: '✉️', desc: 'Thư tín' }
   ];
 
   const handleGeneratePassage = async () => {
@@ -130,7 +130,7 @@ export function ReadingAI() {
       'detail': '🔍 Detail',
       'inference': '🧠 Inference',
       'vocabulary': '📚 Vocabulary',
-      'author_purpose': <><PenTool className="inline-block w-4 h-4 mr-1" /> Author's Purpose</>,
+      'author_purpose': '✍️ Author\'s Purpose',
       'reference': '🔗 Reference',
       'application': '🎯 Application'
     };
@@ -227,7 +227,7 @@ export function ReadingAI() {
                         : 'border-gray-200 hover:border-purple-300'
                     }`}
                   >
-                    <div className="text-2xl mb-1">{type.label.split(' ')[0]}</div>
+                    <div className="text-2xl mb-1 flex justify-center">{type.icon}</div>
                     <div className="text-xs font-medium text-gray-700">{type.desc}</div>
                   </button>
                 ))}
