@@ -15,6 +15,60 @@ export function TranslateAI() {
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [isSpeakingSource, setIsSpeakingSource] = useState(false);
+  const [isSpeakingTarget, setIsSpeakingTarget] = useState(false);
+
+  // Text-to-Speech function
+  const speak = (text, language, setSpeakingState) => {
+    if (!text || !text.trim()) return;
+
+    // Stop any current speech
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    
+    // Map language codes to speech synthesis language codes
+    const langMap = {
+      'vi': 'vi-VN',
+      'en': 'en-US',
+      'fr': 'fr-FR',
+      'de': 'de-DE',
+      'ja': 'ja-JP',
+      'ko': 'ko-KR',
+      'es': 'es-ES',
+      'pt': 'pt-PT',
+      'it': 'it-IT',
+      'ru': 'ru-RU',
+      'zh-CN': 'zh-CN',
+      'zh-TW': 'zh-TW',
+      'ar': 'ar-SA',
+      'th': 'th-TH',
+      'hi': 'hi-IN'
+    };
+
+    utterance.lang = langMap[language] || 'en-US';
+    utterance.rate = 0.9; // Slightly slower for clarity
+    utterance.pitch = 1;
+    utterance.volume = 1;
+
+    setSpeakingState(true);
+
+    utterance.onend = () => {
+      setSpeakingState(false);
+    };
+
+    utterance.onerror = () => {
+      setSpeakingState(false);
+    };
+
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const stopSpeaking = () => {
+    window.speechSynthesis.cancel();
+    setIsSpeakingSource(false);
+    setIsSpeakingTarget(false);
+  };
 
   const handleTranslate = async () => {
     if (!sourceText.trim()) return;
@@ -162,9 +216,18 @@ export function TranslateAI() {
             minHeight: '32px'
           }}>
             <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#1f2937' }}>Văn bản gốc</h3>
-            <Button variant="ghost" size="sm">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => isSpeakingSource ? stopSpeaking() : speak(sourceText, sourceLang, setIsSpeakingSource)}
+              disabled={!sourceText.trim()}
+              style={{
+                background: isSpeakingSource ? 'linear-gradient(to right, #ef4444, #dc2626)' : 'transparent',
+                color: isSpeakingSource ? 'white' : 'inherit'
+              }}
+            >
               <Volume2 style={{ width: '16px', height: '16px', marginRight: '8px' }} />
-              Nghe
+              {isSpeakingSource ? 'Dừng' : 'Nghe'}
             </Button>
           </div>
           <Textarea
@@ -222,9 +285,18 @@ export function TranslateAI() {
           }}>
             <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#1f2937' }}>Bản dịch AI</h3>
             <div style={{ display: 'flex', gap: '8px' }}>
-              <Button variant="ghost" size="sm">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => isSpeakingTarget ? stopSpeaking() : speak(translatedText, targetLang, setIsSpeakingTarget)}
+                disabled={!translatedText.trim()}
+                style={{
+                  background: isSpeakingTarget ? 'linear-gradient(to right, #ef4444, #dc2626)' : 'transparent',
+                  color: isSpeakingTarget ? 'white' : 'inherit'
+                }}
+              >
                 <Volume2 style={{ width: '16px', height: '16px', marginRight: '8px' }} />
-                Nghe
+                {isSpeakingTarget ? 'Dừng' : 'Nghe'}
               </Button>
               <Button variant="ghost" size="sm" onClick={handleCopy}>
                 {copied ? (
