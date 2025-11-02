@@ -2,8 +2,9 @@ import { useState } from "react";
 import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
 import { Card } from "../ui/card";
-import { Languages, ArrowRightLeft, Volume2, Copy, Check } from "lucide-react";
+import { Languages, ArrowRightLeft, Volume2, Copy, Check, Loader2 } from "lucide-react";
 import { aiUsageAPI } from "../../services/api";
+import translationService from "../../services/translationService";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 
 export function TranslateAI() {
@@ -12,17 +13,42 @@ export function TranslateAI() {
   const [sourceText, setSourceText] = useState("");
   const [translatedText, setTranslatedText] = useState("");
   const [copied, setCopied] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleTranslate = () => {
+  const handleTranslate = async () => {
     if (!sourceText.trim()) return;
-    // Mock translation (no backend yet)
-    setTranslatedText("This is a sample AI translation. In a real application, this would call an AI translation API.");
-    // Log usage (non-blocking)
-    aiUsageAPI.logUsage('translate', {
-      source: sourceLang,
-      target: targetLang,
-      length: sourceText.length,
-    });
+    
+    setLoading(true);
+    setError("");
+    
+    try {
+      // Call real translation API
+      const result = await translationService.translate(
+        sourceText,
+        targetLang,
+        sourceLang,
+        'google'
+      );
+      
+      if (result.success) {
+        setTranslatedText(result.translated_text);
+        
+        // Log usage (non-blocking)
+        aiUsageAPI.logUsage('translate', {
+          source: sourceLang,
+          target: targetLang,
+          length: sourceText.length,
+        });
+      } else {
+        setError(result.error || 'Dịch thất bại');
+      }
+    } catch (err) {
+      console.error('Translation error:', err);
+      setError('Không thể kết nối đến dịch vụ dịch thuật');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSwapLanguages = () => {
@@ -162,11 +188,19 @@ export function TranslateAI() {
             </span>
             <Button
               onClick={handleTranslate}
+              disabled={loading || !sourceText.trim()}
               style={{ 
-                background: 'linear-gradient(to right, #2563eb, #0891b2)',
+                background: loading ? '#9ca3af' : 'linear-gradient(to right, #2563eb, #0891b2)',
               }}
             >
-              Dịch ngay
+              {loading ? (
+                <>
+                  <Loader2 style={{ width: '16px', height: '16px', marginRight: '8px' }} className="animate-spin" />
+                  Đang dịch...
+                </>
+              ) : (
+                'Dịch ngay'
+              )}
             </Button>
           </div>
         </Card>
@@ -215,7 +249,17 @@ export function TranslateAI() {
             overflowY: 'auto',
             border: '1px solid #e5e7eb'
           }}>
-            {translatedText ? (
+            {error ? (
+              <div style={{ 
+                padding: '12px', 
+                background: '#fee2e2', 
+                border: '1px solid #fca5a5', 
+                borderRadius: '8px',
+                color: '#dc2626'
+              }}>
+                ⚠️ {error}
+              </div>
+            ) : translatedText ? (
               <p style={{ color: '#1f2937', lineHeight: '1.6', margin: 0 }}>{translatedText}</p>
             ) : (
               <p style={{ color: '#9ca3af', margin: 0 }}>Bản dịch sẽ xuất hiện ở đây...</p>
