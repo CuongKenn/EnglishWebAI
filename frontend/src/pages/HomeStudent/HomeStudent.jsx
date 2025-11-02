@@ -503,7 +503,7 @@ const HomeStudent = () => {
               <i className="fas fa-bolt badge-icon"></i>
               Tính năng
             </span>
-            <h2 className="section-title-new">Vì sao chọn EnglishWebAI?</h2>
+            <h2 className="section-title-new">Vì sao chọn Smart Learn?</h2>
           </div>
           <div className="features-grid-new">
             {features.map((feature, index) => (

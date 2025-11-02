@@ -207,9 +207,9 @@ const Register = () => {
       <div className="space-left-section">
         <div className="logo-section">
           <div className="logo-icon">
-            <div className="logo-symbol">EW</div>
+            <div className="logo-symbol">SL</div>
           </div>
-          <span className="logo-text">EnglishWebAI</span>
+          <span className="logo-text">Smart Learn</span>
         </div>
 
         <div className="space-content">
