@@ -1,5 +1,5 @@
 ﻿import { useState } from 'react';
-import { Book, Loader2, Check, X, Award, TrendingUp, Sparkles } from 'lucide-react';
+import { Book, Loader2, Check, X, Award, TrendingUp, Sparkles, PenTool } from 'lucide-react';
 import { aiAPI, aiUsageAPI } from '../../services/api';
 
 export function ReadingAI() {
@@ -19,7 +19,7 @@ export function ReadingAI() {
   ];
 
   const types = [
-    { value: 'story', label: '📖 Story', desc: 'Truyện ngắn' },
+    { value: 'story', label: <><Book className="inline-block w-4 h-4 mr-1" /> Story</>, desc: 'Truyện ngắn' },
     { value: 'article', label: '📰 Article', desc: 'Bài báo' },
     { value: 'news', label: '📺 News', desc: 'Tin tức' },
     { value: 'essay', label: '📝 Essay', desc: 'Tiểu luận' },
@@ -130,7 +130,7 @@ export function ReadingAI() {
       'detail': '🔍 Detail',
       'inference': '🧠 Inference',
       'vocabulary': '📚 Vocabulary',
-      'author_purpose': '✍️ Author\'s Purpose',
+      'author_purpose': <><PenTool className="inline-block w-4 h-4 mr-1" /> Author's Purpose</>,
       'reference': '🔗 Reference',
       'application': '🎯 Application'
     };
