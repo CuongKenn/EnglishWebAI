@@ -1,6 +1,6 @@
 """Add enhanced weekly assessments tables
 
-Revision ID: 015_enhanced_weekly_assessments
+Revision ID: 015_enhanced_weekly_assess
 Revises: 014_weekly_submissions
 Create Date: 2025-11-02
 
@@ -16,7 +16,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from migration_utils import table_exists
 
 # revision identifiers, used by Alembic.
-revision = '015_enhanced_weekly_assessments'
+revision = '015_enhanced_weekly_assess'
 down_revision = '014_weekly_submissions'
 branch_labels = None
 depends_on = None

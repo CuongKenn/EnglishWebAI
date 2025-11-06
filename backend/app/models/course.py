@@ -66,6 +66,7 @@ class CourseSubmission(Base):
     status = Column(String, default="submitted", nullable=False)  # submitted | graded | late
     submitted_at = Column(DateTime(timezone=True), server_default=func.now())
     graded_at = Column(DateTime(timezone=True), nullable=True)
+    time_spent = Column(Integer, nullable=True)  # Seconds spent on the lesson/test
 
     # Relationships
     exercise = relationship("CourseExercise", back_populates="submissions")

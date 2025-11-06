@@ -7,6 +7,12 @@ Create Date: 2025-10-25 00:00:00.000000
 """
 from alembic import op
 import sqlalchemy as sa
+import sys
+import os
+
+# Add parent directory to path to import migration_utils
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+from migration_utils import column_exists
 
 
 # revision identifiers, used by Alembic.
@@ -18,26 +24,38 @@ depends_on = None
 
 def upgrade():
     # Add new columns to news_posts table
-    op.add_column('news_posts', sa.Column('description', sa.Text(), nullable=True))
-    op.add_column('news_posts', sa.Column('category', sa.String(), nullable=False, server_default='Thông báo'))
-    op.add_column('news_posts', sa.Column('icon', sa.String(), nullable=True, server_default='📰'))
-    op.add_column('news_posts', sa.Column('type', sa.String(), nullable=False, server_default='announcement'))
-    op.add_column('news_posts', sa.Column('image', sa.String(), nullable=True))
-    op.add_column('news_posts', sa.Column('views', sa.Integer(), nullable=False, server_default='0'))
-    op.add_column('news_posts', sa.Column('likes', sa.Integer(), nullable=False, server_default='0'))
-    op.add_column('news_posts', sa.Column('reading_time', sa.Integer(), nullable=False, server_default='5'))
-    op.add_column('news_posts', sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True))
+    columns = [
+        ('description', sa.Text(), {"nullable": True}),
+        ('category', sa.String(), {"nullable": False, "server_default": 'Thông báo'}),
+        ('icon', sa.String(), {"nullable": True, "server_default": '📰'}),
+        ('type', sa.String(), {"nullable": False, "server_default": 'announcement'}),
+        ('image', sa.String(), {"nullable": True}),
+        ('views', sa.Integer(), {"nullable": False, "server_default": '0'}),
+        ('likes', sa.Integer(), {"nullable": False, "server_default": '0'}),
+        ('reading_time', sa.Integer(), {"nullable": False, "server_default": '5'}),
+        ('updated_at', sa.DateTime(timezone=True), {"nullable": True}),
+    ]
+
+    for name, col_type, kwargs in columns:
+        if not column_exists('news_posts', name):
+            op.add_column('news_posts', sa.Column(name, col_type, **kwargs))
 
 
 def downgrade():
     # Remove added columns
-    op.drop_column('news_posts', 'updated_at')
-    op.drop_column('news_posts', 'reading_time')
-    op.drop_column('news_posts', 'likes')
-    op.drop_column('news_posts', 'views')
-    op.drop_column('news_posts', 'image')
-    op.drop_column('news_posts', 'type')
-    op.drop_column('news_posts', 'icon')
-    op.drop_column('news_posts', 'category')
-    op.drop_column('news_posts', 'description')
+    columns = [
+        'updated_at',
+        'reading_time',
+        'likes',
+        'views',
+        'image',
+        'type',
+        'icon',
+        'category',
+        'description',
+    ]
+
+    for name in columns:
+        if column_exists('news_posts', name):
+            op.drop_column('news_posts', name)
 

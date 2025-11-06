@@ -75,6 +75,8 @@ class CourseExerciseResponse(CourseExerciseBase):
 class CourseSubmissionCreate(BaseModel):
     content_text: Optional[str] = None
     content_url: Optional[str] = None
+    score: Optional[int] = None
+    time_spent: Optional[int] = None
 
 
 class CourseSubmissionResponse(BaseModel):
@@ -88,6 +90,7 @@ class CourseSubmissionResponse(BaseModel):
     status: str
     submitted_at: datetime
     graded_at: Optional[datetime]
+    time_spent: Optional[int]
 
     class Config:
         from_attributes = True
