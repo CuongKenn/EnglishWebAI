@@ -107,7 +107,20 @@ const ListeningExercise = () => {
         // Try to load from new API first
         try {
           const audioData = await getListeningAudio(lessonId);
-          
+
+          let matchedUnit = null;
+          if (courseId) {
+            try {
+              const units = await coursesAPI.getUnits(courseId);
+              matchedUnit = units.find((u) => u.id === parseInt(lessonId, 10));
+            } catch (unitErr) {
+              console.warn('Không thể tải thông tin unit để tính cúp:', unitErr);
+            }
+          }
+          if (matchedUnit) {
+            setUnitData(matchedUnit);
+          }
+
           // Parse questions options_json
           const parsedQuestions = audioData.questions?.map((q, idx) => {
             let options = q.options;
@@ -579,12 +592,20 @@ const ListeningExercise = () => {
       });
 
       const score = Math.round((correctCount / totalQuestions) * 100);
+      const rawMaxCups = unitData?.max_cups;
+      let cupCapacity = Number(rawMaxCups);
+      if (!Number.isFinite(cupCapacity) || cupCapacity <= 0) {
+        cupCapacity = totalQuestions > 0 ? totalQuestions : 1;
+      }
+      const cupsEarned = Math.min(cupCapacity, Math.round((score / 100) * cupCapacity));
 
       // Submit answers as JSON to backend
       const answersJson = JSON.stringify(selectedAnswers);
       await coursesAPI.submitUnitAnswers(parseInt(lessonId), {
         content_text: answersJson,
-        content_url: null
+        content_url: null,
+        score: cupsEarned,
+        time_spent: timeSpent
       });
       
       setResults({

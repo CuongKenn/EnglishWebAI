@@ -145,10 +145,10 @@
 
 /* Section Title */
 .section-title {
-  font-size: 20px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 600;
   color: #1e293b;
-  margin: 0 0 20px 0;
+  margin: 0 0 14px 0;
 }
 
 .section-header-flex {

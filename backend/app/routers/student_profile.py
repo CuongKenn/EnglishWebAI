@@ -9,7 +9,7 @@ from app.core.dependencies import get_current_user
 from app.models.user import User
 from app.models.exercise import Exercise
 from app.models.submission import Submission
-from app.models.course import Course, CourseSubmission
+from app.models.course import Course, CourseExercise, CourseSubmission
 
 
 router = APIRouter(prefix="/api/v1/student/profile", tags=["Student Profile"])
@@ -33,21 +33,54 @@ def get_overview(
         .all()
     )
 
+    # Course submissions (lessons inside courses)
+    course_subs: List[CourseSubmission] = (
+        db.query(CourseSubmission)
+        .filter(CourseSubmission.student_id == current_user.id)
+        .order_by(CourseSubmission.submitted_at.desc())
+        .all()
+    )
+
     total_tests = len(subs)
+
+    # Lessons/tests inside courses counted separately
+    total_course_lessons = len(course_subs)
+    total_course_tests = 0
+    total_course_time = 0
+    cups_sum = 0
+
+    if course_subs:
+        exercise_ids = [s.exercise_id for s in course_subs]
+        exercise_map = {}
+        if exercise_ids:
+            for ex in (
+                db.query(CourseExercise)
+                .filter(CourseExercise.id.in_(exercise_ids))
+                .all()
+            ):
+                exercise_map[ex.id] = ex
+
+        for sub in course_subs:
+            cups_sum += sub.score or 0
+            total_course_time += sub.time_spent or 0
+            ex = exercise_map.get(sub.exercise_id)
+            if ex and ex.type == "quiz":
+                total_course_tests += 1
+
+    # Cups from course submissions fallback (in case there are no course submissions above)
+    if cups_sum == 0 and not course_subs:
+        cups_sum = (
+            db.query(func.coalesce(func.sum(CourseSubmission.score), 0))
+            .filter(CourseSubmission.student_id == current_user.id)
+            .scalar()
+            or 0
+        )
 
     # Lessons: approximate as number of unique exercises with a graded or AI graded score
     graded_count = len([s for s in subs if (s.score is not None) or (s.ai_score is not None)])
-    total_lessons = graded_count
+    total_lessons = graded_count + total_course_lessons
 
-    # Cups from course submissions (if any)
-    cups_sum = (
-        db.query(func.coalesce(func.sum(CourseSubmission.score), 0))
-        .filter(CourseSubmission.student_id == current_user.id)
-        .scalar()
-        or 0
-    )
-
-    # Simple streak calculation based on exercise submissions by day
+    # Simple streak calculation based on exercise submissions by day (course submissions currently excluded)
     dates = (
         db.query(cast(Submission.submitted_at, Date))
         .filter(Submission.student_id == current_user.id)
@@ -86,9 +119,9 @@ def get_overview(
     rank = "Gold" if avg_percent >= 75 else ("Silver" if avg_percent >= 50 else "Bronze")
 
     return {
-        "totalTime": None,  # Not tracked
+        "totalTime": int(total_course_time) if total_course_time else None,
         "totalCups": int(cups_sum or 0),
-        "totalTests": total_tests,
+        "totalTests": total_tests + total_course_tests,
         "totalLessons": total_lessons,
         "streak": streak,
         "level": level,
@@ -174,14 +207,29 @@ def get_recent_activity(
         for ex in db.query(Exercise).filter(Exercise.id.in_(ex_ids)).all():
             ex_map[ex.id] = ex
 
-    items = []
+    # Course submissions
+    course_subs = (
+        db.query(CourseSubmission)
+        .filter(CourseSubmission.student_id == current_user.id)
+        .order_by(CourseSubmission.submitted_at.desc())
+        .limit(10)
+        .all()
+    )
+    course_ex_map = {}
+    if course_subs:
+        ex_ids = list({s.exercise_id for s in course_subs})
+        if ex_ids:
+            for ex in db.query(CourseExercise).filter(CourseExercise.id.in_(ex_ids)).all():
+                course_ex_map[ex.id] = ex
+
+    combined = []
     for s in subs:
         ex = ex_map.get(s.exercise_id)
         if not ex:
             continue
         score_val = s.score if s.score is not None else s.ai_score
-        items.append({
-            "id": s.id,
+        combined.append({
+            "id": f"submission-{s.id}",
             "type": "test" if ex.type == "test" else "lesson",
             "title": ex.title,
             "date": s.submitted_at.strftime("%d/%m/%Y") if s.submitted_at else None,
@@ -189,4 +237,20 @@ def get_recent_activity(
             "score": round(100.0 * float(score_val) / float(ex.max_score or 10)) if score_val is not None else None,
         })
 
-    return items
+    for s in course_subs:
+        ex = course_ex_map.get(s.exercise_id)
+        title = ex.title if ex else "Bài học"  # fallback title
+        item_type = "test" if ex and ex.type == "quiz" else "lesson"
+        score_val = s.score
+        combined.append({
+            "id": f"course-{s.id}",
+            "type": item_type,
+            "title": title,
+            "date": s.submitted_at.strftime("%d/%m/%Y") if s.submitted_at else None,
+            "time": s.submitted_at.strftime("%H:%M") if s.submitted_at else None,
+            "score": score_val,
+        })
+
+    combined.sort(key=lambda item: (item.get("date") or "", item.get("time") or ""), reverse=True)
+
+    return combined[:10]

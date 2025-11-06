@@ -24,7 +24,7 @@ import {
   X,
   Loader2
 } from 'lucide-react';
-import apiClient from '../../services/api';
+import apiClient, { coursesAPI } from '../../services/api';
 import { getSpeakingPrompt } from '../../api/courseContent';
 import './SpeakingExercise.css';
 import Toast from '../../components/Toast/Toast';
@@ -53,6 +53,7 @@ const SpeakingExercise = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [speakingData, setSpeakingData] = useState(null);
+  const [unitData, setUnitData] = useState(null);
 
   // Refs
   const mediaRecorderRef = useRef(null);
@@ -62,9 +63,37 @@ const SpeakingExercise = () => {
   const objectUrlSetRef = useRef(new Set());
 
   // Handle completion
-  const handleComplete = () => {
+  const handleComplete = async () => {
     // Calculate final score (mock calculation based on mock results)
     const finalScore = Math.round((currentResults.fluency + currentResults.grammar + currentResults.pronunciation + currentResults.vocabulary) / 4 * 10) / 10;
+
+    let scorePercent;
+    if (assessmentResults?.score !== undefined && assessmentResults?.score !== null) {
+      const numericScore = Number(assessmentResults.score);
+      scorePercent = Number.isFinite(numericScore) ? Math.max(0, Math.min(100, numericScore)) : Math.round((finalScore / 10) * 100);
+    } else {
+      scorePercent = Math.round((finalScore / 10) * 100);
+    }
+
+    const rawMaxCups = unitData?.max_cups;
+    let cupCapacity = Number(rawMaxCups);
+    if (!Number.isFinite(cupCapacity) || cupCapacity <= 0) {
+      cupCapacity = 1;
+    }
+    const cupsEarned = Math.min(cupCapacity, Math.round((scorePercent / 100) * cupCapacity));
+
+    try {
+      await coursesAPI.submitUnitAnswers(parseInt(lessonId, 10), {
+        content_text: assessmentResults?.transcription || null,
+        content_url: null,
+        score: cupsEarned,
+        time_spent: timeSpent
+      });
+      setIsCompleted(true);
+    } catch (submitErr) {
+      console.error('Không thể lưu kết quả Speaking:', submitErr);
+      showError('Không thể lưu kết quả Speaking. Vui lòng thử lại.');
+    }
 
     // Save completion data to localStorage
     const completionData = {
@@ -91,6 +120,18 @@ const SpeakingExercise = () => {
       
       setLoading(true);
       setError(null);
+
+      if (courseId) {
+        try {
+          const units = await coursesAPI.getUnits(courseId);
+          const matchedUnit = units.find((u) => u.id === parseInt(lessonId, 10));
+          if (matchedUnit) {
+            setUnitData(matchedUnit);
+          }
+        } catch (unitErr) {
+          console.warn('Không thể tải thông tin unit Speaking:', unitErr);
+        }
+      }
       
       // Try new Rich Content API first
       try {

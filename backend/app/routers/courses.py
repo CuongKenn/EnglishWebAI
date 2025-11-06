@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 import logging
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 from sqlalchemy.orm import Session
@@ -428,7 +429,20 @@ async def submit_unit_answers(
     if sub:
         sub.content_text = payload.content_text
         sub.content_url = payload.content_url
-        sub.status = "submitted"
+        if payload.score is not None:
+            try:
+                sub.score = int(round(payload.score))
+            except Exception:
+                sub.score = payload.score
+            sub.status = "graded"
+            sub.graded_at = datetime.utcnow()
+        else:
+            sub.status = "submitted"
+        if payload.time_spent is not None:
+            try:
+                sub.time_spent = int(payload.time_spent)
+            except Exception:
+                sub.time_spent = payload.time_spent
         db.commit()
         db.refresh(sub)
         return sub
@@ -438,8 +452,19 @@ async def submit_unit_answers(
         student_id=current_user.id,
         content_text=payload.content_text,
         content_url=payload.content_url,
-        status="submitted",
+        status="graded" if payload.score is not None else "submitted",
     )
+    if payload.score is not None:
+        try:
+            sub.score = int(round(payload.score))
+        except Exception:
+            sub.score = payload.score
+        sub.graded_at = datetime.utcnow()
+    if payload.time_spent is not None:
+        try:
+            sub.time_spent = int(payload.time_spent)
+        except Exception:
+            sub.time_spent = payload.time_spent
     db.add(sub)
     db.commit()
     db.refresh(sub)

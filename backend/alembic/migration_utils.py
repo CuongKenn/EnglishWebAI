@@ -25,6 +25,17 @@ def column_exists(table_name: str, column_name: str) -> bool:
     return result.fetchone() is not None
 
 
+def get_column_data_type(table_name: str, column_name: str) -> str | None:
+    """Return the data type of a column (as reported by information_schema)"""
+    conn = op.get_bind()
+    result = conn.execute(text(
+        "SELECT data_type FROM information_schema.columns "
+        "WHERE table_name = :table AND column_name = :column"
+    ), {"table": table_name, "column": column_name})
+    row = result.fetchone()
+    return row[0] if row else None
+
+
 def enum_type_exists(enum_name: str) -> bool:
     """Check if an ENUM type exists in PostgreSQL"""
     conn = op.get_bind()

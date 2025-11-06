@@ -1,30 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import {
-  ArrowLeftIcon,
-  ClockIcon,
-  CheckCircleIcon,
-  ArrowPathIcon,
-  QuestionMarkCircleIcon,
-  ChartBarIcon,
-  TrophyIcon,
-  StarIcon,
-  DocumentTextIcon,
-  ArrowTrendingUpIcon,
-  PencilSquareIcon,
-  BookOpenIcon,
-  DocumentIcon,
-  XMarkIcon,
-  ExclamationCircleIcon,
-  XCircleIcon
-} from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, ClockIcon, QuestionMarkCircleIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
 import { ArrowDownTrayIcon as SaveIcon } from '@heroicons/react/24/solid';
 import './WritingExercise.css';
-import { coursesAPI } from '../../services/api';
-import { aiAPI } from '../../services/api';
+import { coursesAPI, aiAPI } from '../../services/api';
 import { getWritingPrompt } from '../../api/courseContent';
 import Toast from '../../components/Toast/Toast';
 import useToast from '../../hooks/useToast';
+import { HelpCircle } from 'lucide-react';
 
 const WritingExercise = () => {
   const { courseId, lessonId } = useParams();
@@ -51,6 +34,18 @@ const WritingExercise = () => {
   const [unitData, setUnitData] = useState(null);
   const [questions, setQuestions] = useState([]);
 
+  const safeParseJSON = (value, fallback) => {
+    if (typeof value !== 'string') {
+      return value ?? fallback;
+    }
+    try {
+      return JSON.parse(value);
+    } catch (err) {
+      console.warn('Không thể parse JSON:', err);
+      return fallback;
+    }
+  };
+
   // Load real data from server
   useEffect(() => {
     const loadData = async () => {
@@ -63,16 +58,22 @@ const WritingExercise = () => {
         // Try to load from new API first
         try {
           const promptData = await getWritingPrompt(lessonId);
-          
-          // Parse hints if it's a string
-          let hints = promptData.hints;
-          if (typeof hints === 'string') {
+
+          let matchedUnit = null;
+          if (courseId) {
             try {
-              hints = JSON.parse(hints);
-            } catch (e) {
-              hints = [];
+              const units = await coursesAPI.getUnits(courseId);
+              matchedUnit = units.find((u) => u.id === parseInt(lessonId, 10));
+            } catch (unitErr) {
+              console.warn('Không thể tải thông tin unit để tính cúp:', unitErr);
             }
           }
+          if (matchedUnit) {
+            setUnitData(matchedUnit);
+          }
+          
+          // Parse hints if it's a string
+          const hints = safeParseJSON(promptData.hints, []);
           
           // Transform to component format
           setWritingData({
@@ -123,6 +124,7 @@ const WritingExercise = () => {
         setQuestions(qs || []);
 
         const firstQuestion = qs && qs.length > 0 ? qs[0] : null;
+        const parsedAnswer = firstQuestion?.answer_json ? safeParseJSON(firstQuestion.answer_json, {}) : {};
         setWritingData({
           id: lessonId,
           title: unit.title,
@@ -137,7 +139,7 @@ const WritingExercise = () => {
             type: firstQuestion.type || 'essay',
             instruction: 'Viết bài luận theo yêu cầu dưới đây',
             prompt: firstQuestion.prompt || '',
-            additionalInstruction: firstQuestion.answer_json ? JSON.parse(firstQuestion.answer_json).instruction : '',
+            additionalInstruction: parsedAnswer?.instruction || '',
             wordLimit: 350,
             gradingCriteria: [
               'Nội dung và ý tưởng (40%)',
@@ -243,17 +245,27 @@ const WritingExercise = () => {
 
       setAiResult(result);
 
+      // Calculate score
+      const score = result?.score || calculateScore();
+
       // Submit to course API with AI result
-      await coursesAPI.submitUnitAnswers(parseInt(lessonId), {
+      const rawMaxCups = unitData?.max_cups;
+      let cupCapacity = typeof rawMaxCups === 'number' ? rawMaxCups : parseInt(rawMaxCups, 10);
+      if (!Number.isFinite(cupCapacity) || cupCapacity <= 0) {
+        cupCapacity = writingData?.totalQuestions || 1;
+      }
+      const cupsEarned = Math.min(cupCapacity, Math.round((score / 100) * cupCapacity));
+
+      await coursesAPI.submitUnitAnswers(parseInt(lessonId, 10), {
         content_text: userEssay,
-        content_url: null
+        content_url: null,
+        score: cupsEarned,
+        time_spent: timeSpent
       });
 
       setIsCompleted(true);
       setIsSaved(true);
 
-      // Calculate score and save completion data
-      const score = result?.score || calculateScore();
       const completionData = {
         lessonId,
         courseId,

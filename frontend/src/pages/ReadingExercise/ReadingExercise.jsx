@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import './ReadingExercise.css';
 import { getReadingPassage } from '../../api/courseContent';
+import { coursesAPI } from '../../services/api';
 
 const ReadingExercise = () => {
   const { courseId, lessonId } = useParams();
@@ -32,6 +33,7 @@ const ReadingExercise = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [readingData, setReadingData] = useState(null);
+  const [unitData, setUnitData] = useState(null);
 
   // Fetch reading passage từ API
   useEffect(() => {
@@ -40,6 +42,18 @@ const ReadingExercise = () => {
       
       setLoading(true);
       setError(null);
+
+      if (courseId) {
+        try {
+          const units = await coursesAPI.getUnits(courseId);
+          const matchedUnit = units.find((u) => u.id === parseInt(lessonId, 10));
+          if (matchedUnit) {
+            setUnitData(matchedUnit);
+          }
+        } catch (unitErr) {
+          console.warn('Không thể tải thông tin unit Reading:', unitErr);
+        }
+      }
       
       // Try new Rich Content API first
       try {
@@ -202,7 +216,7 @@ const ReadingExercise = () => {
   };
 
   // Handle completion
-  const handleComplete = () => {
+  const handleComplete = async () => {
     // Save completion data to localStorage
     const completionData = {
       lessonId: lessonId,
@@ -216,6 +230,23 @@ const ReadingExercise = () => {
     const existingData = JSON.parse(localStorage.getItem(`course_${courseId}_completed_lessons`) || '{}');
     existingData[lessonId] = completionData;
     localStorage.setItem(`course_${courseId}_completed_lessons`, JSON.stringify(existingData));
+
+    let cupCapacity = Number(unitData?.max_cups);
+    if (!Number.isFinite(cupCapacity) || cupCapacity <= 0) {
+      cupCapacity = readingData?.totalQuestions || 1;
+    }
+    const cupsEarned = Math.min(cupCapacity, Math.round((score / 100) * cupCapacity));
+
+    try {
+      await coursesAPI.submitUnitAnswers(parseInt(lessonId, 10), {
+        content_text: JSON.stringify(userAnswers),
+        content_url: null,
+        score: cupsEarned,
+        time_spent: timeSpent
+      });
+    } catch (submitErr) {
+      console.error('Không thể lưu kết quả Reading:', submitErr);
+    }
 
     // Navigate to learning profile page
     navigate('/learning-profile');
