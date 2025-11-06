@@ -188,7 +188,7 @@
   background: white;
   position: relative;
   overflow: hidden;
-  height: 260px;
+  min-height: 260px;
   display: flex;
   flex-direction: column;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);

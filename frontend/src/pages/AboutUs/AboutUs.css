@@ -667,6 +667,14 @@ body.about-page-active {
   padding: 0 40px;
 }
 
+.mission-section .section-title {
+  background: none;
+  -webkit-background-clip: initial;
+  -webkit-text-fill-color: #ffffff;
+  background-clip: initial;
+  color: #ffffff;
+}
+
 .pillars-section .section-title {
   background: none;
   -webkit-background-clip: initial;

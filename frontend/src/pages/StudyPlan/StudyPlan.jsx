@@ -1,323 +1,341 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Award, CheckCircle, Clock, ChevronRight, Calendar
-} from 'lucide-react';
+import { Award, CheckCircle, ChevronRight, BookOpen } from 'lucide-react';
 import ConsistentSidebarLayout from '../../components/Layout/ConsistentSidebarLayout';
+import { coursesAPI } from '../../services/api';
 import './StudyPlan.css';
 
-// Dữ liệu giả cho kế hoạch học
-const studyPlanData = {
-  '2025-04': {
-    month: 'Tháng 4 Năm 2025',
-    sessions: [
-      {
-        id: 1,
-        sessionNumber: 1,
-        date: 'Th 5, 24 Thg 4',
-        fullDate: '2025-04-24',
-        title: 'Mở đầu khóa Từ vựng',
-        category: 'Reading',
-        status: 'completed',
-        cupsEarned: 3,
-        totalCups: 3,
-        completedDate: 'Hoàn thành: 21/6'
-      },
-      {
-        id: 2,
-        sessionNumber: 2,
-        date: 'Th 6, 25 Thg 4',
-        fullDate: '2025-04-25',
-        title: 'Bài giới thiệu khóa Ngữ pháp',
-        category: 'Writing',
-        status: 'in-progress',
-        cupsEarned: 0,
-        totalCups: 3,
-        message: 'Bạn chưa hoàn thành buổi học này'
-      },
-      {
-        id: 3,
-        sessionNumber: 3,
-        date: 'Th 5, 24 Thg 4',
-        fullDate: '2025-04-24',
-        title: 'Tổng quan phát âm',
-        category: 'Speaking',
-        status: 'completed',
-        cupsEarned: 3,
-        totalCups: 3,
-        completedDate: 'Hoàn thành trước'
-      },
-      {
-        id: 4,
-        sessionNumber: 4,
-        date: 'Th 7, 26 Thg 4',
-        fullDate: '2025-04-26',
-        title: 'Thế giới tự nhiên',
-        category: 'Reading',
-        status: 'completed',
-        cupsEarned: 2,
-        totalCups: 3,
-        completedDate: 'Hoàn thành: 2/7'
-      },
-      {
-        id: 5,
-        sessionNumber: 5,
-        date: 'CN, 27 Thg 4',
-        fullDate: '2025-04-27',
-        title: 'Danh từ',
-        category: 'Writing',
-        status: 'in-progress',
-        cupsEarned: 0,
-        totalCups: 3,
-        message: 'Bạn chưa hoàn thành buổi học này'
-      },
-      {
-        id: 6,
-        sessionNumber: 6,
-        date: 'Th 2, 28 Thg 4',
-        fullDate: '2025-04-28',
-        title: 'Bài nghe chép chính tả 1',
-        category: 'Listening',
-        status: 'in-progress',
-        cupsEarned: 1,
-        totalCups: 3,
-        message: 'Bạn chưa hoàn thành buổi học này'
-      },
-      {
-        id: 7,
-        sessionNumber: 7,
-        date: 'Th 3, 29 Thg 4',
-        fullDate: '2025-04-29',
-        title: 'Các lời phát âm thường gặp',
-        category: 'Speaking',
-        status: 'completed',
-        cupsEarned: 2,
-        totalCups: 3,
-        completedDate: 'Hoàn thành trước'
-      },
-      {
-        id: 8,
-        sessionNumber: 8,
-        date: 'Th 3, 29 Thg 4',
-        fullDate: '2025-04-29',
-        title: 'Bài kiểm tra 1 - Từ vựng',
-        category: 'Reading',
-        status: 'completed',
-        cupsEarned: 3,
-        totalCups: 3,
-        completedDate: 'Hoàn thành: 3/7'
-      },
-      {
-        id: 9,
-        sessionNumber: 9,
-        date: 'Th 4, 30 Thg 4',
-        fullDate: '2025-04-30',
-        title: 'Mind map 1',
-        category: 'Writing',
-        status: 'in-progress',
-        cupsEarned: 0,
-        totalCups: 3,
-        message: 'Bạn chưa hoàn thành buổi học này'
-      }
-    ]
-  },
-  '2025-05': {
-    month: 'Tháng 5 Năm 2025',
-    sessions: [
-      {
-        id: 10,
-        sessionNumber: 10,
-        date: 'Th 5, 1 Thg 5',
-        fullDate: '2025-05-01',
-        title: 'Dị nghĩa chính chính tả',
-        category: 'Reading',
-        status: 'not-started',
-        cupsEarned: 0,
-        totalCups: 3
-      },
-      {
-        id: 11,
-        sessionNumber: 11,
-        date: 'Th 6, 2 Thg 5',
-        fullDate: '2025-05-02',
-        title: 'Bài kiểm tra 1 - Phát âm',
-        category: 'Speaking',
-        status: 'not-started',
-        cupsEarned: 1,
-        totalCups: 3
-      },
-      {
-        id: 12,
-        sessionNumber: 12,
-        date: 'Th 7, 3 Thg 5',
-        fullDate: '2025-05-03',
-        title: 'Hoạt động thực nghĩa',
-        category: 'Writing',
-        status: 'completed',
-        cupsEarned: 3,
-        totalCups: 3,
-        completedDate: 'Đã Hoàn Thành: Thứ Bảy, 5 Tháng 7'
-      }
-    ]
-  }
-};
-
 const categoryStyles = {
-  Vocabulary: { bg: '#f0fdf4', border: '#86efac', text: '#166534' },
-  Grammar: { bg: '#fef3c7', border: '#fcd34d', text: '#92400e' },
-  Pronunciation: { bg: '#dbeafe', border: '#93c5fd', text: '#1e3a8a' },
-  Listening: { bg: '#fce7f3', border: '#f9a8d4', text: '#831843' },
-  Reading: { bg: '#e0e7ff', border: '#c7d2fe', text: '#3730a3' },
-  Writing: { bg: '#fed7aa', border: '#fdba74', text: '#7c2d12' },
-  Speaking: { bg: '#e9d5ff', border: '#d8b4fe', text: '#6b21a8' }
+  listening: { bg: '#dbeafe', border: '#93c5fd', text: '#1e3a8a' },
+  speaking: { bg: '#e9d5ff', border: '#d8b4fe', text: '#6b21a8' },
+  reading: { bg: '#e0e7ff', border: '#c7d2fe', text: '#3730a3' },
+  writing: { bg: '#fed7aa', border: '#fdba74', text: '#7c2d12' },
+  vocabulary: { bg: '#fef3c7', border: '#fcd34d', text: '#92400e' },
+  grammar: { bg: '#dcfce7', border: '#86efac', text: '#166534' },
+  pronunciation: { bg: '#fce7f3', border: '#f9a8d4', text: '#831843' },
+  general: { bg: '#e2e8f0', border: '#cbd5f5', text: '#1e293b' }
 };
 
-const getCourseIdByCategory = (category) => {
-  const categoryToCourseId = {
-    Speaking: 10,
-    Reading: 11,
-    Writing: 12,
-    Listening: 13
-  };
-  return categoryToCourseId[category] || 10; // Default to 10 if category not found
+const skillLabels = {
+  listening: 'Listening',
+  speaking: 'Speaking',
+  reading: 'Reading',
+  writing: 'Writing',
+  vocabulary: 'Vocabulary',
+  grammar: 'Grammar',
+  pronunciation: 'Pronunciation',
+  general: 'Kỹ năng chung'
+};
+
+const grades = Array.from({ length: 12 }, (_, idx) => `Lớp ${idx + 1}`);
+
+const statusLabelMap = {
+  completed: 'Đã hoàn thành',
+  'in-progress': 'Đang học',
+  'not-started': 'Chưa học'
+};
+
+const getStatusBadgeClass = (status) => {
+  switch (status) {
+    case 'completed':
+      return 'session-completed';
+    case 'in-progress':
+      return 'session-in-progress';
+    case 'not-started':
+    default:
+      return 'session-not-started';
+  }
 };
 
 const StudyPlan = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('overview');
-  const [activeMenuItem, setActiveMenuItem] = useState('study-plan');
-  const [selectedMonth, setSelectedMonth] = useState('2025-04');
-  const [isContentPushed, setIsContentPushed] = useState(false);
+  const [selectedGrade, setSelectedGrade] = useState('Lớp 3');
+  const [courses, setCourses] = useState([]);
+  const [selectedCourseId, setSelectedCourseId] = useState(null);
+  const [units, setUnits] = useState([]);
+  const [loadingCourses, setLoadingCourses] = useState(false);
+  const [loadingUnits, setLoadingUnits] = useState(false);
+  const [coursesError, setCoursesError] = useState('');
+  const [unitsError, setUnitsError] = useState('');
 
-  const months = Object.keys(studyPlanData);
-  const currentMonthData = studyPlanData[selectedMonth];
+  useEffect(() => {
+    const loadCourses = async () => {
+      setLoadingCourses(true);
+      setCoursesError('');
+      try {
+        const gradeNumber = parseInt(selectedGrade.replace('Lớp ', ''), 10);
+        const data = await coursesAPI.getCourses({ grade: gradeNumber });
+        const normalized = Array.isArray(data) ? data : [];
+        setCourses(normalized);
+        setSelectedCourseId((prev) => {
+          if (normalized.some((course) => course.id === prev)) {
+            return prev;
+          }
+          return normalized.length > 0 ? normalized[0].id : null;
+        });
+      } catch (error) {
+        const message = error?.detail || 'Không thể tải danh sách khóa học.';
+        setCourses([]);
+        setSelectedCourseId(null);
+        setCoursesError(message);
+      } finally {
+        setLoadingCourses(false);
+      }
+    };
 
-  const getStatusBadgeClass = (status) => {
-    switch(status) {
-      case 'completed': return 'session-completed';
-      case 'in-progress': return 'session-in-progress';
-      case 'not-started': return 'session-not-started';
-      default: return '';
+    loadCourses();
+  }, [selectedGrade]);
+
+  useEffect(() => {
+    const loadUnits = async () => {
+      if (!selectedCourseId) {
+        setUnits([]);
+        return;
+      }
+
+      setLoadingUnits(true);
+      setUnitsError('');
+      try {
+        const data = await coursesAPI.getUnits(selectedCourseId);
+        const normalized = Array.isArray(data) ? data : [];
+        const sorted = normalized.slice().sort((a, b) => {
+          const weekA = a.week_index ?? Number.MAX_SAFE_INTEGER;
+          const weekB = b.week_index ?? Number.MAX_SAFE_INTEGER;
+          if (weekA !== weekB) return weekA - weekB;
+          const orderA = a.order_index ?? Number.MAX_SAFE_INTEGER;
+          const orderB = b.order_index ?? Number.MAX_SAFE_INTEGER;
+          if (orderA !== orderB) return orderA - orderB;
+          return a.id - b.id;
+        });
+        setUnits(sorted);
+      } catch (error) {
+        setUnits([]);
+        const message = error?.detail || 'Không thể tải kế hoạch học cho khóa học này.';
+        setUnitsError(message);
+      } finally {
+        setLoadingUnits(false);
+      }
+    };
+
+    loadUnits();
+  }, [selectedCourseId]);
+
+  const selectedCourse = useMemo(
+    () => courses.find((course) => course.id === selectedCourseId) || null,
+    [courses, selectedCourseId]
+  );
+
+  const sessions = useMemo(() => {
+    if (!selectedCourse) {
+      return [];
     }
-  };
 
-  const getSessionBadgeText = (sessionNumber) => {
-    return `Buổi ${sessionNumber}`;
-  };
+    const completedUnits = selectedCourse.completedUnits || 0;
+    const isInProgress = selectedCourse.status === 'in-progress';
+    let remainingCups = selectedCourse.cupsEarned || 0;
 
-  const handleMenuItemClick = (itemId) => {
-    setActiveMenuItem(itemId);
-    setIsContentPushed(true);
+    return units.map((unit, index) => {
+      let status = 'not-started';
+      if (index < completedUnits) {
+        status = 'completed';
+      } else if (index === completedUnits && isInProgress) {
+        status = 'in-progress';
+      }
+
+      const maxCups = unit.max_cups ?? 0;
+      let cupsEarnedForUnit = 0;
+      if (status !== 'not-started' && maxCups > 0 && remainingCups > 0) {
+        cupsEarnedForUnit = Math.min(maxCups, remainingCups);
+        remainingCups = Math.max(0, remainingCups - cupsEarnedForUnit);
+      }
+
+      const weekLabel = unit.week_index ? `Tuần ${unit.week_index}` : 'Chưa có lịch';
+      const sessionNumber = index + 1;
+
+      return {
+        id: unit.id,
+        sessionNumber,
+        title: unit.title,
+        description: unit.description,
+        weekLabel,
+        status,
+        cupsEarned: cupsEarnedForUnit,
+        totalCups: maxCups,
+        unitType: unit.unit_type || 'lesson'
+      };
+    });
+  }, [units, selectedCourse]);
+
+  const skillKey = (selectedCourse?.category || selectedCourse?.skill || 'general').toLowerCase();
+  const categoryStyle = categoryStyles[skillKey] || categoryStyles.general;
+  const categoryLabel = skillLabels[skillKey] || skillLabels.general;
+
+  const handleNavigate = (sessionId) => {
+    if (!selectedCourse) {
+      return;
+    }
+    const courseId = selectedCourse.id;
+    const skillType = (selectedCourse.category || selectedCourse.skill || '').toLowerCase();
+
+    const skillRoutes = {
+      reading: `/reading-exercise/${courseId}/${sessionId}`,
+      writing: `/writing-exercise/${courseId}/${sessionId}`,
+      listening: `/listening-exercise/${courseId}/${sessionId}`,
+      speaking: `/speaking-exercise/${courseId}/${sessionId}`
+    };
+
+    if (skillRoutes[skillType]) {
+      navigate(skillRoutes[skillType]);
+      return;
+    }
+
+    navigate(`/course/${courseId}`);
   };
 
   return (
-    <ConsistentSidebarLayout 
-      activeMenuItem={activeMenuItem}
-      onMenuItemClick={handleMenuItemClick}
-      courseTitle="Học bài"
-    >
-      <div className={`study-plan-content-wrapper ${isContentPushed ? 'pushed-out' : ''}`}>
-        {/* Header */}
+    <ConsistentSidebarLayout activeMenuItem="study-plan" courseTitle="Học bài">
+      <div className="study-plan-content-wrapper">
         <div className="study-plan-header">
-          <div className="header-tabs">
-            <button
-              className={`tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
-              onClick={() => setActiveTab('overview')}
-            >
-              Tổng quan
-            </button>
+          <div className="header-description">
+            <h1>Kế hoạch học tập</h1>
+            <p>Theo dõi lộ trình học từ các khóa hiện có và tiếp tục những bài học phù hợp.</p>
           </div>
         </div>
 
-        {/* Content */}
         <div className="study-plan-content">
-          {/* Month Selector */}
-          <div className="month-selector">
-            {months.map(month => (
-              <button
-                key={month}
-                className={`month-btn ${selectedMonth === month ? 'active' : ''}`}
-                onClick={() => setSelectedMonth(month)}
-              >
-                {studyPlanData[month].month}
-              </button>
-            ))}
-          </div>
-
-          {/* Month Title */}
-          <h2 className="month-title">{currentMonthData?.month || 'Tháng 4 Năm 2025'}</h2>
-
-          {/* Sessions Grid */}
-          <div className="sessions-grid">
-            {currentMonthData?.sessions?.map(session => {
-              const categoryStyle = categoryStyles[session.category] || categoryStyles.Vocabulary;
-              
-              return (
-                <div 
-                  key={session.id} 
-                  className={`session-card ${getStatusBadgeClass(session.status)}`}
+          <div className="study-plan-controls">
+            <div className="month-selector">
+              {grades.map((grade) => (
+                <button
+                  key={grade}
+                  className={`month-btn ${selectedGrade === grade ? 'active' : ''}`}
+                  onClick={() => setSelectedGrade(grade)}
                 >
-                  {/* Session Header */}
-                  <div className="session-header">
-                    <div 
-                      className="session-badge"
-                      style={{
-                        background: session.status === 'completed' ? '#10b981' : 
-                                   session.status === 'in-progress' ? '#f59e0b' : '#94a3b8'
-                      }}
-                    >
-                      {getSessionBadgeText(session.sessionNumber)}
-                      {(session.status === 'completed' || session.cupsEarned > 0) && <CheckCircle size={14} className="check-icon" />}
-                    </div>
-                    <span className="session-date">{session.date}</span>
-                  </div>
+                  {grade}
+                </button>
+              ))}
+            </div>
 
-                  {/* Session Content */}
-                  <div className="session-content">
-                    <div className="session-indicator">
-                      <div className="indicator-dot"></div>
-                      <span className="session-title">{session.title}</span>
-                    </div>
-                    
-                    <div 
-                      className="session-category"
-                      style={{
-                        background: categoryStyle.bg,
-                        borderColor: categoryStyle.border,
-                        color: categoryStyle.text
-                      }}
-                    >
-                      {session.category}
-                    </div>
-
-                    {/* Status Messages */}
-                    {session.message && (
-                      <p className="session-message">{session.message}</p>
-                    )}
-                  </div>
-
-                  {/* Session Footer */}
-                  <div className="session-footer">
-                    <div className="cups-indicator">
-                      <Award size={16} className="cup-icon" />
-                      <span className="cups-text">{session.cupsEarned}/{session.totalCups}</span>
-                    </div>
-                    <button
-                      className="session-action-btn"
-                      onClick={() => {
-                        const courseId = getCourseIdByCategory(session.category);
-                        navigate(`/course/${courseId}`);
-                      }}
-                    >
-                      {session.cupsEarned === session.totalCups ? 'Xem lại' :
-                       session.cupsEarned > 0 ? 'Tiếp tục' : 'Bắt đầu'}
-                      <ChevronRight size={16} />
-                    </button>
-                  </div>
-                </div>
-              );
-            }) || []}
+            {loadingCourses ? (
+              <div className="study-plan-loading">Đang tải khóa học...</div>
+            ) : coursesError ? (
+              <div className="study-plan-error">{coursesError}</div>
+            ) : courses.length === 0 ? (
+              <div className="study-plan-empty">
+                <BookOpen size={48} />
+                <p>Chưa có khóa học nào cho {selectedGrade}. Hãy thử chọn lớp khác.</p>
+              </div>
+            ) : courses.length === 1 ? null : (
+              <div className="course-selector">
+                {courses.map((course) => (
+                  <button
+                    key={course.id}
+                    className={`course-pill ${course.id === selectedCourseId ? 'active' : ''}`}
+                    onClick={() => setSelectedCourseId(course.id)}
+                  >
+                    <span className="course-pill-title">{course.name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
+
+          {selectedCourse && (
+            <>
+              {loadingUnits ? (
+                <div className="study-plan-loading">Đang tải chi tiết kế hoạch học...</div>
+              ) : unitsError ? (
+                <div className="study-plan-error">{unitsError}</div>
+              ) : sessions.length === 0 ? (
+                <div className="study-plan-empty">
+                  <BookOpen size={48} />
+                  <p>Khóa học này chưa có bài học nào.</p>
+                </div>
+              ) : (
+                <div className="sessions-grid">
+                  {sessions.map((session) => (
+                    <div
+                      key={session.id}
+                      className={`session-card ${getStatusBadgeClass(session.status)}`}
+                    >
+                      <div className="session-header">
+                        <div
+                          className="session-badge"
+                          style={{
+                            background:
+                              session.status === 'completed'
+                                ? '#10b981'
+                                : session.status === 'in-progress'
+                                ? '#f59e0b'
+                                : '#94a3b8'
+                          }}
+                        >
+                          Buổi {session.sessionNumber}
+                          {(session.status === 'completed' || session.cupsEarned > 0) && (
+                            <CheckCircle size={14} className="check-icon" />
+                          )}
+                        </div>
+                        <span className="session-date">{session.weekLabel}</span>
+                      </div>
+                      <div className="session-content">
+                        <div className="session-indicator">
+                          <div className="indicator-dot"></div>
+                          <span className="session-title">
+                            {selectedCourse?.name ? `${selectedCourse.name} · ${session.title}` : session.title}
+                          </span>
+                        </div>
+
+                        <div
+                          className="session-category"
+                          style={{
+                            background: categoryStyle.bg,
+                            borderColor: categoryStyle.border,
+                            color: categoryStyle.text
+                          }}
+                        >
+                          {categoryLabel}
+                        </div>
+
+                        {session.description && (
+                          <p className="session-message">{session.description}</p>
+                        )}
+
+                        {session.status === 'not-started' && (
+                          <p className="session-message">Bạn chưa bắt đầu buổi học này.</p>
+                        )}
+                        {session.status === 'in-progress' && (
+                          <p className="session-message">Tiếp tục để hoàn thành buổi học.</p>
+                        )}
+                        {session.status === 'completed' && (
+                          <p className="session-message">Đã hoàn thành buổi học.</p>
+                        )}
+                      </div>
+
+                      <div className="session-footer">
+                        <div className="cups-indicator">
+                          <Award size={16} className="cup-icon" />
+                          <span className="cups-text">
+                            {session.cupsEarned}/{session.totalCups}
+                          </span>
+                        </div>
+                        <button
+                          className="session-action-btn"
+                          onClick={() => handleNavigate(session.id)}
+                        >
+                          {session.status === 'completed'
+                            ? 'Xem lại'
+                            : session.status === 'in-progress'
+                            ? 'Tiếp tục'
+                            : 'Bắt đầu'}
+                          <ChevronRight size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
     </ConsistentSidebarLayout>
