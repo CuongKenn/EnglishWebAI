@@ -791,6 +791,7 @@ const UnitQuestionsModal = ({ unit, course, onClose, onRefresh }) => {
   const [audioUploading, setAudioUploading] = useState(false);
   const [uploadedDocument, setUploadedDocument] = useState(null);
   const [documentInputMode, setDocumentInputMode] = useState('text'); // 'text' or 'file'
+  const [passageText, setPassageText] = useState('');
 
   // Load questions
   const loadQuestions = async () => {
@@ -834,6 +835,7 @@ const UnitQuestionsModal = ({ unit, course, onClose, onRefresh }) => {
     setUploadedAudio(null);
     setUploadedDocument(null);
     setDocumentInputMode('text');
+    setPassageText('');
   };
 
   // Handle audio file upload
@@ -856,33 +858,42 @@ const UnitQuestionsModal = ({ unit, course, onClose, onRefresh }) => {
   // Handle document file upload
   const handleDocumentUpload = (e) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 10 * 1024 * 1024) {
-        showWarning('File không được vượt quá 10MB');
-        return;
-      }
-      const allowedTypes = [
-        'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'text/plain'
-      ];
-      if (!allowedTypes.includes(file.type)) {
-        showWarning('Chỉ chấp nhận file PDF, Word, hoặc Text');
-        return;
-      }
+    if (!file) return;
+
+    const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
+    if (!allowedTypes.includes(file.type)) {
+      showWarning('Chỉ hỗ trợ file PDF, DOC, DOCX hoặc TXT');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      showWarning('File không được vượt quá 10MB');
+      return;
+    }
+
+    if (file.type === 'text/plain') {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setPassageText((event.target?.result || '').toString());
+        setUploadedDocument(file);
+      };
+      reader.onerror = () => {
+        showWarning('Không thể đọc nội dung file. Vui lòng thử lại.');
+        setUploadedDocument(null);
+      };
+      reader.readAsText(file);
+    } else {
       setUploadedDocument(file);
-      // TODO: Upload to server
+      showWarning('Định dạng này không thể tự động trích xuất nội dung. Vui lòng nhập lại đoạn văn tay.');
     }
   };
 
   // Handle add question
   const handleAddQuestion = async (e) => {
     e.preventDefault();
+    const errors = [];
     try {
       const payload = {
         type: questionForm.type,
-        prompt: questionForm.prompt,
         points: Number(questionForm.points) || 1,
       };
 
@@ -911,6 +922,26 @@ const UnitQuestionsModal = ({ unit, course, onClose, onRefresh }) => {
           alert('Vui lòng chọn và tải lên file audio trước khi thêm câu hỏi.');
           return;
         }
+      }
+
+      if (course.category === 'reading') {
+        if (!passageText.trim() && documentInputMode === 'text') {
+          errors.push('• Vui lòng nhập đoạn văn đọc');
+        }
+        if (documentInputMode === 'file' && !passageText.trim()) {
+          errors.push('• Vui lòng nhập hoặc trích xuất đoạn văn từ file');
+        }
+        if (errors.length > 0) {
+          alert(errors.join('\n'));
+          return;
+        }
+        const readingContent = {
+          passage: passageText,
+          question: questionForm.prompt,
+        };
+        payload.prompt = JSON.stringify(readingContent);
+      } else {
+        payload.prompt = questionForm.prompt;
       }
 
       await coursesAPI.createQuestion(unit.id, payload);
@@ -1073,8 +1104,20 @@ const UnitQuestionsModal = ({ unit, course, onClose, onRefresh }) => {
                 )}
               </div>
             ) : (
-              <div className="cm-text-input-hint">
-                <p>💡 Nhập nội dung văn bản trực tiếp vào phần "Câu hỏi" bên dưới</p>
+              <div className="cm-form-group" style={{ marginTop: '1rem' }}>
+                <textarea
+                  value={passageText}
+                  onChange={(event) => setPassageText(event.target.value)}
+                  rows={8}
+                  placeholder="Nhập hoặc dán toàn bộ đoạn văn ở đây..."
+                  className="cm-textarea"
+                  required
+                />
+                <div className="cm-text-stats">
+                  <span>{passageText.trim().split(/\s+/).filter(Boolean).length} từ</span>
+                  <span>•</span>
+                  <span>{passageText.length} ký tự</span>
+                </div>
               </div>
             )}
           </div>
