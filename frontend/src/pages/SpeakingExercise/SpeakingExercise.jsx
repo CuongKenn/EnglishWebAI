@@ -48,6 +48,8 @@ const SpeakingExercise = () => {
   const [recordingError, setRecordingError] = useState(null);
   const [showHint, setShowHint] = useState(false);
   const [showCompletionMessage, setShowCompletionMessage] = useState(false);
+  const [isFinalizing, setIsFinalizing] = useState(false);
+  const [completionSaved, setCompletionSaved] = useState(false);
   const [isAssessing, setIsAssessing] = useState(false);
   const [assessmentResults, setAssessmentResults] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -62,14 +64,45 @@ const SpeakingExercise = () => {
   const audioChunksRef = useRef([]);
   const objectUrlSetRef = useRef(new Set());
 
+  const safeParseJSON = (value, fallback) => {
+    if (typeof value === 'undefined' || value === null) {
+      return fallback;
+    }
+    if (typeof value !== 'string') {
+      return value ?? fallback;
+    }
+    try {
+      return JSON.parse(value);
+    } catch (err) {
+      console.warn('Không thể parse JSON:', err);
+      return fallback;
+    }
+  };
+
   // Handle completion
-  const handleComplete = async () => {
-    // Calculate final score (mock calculation based on mock results)
-    const finalScore = Math.round((currentResults.fluency + currentResults.grammar + currentResults.pronunciation + currentResults.vocabulary) / 4 * 10) / 10;
+  const handleComplete = async ({ redirect = true } = {}) => {
+    if (completionSaved) {
+      if (redirect) {
+        navigate('/learning-profile');
+      }
+      return true;
+    }
+
+    if (isFinalizing) {
+      return false;
+    }
+
+    setIsFinalizing(true);
+
+    const results = assessmentResults || mockResults;
+    const scores = [results?.fluency, results?.grammar, results?.pronunciation, results?.vocabulary]
+      .map((value) => (Number.isFinite(Number(value)) ? Number(value) : 0));
+    const scoreAverage = scores.reduce((sum, value) => sum + value, 0) / (scores.length || 1);
+    const finalScore = Math.round((scoreAverage) * 10) / 10;
 
     let scorePercent;
-    if (assessmentResults?.score !== undefined && assessmentResults?.score !== null) {
-      const numericScore = Number(assessmentResults.score);
+    if (results?.score !== undefined && results?.score !== null) {
+      const numericScore = Number(results.score);
       scorePercent = Number.isFinite(numericScore) ? Math.max(0, Math.min(100, numericScore)) : Math.round((finalScore / 10) * 100);
     } else {
       scorePercent = Math.round((finalScore / 10) * 100);
@@ -93,9 +126,10 @@ const SpeakingExercise = () => {
     } catch (submitErr) {
       console.error('Không thể lưu kết quả Speaking:', submitErr);
       showError('Không thể lưu kết quả Speaking. Vui lòng thử lại.');
+      setIsFinalizing(false);
+      return false;
     }
 
-    // Save completion data to localStorage
     const completionData = {
       lessonId: lessonId,
       courseId: courseId,
@@ -109,118 +143,203 @@ const SpeakingExercise = () => {
     existingData[lessonId] = completionData;
     localStorage.setItem(`course_${courseId}_completed_lessons`, JSON.stringify(existingData));
 
-    // Navigate to learning profile page
-    navigate('/learning-profile');
+    setCompletionSaved(true);
+    setIsFinalizing(false);
+
+    if (redirect) {
+      navigate('/learning-profile');
+    }
+
+    return true;
+  };
+
+  const handleFinishExercise = async () => {
+    const success = await handleComplete({ redirect: false });
+    if (success) {
+      setShowCompletionMessage(true);
+    }
   };
 
   // Load speaking data from API
   useEffect(() => {
+    let isMounted = true;
+
     const fetchSpeakingData = async () => {
       if (!lessonId) return;
-      
-      setLoading(true);
-      setError(null);
 
-      if (courseId) {
+      try {
+        setLoading(true);
+        setError(null);
+
+        let matchedUnit = null;
+        let course = null;
+
+        if (courseId) {
+          try {
+            const units = await coursesAPI.getUnits(courseId);
+            matchedUnit = units.find((u) => u.id === parseInt(lessonId, 10)) || null;
+            if (isMounted && matchedUnit) {
+              setUnitData(matchedUnit);
+            }
+          } catch (unitErr) {
+            console.warn('Không thể tải thông tin unit Speaking:', unitErr);
+          }
+
+          try {
+            course = await coursesAPI.getCourse(courseId);
+          } catch (courseErr) {
+            console.warn('Không thể tải thông tin khóa học Speaking:', courseErr);
+          }
+        }
+
+        let promptLoaded = false;
         try {
-          const units = await coursesAPI.getUnits(courseId);
-          const matchedUnit = units.find((u) => u.id === parseInt(lessonId, 10));
-          if (matchedUnit) {
-            setUnitData(matchedUnit);
+          const promptData = await getSpeakingPrompt(lessonId);
+
+          let tips = promptData.tips;
+          if (typeof tips === 'string') {
+            tips = safeParseJSON(tips, []);
           }
-        } catch (unitErr) {
-          console.warn('Không thể tải thông tin unit Speaking:', unitErr);
-        }
-      }
-      
-      // Try new Rich Content API first
-      try {
-        const promptData = await getSpeakingPrompt(lessonId);
-        
-        // Parse tips and vocabulary if they're strings
-        let tips = promptData.tips;
-        if (typeof tips === 'string') {
-          try {
-            tips = JSON.parse(tips);
-          } catch (e) {
-            tips = [];
+
+          let vocabulary = promptData.vocabulary;
+          if (typeof vocabulary === 'string') {
+            vocabulary = safeParseJSON(vocabulary, {});
           }
-        }
-        
-        let vocabulary = promptData.vocabulary;
-        if (typeof vocabulary === 'string') {
-          try {
-            vocabulary = JSON.parse(vocabulary);
-          } catch (e) {
-            vocabulary = {};
-          }
-        }
-        
-        // Transform to component format
-        setSpeakingData({
-          id: promptData.id,
-          title: promptData.title,
-          courseTitle: 'Speaking',
-          difficulty: promptData.difficulty || 'Intermediate',
-          estimatedTime: Math.ceil((promptData.preparation_time + promptData.response_time) / 60) || 10,
-          totalQuestions: 1,
-          preparation_time: promptData.preparation_time,
-          response_time: promptData.response_time,
-          questions: [
-            {
+
+          if (isMounted) {
+            setSpeakingData({
               id: promptData.id,
-              question: promptData.prompt,
-              instruction: promptData.instruction,
-              context: promptData.context,
-              timeLimit: promptData.response_time || 120,
-              minSentences: 2,
-              audioUrl: promptData.sample_audio_url,
-              tips: tips || [],
-              vocabulary: vocabulary || {},
-              sampleResponse: promptData.sample_response,
-              criteria: promptData.criteria || []
+              title: promptData.title,
+              courseTitle: promptData.course_title || course?.title || 'Speaking',
+              difficulty: promptData.difficulty || matchedUnit?.difficulty || course?.level || 'Intermediate',
+              estimatedTime: Math.ceil((Number(promptData.preparation_time || 0) + Number(promptData.response_time || 0)) / 60) || 10,
+              totalQuestions: 1,
+              preparation_time: promptData.preparation_time,
+              response_time: promptData.response_time,
+              questions: [
+                {
+                  id: promptData.id,
+                  question: promptData.prompt,
+                  instruction: promptData.instruction,
+                  context: promptData.context,
+                  timeLimit: Number(promptData.response_time) || 120,
+                  minSentences: 2,
+                  audioUrl: promptData.sample_audio_url,
+                  tips: Array.isArray(tips) ? tips : [],
+                  vocabulary: vocabulary || {},
+                  sampleResponse: promptData.sample_response,
+                  criteria: Array.isArray(promptData.criteria) ? promptData.criteria : []
+                }
+              ]
+            });
+          }
+          promptLoaded = true;
+        } catch (apiErr) {
+          if (apiErr?.response?.status !== 404) {
+            console.warn('Không thể tải dữ liệu Speaking mới:', apiErr);
+          }
+        }
+
+        if (promptLoaded) {
+          return;
+        }
+
+        try {
+          const numericLessonId = parseInt(lessonId, 10);
+          const legacyQuestions = await coursesAPI.getQuestions(numericLessonId);
+
+          if (!Array.isArray(legacyQuestions) || legacyQuestions.length === 0) {
+            throw new Error('Bài nói này chưa có nội dung để luyện.');
+          }
+
+          const normalizedQuestions = legacyQuestions.map((question, index) => {
+            const rawAnswer = typeof question.answer !== 'undefined' ? question.answer : question.answer_json;
+            const parsedAnswer = safeParseJSON(rawAnswer, {});
+
+            const instruction = parsedAnswer.instruction
+              || (Array.isArray(parsedAnswer.instructions) ? parsedAnswer.instructions[0] : null)
+              || 'Ghi âm câu trả lời của bạn cho câu hỏi sau';
+
+            const tipsValue = parsedAnswer.tips ?? parsedAnswer.hints;
+            let tips = Array.isArray(tipsValue) ? tipsValue : [];
+            if (!Array.isArray(tips) && typeof tipsValue === 'string') {
+              tips = safeParseJSON(tipsValue, []);
             }
-          ]
-        });
-        setLoading(false);
-        return; // Success - exit early
-      } catch (apiErr) {
-        // 404 is expected when no rich content - fallback silently
-        // Continue to fallback...
-      }
-      
-      // Fallback: Use mock/placeholder data
-      try {
-        const mockData = {
-          id: lessonId || '1',
-          title: 'Speaking Unit',
-          courseTitle: 'Speaking',
-          difficulty: 'Beginner',
-          estimatedTime: 10,
-          totalQuestions: 1,
-          questions: [
-            {
-              id: 1,
-              question: "Describe yourself",
-              instruction: "Record your answer to the following IELTS Speaking question",
-              timeLimit: 60,
-              minSentences: 2,
-              audioUrl: null
+
+            let vocabulary = parsedAnswer.vocabulary ?? {};
+            if (typeof vocabulary === 'string') {
+              vocabulary = safeParseJSON(vocabulary, {});
             }
-          ]
-        };
-        
-        setSpeakingData(mockData);
+
+            const prepTime = Number(parsedAnswer.preparation_time ?? parsedAnswer.prep_time ?? 30);
+            const responseTime = Number(parsedAnswer.response_time ?? parsedAnswer.time_limit ?? parsedAnswer.duration ?? 60);
+            const minSentences = Number(parsedAnswer.min_sentences ?? parsedAnswer.minSentences ?? 2);
+
+            return {
+              id: question.id,
+              question: question.prompt || parsedAnswer.prompt || `Câu hỏi ${index + 1}`,
+              instruction,
+              context: parsedAnswer.context || parsedAnswer.topic || '',
+              preparationTime: Number.isFinite(prepTime) ? prepTime : 30,
+              timeLimit: Number.isFinite(responseTime) ? responseTime : 60,
+              minSentences: Number.isFinite(minSentences) ? minSentences : 2,
+              audioUrl: question.media_url || parsedAnswer.sample_audio_url || parsedAnswer.audio_url || null,
+              tips,
+              vocabulary,
+              sampleResponse: parsedAnswer.sample_response ?? parsedAnswer.sampleResponse ?? null,
+              criteria: Array.isArray(parsedAnswer.criteria) ? parsedAnswer.criteria : [],
+            };
+          });
+
+          const validQuestions = normalizedQuestions.filter((q) => q.question && typeof q.question === 'string');
+          if (!validQuestions.length) {
+            throw new Error('Không có câu hỏi Speaking hợp lệ trong bài này.');
+          }
+
+          const totalTimeSeconds = validQuestions.reduce((total, q) => {
+            const prep = Number.isFinite(q.preparationTime) ? q.preparationTime : 0;
+            const speak = Number.isFinite(q.timeLimit) ? q.timeLimit : 0;
+            return total + prep + speak;
+          }, 0);
+          const estimatedTime = Math.max(1, Math.ceil(totalTimeSeconds / 60));
+
+          if (isMounted) {
+            setSpeakingData({
+              id: lessonId,
+              title: matchedUnit?.title || course?.title || 'Speaking Unit',
+              courseTitle: course?.title || 'Speaking',
+              difficulty: matchedUnit?.difficulty || course?.level || 'Intermediate',
+              estimatedTime,
+              totalQuestions: validQuestions.length,
+              preparation_time: validQuestions[0]?.preparationTime ?? 30,
+              response_time: validQuestions[0]?.timeLimit ?? 60,
+              questions: validQuestions,
+            });
+          }
+        } catch (legacyErr) {
+          console.error('Không thể tải dữ liệu Speaking từ câu hỏi cũ:', legacyErr);
+          if (isMounted) {
+            setError(legacyErr.message || 'Không thể tải bài tập speaking. Vui lòng thử lại sau.');
+          }
+        }
       } catch (err) {
-        console.error('Error setting fallback data:', err);
-        setError('Không thể tải bài tập speaking. Vui lòng thử lại sau.');
+        console.error('Lỗi khi tải bài Speaking:', err);
+        if (isMounted) {
+          setError('Không thể tải bài tập speaking. Vui lòng thử lại sau.');
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchSpeakingData();
-  }, [lessonId]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [lessonId, courseId]);
 
   // Mock results data - sẽ được thay thế bằng API response
   const mockResults = {
@@ -489,8 +608,7 @@ const SpeakingExercise = () => {
       setAudioUrl(null);
       setRecordingTime(0);
     } else {
-      // Exercise completed - show completion message
-      setShowCompletionMessage(true);
+      handleFinishExercise();
     }
   };
 
@@ -505,6 +623,8 @@ const SpeakingExercise = () => {
     setRecordingTime(0);
     setTimeSpent(0);
     setShowCompletionMessage(false);
+    setCompletionSaved(false);
+    setIsFinalizing(false);
   };
 
   // Loading state
@@ -828,7 +948,8 @@ const SpeakingExercise = () => {
           ) : (
           <button
             className="next-btn"
-            onClick={currentQuestion < speakingData.questions.length - 1 ? nextQuestion : () => setShowCompletionMessage(true)}
+            onClick={currentQuestion < speakingData.questions.length - 1 ? nextQuestion : handleFinishExercise}
+            disabled={isFinalizing}
           >
             <RefreshCw size={16} />
             {currentQuestion < speakingData.questions.length - 1 ? 'Câu tiếp theo' : 'Hoàn thành'}
@@ -867,7 +988,8 @@ const SpeakingExercise = () => {
             <div className="completion-actions">
               <button
                 className="back-to-profile-btn"
-                onClick={() => navigate('/learning-profile')}
+                onClick={() => handleComplete({ redirect: true })}
+                disabled={isFinalizing}
               >
                 Quay lại
               </button>
