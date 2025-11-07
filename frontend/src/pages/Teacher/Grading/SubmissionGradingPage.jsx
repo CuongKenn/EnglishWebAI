@@ -232,23 +232,93 @@ export default function SubmissionGradingPage() {
     }
   };
 
-  // Check if comprehensive test
-  const isComprehensiveTest = submission?.rubrics_scores?.listening && submission?.rubrics_scores?.reading;
-  
-  // Extract sections for comprehensive test
+  // Extract structured rubric sections (if any)
   const listeningSection = submission?.rubrics_scores?.listening || null;
   const readingSection = submission?.rubrics_scores?.reading || null;
   const writingSection = submission?.rubrics_scores?.writing || null;
   const speakingSection = submission?.rubrics_scores?.speaking || null;
   
-  // Debug logs
-  if (submission && isComprehensiveTest) {
+  const hasText = (value) => typeof value === 'string' && value.trim().length > 0;
+  const hasNonEmptyStringArray = (value) => Array.isArray(value) && value.some((item) => hasText(item));
+  const hasObjectWithContent = (obj) => {
+    if (!obj || typeof obj !== 'object') return false;
+    return Object.values(obj).some((val) => {
+      if (Array.isArray(val)) {
+        return val.some((item) => {
+          if (typeof item === 'string') return hasText(item);
+          if (typeof item === 'number') return item > 0;
+          if (item && typeof item === 'object') return hasObjectWithContent(item);
+          return false;
+        });
+      }
+      if (typeof val === 'string') return hasText(val);
+      if (typeof val === 'number') return val > 0;
+      if (val && typeof val === 'object') return hasObjectWithContent(val);
+      return false;
+    });
+  };
 
+  const hasListeningSection = Boolean(
+    listeningSection && (
+      (Array.isArray(listeningSection.questions) && listeningSection.questions.length > 0) ||
+      hasText(listeningSection.script) ||
+      hasText(listeningSection.audio_url)
+    )
+  );
 
+  const hasReadingSection = Boolean(
+    readingSection && (
+      (Array.isArray(readingSection.questions) && readingSection.questions.length > 0) ||
+      hasText(readingSection.passage)
+    )
+  );
 
+  const hasWritingFeedback = writingSection?.feedback && hasObjectWithContent(writingSection.feedback);
+  const hasWritingSection = Boolean(
+    writingSection && (
+      hasText(writingSection.prompt) ||
+      hasText(writingSection.student_text) ||
+      (typeof writingSection.word_count === 'number' && writingSection.word_count > 0) ||
+      hasNonEmptyStringArray(writingSection.strengths) ||
+      hasNonEmptyStringArray(writingSection.improvements) ||
+      hasText(writingSection.overall_comment) ||
+      hasWritingFeedback
+    )
+  );
 
+  const speakingRecognizedText = speakingSection?.pronunciation?.recognized_text
+    || speakingSection?.recognized_text
+    || speakingSection?.feedback?.recognized_text;
+  const hasSpeakingContentFeedback = speakingSection?.content && hasObjectWithContent({
+    content_feedback: speakingSection.content?.content_feedback,
+    grammar_feedback: speakingSection.content?.grammar_feedback,
+    vocabulary_feedback: speakingSection.content?.vocabulary_feedback,
+    pronunciation_note: speakingSection.content?.pronunciation_note,
+    strengths: speakingSection.content?.strengths,
+    improvements: speakingSection.content?.improvements,
+    suggestions: speakingSection.content?.suggestions,
+    overall_comment: speakingSection.content?.overall_comment,
+    content_score: speakingSection.content?.content_score
+  });
+  const hasSpeakingPronunciationScores = speakingSection?.pronunciation && hasObjectWithContent({
+    pronunciation_score: speakingSection.pronunciation?.pronunciation_score,
+    fluency_score: speakingSection.pronunciation?.fluency_score,
+    accuracy_score: speakingSection.pronunciation?.accuracy_score,
+    completeness_score: speakingSection.pronunciation?.completeness_score
+  });
+  const hasSpeakingSection = Boolean(
+    speakingSection && (
+      hasText(speakingSection.prompt) ||
+      hasText(speakingSection.audio_url) ||
+      hasText(speakingRecognizedText) ||
+      (typeof speakingSection.points_earned === 'number' && speakingSection.points_earned > 0) ||
+      hasSpeakingContentFeedback ||
+      hasSpeakingPronunciationScores
+    )
+  );
 
-  }
+  const sectionedRubricsCount = [hasListeningSection, hasReadingSection, hasWritingSection, hasSpeakingSection].filter(Boolean).length;
+  const showSectionedRubrics = sectionedRubricsCount > 0;
   
   // Legacy single-skill data
   const speaking = submission?.rubrics_scores?.speaking_assessment || null;
@@ -367,11 +437,11 @@ export default function SubmissionGradingPage() {
         <div className="gp-grid">
           {/* Main column */}
           <div className="gp-main">
-            {/* COMPREHENSIVE TEST - 4 SECTIONS */}
-            {isComprehensiveTest && (
+            {/* SECTIONED RUBRICS (Listening/Reading/Writing/Speaking) */}
+            {showSectionedRubrics && (
               <>
                 {/* SECTION 1: LISTENING */}
-                {listeningSection && (
+                {hasListeningSection && (
                   <div className="gp-card">
                     <div className="gp-card-header">
                       <div className="gp-card-title"><Headphones className="inline-block w-5 h-5 mr-2" /> PHẦN 1: NGHE HIỂU</div>
@@ -402,7 +472,7 @@ export default function SubmissionGradingPage() {
                 )}
 
                 {/* SECTION 2: READING */}
-                {readingSection && (
+                {hasReadingSection && (
                   <div className="gp-card">
                     <div className="gp-card-header">
                       <div className="gp-card-title">
@@ -435,7 +505,7 @@ export default function SubmissionGradingPage() {
                 )}
 
                 {/* SECTION 3: WRITING */}
-                {writingSection && (
+                {hasWritingSection && (
                   <div className="gp-card">
                     <div className="gp-card-header">
                       <div className="gp-card-title">
@@ -730,7 +800,7 @@ export default function SubmissionGradingPage() {
                 )}
 
                 {/* SECTION 4: SPEAKING */}
-                {speakingSection && (
+                {hasSpeakingSection && (
                   <div className="gp-card">
                     <div className="gp-card-header">
                       <div className="gp-card-title"><Mic className="inline-block w-5 h-5 mr-2" /> PHẦN 4: NÓI</div>
@@ -1143,7 +1213,7 @@ export default function SubmissionGradingPage() {
             )}
 
             {/* LEGACY SINGLE-SKILL BLOCKS */}
-            {!isComprehensiveTest && (
+            {!showSectionedRubrics && (
               <>
                 {/* Speaking block */}
                 {submission?.content_url && (

@@ -6,13 +6,13 @@ import {
 } from 'lucide-react';
 import './ExerciseManagement.css';
 import QuestionBankSelectorModal from './QuestionBankSelectorModal';
-import { apiV1 } from '../../../../../services/api';
+import { apiV1, questionBankAPI } from '../../../../../services/api';
 import examService from '../../../../../services/examService';
 import Toast from '../../../../../components/Toast/Toast';
 import useToast from '../../../../../hooks/useToast';
 
 export default function CreateExerciseModalComplete({ onClose, onCreate }) {
-  const { toast, showSuccess, showWarning, hideToast } = useToast();
+  const { toast, showSuccess, showError, showWarning, hideToast } = useToast();
   const [testType, setTestType] = useState('skill_exercise');
   const [selectedSkill, setSelectedSkill] = useState('listening');
   const [inputMethod, setInputMethod] = useState('manual'); // 'manual', 'ai', 'import'
@@ -32,6 +32,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   const [showTranscript, setShowTranscript] = useState(false);
   const [audioUrl, setAudioUrl] = useState('');
   const [audioFile, setAudioFile] = useState(null);
+  const [isUploadingAudio, setIsUploadingAudio] = useState(false);
   
   // Reading fields
   const [passageText, setPassageText] = useState('');
@@ -177,16 +178,40 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   };
   
   // Audio file upload handler
-  const handleAudioUpload = (e) => {
+  const handleAudioUpload = async (e) => {
     const file = e.target.files[0];
-    if (file) {
-      // Validate file size (max 50MB)
-      if (file.size > 50 * 1024 * 1024) {
-        showWarning('File audio quá lớn! Tối đa 50MB.');
-        return;
+    if (!file) return;
+
+    if (file.size > 50 * 1024 * 1024) {
+      showWarning('File audio quá lớn! Tối đa 50MB.');
+      if (audioInputRef.current) audioInputRef.current.value = '';
+      return;
+    }
+
+    const allowedTypes = ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/mp4', 'audio/webm', 'audio/aac'];
+    if (file.type && !allowedTypes.includes(file.type)) {
+      showWarning('Chỉ chấp nhận các định dạng audio phổ biến (MP3, WAV, OGG, MP4, WEBM, AAC).');
+      if (audioInputRef.current) audioInputRef.current.value = '';
+      return;
+    }
+
+    setAudioFile(file);
+    setIsUploadingAudio(true);
+    try {
+      const uploadRes = await questionBankAPI.uploadAudio(file);
+      if (!uploadRes?.url) {
+        throw new Error('Không nhận được đường dẫn audio sau khi tải lên.');
       }
-      setAudioFile(file);
-      // Optionally upload to server immediately or wait until form submit
+      setAudioUrl(uploadRes.url);
+      showSuccess('Đã tải lên file audio thành công!');
+    } catch (error) {
+      console.error('[Listening] Upload audio failed:', error);
+      showError(error?.response?.data?.detail || 'Không thể tải lên file audio. Vui lòng thử lại.');
+      setAudioFile(null);
+      setAudioUrl('');
+      if (audioInputRef.current) audioInputRef.current.value = '';
+    } finally {
+      setIsUploadingAudio(false);
     }
   };
   
@@ -315,10 +340,6 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
       // Call AI generate API
       const response = await examService.generateFullExam(payload);
 
-
-
-
-
       // Populate form with AI generated data
       // LISTENING Section
       if (response && response.listening) {
@@ -424,7 +445,51 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
       showWarning('Vui lòng nhập tiêu đề!');
       return;
     }
-    
+
+    if (isUploadingAudio) {
+      showWarning('Đang tải lên file audio. Vui lòng chờ hoàn tất trước khi tạo bài.');
+      return;
+    }
+
+    const normalizedQuestions = questions.map((q, idx) => {
+      const baseQuestion = {
+        id: q.id || `q_${idx + 1}`,
+        question: (q.question || '').trim() || `Câu ${idx + 1}`,
+        type: q.type || 'multiple_choice',
+        points: Number.isFinite(Number(q.points)) ? Number(q.points) : 1,
+        correct_answer: q.correct_answer ?? '',
+      };
+
+      if (Array.isArray(q.options)) {
+        baseQuestion.options = q.options.filter((opt) => opt !== null && opt !== undefined && String(opt).trim() !== '');
+      } else if (q.options && typeof q.options === 'string') {
+        try {
+          const parsed = JSON.parse(q.options);
+          baseQuestion.options = Array.isArray(parsed) ? parsed : [];
+        } catch (err) {
+          baseQuestion.options = [];
+        }
+      } else {
+        baseQuestion.options = [];
+      }
+
+      if (baseQuestion.type === 'multiple_choice' && baseQuestion.options.length < 2) {
+        baseQuestion.options = ['A', 'B', 'C', 'D'];
+      }
+
+      if (q.section) baseQuestion.section = q.section;
+      if (q.skill) baseQuestion.skill = q.skill;
+      if (!q.section && !q.skill && requiresSkill && selectedSkill) {
+        baseQuestion.skill = selectedSkill;
+      }
+      if (q.explanation) baseQuestion.explanation = q.explanation;
+      if (q.media_url) baseQuestion.media_url = q.media_url;
+      if (q.timestamp) baseQuestion.timestamp = q.timestamp;
+      if (q.reference_text) baseQuestion.reference_text = q.reference_text;
+
+      return baseQuestion;
+    });
+
     // Build exercise object for backend
     const exercise = {
       title,
@@ -436,29 +501,44 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
       description: '',
       content: {},
     };
-    
+
     // Add content based on skill type
     if (isMidtermOrFinal) {
         // Mid-term/Final: Comprehensive test with all sections
         exercise.content = {
           type: 'comprehensive_test'
         };
-        
+
         // Add listening section if has transcript/audio
-        if (transcript || audioUrl) {
+        const listeningQuestions = normalizedQuestions.filter((q) => {
+          const sectionName = typeof q.section === 'string' ? q.section.toLowerCase() : '';
+          const skillName = typeof q.skill === 'string' ? q.skill.toLowerCase() : '';
+          return sectionName === 'listening' || skillName === 'listening';
+        });
+
+        if ((transcript || audioUrl) && listeningQuestions.length > 0) {
+          if (!audioUrl) {
+            showWarning('Vui lòng tải lên file audio cho phần Listening trước khi tạo bài.');
+            return;
+          }
           exercise.content.listening = {
             script: transcript,
             audio_url: audioUrl,
-            questions: questions.filter(q => q.section === 'listening' || q.skill === 'listening')
+            show_transcript: showTranscript,
+            questions: listeningQuestions
           };
         }
-        
+
         // Add reading section if has passage
         if (passageText) {
           exercise.content.reading = {
             passage: passageText,
             word_count: passageText.split(/\s+/).filter(w => w).length,
-            questions: questions.filter(q => q.section === 'reading' || q.skill === 'reading')
+            questions: normalizedQuestions.filter((q) => {
+              const sectionName = typeof q.section === 'string' ? q.section.toLowerCase() : '';
+              const skillName = typeof q.skill === 'string' ? q.skill.toLowerCase() : '';
+              return sectionName === 'reading' || skillName === 'reading';
+            })
           };
         }
         
@@ -484,16 +564,20 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
         
         // If no sections, at least include all questions
         if (!exercise.content.listening && !exercise.content.reading && !exercise.content.writing && !exercise.content.speaking) {
-          exercise.content.questions = questions;
+          exercise.content.questions = normalizedQuestions;
         }
       } else {
         // Skill-based
         if (selectedSkill === 'listening') {
+          if (!audioUrl) {
+            showWarning('Vui lòng tải lên file audio cho bài nghe.');
+            return;
+          }
           exercise.content = {
             audio_url: audioUrl,
             transcript,
             show_transcript: showTranscript,
-            questions
+            questions: normalizedQuestions
           };
         } else if (selectedSkill === 'speaking') {
           exercise.content = {
@@ -506,7 +590,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
           exercise.content = {
             passage: passageText,
             word_count: passageText.split(/\s+/).filter(w => w).length,
-            questions
+            questions: normalizedQuestions
           };
         } else if (selectedSkill === 'writing') {
           exercise.content = {
@@ -711,7 +795,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
         
         <div className="modal-footer-ex">
           <button className="btn-cancel-ex" onClick={onClose}>Hủy</button>
-          <button className="btn-create-ex" onClick={handleSubmit}>
+          <button className="btn-create-ex" onClick={handleSubmit} disabled={isUploadingAudio}>
             <Plus size={18} />
             Tạo bài tập
           </button>
@@ -829,7 +913,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
               <div className="audio-info-box">
                 <FileAudio size={28} className="audio-icon-success" />
                 <div className="audio-info-text">
-                  <span className="audio-label">🤖 Audio được tạo bởi AI</span>
+                  <span className="audio-label">{isUploadingAudio ? 'Đang tải lên audio...' : 'Audio đã sẵn sàng phát'}</span>
                   <span className="audio-url">{audioUrl}</span>
                 </div>
                 <button 
@@ -863,7 +947,12 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
                 onChange={handleAudioUpload}
                 style={{ display: 'none' }}
               />
-              {!audioFile ? (
+              {isUploadingAudio ? (
+                <>
+                  <div className="spinner-small" />
+                  <p>Đang tải lên file audio...</p>
+                </>
+              ) : !audioFile ? (
                 <>
                   <FileAudio size={40} className="upload-icon" />
                   <p>Click để chọn file audio</p>
