@@ -106,45 +106,127 @@ const ReadingExercise = () => {
         // Continue to fallback...
       }
       
-      // Fallback: Use mock/placeholder data since old CourseQuestions doesn't have proper reading structure
-      // This will show a basic UI until teacher adds rich content
+      // Fallback: Load legacy CourseQuestion data (reading units) and transform
       try {
-        const mockData = {
-          id: lessonId || '1',
-          title: 'Reading Unit',
-          courseTitle: 'Reading',
-          difficulty: 'Beginner',
-          estimatedTime: 15,
-          totalQuestions: 1,
-          passage: {
-            title: 'Reading Practice',
-            subtitle: 'Complete the reading exercise below',
-            paragraphs: [
-              {
-                id: 'A',
-                content: 'This is a practice reading passage. Rich content will be available once your teacher adds it.',
-                heading: 'Practice Passage',
-                questions: [
-                  {
-                    id: 1,
-                    type: 'multiple-choice',
-                    instruction: 'This is a sample question. Real questions will appear once content is added.',
-                    options: ['Option A', 'Option B', 'Option C', 'Option D'],
-                    correctAnswer: 0
-                  }
-                ]
+        const legacyQuestions = await coursesAPI.getQuestions(parseInt(lessonId, 10));
+        const readingQuestions = Array.isArray(legacyQuestions)
+          ? legacyQuestions.filter((q) => q && ['mcq', 'fill-blank', 'short'].includes(q.type))
+          : [];
+
+        let passageText = '';
+        const normalizeLegacyQuestion = (question) => {
+          if (!question) return null;
+
+          let instructionText = question.prompt;
+          if (typeof instructionText === 'string') {
+            try {
+              const parsedPrompt = JSON.parse(instructionText);
+              if (parsedPrompt && typeof parsedPrompt === 'object') {
+                if (!passageText && typeof parsedPrompt.passage === 'string') {
+                  passageText = parsedPrompt.passage;
+                }
+                if (typeof parsedPrompt.question === 'string') {
+                  instructionText = parsedPrompt.question;
+                }
               }
-            ]
+            } catch (parseErr) {
+              // eslint-disable-next-line no-console
+              console.warn('Không thể parse prompt cho câu hỏi Reading:', parseErr);
+            }
           }
+
+          const options = Array.isArray(question.options) ? question.options.filter(Boolean) : [];
+          if (options.length === 0) {
+            // Legacy student UI hiện chỉ hỗ trợ multiple-choice, bỏ qua câu không có đáp án
+            return null;
+          }
+
+          const correctAnswerIndex = typeof question.answer?.correct === 'number'
+            ? question.answer.correct
+            : null;
+
+          return {
+            id: question.id,
+            type: 'multiple-choice',
+            instruction: instructionText,
+            options,
+            correctAnswer: correctAnswerIndex,
+          };
         };
-        
-        setReadingData(mockData);
-      } catch (err) {
-        console.error('Error setting fallback data:', err);
-        setError('Không thể tải bài đọc. Vui lòng thử lại sau.');
-      } finally {
-        setLoading(false);
+
+        const normalizedQuestions = readingQuestions
+          .map(normalizeLegacyQuestion)
+          .filter(Boolean);
+
+        if (normalizedQuestions.length > 0) {
+          if (!passageText) {
+            const firstPrompt = readingQuestions[0]?.prompt;
+            if (typeof firstPrompt === 'string' && firstPrompt.trim()) {
+              passageText = firstPrompt;
+            } else {
+              passageText = 'Đoạn văn chưa được cung cấp. Vui lòng liên hệ giáo viên.';
+            }
+          }
+
+          const fallbackData = {
+            id: lessonId || '1',
+            title: unitData?.title || 'Reading Unit',
+            courseTitle: 'Reading',
+            difficulty: unitData?.level || 'Beginner',
+            estimatedTime: unitData?.estimated_time || 15,
+            totalQuestions: normalizedQuestions.length,
+            passage: {
+              title: unitData?.title || 'Reading Passage',
+              subtitle: unitData?.description || '',
+              paragraphs: [
+                {
+                  id: 'A',
+                  content: passageText,
+                  heading: 'Paragraph A',
+                  questions: normalizedQuestions,
+                },
+              ],
+            },
+          };
+
+          setReadingData(fallbackData);
+          setLoading(false);
+          return;
+        }
+      } catch (legacyErr) {
+        console.warn('Không thể tải bài đọc từ dữ liệu legacy:', legacyErr);
       }
+
+      // Không có dữ liệu legacy -> dùng thông điệp mặc định
+      setReadingData({
+        id: lessonId || '1',
+        title: 'Reading Unit',
+        courseTitle: 'Reading',
+        difficulty: 'Beginner',
+        estimatedTime: 15,
+        totalQuestions: 1,
+        passage: {
+          title: 'Reading Practice',
+          subtitle: 'Complete the reading exercise below',
+          paragraphs: [
+            {
+              id: 'A',
+              content: 'This is a practice reading passage. Rich content will be available once your teacher adds it.',
+              heading: 'Practice Passage',
+              questions: [
+                {
+                  id: 1,
+                  type: 'multiple-choice',
+                  instruction: 'This is a sample question. Real questions will appear once content is added.',
+                  options: ['Option A', 'Option B', 'Option C', 'Option D'],
+                  correctAnswer: 0,
+                },
+              ],
+            },
+          ],
+        },
+      });
+      setLoading(false);
     };
 
     fetchReadingData();
