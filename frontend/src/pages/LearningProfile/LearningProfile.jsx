@@ -235,7 +235,8 @@ const LearningProfile = () => {
             id: recs.length + 1,
             title: `Luyện thêm ${skill.skill}`,
             reason: `Điểm ${skill.skill} cần cải thiện (${skill.progress}%)`,
-            priority: skill.progress < 50 ? 'high' : 'medium'
+            priority: skill.progress < 50 ? 'high' : 'medium',
+            redirectTo: '/exercise-hub'
           });
         }
       });
@@ -248,7 +249,8 @@ const LearningProfile = () => {
           id: 1,
           title: 'Bắt đầu học hàng ngày',
           reason: 'Xây dựng thói quen học tập đều đặn',
-          priority: 'high'
+          priority: 'high',
+          redirectTo: '/study-plan'
         });
       }
       
@@ -257,7 +259,8 @@ const LearningProfile = () => {
           id: 2,
           title: 'Làm thêm bài kiểm tra',
           reason: 'Đánh giá trình độ và tiến bộ',
-          priority: 'medium'
+          priority: 'medium',
+          redirectTo: '/exercise-hub'
         });
       }
 
@@ -266,13 +269,19 @@ const LearningProfile = () => {
           id: 3,
           title: 'Ôn tập lại kiến thức cũ',
           reason: 'Củng cố nền tảng để nâng cao điểm số',
-          priority: 'high'
+          priority: 'high',
+          redirectTo: '/study-plan'
         });
       }
     }
 
     // Limit to 3 recommendations
     setRecommendations(recs.slice(0, 3));
+  };
+
+  const handleRecommendationClick = (rec) => {
+    const destination = rec.redirectTo || '/study-plan';
+    navigate(destination);
   };
 
   // Get user's grade from their classes
@@ -559,7 +568,10 @@ const LearningProfile = () => {
                       </div>
                       <p>{rec.reason}</p>
                     </div>
-                    <button className="rec-action-btn">
+                    <button 
+                      className="rec-action-btn"
+                      onClick={() => handleRecommendationClick(rec)}
+                    >
                       Bắt đầu
                       <ChevronRight size={16} />
                     </button>

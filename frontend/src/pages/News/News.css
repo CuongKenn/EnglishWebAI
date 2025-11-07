@@ -90,50 +90,48 @@
 /* Category Tabs */
 .category-tabs {
   display: flex;
-  gap: 1rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
   margin-bottom: 2rem;
-  padding: 1.5rem;
-  background: white;
+  padding: 1.25rem;
+  background: #ffffff;
   border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  overflow-x: auto;
-  scrollbar-width: thin;
-}
-
-.category-tabs::-webkit-scrollbar {
-  height: 4px;
-}
-
-.category-tabs::-webkit-scrollbar-thumb {
-  background: #667eea;
-  border-radius: 2px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
 }
 
 .tab-btn {
-  padding: 0.75rem 1.5rem;
-  border: 2px solid transparent;
-  background: #f8f9fa;
-  color: #495057;
+  padding: 0.65rem 1.4rem;
+  border: 1.5px solid #e2e8f0;
+  background: #ffffff;
+  color: #475569;
   font-weight: 600;
-  border-radius: 25px;
+  border-radius: 999px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   white-space: nowrap;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: center;
+  gap: 0.45rem;
+  box-shadow: 0 1px 2px rgba(148, 163, 184, 0.12);
 }
 
 .tab-btn:hover {
-  background: #e9ecef;
-  transform: translateY(-2px);
+  border-color: rgba(99, 102, 241, 0.35);
+  color: #3730a3;
+  transform: translateY(-1px);
 }
 
 .tab-btn.active {
-  background: linear-gradient(135deg, var(--tab-color, #667eea) 0%, var(--tab-color, #764ba2) 100%);
-  color: white;
-  border-color: var(--tab-color, #667eea);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  background: rgba(99, 102, 241, 0.12);
+  color: var(--tab-color, #4f46e5);
+  border-color: var(--tab-color, #4f46e5);
+  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.16);
+}
+
+.tab-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
 }
 
 /* Featured Post */
