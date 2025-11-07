@@ -1,13 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeftIcon, ClockIcon, QuestionMarkCircleIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
-import { ArrowDownTrayIcon as SaveIcon } from '@heroicons/react/24/solid';
+import {
+  ArrowLeftIcon,
+  ClockIcon,
+  QuestionMarkCircleIcon,
+  ExclamationCircleIcon,
+  XMarkIcon,
+  CheckCircleIcon,
+  DocumentIcon,
+  DocumentTextIcon,
+  ArrowTrendingUpIcon,
+  PencilSquareIcon
+} from '@heroicons/react/24/outline';
+import { ArrowDownTrayIcon as SaveIcon, TrophyIcon } from '@heroicons/react/24/solid';
 import './WritingExercise.css';
 import { coursesAPI, aiAPI } from '../../services/api';
 import { getWritingPrompt } from '../../api/courseContent';
 import Toast from '../../components/Toast/Toast';
 import useToast from '../../hooks/useToast';
-import { HelpCircle } from 'lucide-react';
+import { HelpCircle, RotateCcw, Target } from 'lucide-react';
+
+const DEFAULT_GRADING_CRITERIA = [
+  'Nội dung và ý tưởng (40%)',
+  'Tổ chức và cấu trúc (25%)',
+  'Sử dụng ngôn ngữ (25%)',
+  'Cơ học viết (10%)'
+];
 
 const WritingExercise = () => {
   const { courseId, lessonId } = useParams();
@@ -93,12 +111,7 @@ const WritingExercise = () => {
               prompt: promptData.prompt,
               additionalInstruction: promptData.additional_instruction || '',
               wordLimit: promptData.max_words || 350,
-              gradingCriteria: promptData.rubrics?.map(r => `${r.category} (${r.max_points} điểm)`) || [
-                'Nội dung và ý tưởng (40%)',
-                'Tổ chức và cấu trúc (25%)',
-                'Sử dụng ngôn ngữ (25%)',
-                'Cơ học viết (10%)'
-              ],
+              gradingCriteria: promptData.rubrics?.map(r => `${r.category} (${r.max_points} điểm)`) || DEFAULT_GRADING_CRITERIA,
               hints: hints || [],
               sampleAnswer: promptData.sample_answer
             }
@@ -109,45 +122,95 @@ const WritingExercise = () => {
           // If new API fails (404), fallback to old method silently
         }
 
-        // Fallback: Load từ old CourseQuestions API
-        const course = await coursesAPI.getCourse(courseId);
-        setCourseData(course);
+        const numericLessonId = parseInt(lessonId, 10);
 
-        const units = await coursesAPI.getUnits(courseId);
-        const unit = units.find(u => u.id === parseInt(lessonId));
-        if (!unit) {
-          throw new Error('Không tìm thấy bài học');
+        const [courseResult, unitsResult, questionsResult] = await Promise.allSettled([
+          courseId ? coursesAPI.getCourse(courseId) : Promise.resolve(null),
+          courseId ? coursesAPI.getUnits(courseId) : Promise.resolve([]),
+          coursesAPI.getQuestions(numericLessonId)
+        ]);
+
+        let course = null;
+        if (courseResult.status === 'fulfilled' && courseResult.value) {
+          course = courseResult.value;
+          setCourseData(courseResult.value);
+        } else if (courseResult.status === 'rejected') {
+          console.warn('Không thể tải thông tin khóa học:', courseResult.reason);
         }
-        setUnitData(unit);
 
-        const qs = await coursesAPI.getQuestions(parseInt(lessonId));
-        setQuestions(qs || []);
+        let matchedUnit = null;
+        if (unitsResult.status === 'fulfilled' && Array.isArray(unitsResult.value)) {
+          const units = unitsResult.value;
+          matchedUnit = units.find((u) => u.id === numericLessonId) || null;
+          if (matchedUnit) {
+            setUnitData(matchedUnit);
+          }
+        } else if (unitsResult.status === 'rejected') {
+          console.warn('Không thể tải danh sách bài học:', unitsResult.reason);
+        }
 
-        const firstQuestion = qs && qs.length > 0 ? qs[0] : null;
-        const parsedAnswer = firstQuestion?.answer_json ? safeParseJSON(firstQuestion.answer_json, {}) : {};
+        let qs = [];
+        if (questionsResult.status === 'fulfilled' && Array.isArray(questionsResult.value)) {
+          qs = questionsResult.value;
+        } else {
+          console.warn('Không thể tải câu hỏi viết:', questionsResult.reason);
+        }
+        setQuestions(Array.isArray(qs) ? qs : []);
+
+        if (!qs || qs.length === 0) {
+          throw new Error('Bài viết này chưa có nội dung để luyện.');
+        }
+
+        const firstQuestion = qs[0];
+        const answerPayload = firstQuestion?.answer_json ?? firstQuestion?.answer ?? null;
+        const parsedAnswer = safeParseJSON(answerPayload, {});
+
+        const resolveRubrics = () => {
+          if (Array.isArray(parsedAnswer?.gradingCriteria)) {
+            return parsedAnswer.gradingCriteria;
+          }
+          if (Array.isArray(parsedAnswer?.rubrics)) {
+            return parsedAnswer.rubrics.map((r) => {
+              if (!r) return '';
+              if (typeof r === 'string') return r;
+              const category = r.category || r.title || 'Tiêu chí';
+              const points = r.max_points ?? r.points;
+              return points ? `${category} (${points} điểm)` : category;
+            }).filter(Boolean);
+          }
+          return DEFAULT_GRADING_CRITERIA;
+        };
+
+        const minWords = parsedAnswer?.min_words ?? parsedAnswer?.minWords ?? 100;
+        const maxWords = parsedAnswer?.max_words ?? parsedAnswer?.maxWords ?? 350;
+        const estimatedTime = parsedAnswer?.estimated_time ?? parsedAnswer?.time_limit ?? 30;
+        const instructionText = parsedAnswer?.instruction || parsedAnswer?.instructions || 'Viết bài luận theo yêu cầu dưới đây';
+        const promptText = firstQuestion?.prompt || parsedAnswer?.prompt || parsedAnswer?.question || '';
+        const additionalInstruction = parsedAnswer?.additional_instruction ?? parsedAnswer?.additionalInstruction ?? '';
+        const hints = Array.isArray(parsedAnswer?.hints) ? parsedAnswer.hints : [];
+        const sampleAnswer = parsedAnswer?.sample_answer ?? parsedAnswer?.sampleAnswer ?? '';
+
         setWritingData({
           id: lessonId,
-          title: unit.title,
-          courseTitle: course.title,
-          difficulty: course.level || 'Intermediate',
-          estimatedTime: 30,
-          wordLimit: 350,
+          title: matchedUnit?.title || course?.title || 'Bài viết',
+          courseTitle: course?.title || 'Writing',
+          difficulty: course?.level || matchedUnit?.difficulty || 'Intermediate',
+          estimatedTime,
+          wordLimit: maxWords,
+          minWords,
           currentQuestion: 1,
-          totalQuestions: qs?.length || 1,
-          question: firstQuestion ? {
+          totalQuestions: qs.length,
+          question: {
             id: firstQuestion.id,
             type: firstQuestion.type || 'essay',
-            instruction: 'Viết bài luận theo yêu cầu dưới đây',
-            prompt: firstQuestion.prompt || '',
-            additionalInstruction: parsedAnswer?.instruction || '',
-            wordLimit: 350,
-            gradingCriteria: [
-              'Nội dung và ý tưởng (40%)',
-              'Tổ chức và cấu trúc (25%)',
-              'Sử dụng ngôn ngữ (25%)',
-              'Cơ học viết (10%)'
-            ]
-          } : null
+            instruction: instructionText,
+            prompt: promptText,
+            additionalInstruction,
+            wordLimit: maxWords,
+            gradingCriteria: resolveRubrics(),
+            hints,
+            sampleAnswer
+          }
         });
 
       } catch (err) {
