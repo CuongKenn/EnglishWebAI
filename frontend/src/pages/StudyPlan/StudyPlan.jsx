@@ -27,6 +27,16 @@ const skillLabels = {
   general: 'Kỹ năng chung'
 };
 
+const formatSkillLabel = (value) => {
+  if (!value) return '';
+  return value
+    .toString()
+    .split(/[\s_-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+};
+
 const grades = Array.from({ length: 12 }, (_, idx) => `Lớp ${idx + 1}`);
 
 const statusLabelMap = {
@@ -120,10 +130,34 @@ const StudyPlan = () => {
     loadUnits();
   }, [selectedCourseId]);
 
+  const [selectedSkillFilter, setSelectedSkillFilter] = useState('all');
+
   const selectedCourse = useMemo(
     () => courses.find((course) => course.id === selectedCourseId) || null,
     [courses, selectedCourseId]
   );
+
+  const availableSkills = useMemo(() => {
+    if (!Array.isArray(units) || units.length === 0) return [];
+    const keys = new Set();
+    units.forEach((unit) => {
+      const key = (unit.skill_type || unit.category || 'general').toLowerCase();
+      keys.add(key);
+    });
+    keys.delete('general');
+    return Array.from(keys);
+  }, [units]);
+
+  useEffect(() => {
+    if (selectedSkillFilter === 'all') return;
+    if (availableSkills.length === 0) {
+      setSelectedSkillFilter('all');
+      return;
+    }
+    if (!availableSkills.includes(selectedSkillFilter)) {
+      setSelectedSkillFilter('all');
+    }
+  }, [availableSkills, selectedSkillFilter]);
 
   const sessions = useMemo(() => {
     if (!selectedCourse) {
@@ -134,41 +168,48 @@ const StudyPlan = () => {
     const isInProgress = selectedCourse.status === 'in-progress';
     let remainingCups = selectedCourse.cupsEarned || 0;
 
-    return units.map((unit, index) => {
-      let status = 'not-started';
-      if (index < completedUnits) {
-        status = 'completed';
-      } else if (index === completedUnits && isInProgress) {
-        status = 'in-progress';
-      }
+    return units
+      .filter((unit) => {
+        if (selectedSkillFilter === 'all') return true;
+        const key = (unit.skill_type || unit.category || 'general').toLowerCase();
+        return key === selectedSkillFilter;
+      })
+      .map((unit, index) => {
+        let status = 'not-started';
+        if (index < completedUnits) {
+          status = 'completed';
+        } else if (index === completedUnits && isInProgress) {
+          status = 'in-progress';
+        }
 
-      const maxCups = unit.max_cups ?? 0;
-      let cupsEarnedForUnit = 0;
-      if (status !== 'not-started' && maxCups > 0 && remainingCups > 0) {
-        cupsEarnedForUnit = Math.min(maxCups, remainingCups);
-        remainingCups = Math.max(0, remainingCups - cupsEarnedForUnit);
-      }
+        const maxCups = unit.max_cups ?? 0;
+        let cupsEarnedForUnit = 0;
+        if (status !== 'not-started' && maxCups > 0 && remainingCups > 0) {
+          cupsEarnedForUnit = Math.min(maxCups, remainingCups);
+          remainingCups = Math.max(0, remainingCups - cupsEarnedForUnit);
+        }
 
-      const weekLabel = unit.week_index ? `Tuần ${unit.week_index}` : 'Chưa có lịch';
-      const sessionNumber = index + 1;
+        const weekLabel = unit.week_index ? `Tuần ${unit.week_index}` : 'Chưa có lịch';
+        const sessionNumber = index + 1;
 
-      return {
-        id: unit.id,
-        sessionNumber,
-        title: unit.title,
-        description: unit.description,
-        weekLabel,
-        status,
-        cupsEarned: cupsEarnedForUnit,
-        totalCups: maxCups,
-        unitType: unit.unit_type || 'lesson'
-      };
-    });
-  }, [units, selectedCourse]);
+        return {
+          id: unit.id,
+          sessionNumber,
+          title: unit.title,
+          description: unit.description,
+          weekLabel,
+          status,
+          cupsEarned: cupsEarnedForUnit,
+          totalCups: maxCups,
+          unitType: unit.unit_type || 'lesson',
+          skillKey: (unit.skill_type || unit.category || 'general').toLowerCase()
+        };
+      });
+  }, [units, selectedCourse, selectedSkillFilter]);
 
   const skillKey = (selectedCourse?.category || selectedCourse?.skill || 'general').toLowerCase();
   const categoryStyle = categoryStyles[skillKey] || categoryStyles.general;
-  const categoryLabel = skillLabels[skillKey] || skillLabels.general;
+  const categoryLabel = skillLabels[skillKey] || formatSkillLabel(skillKey);
 
   const handleNavigate = (sessionId) => {
     if (!selectedCourse) {
@@ -252,12 +293,29 @@ const StudyPlan = () => {
                   <p>Khóa học này chưa có bài học nào.</p>
                 </div>
               ) : (
-                <div className="sessions-grid">
-                  {sessions.map((session) => (
-                    <div
-                      key={session.id}
-                      className={`session-card ${getStatusBadgeClass(session.status)}`}
-                    >
+                <>
+                  {availableSkills.length > 0 && (
+                    <div className="skill-filter">
+                      {['all', ...availableSkills].map((skill) => {
+                        const label = skill === 'all' ? 'Tất cả' : (skillLabels[skill] || formatSkillLabel(skill));
+                        return (
+                          <button
+                            key={skill}
+                            className={`skill-chip ${selectedSkillFilter === skill ? 'active' : ''}`}
+                            onClick={() => setSelectedSkillFilter(skill)}
+                          >
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <div className="sessions-grid">
+                    {sessions.map((session) => (
+                      <div
+                        key={session.id}
+                        className={`session-card ${getStatusBadgeClass(session.status)}`}
+                      >
                       <div className="session-header">
                         <div
                           className="session-badge"
@@ -330,9 +388,10 @@ const StudyPlan = () => {
                           <ChevronRight size={16} />
                         </button>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
               )}
             </>
           )}

@@ -102,22 +102,22 @@ const News = () => {
         <main className="news-main">
           {/* Category Filter Tabs */}
           <div className="category-tabs">
-            <button
-              className={`tab-btn ${selectedCategory === 'all' ? 'active' : ''}`}
-              onClick={() => setSelectedCategory('all')}
-            >
-              <span>📚</span> Tất cả
-            </button>
-            {categories.filter(c => c !== 'all').map((cat) => (
-              <button
-                key={cat}
-                className={`tab-btn ${selectedCategory === cat ? 'active' : ''}`}
-                onClick={() => setSelectedCategory(cat)}
-                style={{ '--tab-color': getCategoryColor(cat) }}
-              >
-                {cat}
-              </button>
-            ))}
+            {categories.map((cat) => {
+              const isAll = cat === 'all';
+              const label = isAll ? 'Tất cả' : cat;
+              const accent = isAll ? '#6366f1' : getCategoryColor(cat);
+              return (
+                <button
+                  key={cat}
+                  className={`tab-btn ${selectedCategory === cat ? 'active' : ''}`}
+                  onClick={() => setSelectedCategory(cat)}
+                  style={{ '--tab-color': accent }}
+                >
+                  {isAll && <span className="tab-icon">📚</span>}
+                  <span className="tab-label">{label}</span>
+                </button>
+              );
+            })}
           </div>
 
           {loading ? (

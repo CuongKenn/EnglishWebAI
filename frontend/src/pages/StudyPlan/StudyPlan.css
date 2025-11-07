@@ -1,9 +1,7 @@
 /* StudyPlan.css - Updated for Consistent Layout */
 
 /* Ensure no black backgrounds */
-.study-plan-content-wrapper * {
-  background-color: transparent !important;
-}
+
 
 .study-plan-content-wrapper .study-plan-header,
 .study-plan-content-wrapper .study-plan-content,
@@ -12,7 +10,9 @@
 .study-plan-content-wrapper .view-calendar-btn,
 .study-plan-content-wrapper .view-grid-btn,
 .study-plan-content-wrapper .view-list-btn,
-.study-plan-content-wrapper .month-btn {
+.study-plan-content-wrapper .month-btn,
+.study-plan-content-wrapper .course-pill,
+.study-plan-content-wrapper .skill-chip {
   background-color: white !important;
 }
 
@@ -114,6 +114,38 @@
   border: 1px solid rgba(226, 232, 240, 0.5);
 }
 
+.course-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.course-pill {
+  padding: 0.65rem 1.4rem;
+  border-radius: 999px;
+  border: 1.5px solid #e2e8f0;
+  color: #475569;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(148, 163, 184, 0.12);
+}
+
+.course-pill:hover {
+  border-color: rgba(59, 130, 246, 0.4);
+  color: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.course-pill.active {
+  background: rgba(59, 130, 246, 0.12) !important;
+  color: #1d4ed8 !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 6px 18px rgba(59, 130, 246, 0.16);
+}
+
 .study-plan-main.pushed-out .study-plan-content {
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
   background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
@@ -179,6 +211,40 @@
   grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   gap: 24px;
   padding: 8px 0;
+}
+
+.skill-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  padding: 0.5rem 0;
+}
+
+.skill-chip {
+  padding: 0.6rem 1.45rem;
+  border-radius: 999px;
+  border: 1.5px solid #e2e8f0;
+  background: #ffffff;
+  color: #475569;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(148, 163, 184, 0.12);
+}
+
+.skill-chip:hover {
+  border-color: rgba(79, 70, 229, 0.35);
+  color: #3730a3;
+  transform: translateY(-1px);
+}
+
+.skill-chip.active {
+  background: rgba(79, 70, 229, 0.12);
+  color: #4f46e5;
+  border-color: #4f46e5;
+  box-shadow: 0 6px 18px rgba(79, 70, 229, 0.18);
 }
 
 .session-card {
