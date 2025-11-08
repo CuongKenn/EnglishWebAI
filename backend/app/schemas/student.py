@@ -218,6 +218,36 @@ class ExerciseResponse(ExerciseBase):
     class Config:
         from_attributes = True
 
+
+class SubmissionSummary(BaseModel):
+    id: int
+    exercise_id: int
+    student_id: int
+    content_text: Optional[str] = None
+    content_url: Optional[str] = None
+    answers: Optional[dict] = None
+    score: Optional[float] = None
+    ai_score: Optional[float] = None
+    feedback: Optional[str] = None
+    ai_feedback: Optional[str] = None
+    rubrics_scores: Optional[dict] = None
+    status: str
+    grading_status: Optional[str] = None
+    teacher_reviewed: Optional[bool] = None
+    submitted_at: Optional[datetime] = None
+    graded_at: Optional[datetime] = None
+    ai_graded_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class ExerciseWithSubmissionResponse(ExerciseResponse):
+    my_submission: Optional[SubmissionSummary] = None
+
+    class Config:
+        from_attributes = True
+
 class ExerciseListResponse(BaseModel):
     id: int
     title: str

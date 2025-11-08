@@ -23,14 +23,16 @@ from app.schemas.student import (
     AddStudentsRequest,
     ClassStudentOut,
     AttendanceUpsertRequest,
-    AttendanceRecordOut
+    AttendanceRecordOut,
+    MaterialResponse,
+    ExerciseWithSubmissionResponse,
 )
-from app.schemas.student import MaterialResponse, ExerciseResponse
 from app.schemas.student import LessonResponse, LessonCreate, LessonUpdate
 from app.schemas.excel_import import AddStudentsToClassRequest, AddStudentsToClassResponse
 from app.models.material import Material
 from app.models.exercise import Exercise
 from app.models.lesson import Lesson
+from app.models.submission import Submission
 from app.services.excel_import_service import ClassStudentService, ExcelImportService, TeacherImportToClassResponse
 
 router = APIRouter()
@@ -593,16 +595,58 @@ async def list_class_materials(
     return rows
 
 
-@router.get("/{class_id}/exercises", response_model=List[ExerciseResponse])
+@router.get("/{class_id}/exercises", response_model=List[ExerciseWithSubmissionResponse])
 async def list_class_exercises(
     class_id: int,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Danh sách bài tập của lớp (học sinh đã tham gia, giáo viên lớp, hoặc admin)"""
+    """Danh sách bài tập của lớp, kèm bài nộp mới nhất của học sinh nếu có"""
     _ensure_can_view_class(db, current_user, class_id)
-    rows = db.query(Exercise).filter(Exercise.class_id == class_id).all()
-    return rows
+
+    exercises = (
+        db.query(Exercise)
+        .filter(Exercise.class_id == class_id)
+        .order_by(Exercise.due_at.desc().nulls_last(), Exercise.created_at.desc())
+        .all()
+    )
+
+    submissions_map: Dict[int, Submission] = {}
+    if exercises and current_user.role == UserRole.USER:
+        exercise_ids = [ex.id for ex in exercises]
+        submissions = (
+            db.query(Submission)
+            .filter(
+                Submission.exercise_id.in_(exercise_ids),
+                Submission.student_id == current_user.id,
+            )
+            .order_by(Submission.submitted_at.desc().nulls_last())
+            .all()
+        )
+        for sub in submissions:
+            if sub.exercise_id not in submissions_map:
+                submissions_map[sub.exercise_id] = sub
+
+    result = []
+    for exercise in exercises:
+        result.append({
+            "id": exercise.id,
+            "title": exercise.title,
+            "description": exercise.description,
+            "type": exercise.type,
+            "skill_type": exercise.skill_type,
+            "max_score": exercise.max_score,
+            "duration": exercise.duration,
+            "content": exercise.content,
+            "class_id": exercise.class_id,
+            "lesson_id": exercise.lesson_id,
+            "due_at": exercise.due_at,
+            "created_at": exercise.created_at,
+            "enable_ai_grading": getattr(exercise, "enable_ai_grading", False),
+            "my_submission": submissions_map.get(exercise.id),
+        })
+
+    return result
 
 
 @router.post("/{class_id}/lessons/ensure-default", response_model=LessonResponse, status_code=201)
