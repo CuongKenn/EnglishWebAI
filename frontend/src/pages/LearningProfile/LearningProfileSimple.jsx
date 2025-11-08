@@ -10,7 +10,7 @@ import ConsistentSidebarLayout from '../../components/Layout/ConsistentSidebarLa
 
 const LearningProfileSimple = () => {
 
-  const navigate = useNavigate();
+  // navigate not currently used
   const [activeMenuItem, setActiveMenuItem] = useState('profile');
   const [isContentPushed, setIsContentPushed] = useState(false);
 

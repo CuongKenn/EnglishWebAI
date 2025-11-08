@@ -12,7 +12,7 @@ import ConsistentSidebarLayout from '../../components/Layout/ConsistentSidebarLa
 import './Lessons.css';
 
 const Lessons = () => {
-  const navigate = useNavigate();
+  // navigate not currently used
   const [activeMenuItem, setActiveMenuItem] = useState('overview');
   const [isContentPushed, setIsContentPushed] = useState(false);
   

@@ -28,12 +28,6 @@ export function useErrorHandler() {
  *   const safeAsyncFunction = withErrorBoundary(myAsyncFunction);
  */
 export function withErrorBoundary(asyncFn) {
-  return async (...args) => {
-    try {
-      return await asyncFn(...args);
-    } catch (error) {
-      // Re-throw to be caught by error boundary
-      throw error;
-    }
-  };
+  // Simply return the async function - errors will propagate to error boundary naturally
+  return asyncFn;
 }

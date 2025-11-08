@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useExercises } from '../../hooks';
 import ExerciseSubmit from './ExerciseSubmit';
 import './Exercises.css';
