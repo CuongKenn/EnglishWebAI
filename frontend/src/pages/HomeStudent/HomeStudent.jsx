@@ -37,13 +37,8 @@ import './HomeStudent.css';const HomeStudent = () => {
     return () => window.removeEventListener('storage', checkLoginStatus);
   }, []);
 
-  const heroStats = [
-    { icon: <UserGroupIcon className="w-6 h-6" />, number: '50K+', label: 'Học viên' },
-    { icon: <BookOpenIcon className="w-6 h-6" />, number: '200+', label: 'Khóa học' },
-    { icon: <StarIcon className="w-6 h-6" />, number: '95%', label: 'Hài lòng' },
-    { icon: <TrophyIcon className="w-6 h-6" />, number: '24/7', label: 'Hỗ trợ' },
-  ];
-
+  // heroStats not currently displayed in UI
+  
   const aiPractices = [
     {
       title: 'AI Writing Assistant',
@@ -130,7 +125,7 @@ import './HomeStudent.css';const HomeStudent = () => {
 
   useEffect(() => {
     const animateCounter = (target, key, duration = 2000) => {
-      const start = 0;
+      // start variable not used - counter starts from 0 implicitly
       const increment = target / (duration / 16);
       let current = 0;
       
@@ -186,11 +181,8 @@ import './HomeStudent.css';const HomeStudent = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const formatNumber = (num) => {
-    if (num >= 1000) return (num / 1000).toFixed(0) + 'K+';
-    return num + (num === 95 ? '%' : '+');
-  };
-
+  // formatNumber helper not currently used in UI
+  
   // Handle navigation with login check
   const handleNavigate = (path) => {
     if (!isLoggedIn) {

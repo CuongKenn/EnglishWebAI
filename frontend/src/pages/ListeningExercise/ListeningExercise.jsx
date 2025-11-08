@@ -159,7 +159,7 @@ const ListeningExercise = () => {
           });
           
           return; // Success, exit
-        } catch (apiErr) {
+        } catch {
           // If new API fails (404), fallback to old method silently
         }
 

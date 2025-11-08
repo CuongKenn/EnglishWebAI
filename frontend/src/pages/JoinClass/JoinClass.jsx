@@ -82,7 +82,8 @@ const JoinClass = () => {
   const [selectedSkill, setSelectedSkill] = useState('all');
   const gradeNumber = selectedGrade && selectedGrade !== 'all' ? (selectedGrade.match(/\d+/)?.[0] || null) : null;
   const skillParam = selectedSkill !== 'all' ? selectedSkill : undefined;
-  const { classes, loading, error, joinClass } = useClasses({ grade: gradeNumber || undefined, skill: skillParam });
+  // joinClass function from hook not used directly (using classesAPI instead)
+  const { classes, loading, error } = useClasses({ grade: gradeNumber || undefined, skill: skillParam });
   const [params] = useSearchParams();
   const navigate = useNavigate();
   
@@ -112,9 +113,14 @@ const JoinClass = () => {
 
   const handleJoinClass = async (classId) => {
     try {
-      try { await classesAPI.joinClass(classId); } catch (e) { /* Bỏ qua lỗi */ }
+      try { 
+        await classesAPI.joinClass(classId); 
+      } catch {
+        // Silent error - will navigate anyway
+      }
       navigate(`/course/${classId}`);
-    } catch (err) {
+    } catch {
+      // Navigate even on error
       navigate(`/course/${classId}`);
     }
   };

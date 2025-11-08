@@ -11,7 +11,7 @@ const Discussion = () => {
     const [selectedSubject, setSelectedSubject] = useState('all');
     const [currentUser, setCurrentUser] = useState(null);
     const [showAskForm, setShowAskForm] = useState(false);
-    const [likedQuestions, setLikedQuestions] = useState(new Set());
+    // likedQuestions not used - like feature to be implemented later
     const [newQuestion, setNewQuestion] = useState({ title: '', content: '', subject: '', tags: '' });
     
     // --- [BẮT ĐẦU] CODE MỚI ---
@@ -172,7 +172,9 @@ const Discussion = () => {
             try {
                 const { discussionsAPI } = await import('../../services/api');
                 await discussionsAPI.viewThread(questionId);
-            } catch (_) {}
+            } catch {
+                // Ignore view tracking errors
+            }
             // Load posts nếu chưa có trong cache
             if (!questionPosts[questionId]) {
                 await fetchPosts(questionId);
@@ -190,7 +192,9 @@ const Discussion = () => {
         try {
             const { discussionsAPI } = await import('../../services/api');
             await discussionsAPI.viewThread(questionId);
-        } catch (_) {}
+        } catch {
+            // Ignore view tracking errors
+        }
         if (!questionPosts[questionId]) {
             await fetchPosts(questionId);
         }
