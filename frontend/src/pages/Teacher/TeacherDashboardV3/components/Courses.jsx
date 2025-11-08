@@ -112,19 +112,6 @@ const Courses = () => {
     return iconMap[skill] || <BookMarked {...common} />;
   };
 
-  // Get skill color
-  const getSkillColor = (skill) => {
-    const colorMap = {
-      'speaking': 'bg-purple-100 text-purple-700',
-      'writing': 'bg-orange-100 text-orange-700',
-      'reading': 'bg-blue-100 text-blue-700',
-      'listening': 'bg-green-100 text-green-700',
-      'vocabulary': 'bg-yellow-100 text-yellow-700',
-      'grammar': 'bg-pink-100 text-pink-700'
-    };
-    return colorMap[skill] || 'bg-gray-100 text-gray-700';
-  };
-
   const skills = [
     { id: 'all', label: 'Tất cả', count: courses.length },
     { id: 'vocabulary', label: 'Từ vựng', count: courses.filter(c => c.category === 'vocabulary').length },
