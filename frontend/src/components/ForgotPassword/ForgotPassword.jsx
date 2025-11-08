@@ -71,30 +71,21 @@ const ForgotPassword = () => {
   };
 
   const handleVerifyOTP = async (otpCode) => {
-    try {
-      await otpService.verifyOTP(email, otpCode, 'password_reset');
-      setShowOTPModal(false);
-      setStep(3);
-      setMessage({
-        type: 'success',
-        text: 'Xác thực thành công! Vui lòng nhập mật khẩu mới.',
-      });
-    } catch (error) {
-      // surface error to OTPModal via throw for its own handling
-      throw error;
-    }
+    await otpService.verifyOTP(email, otpCode, 'password_reset');
+    setShowOTPModal(false);
+    setStep(3);
+    setMessage({
+      type: 'success',
+      text: 'Xác thực thành công! Vui lòng nhập mật khẩu mới.',
+    });
   };
 
   const handleResendOTP = async () => {
-    try {
-      await otpService.resendOTP(email, 'password_reset');
-      setMessage({
-        type: 'success',
-        text: 'Mã OTP mới đã được gửi!',
-      });
-    } catch (error) {
-      throw error;
-    }
+    await otpService.resendOTP(email, 'password_reset');
+    setMessage({
+      type: 'success',
+      text: 'Mã OTP mới đã được gửi!',
+    });
   };
 
   const handleResetPassword = async (e) => {
