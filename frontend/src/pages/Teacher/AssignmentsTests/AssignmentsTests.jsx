@@ -92,7 +92,8 @@ const AssignmentsTests = () => {
       setShowModal(false);
       resetForm();
       loadAssignments();
-    } catch (error) {
+    } catch {
+      /* Error saving assignment - display generic message */
       alert('Có lỗi xảy ra');
     }
   };

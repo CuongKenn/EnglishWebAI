@@ -82,7 +82,8 @@ const MaterialsManagement = () => {
       await apiClient.delete(`/api/v1/materials/${id}`);
       alert('Xóa học liệu thành công');
       loadMaterials();
-    } catch (error) {
+    } catch {
+      /* Error deleting material */
       alert('Xóa học liệu thất bại');
     }
   };

@@ -63,7 +63,8 @@ const ClassManagement = () => {
         map[r.userId] = { status: r.status, note: r.note || '' };
       });
       setAttendance(map);
-    } catch (error) {
+    } catch {
+      /* Error loading attendance - reset to empty */
       setAttendance({});
     }
   };

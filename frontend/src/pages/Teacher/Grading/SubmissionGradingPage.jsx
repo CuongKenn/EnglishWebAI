@@ -36,7 +36,6 @@ export default function SubmissionGradingPage() {
   const examId = searchParams.get('examId'); // NEW: for exam submissions
 
   const [loading, setLoading] = useState(false);
-  const [aiLoading, setAiLoading] = useState(false);
   const [submission, setSubmission] = useState(null);
   const [scoreInput, setScoreInput] = useState('');
   const [feedbackInput, setFeedbackInput] = useState('');
@@ -154,7 +153,6 @@ export default function SubmissionGradingPage() {
   const runAutoGrade = async () => {
     if (!submission) return;
     setLoading(true);
-    setAiLoading(true);
     try {
       // Use appropriate endpoint based on submission type
       const endpoint = isExam 
@@ -172,7 +170,6 @@ export default function SubmissionGradingPage() {
       alert('Lỗi khi chấm tự động!');
     } finally {
       setLoading(false);
-      setAiLoading(false);
     }
   };
 
