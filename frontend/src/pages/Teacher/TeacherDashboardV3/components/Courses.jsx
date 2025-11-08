@@ -99,8 +99,8 @@ const Courses = () => {
     }
   };
 
-  // Get skill icon component (supports custom size and className)
-  const getSkillIcon = (skill, size = 40, className = '') => {
+  // Get skill icon component (uses size prop from lucide for crisp scaling)
+  const getSkillIcon = (skill, size = 64, className = '') => {
     const common = { size, className };
     const iconMap = {
       'speaking': <MessageSquare {...common} />,
@@ -373,7 +373,7 @@ const Courses = () => {
               <Card key={course.id} className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
                 <div className="relative">
                   <div
-                    className={`h-40 flex items-center justify-center ${
+                    className={`h-48 flex items-center justify-center ${
                       course.category === 'speaking' ? 'bg-purple-100' :
                       course.category === 'writing' ? 'bg-orange-100' :
                       course.category === 'reading' ? 'bg-blue-100' :
@@ -381,15 +381,15 @@ const Courses = () => {
                       course.category === 'vocabulary' ? 'bg-yellow-100' : 'bg-pink-100'
                     }`}
                   >
-                    <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl bg-white/60 backdrop-blur-sm shadow-sm flex items-center justify-center">
+                    <div className="w-28 h-28 md:w-32 md:h-32 rounded-2xl bg-white/70 backdrop-blur-sm shadow-sm flex items-center justify-center shrink-0">
                       {getSkillIcon(
                         course.category,
-                        48,
-                        course.category === 'speaking' ? 'text-purple-600' :
+                        72,
+                        (course.category === 'speaking' ? 'text-purple-600' :
                         course.category === 'writing' ? 'text-orange-600' :
                         course.category === 'reading' ? 'text-blue-600' :
                         course.category === 'listening' ? 'text-green-600' :
-                        course.category === 'vocabulary' ? 'text-yellow-600' : 'text-pink-600'
+                        course.category === 'vocabulary' ? 'text-yellow-600' : 'text-pink-600') + ' block'
                       )}
                     </div>
                   </div>

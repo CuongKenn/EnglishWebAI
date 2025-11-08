@@ -11,11 +11,12 @@ import Toast from '../../../components/Toast/Toast';
 import useToast from '../../../hooks/useToast';
 
 
+// Enlarged skill icons for better visual prominence in course cards
 const SKILLS = [
-  { value: 'listening', label: 'Listening', icon: <Headphones size={16} />, color: '#10b981' },
-  { value: 'speaking', label: 'Speaking', icon: <MessageSquare size={16} />, color: '#8b5cf6' },
-  { value: 'reading', label: 'Reading', icon: <BookOpen size={16} />, color: '#3b82f6' },
-  { value: 'writing', label: 'Writing', icon: <PenLine size={16} />, color: '#f97316' },
+  { value: 'listening', label: 'Listening', icon: <Headphones size={48} strokeWidth={1.5} />, color: '#10b981' },
+  { value: 'speaking', label: 'Speaking', icon: <MessageSquare size={48} strokeWidth={1.5} />, color: '#8b5cf6' },
+  { value: 'reading', label: 'Reading', icon: <BookOpen size={48} strokeWidth={1.5} />, color: '#3b82f6' },
+  { value: 'writing', label: 'Writing', icon: <PenLine size={48} strokeWidth={1.5} />, color: '#f97316' },
 ];
 
 const LEVELS = [
@@ -387,7 +388,7 @@ const CoursesManagement = () => {
                   background: `linear-gradient(135deg, ${getSkillColor(course.category)}15 0%, ${getSkillColor(course.category)}30 100%)`,
                 }}
               >
-                <div className="cm-course-emoji">{getSkillIcon(course.category)}</div>
+                <div className="cm-course-icon-wrapper">{getSkillIcon(course.category)}</div>
                 <div className="cm-course-badge" style={{ backgroundColor: getSkillColor(course.category) }}>
                   {course.level || 'INTERMEDIATE'}
                 </div>
