@@ -16,7 +16,6 @@ class RouteErrorBoundary extends React.Component {
   componentDidCatch(error, errorInfo) {
     // Log error in development
     if (isDev) {
-      // eslint-disable-next-line no-console
       console.error('RouteErrorBoundary:', error, errorInfo);
     }
   }
