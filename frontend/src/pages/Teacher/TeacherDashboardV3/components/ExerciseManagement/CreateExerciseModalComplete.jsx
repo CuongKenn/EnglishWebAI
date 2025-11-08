@@ -19,7 +19,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   
   // Classes from API
   const [classes, setClasses] = useState([]);
-  // loadingClasses state not used in UI
+  const [loadingClasses, setLoadingClasses] = useState(true);
   
   // Form fields
   const [title, setTitle] = useState('');
@@ -292,12 +292,6 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   };
   
   // AI file handlers
-  // handleAiFilesUpload not currently used - could be used for AI file upload feature
-  // const handleAiFilesUpload = (e) => {
-  //   const files = Array.from(e.target.files);
-  //   setAiFiles([...aiFiles, ...files]);
-  // };
-  
   const removeAiFile = (index) => {
     setAiFiles(aiFiles.filter((_, i) => i !== index));
   };
@@ -354,7 +348,8 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
       }
 
       // Call API to upload and process Word file
-      const response = await examService.uploadExamFromWord(formData);
+      await examService.uploadExamFromWord(formData);
+      // response not used - success indicated by no error thrown
 
       showSuccess('✅ Import thành công! Đề thi đã được tạo.');
       
@@ -543,7 +538,8 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
         try {
           const parsed = JSON.parse(q.options);
           baseQuestion.options = Array.isArray(parsed) ? parsed : [];
-        } catch (err) {
+        } catch {
+          // JSON parse failed - use empty array
           baseQuestion.options = [];
         }
       } else {
@@ -1282,9 +1278,9 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   // Writing Form
   function renderWritingForm(sectionKey = null) {
     const normalizedSection = sectionKey ? sectionKey.toLowerCase() : null;
-    const currentSkill = requiresSkill ? selectedSkill?.toLowerCase() : null;
+    // currentSkill not used - section logic handled by normalizedSection
     const questionSection = normalizedSection || (requiresSkill ? selectedSkill : null);
-    const includeQuestions = !sectionKey || (!isMidtermOrFinal && normalizedSection && currentSkill === normalizedSection);
+    // includeQuestions logic removed - always render questions
     return (
       <div className="writing-form-content">
         <h4 className="section-title"><PenLine className="inline-block w-5 h-5 mr-2" /> Nội dung bài Viết</h4>
@@ -1375,7 +1371,9 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
     );
   }
   
-  // Import Form
+  // Import Form - currently not used in the UI flow
+  // Kept for potential future feature
+  /*
   function renderImportForm() {
     // Word Import Special Case
     if (testType === 'midterm' || testType === 'final') {
@@ -1600,6 +1598,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
       </div>
     );
   }
+  */
   
   // AI Form
   function renderAIForm() {
