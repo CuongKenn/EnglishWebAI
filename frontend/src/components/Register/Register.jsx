@@ -118,33 +118,20 @@ const Register = () => {
   };
 
   const handleVerifyOTP = async (otpCode) => {
-    try {
-      // Xác thực OTP
-      await otpService.verifyOTP(pendingUserData.email, otpCode, 'verification');
-      
-      // Sau khi xác thực OTP thành công, tiến hành đăng ký
-      await authService.register(pendingUserData);
-      
-      setShowOTPModal(false);
-      setToast({ message: 'Đăng ký thành công!', type: 'success' });
-      
-      // Đợi 1.5 giây để hiện toast rồi mới chuyển trang
-      setTimeout(() => {
-        navigate('/login');
-      }, 1500);
-      
-    } catch (error) {
-      console.error('Verification or Registration failed:', error);
-      throw error; // Re-throw để OTPModal có thể xử lý
-    }
+    // Xác thực OTP
+    await otpService.verifyOTP(pendingUserData.email, otpCode, 'verification');
+    // Sau khi xác thực OTP thành công, tiến hành đăng ký
+    await authService.register(pendingUserData);
+    setShowOTPModal(false);
+    setToast({ message: 'Đăng ký thành công!', type: 'success' });
+    // Đợi 1.5 giây để hiện toast rồi mới chuyển trang
+    setTimeout(() => {
+      navigate('/login');
+    }, 1500);
   };
 
   const handleResendOTP = async () => {
-    try {
-      await otpService.resendOTP(pendingUserData.email, 'verification');
-    } catch (error) {
-      throw error;
-    }
+    await otpService.resendOTP(pendingUserData.email, 'verification');
   };
 
   const createRipple = (button, e) => {
@@ -163,9 +150,7 @@ const Register = () => {
     setTimeout(() => ripple.remove(), 600);
   };
 
-  const handleSocialRegister = (provider) => {
-
-  };
+  const handleSocialRegister = () => {};
 
   const handleNavigateToLogin = () => {
     navigate('/login'); // Chuyển đến trang login
