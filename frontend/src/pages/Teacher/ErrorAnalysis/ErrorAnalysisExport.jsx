@@ -11,7 +11,7 @@ export default function ErrorAnalysisExport() {
   const [selectedClass, setSelectedClass] = useState('');
   const [weekNumber, setWeekNumber] = useState('');
   const [skillType, setSkillType] = useState('all');
-  const [exportFormat, setExportFormat] = useState('csv');
+  // exportFormat state declared but not currently used in UI
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 

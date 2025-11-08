@@ -12,7 +12,7 @@ import {
 import './Messages.css';
 
 const Messages = () => {
-  const navigate = useNavigate();
+  // navigate not currently used
   const [conversations, setConversations] = useState([]);
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);

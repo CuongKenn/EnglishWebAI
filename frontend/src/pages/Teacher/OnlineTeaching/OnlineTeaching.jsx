@@ -3,7 +3,8 @@ import './OnlineTeaching.css';
 
 const OnlineTeaching = () => {
   const [selectedTab, setSelectedTab] = useState('schedule');
-  const [meetings, setMeetings] = useState([
+  // setMeetings not used - meetings are currently static mock data
+  const [meetings] = useState([
     {
       id: 1,
       title: 'English 10A - Grammar Lesson',

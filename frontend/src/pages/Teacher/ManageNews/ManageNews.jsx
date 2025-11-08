@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import apiClient from '../../../services/api';
+// apiClient imported but not used - could be used for custom API calls
 import './ManageNews.css';
 import { 
   NewspaperIcon, 
