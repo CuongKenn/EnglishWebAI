@@ -519,10 +519,27 @@ export default function QuestionBankV2() {
   const handleApplyTemplate = (templateId) => {
     const template = templates.find(t => t.id === templateId);
     if (template) {
+      // Some template.name values are JSX elements, not plain strings. Safely extract text before using replace.
+      let templateNameText = '';
+      if (typeof template.name === 'string') {
+        templateNameText = template.name;
+      } else if (Array.isArray(template.name)) {
+        // If it's an array of nodes, join any string children
+        templateNameText = template.name.filter(ch => typeof ch === 'string').join(' ').trim();
+      } else if (template.name && typeof template.name === 'object') {
+        // Attempt to read props.children if available (React element)
+        const children = template.name.props?.children;
+        if (typeof children === 'string') templateNameText = children;
+        else if (Array.isArray(children)) templateNameText = children.filter(ch => typeof ch === 'string').join(' ').trim();
+      }
+      if (!templateNameText) {
+        // Fallback to template id when we cannot derive a plain string
+        templateNameText = template.id;
+      }
       setAiGenerationConfig(prev => ({
         ...prev,
         ...template.config,
-        testName: prev.testName || template.name.replace(/[^\w\s]/g, '')
+        testName: prev.testName || templateNameText.replace(/[^\w\s]/g, '')
       }));
       setSelectedTemplate(templateId);
     }
