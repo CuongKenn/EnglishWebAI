@@ -57,9 +57,8 @@ const ListeningExercise = () => {
   const [results, setResults] = useState(null);
 
   const [notification, setNotification] = useState(null);
-  const [courseData, setCourseData] = useState(null);
+  // Removed unused courseData/questions state to reduce lint noise
   const [unitData, setUnitData] = useState(null);
-  const [questions, setQuestions] = useState([]);
 
   const totalQuestions = listeningData?.totalQuestions || 0;
   const answeredCount = Object.keys(selectedAnswers).length;
@@ -91,7 +90,7 @@ const ListeningExercise = () => {
 
   // Refs
   const audioRef = useRef(null);
-  const timerRef = useRef(null);
+  // Removed unused timerRef
   const speechSynthRef = useRef(null);
   const utteranceRef = useRef(null);
   const questionRefs = useRef({});
@@ -127,7 +126,7 @@ const ListeningExercise = () => {
             if (typeof options === 'string') {
               try {
                 options = JSON.parse(options);
-              } catch (e) {
+              } catch {
                 options = [];
               }
             }
@@ -165,8 +164,7 @@ const ListeningExercise = () => {
         }
 
         // Fallback: Load từ old CourseQuestions API
-        const course = await coursesAPI.getCourse(courseId);
-        setCourseData(course);
+  const course = await coursesAPI.getCourse(courseId);
 
         const units = await coursesAPI.getUnits(courseId);
         const unit = units.find(u => u.id === parseInt(lessonId));
@@ -175,8 +173,7 @@ const ListeningExercise = () => {
         }
         setUnitData(unit);
 
-        const qs = await coursesAPI.getQuestions(parseInt(lessonId));
-        setQuestions(qs || []);
+  const qs = await coursesAPI.getQuestions(parseInt(lessonId));
 
         // Determine audio/transcript from unit/question data
         const getBackendBaseUrl = () => {
@@ -699,7 +696,7 @@ const ListeningExercise = () => {
     );
   }
 
-  const currentQuestionData = listeningData.questions[currentQuestion];
+  // Removed unused currentQuestionData constant
   const audioProgressWidth = audioDuration > 0 ? (audioProgress / audioDuration) * 100 : 0;
 
   return (
@@ -982,9 +979,7 @@ const ListeningExercise = () => {
               </aside>
 
               <div className="question-list">
-                {listeningData.questions.map((question, index) => {
-                  const isSelectedAnswer = typeof selectedAnswers[question.id] === 'number';
-                  return (
+                  {listeningData.questions.map((question, index) => (
                     <div
                       key={question.id}
                       className={`question-card ${currentQuestion === index ? 'highlight' : ''}`}
@@ -1056,8 +1051,7 @@ const ListeningExercise = () => {
                         })}
                       </div>
                     </div>
-                  );
-                })}
+                  ))}
               </div>
             </div>
           )}
