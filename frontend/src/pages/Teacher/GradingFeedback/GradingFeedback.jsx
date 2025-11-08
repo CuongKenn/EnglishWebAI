@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import './GradingFeedback.css';
-import apiClient from '../../../services/api';
 import { 
   CheckCircleIcon, 
   BoltIcon, 

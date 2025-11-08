@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './StatisticsReports.css';
-// apiClient imported but not used - API calls use different service
+import { apiClient } from '../../../services/api';
 import { 
   UserGroupIcon, 
   StarIcon, 

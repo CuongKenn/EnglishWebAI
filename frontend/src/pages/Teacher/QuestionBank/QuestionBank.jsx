@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import './QuestionBank.css';
-import apiClient from '../../../services/api';
 
 const QuestionBank = () => {
   const [questions, setQuestions] = useState([]);

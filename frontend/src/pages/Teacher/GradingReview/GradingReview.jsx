@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { apiV1 } from '../../../services/api';
 import { CheckCircle, XCircle, Clock, AlertCircle, Eye, Edit2 } from 'lucide-react';
 import { useToast } from '../../../components/ui/Toast';
 import './GradingReview.css';
 
 const GradingReview = () => {
-  // navigate not currently used
   const toast = useToast();
   const [pendingSubmissions, setPendingSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
