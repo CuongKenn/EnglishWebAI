@@ -117,7 +117,8 @@ const MyClassesTeacher = () => {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Lớp học của tôi</h1>
+  {/* Updated heading color for better contrast with background; supports dark mode */}
+  <h1 className="text-4xl font-extrabold mb-2 text-slate-900 dark:text-white">Lớp học của tôi</h1>
         <p className="text-gray-600">Quản lý bài giảng, tài liệu và bài tập cho các lớp</p>
       </div>
 
