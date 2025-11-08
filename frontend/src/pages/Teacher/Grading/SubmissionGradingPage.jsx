@@ -236,7 +236,63 @@ export default function SubmissionGradingPage() {
   const listeningSection = submission?.rubrics_scores?.listening || null;
   const readingSection = submission?.rubrics_scores?.reading || null;
   const writingSection = submission?.rubrics_scores?.writing || null;
-  const speakingSection = submission?.rubrics_scores?.speaking || null;
+
+  const legacySpeakingAssessment = submission?.rubrics_scores?.speaking_assessment;
+  const legacySpeakingContent = submission?.rubrics_scores?.speaking_content;
+  const legacySpeakingFeedback = submission?.rubrics_scores?.speaking_feedback || submission?.rubrics_scores?.detailed_feedback;
+  const legacyRecognizedText = submission?.rubrics_scores?.recognized_text;
+
+  const normalizeLegacyPronunciation = (assessment) => {
+    if (!assessment || typeof assessment !== 'object') return null;
+    const pronunciation = assessment.pronunciation ?? assessment.pronunciation_score ?? assessment.pronunciationScore;
+    const fluency = assessment.fluency ?? assessment.fluency_score ?? assessment.fluencyScore;
+    const completeness = assessment.completeness ?? assessment.completeness_score ?? assessment.completenessScore;
+    const accuracy = assessment.accuracy ?? assessment.accuracy_score ?? assessment.accuracyScore;
+    const recognized = assessment.recognized_text ?? assessment.recognizedText ?? legacyRecognizedText ?? '';
+    if ([pronunciation, fluency, completeness, accuracy].every((value) => typeof value !== 'number')) {
+      return null;
+    }
+    return {
+      pronunciation_score: typeof pronunciation === 'number' ? pronunciation : 0,
+      fluency_score: typeof fluency === 'number' ? fluency : 0,
+      completeness_score: typeof completeness === 'number' ? completeness : 0,
+      accuracy_score: typeof accuracy === 'number' ? accuracy : 0,
+      recognized_text: recognized,
+    };
+  };
+
+  let speakingSection = submission?.rubrics_scores?.speaking || null;
+
+  if (!speakingSection && (legacySpeakingAssessment || legacySpeakingContent || legacySpeakingFeedback || legacyRecognizedText || submission?.content_url)) {
+    const normalizedPronunciation = normalizeLegacyPronunciation(legacySpeakingAssessment);
+    const fallbackContent = legacySpeakingContent || (legacySpeakingFeedback ? {
+      overall_comment: legacySpeakingFeedback,
+    } : null);
+
+    speakingSection = {
+      points_earned: submission?.rubrics_scores?.speaking_points ?? null,
+      max_points: submission?.rubrics_scores?.speaking_max_points ?? 2.5,
+      prompt: submission?.rubrics_scores?.speaking_prompt ?? null,
+      audio_url: submission?.rubrics_scores?.speaking_audio_url || submission?.content_url || null,
+      pronunciation: normalizedPronunciation,
+      content: fallbackContent,
+      recognized_text: legacyRecognizedText ?? normalizedPronunciation?.recognized_text ?? null,
+      feedback: legacySpeakingFeedback ? {
+        pronunciation: legacySpeakingFeedback,
+        recognized_text: legacyRecognizedText ?? normalizedPronunciation?.recognized_text ?? '',
+      } : null,
+    };
+  } else if (speakingSection) {
+    speakingSection = {
+      ...speakingSection,
+      audio_url: speakingSection.audio_url || submission?.rubrics_scores?.speaking_audio_url || submission?.content_url || null,
+      pronunciation: speakingSection.pronunciation || normalizeLegacyPronunciation(legacySpeakingAssessment),
+      content: speakingSection.content || legacySpeakingContent || (legacySpeakingFeedback ? {
+        overall_comment: legacySpeakingFeedback,
+      } : null),
+      recognized_text: speakingSection.recognized_text || legacyRecognizedText || speakingSection.pronunciation?.recognized_text || null,
+    };
+  }
   
   const hasText = (value) => typeof value === 'string' && value.trim().length > 0;
   const hasNonEmptyStringArray = (value) => Array.isArray(value) && value.some((item) => hasText(item));
@@ -315,7 +371,7 @@ export default function SubmissionGradingPage() {
       hasSpeakingContentFeedback ||
       hasSpeakingPronunciationScores
     )
-  );
+  ) || Boolean(submission?.content_url);
 
   const sectionedRubricsCount = [hasListeningSection, hasReadingSection, hasWritingSection, hasSpeakingSection].filter(Boolean).length;
   const showSectionedRubrics = sectionedRubricsCount > 0;

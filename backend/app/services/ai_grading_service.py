@@ -789,14 +789,17 @@ Trả về JSON với format:
     
     async def grade_comprehensive_submission(
         self, 
-        exercise_content: Dict, 
-        student_answers: Dict,
+        exercise_content: Optional[Dict], 
+        student_answers: Optional[Dict],
         audio_file_path: Optional[str] = None
     ) -> Dict:
         """
         Grade entire comprehensive test submission
         Returns detailed grading for all sections
         """
+        exercise_content = exercise_content or {}
+        student_answers = student_answers or {}
+
         results = {
             "listening": {"questions": [], "total_points": 0, "max_points": 2.5},
             "reading": {"questions": [], "total_points": 0, "max_points": 2.5},
@@ -806,8 +809,8 @@ Trả về JSON với format:
             "max_score": 10
         }
         
-        logger.debug(f"[GRADE_COMPREHENSIVE] Exercise content keys: {exercise_content.keys()}")
-        logger.debug(f"[GRADE_COMPREHENSIVE] Student answers keys: {student_answers.keys()}")
+        logger.debug(f"[GRADE_COMPREHENSIVE] Exercise content keys: {list(exercise_content.keys())}")
+        logger.debug(f"[GRADE_COMPREHENSIVE] Student answers keys: {list(student_answers.keys())}")
         
         # Grade Listening questions
         # Check both locations: content.listening.questions AND content.questions with skill="listening"
@@ -915,13 +918,45 @@ Trả về JSON với format:
             )
             results["writing"] = writing_result
         
+        # Resolve audio path to local filesystem
+        resolved_audio_path = None
+        if audio_file_path:
+            candidate_paths = []
+
+            # Use original path first
+            candidate_paths.append(audio_file_path)
+
+            # Common relative forms (e.g. /media/uploads/...)
+            if audio_file_path.startswith('/'):
+                relative = audio_file_path.lstrip('/')
+                candidate_paths.append(os.path.join('.', relative))
+                candidate_paths.append(os.path.join('/app', relative))
+            elif audio_file_path.startswith('media/'):
+                candidate_paths.append(os.path.join('.', audio_file_path))
+                candidate_paths.append(os.path.join('/app', audio_file_path))
+            elif audio_file_path.startswith('./media/'):
+                candidate_paths.append(os.path.join('/app', audio_file_path[2:]))
+
+            # Remove duplicates while keeping order
+            seen = set()
+            unique_candidates = []
+            for path in candidate_paths:
+                if path not in seen:
+                    seen.add(path)
+                    unique_candidates.append(path)
+
+            for path in unique_candidates:
+                if path and os.path.exists(path):
+                    resolved_audio_path = path
+                    break
+
         # Grade Speaking
-        if audio_file_path and os.path.exists(audio_file_path):
+        if resolved_audio_path:
             speaking_prompt = exercise_content.get("speaking", {}).get("prompt", "")
             
             # Step 1: Azure pronunciation assessment
             pronunciation_result = await self.grade_speaking_pronunciation(
-                audio_file_path,
+                resolved_audio_path,
                 speaking_prompt
             )
             

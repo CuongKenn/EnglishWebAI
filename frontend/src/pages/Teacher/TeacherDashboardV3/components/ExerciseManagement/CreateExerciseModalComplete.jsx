@@ -53,6 +53,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   
   // Questions
   const [questions, setQuestions] = useState([]);
+  const [activeSection, setActiveSection] = useState('listening');
   const [showQuestionBankModal, setShowQuestionBankModal] = useState(false);
   
   // Import states
@@ -79,6 +80,13 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   // Logic helpers
   const requiresSkill = testType === 'skill_exercise' || testType === 'test_15min';
   const isMidtermOrFinal = testType === 'midterm' || testType === 'final';
+  const comprehensiveSections = ['listening', 'reading', 'writing', 'speaking'];
+  const sectionDisplayNames = {
+    listening: 'Nghe',
+    reading: 'Đọc',
+    writing: 'Viết',
+    speaking: 'Nói',
+  };
   
   // Set default due date to today at 23:59
   useEffect(() => {
@@ -114,17 +122,41 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
       setInputMethod('ai');
     }
   }, [testType]);
+
+  useEffect(() => {
+    if (isMidtermOrFinal) {
+      if (!comprehensiveSections.includes(activeSection)) {
+        setActiveSection('listening');
+      }
+    } else if (requiresSkill && selectedSkill) {
+      setActiveSection(selectedSkill);
+    }
+  }, [isMidtermOrFinal, requiresSkill, selectedSkill]);
   
   // Question handlers
-  const addQuestion = () => {
-    setQuestions([...questions, {
+  const addQuestion = (section = null) => {
+    const questionSection = section || (isMidtermOrFinal && inputMethod === 'manual' ? activeSection : null);
+    const baseQuestion = {
       id: Date.now(),
       type: 'multiple_choice',
       question: '',
       options: ['', '', '', ''],
       correct_answer: '',
-      points: 2
-    }]);
+      points: 2,
+    };
+
+    if (isMidtermOrFinal && inputMethod === 'manual') {
+      const sectionKey = (questionSection || 'listening').toLowerCase();
+      baseQuestion.section = sectionKey;
+      baseQuestion.skill = sectionKey;
+      baseQuestion.skill_type = sectionKey;
+    } else if (requiresSkill && selectedSkill) {
+      const skillKey = selectedSkill.toLowerCase();
+      baseQuestion.skill = skillKey;
+      baseQuestion.skill_type = skillKey;
+    }
+
+    setQuestions([...questions, baseQuestion]);
   };
   
   const removeQuestion = (index) => {
@@ -133,7 +165,33 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   
   const updateQuestion = (index, field, value) => {
     const updated = [...questions];
-    updated[index] = { ...updated[index], [field]: value };
+    const nextQuestion = { ...updated[index], [field]: value };
+
+    if (isMidtermOrFinal && inputMethod === 'manual') {
+      const sectionKey = (nextQuestion.section || activeSection || 'listening').toLowerCase();
+      nextQuestion.section = sectionKey;
+      nextQuestion.skill = sectionKey;
+      nextQuestion.skill_type = sectionKey;
+    } else if (requiresSkill && selectedSkill) {
+      const skillKey = selectedSkill.toLowerCase();
+      nextQuestion.skill = skillKey;
+      nextQuestion.skill_type = skillKey;
+    }
+
+    if (field === 'type') {
+      if (isMidtermOrFinal && inputMethod === 'manual') {
+        const sectionKey = (activeSection || nextQuestion.section || value).toLowerCase();
+        nextQuestion.section = sectionKey;
+        nextQuestion.skill = sectionKey;
+        nextQuestion.skill_type = sectionKey;
+      } else if (requiresSkill && selectedSkill) {
+        const skillKey = selectedSkill.toLowerCase();
+        nextQuestion.skill = skillKey;
+        nextQuestion.skill_type = skillKey;
+      }
+    }
+
+    updated[index] = nextQuestion;
     setQuestions(updated);
   };
   
@@ -144,7 +202,27 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   };
   
   const handleQuestionsFromBank = (selectedQuestions) => {
-    setQuestions([...questions, ...selectedQuestions]);
+    const mapped = selectedQuestions.map((rawQuestion, idx) => {
+      const cloned = { ...rawQuestion };
+      if (!cloned.id) {
+        cloned.id = `qb_${Date.now()}_${idx}`;
+      }
+
+      if (isMidtermOrFinal && inputMethod === 'manual') {
+        const sectionKey = (cloned.section || cloned.skill || cloned.skill_type || activeSection || 'listening').toString().toLowerCase();
+        cloned.section = sectionKey;
+        cloned.skill = sectionKey;
+        cloned.skill_type = sectionKey;
+      } else if (requiresSkill && selectedSkill) {
+        const skillKey = (cloned.skill || cloned.skill_type || selectedSkill).toString().toLowerCase();
+        cloned.skill = skillKey;
+        cloned.skill_type = skillKey;
+      }
+
+      return cloned;
+    });
+
+    setQuestions([...questions, ...mapped]);
     setShowQuestionBankModal(false);
   };
   
@@ -782,10 +860,10 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
                   {/* Render based on selected method */}
                   {inputMethod === 'manual' && (
                     <>
-                      {selectedSkill === 'listening' && renderListeningForm()}
-                      {selectedSkill === 'speaking' && renderSpeakingForm()}
-                      {selectedSkill === 'reading' && renderReadingForm()}
-                      {selectedSkill === 'writing' && renderWritingForm()}
+                      {selectedSkill === 'listening' && renderListeningForm('listening')}
+                      {selectedSkill === 'speaking' && renderSpeakingForm('speaking')}
+                      {selectedSkill === 'reading' && renderReadingForm('reading')}
+                      {selectedSkill === 'writing' && renderWritingForm('writing')}
                     </>
                   )}
                   {inputMethod === 'ai' && renderAIForm()}
@@ -805,7 +883,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
       {/* Question Bank Selector Modal */}
       {showQuestionBankModal && (
         <QuestionBankSelectorModal
-          skillType={selectedSkill}
+          skillType={(isMidtermOrFinal && inputMethod === 'manual') ? activeSection : selectedSkill}
           onClose={() => setShowQuestionBankModal(false)}
           onSelect={handleQuestionsFromBank}
         />
@@ -863,28 +941,50 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
             <p className="section-desc">Tạo đề thi toàn diện với 4 kỹ năng</p>
             
             {/* Listening Section */}
-            <div className="comprehensive-section">
-              <h5 className="section-subtitle"><Headphones className="inline-block w-5 h-5 mr-2" /> Phần Nghe (Listening)</h5>
-              {renderListeningForm()}
+            <div className="section-tabs">
+              {comprehensiveSections.map((section) => (
+                <button
+                  key={section}
+                  type="button"
+                  className={`section-tab ${activeSection === section ? 'active' : ''}`}
+                  onClick={() => setActiveSection(section)}
+                >
+                  {sectionDisplayNames[section] || section}
+                </button>
+              ))}
             </div>
-            
-            {/* Reading Section */}
-            <div className="comprehensive-section">
-              <h5 className="section-subtitle"><BookOpen className="inline-block w-5 h-5 mr-2" /> Phần Đọc (Reading)</h5>
-              {renderReadingForm()}
-            </div>
-            
-            {/* Writing Section */}
-            <div className="comprehensive-section">
-              <h5 className="section-subtitle"><PenLine className="inline-block w-5 h-5 mr-2" /> Phần Viết (Writing)</h5>
-              {renderWritingForm()}
-            </div>
-            
-            {/* Speaking Section */}
-            <div className="comprehensive-section">
-              <h5 className="section-subtitle"><Mic className="inline-block w-5 h-5 mr-2" /> Phần Nói (Speaking)</h5>
-              {renderSpeakingForm()}
-            </div>
+
+            {activeSection === 'listening' && (
+              <div className="comprehensive-section">
+                <h5 className="section-subtitle"><Headphones className="inline-block w-5 h-5 mr-2" /> Phần Nghe (Listening)</h5>
+                {renderListeningForm('listening')}
+                {renderQuestions('listening')}
+              </div>
+            )}
+
+            {activeSection === 'reading' && (
+              <div className="comprehensive-section">
+                <h5 className="section-subtitle"><BookOpen className="inline-block w-5 h-5 mr-2" /> Phần Đọc (Reading)</h5>
+                {renderReadingForm('reading')}
+                {renderQuestions('reading')}
+              </div>
+            )}
+
+            {activeSection === 'writing' && (
+              <div className="comprehensive-section">
+                <h5 className="section-subtitle"><PenLine className="inline-block w-5 h-5 mr-2" /> Phần Viết (Writing)</h5>
+                {renderWritingForm('writing')}
+                {renderQuestions('writing')}
+              </div>
+            )}
+
+            {activeSection === 'speaking' && (
+              <div className="comprehensive-section">
+                <h5 className="section-subtitle"><Mic className="inline-block w-5 h-5 mr-2" /> Phần Nói (Speaking)</h5>
+                {renderSpeakingForm('speaking')}
+                {renderQuestions('speaking')}
+              </div>
+            )}
             
             <div className="info-box-note">
               <Sparkles className="inline-block w-5 h-5 mr-2 text-yellow-500" />
@@ -898,7 +998,9 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   }
   
   // Listening Form
-  function renderListeningForm() {
+  function renderListeningForm(sectionKey = null) {
+    const questionSection = sectionKey || (requiresSkill ? selectedSkill : null);
+    const includeQuestions = !sectionKey;
     return (
       <div className="listening-form-content">
         <h4 className="section-title"><Headphones className="inline-block w-5 h-5 mr-2" /> Nội dung bài Nghe</h4>
@@ -1006,13 +1108,15 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
         </div>
         
         {/* Questions */}
-        {renderQuestions()}
+        {includeQuestions && renderQuestions(questionSection)}
       </div>
     );
   }
   
   // Speaking Form
-  function renderSpeakingForm() {
+  function renderSpeakingForm(sectionKey = null) {
+    const questionSection = sectionKey || (requiresSkill ? selectedSkill : null);
+    const includeQuestions = !sectionKey;
     return (
       <div className="speaking-form-content">
         <h4 className="section-title"><Mic className="inline-block w-5 h-5 mr-2" /> Nội dung bài Nói</h4>
@@ -1078,12 +1182,16 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
             />
           </div>
         </div>
+        
+        {includeQuestions && renderQuestions(questionSection)}
       </div>
     );
   }
   
   // Reading Form
-  function renderReadingForm() {
+  function renderReadingForm(sectionKey = null) {
+    const questionSection = sectionKey || (requiresSkill ? selectedSkill : null);
+    const includeQuestions = !sectionKey;
     return (
       <div className="reading-form-content">
         <h4 className="section-title"><BookOpen className="inline-block w-5 h-5 mr-2" /> Nội dung bài Đọc</h4>
@@ -1161,14 +1269,15 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
           </div>
         )}
         
-        {/* Questions */}
-        {renderQuestions()}
+        {includeQuestions && renderQuestions(questionSection)}
       </div>
     );
   }
   
   // Writing Form
-  function renderWritingForm() {
+  function renderWritingForm(sectionKey = null) {
+    const questionSection = sectionKey || (requiresSkill ? selectedSkill : null);
+    const includeQuestions = !sectionKey;
     return (
       <div className="writing-form-content">
         <h4 className="section-title"><PenLine className="inline-block w-5 h-5 mr-2" /> Nội dung bài Viết</h4>
@@ -1253,6 +1362,8 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
             Thêm yêu cầu
           </button>
         </div>
+        
+        {renderQuestions(questionSection)}
       </div>
     );
   }
@@ -1747,7 +1858,19 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   }
   
   // Questions Section
-  function renderQuestions() {
+  function renderQuestions(sectionFilter = null) {
+    const normalizedFilter = sectionFilter ? sectionFilter.toLowerCase() : null;
+    const questionEntries = questions
+      .map((question, index) => ({ question, index }))
+      .filter(({ question }) => {
+        if (!normalizedFilter) return true;
+        const qSection = (question.section || question.skill || question.skill_type || '').toString().toLowerCase();
+        return qSection === normalizedFilter;
+      });
+
+    const displayQuestions = questionEntries.map(({ question, index }) => ({ question, originalIndex: index }));
+    const hasQuestions = displayQuestions.length > 0;
+
     return (
       <div className="questions-section-form">
         <div className="section-header-with-actions">
@@ -1755,28 +1878,33 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
           <div className="question-actions">
             <button 
               className="btn-from-bank"
-              onClick={() => setShowQuestionBankModal(true)}
+              onClick={() => {
+                if (sectionFilter && isMidtermOrFinal && inputMethod === 'manual') {
+                  setActiveSection(sectionFilter);
+                }
+                setShowQuestionBankModal(true);
+              }}
             >
               <Database size={16} />
               Từ Ngân hàng
             </button>
-            <button className="btn-add-question" onClick={addQuestion}>
+            <button className="btn-add-question" onClick={() => addQuestion(sectionFilter)}>
               <Plus size={16} />
               Thêm câu hỏi
             </button>
           </div>
         </div>
         
-        {questions.length === 0 ? (
+        {!hasQuestions ? (
           <div className="empty-questions">
             <p>Chưa có câu hỏi. Click "Thêm câu hỏi" hoặc "Từ Ngân hàng"</p>
           </div>
         ) : (
-          questions.map((q, idx) => (
-            <div key={q.id} className="question-form-card">
+          displayQuestions.map(({ question: q, originalIndex }, orderIndex) => (
+            <div key={q.id || `${originalIndex}_${orderIndex}`} className="question-form-card">
               <div className="question-form-header">
-                <span>Câu {idx + 1}</span>
-                <button onClick={() => removeQuestion(idx)} className="btn-remove-question">
+                <span>Câu {orderIndex + 1}</span>
+                <button onClick={() => removeQuestion(originalIndex)} className="btn-remove-question">
                   <Trash2 size={16} />
                 </button>
               </div>
@@ -1786,7 +1914,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
                 <select 
                   className="form-select-ex"
                   value={q.type}
-                  onChange={(e) => updateQuestion(idx, 'type', e.target.value)}
+                  onChange={(e) => updateQuestion(originalIndex, 'type', e.target.value)}
                 >
                   <optgroup label="Trắc nghiệm">
                     <option value="multiple_choice">Trắc nghiệm (A/B/C/D)</option>
@@ -1824,7 +1952,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
                     'Nhập câu hỏi...'
                   }
                   value={q.question}
-                  onChange={(e) => updateQuestion(idx, 'question', e.target.value)}
+                  onChange={(e) => updateQuestion(originalIndex, 'question', e.target.value)}
                   rows={q.type === 'reading' || q.type === 'writing' ? 5 : 3}
                   style={{ resize: 'vertical' }}
                 />
@@ -1841,14 +1969,14 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
                         className="form-input-ex"
                         placeholder={`${String.fromCharCode(65 + optIdx)}. Đáp án ${optIdx + 1}`}
                         value={opt}
-                        onChange={(e) => updateQuestionOption(idx, optIdx, e.target.value)}
+                        onChange={(e) => updateQuestionOption(originalIndex, optIdx, e.target.value)}
                         style={{ marginBottom: '8px' }}
                       />
                     ))}
                     <select 
                       className="form-select-ex"
                       value={q.correct_answer}
-                      onChange={(e) => updateQuestion(idx, 'correct_answer', e.target.value)}
+                      onChange={(e) => updateQuestion(originalIndex, 'correct_answer', e.target.value)}
                     >
                       <option value="">Chọn đáp án đúng</option>
                       <option value="A">A</option>
@@ -1868,7 +1996,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
                     className="form-input-ex"
                     placeholder="Nhập đáp án..."
                     value={q.correct_answer}
-                    onChange={(e) => updateQuestion(idx, 'correct_answer', e.target.value)}
+                    onChange={(e) => updateQuestion(originalIndex, 'correct_answer', e.target.value)}
                   />
                 </div>
               )}
@@ -1879,7 +2007,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
                   <select 
                     className="form-select-ex"
                     value={q.correct_answer}
-                    onChange={(e) => updateQuestion(idx, 'correct_answer', e.target.value)}
+                    onChange={(e) => updateQuestion(originalIndex, 'correct_answer', e.target.value)}
                   >
                     <option value="">Chọn...</option>
                     <option value="true">Đúng</option>
@@ -1901,7 +2029,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
                     className="form-input-ex"
                     placeholder="Nhập văn bản tham khảo mà học sinh cần đọc (nếu có)..."
                     value={q.reference_text || ''}
-                    onChange={(e) => updateQuestion(idx, 'reference_text', e.target.value)}
+                    onChange={(e) => updateQuestion(originalIndex, 'reference_text', e.target.value)}
                     rows={3}
                   />
                 </div>
@@ -1920,7 +2048,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
                     className="form-input-ex"
                     placeholder="Số từ tối thiểu (VD: 150)"
                     value={q.min_words || ''}
-                    onChange={(e) => updateQuestion(idx, 'min_words', Number(e.target.value))}
+                    onChange={(e) => updateQuestion(originalIndex, 'min_words', Number(e.target.value))}
                   />
                 </div>
               )}
@@ -1938,14 +2066,14 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
                     className="form-input-ex"
                     placeholder="https://... hoặc /media/audio/..."
                     value={q.audio_url || ''}
-                    onChange={(e) => updateQuestion(idx, 'audio_url', e.target.value)}
+                    onChange={(e) => updateQuestion(originalIndex, 'audio_url', e.target.value)}
                   />
                   <label style={{ marginTop: '12px' }}>Câu hỏi sau khi nghe</label>
                   <textarea
                     className="form-input-ex"
                     placeholder="VD: What is the main topic? Who are the speakers?"
                     value={q.listening_question || ''}
-                    onChange={(e) => updateQuestion(idx, 'listening_question', e.target.value)}
+                    onChange={(e) => updateQuestion(originalIndex, 'listening_question', e.target.value)}
                     rows={2}
                   />
                 </div>
@@ -1963,7 +2091,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
                     className="form-input-ex"
                     placeholder="VD: What is the main idea? According to the passage..."
                     value={q.reading_question || ''}
-                    onChange={(e) => updateQuestion(idx, 'reading_question', e.target.value)}
+                    onChange={(e) => updateQuestion(originalIndex, 'reading_question', e.target.value)}
                     rows={2}
                   />
                 </div>
@@ -1975,7 +2103,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
                   type="number"
                   className="form-input-ex"
                   value={q.points}
-                  onChange={(e) => updateQuestion(idx, 'points', Number(e.target.value))}
+                  onChange={(e) => updateQuestion(originalIndex, 'points', Number(e.target.value))}
                   min="0.5"
                   step="0.5"
                 />
@@ -1986,4 +2114,5 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
       </div>
     );
   }
+  
 }
