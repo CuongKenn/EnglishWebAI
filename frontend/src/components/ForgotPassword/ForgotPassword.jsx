@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import otpService from '../../services/otpService';
+import authService from '../../services/authService';
 import OTPModal from '../OTPModal/OTPModal';
 import './ForgotPassword.css';
 
@@ -79,6 +80,7 @@ const ForgotPassword = () => {
         text: 'Xác thực thành công! Vui lòng nhập mật khẩu mới.',
       });
     } catch (error) {
+      // surface error to OTPModal via throw for its own handling
       throw error;
     }
   };
