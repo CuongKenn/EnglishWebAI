@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Card } from "../ui/card";
 import { Avatar, AvatarFallback } from "../ui/avatar";
-import { MessageCircle, Send, Mic, Volume2, Loader2 } from "lucide-react";
+import { MessageCircle, Send, Mic, Volume2, Loader2, MicOff } from "lucide-react";
 import { ScrollArea } from "../ui/scroll-area";
 import { aiAPI, aiUsageAPI } from "../../services/api";
+import { useSpeechRecognition } from "../../hooks/useMicrophone";
+import { useToast } from "../../hooks/useToast";
 
 export function ConversationAI() {
   const [messages, setMessages] = useState([
@@ -18,6 +20,43 @@ export function ConversationAI() {
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [speakingIndex, setSpeakingIndex] = useState(null);
+  
+  const { showError } = useToast();
+  const { 
+    isListening,
+    transcript,
+    interimTranscript,
+    error: speechError,
+    isSupported,
+    startListening,
+    stopListening,
+    clearTranscript
+  } = useSpeechRecognition();
+
+  // Update input text when transcript changes
+  useEffect(() => {
+    if (transcript) {
+      setInputText(transcript);
+    }
+  }, [transcript]);
+
+  // Show error toast when speech recognition fails
+  useEffect(() => {
+    if (speechError) {
+      showError(speechError);
+    }
+  }, [speechError, showError]);
+
+  // Handle microphone button click
+  const handleMicClick = () => {
+    if (isListening) {
+      stopListening();
+    } else {
+      clearTranscript();
+      setInputText('');
+      startListening();
+    }
+  };
 
   // Text-to-Speech functionality
   const speak = (text, messageIndex) => {
@@ -253,15 +292,33 @@ export function ConversationAI() {
 
         {/* Input Area */}
         <div className="border-t bg-gray-50 p-4">
+          {!isSupported && (
+            <div className="mb-3 rounded-lg bg-yellow-50 p-3 text-sm text-yellow-800">
+              ⚠️ Speech recognition is not supported in this browser. Please use Chrome or Edge for voice input.
+            </div>
+          )}
+          
           <div className="flex gap-2">
-            <Button variant="outline" size="icon" className="rounded-full" disabled={isLoading}>
-              <Mic className="h-4 w-4" />
+            <Button 
+              variant={isListening ? "destructive" : "outline"}
+              size="icon" 
+              className="rounded-full" 
+              disabled={isLoading || !isSupported}
+              onClick={handleMicClick}
+              title={isListening ? "Stop Listening" : "Start Voice Input"}
+            >
+              {isListening ? (
+                <MicOff className="h-4 w-4 animate-pulse" />
+              ) : (
+                <Mic className="h-4 w-4" />
+              )}
             </Button>
+            
             <Input
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Nhập tin nhắn bằng tiếng Anh..."
+              placeholder={isListening ? "Listening..." : "Nhập tin nhắn bằng tiếng Anh..."}
               className="flex-1"
               disabled={isLoading}
             />
@@ -278,9 +335,32 @@ export function ConversationAI() {
               )}
             </Button>
           </div>
-          <p className="mt-2 text-xs text-gray-500">
-            {isLoading ? "🤖 AI đang suy nghĩ..." : "💡 Mẹo: Nhấn Enter để gửi tin nhắn"}
-          </p>
+          
+          <div className="mt-2 flex items-center justify-between">
+            <p className="text-xs text-gray-500">
+              {isListening ? (
+                <span className="text-red-500">
+                  🔴 Listening... Speak in English
+                  {interimTranscript && ` (${interimTranscript}...)`}
+                </span>
+              ) : isLoading ? (
+                "🤖 AI đang suy nghĩ..."
+              ) : (
+                "💡 Mẹo: Nhấn Enter để gửi hoặc dùng mic để nói"
+              )}
+            </p>
+            
+            {isListening && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={stopListening}
+                className="h-6 text-xs"
+              >
+                Done
+              </Button>
+            )}
+          </div>
         </div>
       </Card>
     </div>

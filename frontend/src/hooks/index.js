@@ -20,3 +20,6 @@ export { useDiscussions, useDiscussionDetail } from './useDiscussions';
 
 // News hooks
 export { useNews, useNewsDetail } from './useNews';
+
+// Speech recognition hooks
+export { useSpeechRecognition } from './useMicrophone';
