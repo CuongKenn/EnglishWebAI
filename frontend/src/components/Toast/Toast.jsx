@@ -2,11 +2,6 @@ import React, { useEffect } from 'react';
 import './Toast.css';
 
 const Toast = ({ message, type = 'info', duration = 5000, onClose }) => {
-  // Không hiển thị nếu không có message
-  if (!message || message.trim() === '') {
-    return null;
-  }
-
   // Đảm bảo onClose luôn là function
   const handleClose = React.useCallback(() => {
     if (onClose && typeof onClose === 'function') {
@@ -23,6 +18,11 @@ const Toast = ({ message, type = 'info', duration = 5000, onClose }) => {
       return () => clearTimeout(timer);
     }
   }, [duration, handleClose]);
+
+  // Không hiển thị nếu không có message (đặt sau hooks để tránh gọi hook có điều kiện)
+  if (!message || message.trim() === '') {
+    return null;
+  }
 
   const getIcon = () => {
     switch (type) {

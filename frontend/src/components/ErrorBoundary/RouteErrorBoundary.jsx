@@ -1,6 +1,8 @@
 import React from 'react';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 
+const isDev = typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV;
+
 class RouteErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -13,7 +15,8 @@ class RouteErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     // Log error in development
-    if (process.env.NODE_ENV === 'development') {
+    if (isDev) {
+      // eslint-disable-next-line no-console
       console.error('RouteErrorBoundary:', error, errorInfo);
     }
   }
@@ -46,7 +49,7 @@ class RouteErrorBoundary extends React.Component {
               Try Again
             </button>
 
-            {process.env.NODE_ENV === 'development' && this.state.error && (
+            {isDev && this.state.error && (
               <details className="mt-4 text-xs">
                 <summary className="cursor-pointer text-gray-500">Error Details</summary>
                 <pre className="mt-2 p-2 bg-gray-100 rounded overflow-x-auto">

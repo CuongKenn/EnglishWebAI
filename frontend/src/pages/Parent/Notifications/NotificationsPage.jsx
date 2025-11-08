@@ -5,6 +5,8 @@ import {
   CalendarIcon, TrashIcon, CheckIcon, ArrowLeftIcon, ChevronRightIcon, FunnelIcon,
   MagnifyingGlassIcon, ArrowDownTrayIcon, DocumentTextIcon, DocumentChartBarIcon
 } from '@heroicons/react/24/outline';
+// Missing lucide-react icons used in mapping logic
+import { Award, AlertCircle, CheckCircle, Info, Bell } from 'lucide-react';
 import Navbar from '../../../components/Navbar/Navbar';
 import Modal from '../ParentDashboardV2/components/Modal';
 import authService from '../../../services/authService';

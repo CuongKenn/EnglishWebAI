@@ -1,6 +1,9 @@
 import React from 'react';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 
+// Use Vite env flag instead of process.env (process is undefined in browser without polyfill)
+const isDev = typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV;
+
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -19,7 +22,8 @@ class ErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     // Log error to console in development
-    if (process.env.NODE_ENV === 'development') {
+    if (isDev) {
+      // eslint-disable-next-line no-console
       console.error('ErrorBoundary caught an error:', error, errorInfo);
     }
 
@@ -116,7 +120,7 @@ class ErrorBoundary extends React.Component {
               </div>
 
               {/* Error Details (Development/Debug Mode) */}
-              {(showDetails || process.env.NODE_ENV === 'development') && error && (
+              {(showDetails || isDev) && error && (
                 <details className="mt-6 bg-gray-50 rounded-lg overflow-hidden">
                   <summary className="px-4 py-3 cursor-pointer bg-gray-100 hover:bg-gray-200 transition-colors font-medium text-gray-700">
                     Technical Details (for developers)

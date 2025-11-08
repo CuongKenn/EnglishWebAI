@@ -518,8 +518,7 @@ const ClassManagement = () => {
             </div>
           </div>
         </div>
-      )}
-<<<<<<< HEAD
+  )}
 
       {/* Add Students Modal */}
       <AddStudentsModal
