@@ -584,16 +584,16 @@ export default function DoExercise() {
           }
         }
       } else {
-
+        // MediaRecorder.isTypeSupported not available in this browser
       }
 
       let recorder;
       try {
         recorder = recorderOptions ? new MediaRecorder(stream, recorderOptions) : new MediaRecorder(stream);
-
-      } catch (e) {
-
-        recorder = new MediaRecorder(stream);}
+      } catch {
+        // Fallback to MediaRecorder without options if mimeType not supported
+        recorder = new MediaRecorder(stream);
+      }
       mediaRecorderRef.current = recorder;
       audioChunksRef.current = [];
 
@@ -675,15 +675,14 @@ export default function DoExercise() {
         try { recorder.requestData?.(); } catch {}
         recorder.stop();
       }
-    } catch (error) {
-
+    } catch {
+      // Ignore recorder stop errors
     } finally {
       setIsRecording(false);
     }
   };
 
   const reRecord = async (questionId = null) => {
-
     audioChunksRef.current = [];
 
     if (questionId) {
@@ -699,8 +698,8 @@ export default function DoExercise() {
       // Start a fresh recording for this question
       try {
         await startRecording(questionId);
-      } catch (e) {
-
+      } catch {
+        // Ignore startRecording errors for specific question
       }
     } else {
       if (recordedAudio?.url) {
@@ -715,8 +714,8 @@ export default function DoExercise() {
       // Start a fresh general speaking recording
       try {
         await startRecording();
-      } catch (e) {
-
+      } catch {
+        // Ignore startRecording errors for general recording
       }
     }
   };
@@ -1544,7 +1543,7 @@ export default function DoExercise() {
       }
 
       const minWords = exerciseContent.word_limit.min;
-      const maxWords = exerciseContent.word_limit.max;
+      // maxWords defined but not used - could be used for validation later
 
       const progress = (wordCount / minWords) * 100;
 
@@ -1690,10 +1689,9 @@ export default function DoExercise() {
 
     // Show full results (teacher reviewed)
     const effectiveScore = (submission.score ?? submission.ai_score);
-    const gradedByAI = submission.score == null && submission.ai_score != null;
     const statusLabel = submission.status === 'graded'
       ? 'Đã chấm'
-      : gradedByAI
+      : (submission.score == null && submission.ai_score != null)
         ? 'Đã chấm (AI)'
         : (submission.status === 'pending_review' ? 'Đang chờ duyệt' : (submission.status || '')); 
 
@@ -1760,7 +1758,7 @@ export default function DoExercise() {
                   try {
                     // Try to parse as JSON
                     feedbackData = JSON.parse(feedbackData);
-                  } catch (e) {
+                  } catch {
                     // If JSON parse fails, might be Python dict string format (single quotes)
                     // Try converting Python dict string to JSON format
                     try {
@@ -1771,7 +1769,7 @@ export default function DoExercise() {
                         .replace(/True/g, 'true')
                         .replace(/False/g, 'false');
                       feedbackData = JSON.parse(jsonStr);
-                    } catch (e2) {
+                    } catch {
                       // Still not valid, treat as regular string
                     }
                   }
