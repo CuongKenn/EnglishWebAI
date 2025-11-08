@@ -4,7 +4,7 @@ import './NotificationDropdown.css';
 
 const NotificationDropdown = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [notifications, setNotifications] = useState([]);
+  const [notifications] = useState([]); // no dynamic updates yet; drop setter to avoid unused var lint
   const dropdownRef = useRef(null);
 
   useEffect(() => {
