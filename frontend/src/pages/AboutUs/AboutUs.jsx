@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { 
   BookOpenIcon, ChartBarIcon, TrophyIcon, UserGroupIcon,
   CpuChipIcon, MicrophoneIcon, ChartBarIcon as AnalyticsIcon, 
@@ -8,7 +7,6 @@ import {
 import './AboutUs.css';
 
 const AboutUs = () => {
-  const navigate = useNavigate();
   const [scrollY, setScrollY] = useState(0);
   const [activeSection, setActiveSection] = useState(0);
 

@@ -142,7 +142,7 @@ const AvatarCropModal = ({ imageUrl, onSave, onClose }) => {
     if (!canvasRef.current || !imageRef.current) return;
 
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
+    // ctx not used directly - canvas operations done on croppedCanvas below
 
     // Create a new canvas for the cropped image
     const croppedCanvas = document.createElement('canvas');

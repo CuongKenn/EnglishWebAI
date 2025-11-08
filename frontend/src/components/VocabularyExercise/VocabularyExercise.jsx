@@ -16,7 +16,7 @@ const VocabularyExercise = ({
   useEffect(() => {
     // Initialize part answers from userAnswers prop
     const initialAnswers = {};
-    exercise.parts.forEach((part, index) => {
+    exercise.parts.forEach((part) => {
       const answerKey = `${exercise.id}-${part.id}`;
       initialAnswers[part.id] = userAnswers[answerKey] || '';
     });

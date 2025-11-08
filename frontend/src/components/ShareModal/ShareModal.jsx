@@ -9,8 +9,8 @@ const ShareModal = ({ isOpen, onClose, shareUrl, title = 'Chia sẻ bài viết'
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      // Fallback for older browsers
+    } catch {
+      // Fallback for older browsers - use document.execCommand
       const textArea = document.createElement('textarea');
       textArea.value = shareUrl;
       document.body.appendChild(textArea);

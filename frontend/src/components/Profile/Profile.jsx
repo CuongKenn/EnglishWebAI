@@ -21,8 +21,7 @@ const Profile = () => {
   const fileInputRef = useRef(null);
   const [showCropModal, setShowCropModal] = useState(false);
   const [tempImageUrl, setTempImageUrl] = useState(null);
-  const [clickCount, setClickCount] = useState(0);
-  const clickTimerRef = useRef(null);
+  // clickCount and clickTimerRef removed - unused Easter egg feature
 
   useEffect(() => {
     const fetchUser = async () => {
