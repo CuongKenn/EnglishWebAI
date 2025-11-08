@@ -1345,10 +1345,21 @@ async def delete_exercise_teacher(
     ex = db.query(Exercise).filter(Exercise.id == exercise_id).first()
     if not ex:
         raise HTTPException(status_code=404, detail="Không tìm thấy bài tập")
+
     class_id = _get_exercise_class_id(db, ex)
     if class_id is None:
         raise HTTPException(status_code=400, detail="Bài tập không gắn lớp hợp lệ")
+
     _ensure_can_manage_class(db, current_user, int(class_id))
+
+    # Nếu bài tập đã có bài nộp hoặc đã được công bố, chỉ đánh dấu ẩn để không làm mất dữ liệu
+    has_submission = db.query(Submission.id).filter(Submission.exercise_id == exercise_id).first()
+    if has_submission or getattr(ex, "is_published", False):
+        ex.is_active = False
+        ex.is_archived = True
+        db.commit()
+        return {"message": "Đã ẩn bài tập, giữ lại dữ liệu nộp"}
+
     db.delete(ex)
     db.commit()
     return {"message": "Đã xóa bài tập"}
