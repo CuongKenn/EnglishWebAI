@@ -22,10 +22,9 @@ const badgeVariants = cva(
   }
 );
 
-function Badge({ className, variant, ...props }) {
-  return (
-    <div className={cn(badgeVariants({ variant }), className)} {...props} />
-  );
+export function Badge({ className, variant, ...props }) {
+  return <div className={cn(badgeVariants({ variant }), className)} {...props} />;
 }
 
-export { Badge, badgeVariants };
+// Export only component for fast-refresh friendliness; internal variants consumed via props.
+export default Badge;

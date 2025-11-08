@@ -51,5 +51,5 @@ const EnhancedButton = React.forwardRef(
 )
 EnhancedButton.displayName = "EnhancedButton"
 
-export { EnhancedButton, enhancedButtonVariants }
+export default EnhancedButton
 
