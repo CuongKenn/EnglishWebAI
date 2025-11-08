@@ -3,6 +3,25 @@ import { Link } from 'react-router-dom';
 import { newsAPI } from '../../services/api';
 import { useNews } from '../../hooks';
 import ShareModal from '../../components/ShareModal/ShareModal';
+import { 
+  Sparkles, 
+  BookOpen, 
+  ArrowLeft,
+  PartyPopper,
+  FileText,
+  Tag,
+  Megaphone,
+  GraduationCap,
+  User,
+  Clock,
+  Eye,
+  Heart,
+  Calendar,
+  TrendingUp,
+  Mail,
+  FileCheck,
+  Flame
+} from 'lucide-react';
 import './News.css';
 
 const News = () => {
@@ -85,11 +104,11 @@ const News = () => {
       <div className="news-header">
         <div className="news-header-content">
           <Link to="/" className="back-link">
-            <i className="fas fa-arrow-left"></i>
+            <ArrowLeft className="h-4 w-4 mr-2 inline-block" />
             Về trang chủ
           </Link>
           <h1 className="news-page-title">
-            <span className="title-icon">✨</span>
+            <Sparkles className="h-8 w-8 inline-block mr-3" />
             Bài viết nổi bật
           </h1>
           <p className="news-page-subtitle">
@@ -113,7 +132,7 @@ const News = () => {
                   onClick={() => setSelectedCategory(cat)}
                   style={{ '--tab-color': accent }}
                 >
-                  {isAll && <span className="tab-icon">📚</span>}
+                  {isAll && <BookOpen className="h-4 w-4 inline-block mr-1.5" />}
                   <span className="tab-label">{label}</span>
                 </button>
               );
@@ -152,7 +171,11 @@ const News = () => {
                     <div className="featured-meta">
                       <div className="author-info">
                         <div className="author-avatar">
-                          {featuredPost.author_role === 'teacher' ? '👨‍🏫' : '👤'}
+                          {featuredPost.author_role === 'teacher' ? (
+                            <GraduationCap className="h-5 w-5" />
+                          ) : (
+                            <User className="h-5 w-5" />
+                          )}
                         </div>
                         <div className="author-details">
                           <span className="author-name">{featuredPost.author_name || 'Admin'}</span>
@@ -163,16 +186,16 @@ const News = () => {
                       </div>
                       <div className="post-stats">
                         <span className="stat-item">
-                          <span className="stat-icon">⏱️</span> {featuredPost.reading_time || 5} phút đọc
+                          <Clock className="stat-icon h-4 w-4 inline" /> {featuredPost.reading_time || 5} phút đọc
                         </span>
                         <span className="stat-item">
-                          <span className="stat-icon">👁️</span> {featuredPost.views || 0}
+                          <Eye className="stat-icon h-4 w-4 inline" /> {featuredPost.views || 0}
                         </span>
                         <span className="stat-item">
-                          <span className="stat-icon">❤️</span> {featuredPost.likes || 0}
+                          <Heart className="stat-icon h-4 w-4 inline" /> {featuredPost.likes || 0}
                         </span>
                         <span className="stat-item">
-                          <span className="stat-icon">📅</span> {featuredPost.date}
+                          <Calendar className="stat-icon h-4 w-4 inline" /> {featuredPost.date}
                         </span>
                       </div>
                     </div>
@@ -202,13 +225,17 @@ const News = () => {
                       <div className="post-footer">
                         <div className="post-author">
                           <span className="author-avatar-sm">
-                            {post.author_role === 'teacher' ? '👨‍🏫' : '👤'}
+                            {post.author_role === 'teacher' ? (
+                              <GraduationCap className="h-4 w-4 inline" />
+                            ) : (
+                              <User className="h-4 w-4 inline" />
+                            )}
                           </span>
                           <span className="author-name-sm">{post.author_name || 'Admin'}</span>
                         </div>
                         <div className="post-meta">
-                          <span><i className="far fa-clock"></i> {post.reading_time || 5} phút</span>
-                          <span><i className="far fa-eye"></i> {post.views || 0}</span>
+                          <span><Clock className="far h-4 w-4 inline" /> {post.reading_time || 5} phút</span>
+                          <span><Eye className="far h-4 w-4 inline" /> {post.views || 0}</span>
                         </div>
                       </div>
                     </div>
@@ -224,7 +251,7 @@ const News = () => {
           {/* Trending Posts */}
           <div className="sidebar-widget">
             <h3 className="widget-title">
-              <span>🔥</span> Đang thịnh hành
+              <Flame className="inline h-5 w-5 mr-2" /> Đang thịnh hành
             </h3>
             <div className="trending-list">
               {trendingPosts.map((post, index) => (
@@ -235,7 +262,7 @@ const News = () => {
                     <div className="trending-meta">
                       <span className="trending-author">{post.author_name || 'Admin'}</span>
                       <span className="trending-stats">
-                        <span className="stat-icon">👁️</span> {post.views || 0}
+                        <Eye className="stat-icon h-4 w-4 inline" /> {post.views || 0}
                       </span>
                     </div>
                   </div>
@@ -247,9 +274,9 @@ const News = () => {
           {/* Newsletter */}
           <div className="sidebar-widget newsletter-widget">
             <h3 className="widget-title">
-              <span>📬</span> Đặc biệt
+              <Mail className="inline h-5 w-5 mr-2" /> Đặc biệt
             </h3>
-            <p className="newsletter-text">Đăng ký nhận tin 🎁</p>
+            <p className="newsletter-text">Đăng ký nhận tin <Sparkles className="inline h-4 w-4" /></p>
             <p className="newsletter-subtext">
               Nhận các bài viết mới nhất về học tiếng Anh và AI qua email mỗi tuần
             </p>
@@ -259,14 +286,18 @@ const News = () => {
                 placeholder="Email của bạn" 
                 className="newsletter-input"
               />
-              <button className="newsletter-btn">Đăng ký ngay 🚀</button>
+              <button className="newsletter-btn">
+                Đăng ký ngay <TrendingUp className="inline h-4 w-4 ml-1" />
+              </button>
             </div>
           </div>
 
           {/* Stats */}
           <div className="sidebar-widget stats-widget">
             <div className="stat-box-sidebar">
-              <div className="stat-icon">📄</div>
+              <div className="stat-icon">
+                <FileCheck className="h-8 w-8" />
+              </div>
               <div className="stat-info">
                 <div className="stat-number">{newsData.length}</div>
                 <div className="stat-label">Bài viết</div>
@@ -295,7 +326,11 @@ const News = () => {
               <div className="news-detail-meta">
                 <div className="author-info-detail">
                   <div className="author-avatar-detail">
-                    {selectedNews.author_role === 'teacher' ? '👨‍🏫' : '👤'}
+                    {selectedNews.author_role === 'teacher' ? (
+                      <GraduationCap className="h-6 w-6" />
+                    ) : (
+                      <User className="h-6 w-6" />
+                    )}
                   </div>
                   <div className="author-details-detail">
                     <span className="author-name-detail">{selectedNews.author_name || 'Admin'}</span>
@@ -305,10 +340,18 @@ const News = () => {
                   </div>
                 </div>
                 <div className="post-stats-detail">
-                <span className="stat-item-detail"><span className="stat-icon">⏱️</span> {selectedNews.reading_time || 5} phút đọc</span>
-                <span className="stat-item-detail"><span className="stat-icon">👁️</span> {selectedNews.views || 0}</span>
-                <span className="stat-item-detail"><span className="stat-icon">❤️</span> {selectedNews.likes || 0}</span>
-                <span className="stat-item-detail"><span className="stat-icon">📅</span> {selectedNews.date}</span>
+                <span className="stat-item-detail">
+                  <Clock className="stat-icon h-4 w-4 inline" /> {selectedNews.reading_time || 5} phút đọc
+                </span>
+                <span className="stat-item-detail">
+                  <Eye className="stat-icon h-4 w-4 inline" /> {selectedNews.views || 0}
+                </span>
+                <span className="stat-item-detail">
+                  <Heart className="stat-icon h-4 w-4 inline" /> {selectedNews.likes || 0}
+                </span>
+                <span className="stat-item-detail">
+                  <Calendar className="stat-icon h-4 w-4 inline" /> {selectedNews.date}
+                </span>
                 </div>
               </div>
             </div>
