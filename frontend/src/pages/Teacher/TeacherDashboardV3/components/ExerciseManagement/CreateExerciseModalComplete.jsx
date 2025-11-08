@@ -19,7 +19,6 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   
   // Classes from API
   const [classes, setClasses] = useState([]);
-  const [loadingClasses, setLoadingClasses] = useState(true);
   
   // Form fields
   const [title, setTitle] = useState('');
@@ -98,16 +97,14 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   useEffect(() => {
     const fetchClasses = async () => {
       try {
-        setLoadingClasses(true);
         const response = await apiV1.get('/classes/teaching');
         setClasses(response.data);
         if (response.data.length > 0 && !classId) {
           setClassId(response.data[0].id);
         }
       } catch (error) {
+        /* Error fetching classes */
         console.error('Error fetching classes:', error);
-      } finally {
-        setLoadingClasses(false);
       }
     };
     
