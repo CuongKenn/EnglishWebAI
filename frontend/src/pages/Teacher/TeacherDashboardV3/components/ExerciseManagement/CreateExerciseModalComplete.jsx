@@ -999,8 +999,10 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   
   // Listening Form
   function renderListeningForm(sectionKey = null) {
-    const questionSection = sectionKey || (requiresSkill ? selectedSkill : null);
-    const includeQuestions = !sectionKey;
+    const normalizedSection = sectionKey ? sectionKey.toLowerCase() : null;
+    const currentSkill = requiresSkill ? selectedSkill?.toLowerCase() : null;
+    const questionSection = normalizedSection || (requiresSkill ? selectedSkill : null);
+    const includeQuestions = !sectionKey || (!isMidtermOrFinal && normalizedSection && currentSkill === normalizedSection);
     return (
       <div className="listening-form-content">
         <h4 className="section-title"><Headphones className="inline-block w-5 h-5 mr-2" /> Nội dung bài Nghe</h4>
@@ -1115,8 +1117,10 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   
   // Speaking Form
   function renderSpeakingForm(sectionKey = null) {
-    const questionSection = sectionKey || (requiresSkill ? selectedSkill : null);
-    const includeQuestions = !sectionKey;
+    const normalizedSection = sectionKey ? sectionKey.toLowerCase() : null;
+    const currentSkill = requiresSkill ? selectedSkill?.toLowerCase() : null;
+    const questionSection = normalizedSection || (requiresSkill ? selectedSkill : null);
+    const includeQuestions = !sectionKey || (!isMidtermOrFinal && normalizedSection && currentSkill === normalizedSection);
     return (
       <div className="speaking-form-content">
         <h4 className="section-title"><Mic className="inline-block w-5 h-5 mr-2" /> Nội dung bài Nói</h4>
@@ -1190,8 +1194,10 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   
   // Reading Form
   function renderReadingForm(sectionKey = null) {
-    const questionSection = sectionKey || (requiresSkill ? selectedSkill : null);
-    const includeQuestions = !sectionKey;
+    const normalizedSection = sectionKey ? sectionKey.toLowerCase() : null;
+    const currentSkill = requiresSkill ? selectedSkill?.toLowerCase() : null;
+    const questionSection = normalizedSection || (requiresSkill ? selectedSkill : null);
+    const includeQuestions = !sectionKey || (!isMidtermOrFinal && normalizedSection && currentSkill === normalizedSection);
     return (
       <div className="reading-form-content">
         <h4 className="section-title"><BookOpen className="inline-block w-5 h-5 mr-2" /> Nội dung bài Đọc</h4>
@@ -1276,8 +1282,10 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   
   // Writing Form
   function renderWritingForm(sectionKey = null) {
-    const questionSection = sectionKey || (requiresSkill ? selectedSkill : null);
-    const includeQuestions = !sectionKey;
+    const normalizedSection = sectionKey ? sectionKey.toLowerCase() : null;
+    const currentSkill = requiresSkill ? selectedSkill?.toLowerCase() : null;
+    const questionSection = normalizedSection || (requiresSkill ? selectedSkill : null);
+    const includeQuestions = !sectionKey || (!isMidtermOrFinal && normalizedSection && currentSkill === normalizedSection);
     return (
       <div className="writing-form-content">
         <h4 className="section-title"><PenLine className="inline-block w-5 h-5 mr-2" /> Nội dung bài Viết</h4>

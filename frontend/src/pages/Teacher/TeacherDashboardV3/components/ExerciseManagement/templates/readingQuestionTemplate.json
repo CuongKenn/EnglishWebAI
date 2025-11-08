@@ -1,0 +1,17 @@
+{
+  "questions": [
+    {
+      "id": "q1",
+      "question": "What is the main idea of the passage?",
+      "type": "multiple_choice",
+      "options": [
+        "A. Option A",
+        "B. Option B",
+        "C. Option C",
+        "D. Option D"
+      ],
+      "correct_answer": "A",
+      "points": 1
+    }
+  ]
+}

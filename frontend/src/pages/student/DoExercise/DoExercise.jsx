@@ -1237,6 +1237,7 @@ export default function DoExercise() {
 
     // LISTENING
     if (skill_type === 'listening') {
+      const questions = Array.isArray(exerciseContent.questions) ? exerciseContent.questions : [];
 
       return (
         <div className="listening-exercise">
@@ -1257,69 +1258,90 @@ export default function DoExercise() {
 
           <div className="questions-container">
             <h3>Câu hỏi</h3>
-            {exerciseContent.questions && exerciseContent.questions.map((q, idx) => (
-              <div key={q.id} className="question-card">
-                <div className="question-header">
-                  <span className="question-number">Câu {idx + 1}</span>
-                  <span className="question-points">{q.points} điểm</span>
-                </div>
-                <p className="question-text">{q.question}</p>
+            {questions.map((q, idx) => {
+              const questionKey = q.id ?? `listening_${idx}`;
+              const options = Array.isArray(q.options) ? q.options : [];
 
-                {q.type === 'multiple_choice' && (
-                  <div className="options-list">
-                    {q.options.map((opt, i) => (
-                      <label key={i} className="option-label">
+              return (
+                <div key={questionKey} className="question-card">
+                  <div className="question-header">
+                    <span className="question-number">Câu {idx + 1}</span>
+                    <span className="question-points">{q.points} điểm</span>
+                  </div>
+                  <p className="question-text">{q.question}</p>
+
+                  {q.type === 'multiple_choice' && (
+                    <div className="options-list">
+                      {options.map((opt, i) => {
+                        const rawOption = typeof opt === 'string' ? opt : String(opt ?? '');
+                        const optionMatch = rawOption.match(/^[A-D]\.\s*/i);
+                        const optionLetter = optionMatch ? optionMatch[0][0].toUpperCase() : String.fromCharCode(65 + i);
+                        const optionText = optionMatch ? rawOption.replace(/^[A-D]\.\s*/i, '') : rawOption;
+                        return (
+                          <label key={i} className="option-label">
+                            <input
+                              type="radio"
+                              name={`question_${questionKey}`}
+                              value={optionLetter}
+                              checked={answers[questionKey] === optionLetter}
+                              onChange={(e) => handleAnswerChange(questionKey, e.target.value)}
+                            />
+                            <span>{`${optionLetter}. ${optionText}`}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {q.type === 'fill_blank' && (
+                    <input
+                      type="text"
+                      className="answer-input"
+                      placeholder="Nhập câu trả lời..."
+                      value={answers[questionKey] || ''}
+                      onChange={(e) => handleAnswerChange(questionKey, e.target.value)}
+                    />
+                  )}
+
+                  {q.type === 'true_false' && (
+                    <div className="true-false-options">
+                      <label className="tf-option">
                         <input
                           type="radio"
-                          name={`question_${q.id}`}
-                          value={opt[0]}
-                          checked={answers[q.id] === opt[0]}
-                          onChange={(e) => handleAnswerChange(q.id, e.target.value)}
+                          name={`question_${questionKey}`}
+                          value="true"
+                          checked={answers[questionKey] === 'true'}
+                          onChange={(e) => handleAnswerChange(questionKey, e.target.value)}
                         />
-                        <span>{opt}</span>
+                        <Check size={18} />
+                        <span>Đúng</span>
                       </label>
-                    ))}
-                  </div>
-                )}
+                      <label className="tf-option">
+                        <input
+                          type="radio"
+                          name={`question_${questionKey}`}
+                          value="false"
+                          checked={answers[questionKey] === 'false'}
+                          onChange={(e) => handleAnswerChange(questionKey, e.target.value)}
+                        />
+                        <X size={18} />
+                        <span>Sai</span>
+                      </label>
+                    </div>
+                  )}
 
-                {q.type === 'fill_blank' && (
-                  <input
-                    type="text"
-                    className="answer-input"
-                    placeholder="Nhập câu trả lời..."
-                    value={answers[q.id] || ''}
-                    onChange={(e) => handleAnswerChange(q.id, e.target.value)}
-                  />
-                )}
-
-                {q.type === 'true_false' && (
-                  <div className="true-false-options">
-                    <label className="tf-option">
-                      <input
-                        type="radio"
-                        name={`question_${q.id}`}
-                        value="true"
-                        checked={answers[q.id] === 'true'}
-                        onChange={(e) => handleAnswerChange(q.id, e.target.value)}
-                      />
-                      <Check size={18} />
-                      <span>Đúng</span>
-                    </label>
-                    <label className="tf-option">
-                      <input
-                        type="radio"
-                        name={`question_${q.id}`}
-                        value="false"
-                        checked={answers[q.id] === 'false'}
-                        onChange={(e) => handleAnswerChange(q.id, e.target.value)}
-                      />
-                      <X size={18} />
-                      <span>Sai</span>
-                    </label>
-                  </div>
-                )}
-              </div>
-            ))}
+                  {q.type === 'short_answer' && (
+                    <textarea
+                      className="short-answer-input"
+                      placeholder="Nhập câu trả lời..."
+                      value={answers[questionKey] || ''}
+                      onChange={(e) => handleAnswerChange(questionKey, e.target.value)}
+                      rows="3"
+                    />
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       );
@@ -1402,6 +1424,7 @@ export default function DoExercise() {
 
     // READING
     if (skill_type === 'reading') {
+      const questions = Array.isArray(exerciseContent.questions) ? exerciseContent.questions : [];
 
       return (
         <div className="reading-exercise">
@@ -1417,43 +1440,90 @@ export default function DoExercise() {
 
             <div className="questions-panel">
               <h3>Câu hỏi</h3>
-              {exerciseContent.questions && exerciseContent.questions.map((q, idx) => (
-                <div key={q.id} className="question-card">
-                  <div className="question-header">
-                    <span className="question-number">Câu {idx + 1}</span>
-                    <span className="question-points">{q.points} điểm</span>
-                  </div>
-                  <p className="question-text">{q.question}</p>
+              {questions.map((q, idx) => {
+                const questionKey = q.id ?? `reading_${idx}`;
+                const options = Array.isArray(q.options) ? q.options : [];
 
-                  {/* Similar rendering logic as Listening */}
-                  {q.type === 'multiple_choice' && (
-                    <div className="options-list">
-                      {q.options.map((opt, i) => (
-                        <label key={i} className="option-label">
+                return (
+                  <div key={questionKey} className="question-card">
+                    <div className="question-header">
+                      <span className="question-number">Câu {idx + 1}</span>
+                      <span className="question-points">{q.points} điểm</span>
+                    </div>
+                    <p className="question-text">{q.question}</p>
+
+                    {q.type === 'multiple_choice' && (
+                      <div className="options-list">
+                        {options.map((opt, i) => {
+                          const rawOption = typeof opt === 'string' ? opt : String(opt ?? '');
+                          const optionMatch = rawOption.match(/^[A-D]\.\s*/i);
+                          const optionLetter = optionMatch ? optionMatch[0][0].toUpperCase() : String.fromCharCode(65 + i);
+                          const optionText = optionMatch ? rawOption.replace(/^[A-D]\.\s*/i, '') : rawOption;
+                          return (
+                            <label key={i} className="option-label">
+                              <input
+                                type="radio"
+                                name={`question_${questionKey}`}
+                                value={optionLetter}
+                                checked={answers[questionKey] === optionLetter}
+                                onChange={(e) => handleAnswerChange(questionKey, e.target.value)}
+                              />
+                              <span>{`${optionLetter}. ${optionText}`}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {q.type === 'fill_blank' && (
+                      <input
+                        type="text"
+                        className="answer-input"
+                        placeholder="Nhập câu trả lời..."
+                        value={answers[questionKey] || ''}
+                        onChange={(e) => handleAnswerChange(questionKey, e.target.value)}
+                      />
+                    )}
+
+                    {q.type === 'true_false' && (
+                      <div className="true-false-options">
+                        <label className="tf-option">
                           <input
                             type="radio"
-                            name={`question_${q.id}`}
-                            value={opt[0]}
-                            checked={answers[q.id] === opt[0]}
-                            onChange={(e) => handleAnswerChange(q.id, e.target.value)}
+                            name={`question_${questionKey}`}
+                            value="true"
+                            checked={answers[questionKey] === 'true'}
+                            onChange={(e) => handleAnswerChange(questionKey, e.target.value)}
                           />
-                          <span>{opt}</span>
+                          <Check size={18} />
+                          <span>Đúng</span>
                         </label>
-                      ))}
-                    </div>
-                  )}
+                        <label className="tf-option">
+                          <input
+                            type="radio"
+                            name={`question_${questionKey}`}
+                            value="false"
+                            checked={answers[questionKey] === 'false'}
+                            onChange={(e) => handleAnswerChange(questionKey, e.target.value)}
+                          />
+                          <X size={18} />
+                          <span>Sai</span>
+                        </label>
+                      </div>
+                    )}
 
-                  {q.type === 'short_answer' && (
-                    <textarea
-                      className="short-answer-input"
-                      placeholder="Nhập câu trả lời..."
-                      value={answers[q.id] || ''}
-                      onChange={(e) => handleAnswerChange(q.id, e.target.value)}
-                      rows="3"
-                    />
-                  )}
-                </div>
-              ))}
+                    {q.type === 'short_answer' && (
+                      <textarea
+                        className="short-answer-input"
+                        placeholder="Nhập câu trả lời..."
+                        value={answers[questionKey] || ''}
+                        onChange={(e) => handleAnswerChange(questionKey, e.target.value)}
+                        rows="3"
+                      />
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -1463,10 +1533,6 @@ export default function DoExercise() {
     // WRITING
     if (skill_type === 'writing') {
 
-
-
-
-      
       if (!exerciseContent || !exerciseContent.word_limit) {
         console.error('[WRITING] Missing exerciseContent or word_limit!');
         return (
@@ -1477,7 +1543,7 @@ export default function DoExercise() {
           </div>
         );
       }
-      
+
       const minWords = exerciseContent.word_limit.min;
       const maxWords = exerciseContent.word_limit.max;
 
@@ -1599,7 +1665,7 @@ export default function DoExercise() {
             </div>
             <div style={{ marginTop: '20px', textAlign: 'center' }}>
               <button 
-                onClick={() => navigate('/student/exercises')}
+                onClick={() => navigate('/exercise-hub')}
                 className="btn-primary"
                 style={{
                   padding: '12px 24px',
