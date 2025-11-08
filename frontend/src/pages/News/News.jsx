@@ -94,7 +94,8 @@ const News = () => {
         setShareUrl(shareUrl);
         setShowShareModal(true);
       }
-    } catch (err) {
+    } catch {
+      /* Share API failed - fallback to modal */
       setShareUrl(shareUrl);
       setShowShareModal(true);
     }

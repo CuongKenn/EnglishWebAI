@@ -494,7 +494,9 @@ const SpeakingExercise = () => {
         } finally {
           try {
             recorder.stream?.getTracks().forEach(t => t.stop());
-          } catch {}
+          } catch {
+            /* Ignore errors stopping tracks */
+          }
         }
       };
 
@@ -510,8 +512,8 @@ const SpeakingExercise = () => {
       showError(message);
       try {
         mediaRecorderRef.current?.stream?.getTracks().forEach(track => track.stop());
-      } catch (cleanupError) {
-        // noop
+      } catch {
+        /* Ignore cleanup errors */
       }
     }
   };
