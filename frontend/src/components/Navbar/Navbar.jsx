@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { 
   HomeIcon, BookOpenIcon, UserGroupIcon, ChatBubbleLeftRightIcon, 
   EnvelopeIcon, BellIcon, Cog6ToothIcon, ArrowRightOnRectangleIcon, 
@@ -16,7 +16,7 @@ const Navbar = ({ userRole = 'student', isLoggedIn: isLoggedInProp = false, onLo
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(isLoggedInProp);
   const location = useLocation();
-  const navigate = useNavigate();
+  // No imperative navigation needed in this Navbar; links handle routing.
 
   // Check login status from localStorage on mount and location change
   useEffect(() => {
@@ -111,7 +111,7 @@ const Navbar = ({ userRole = 'student', isLoggedIn: isLoggedInProp = false, onLo
     return location.pathname === path;
   };
 
-  const handleNavClick = (e, path) => {
+  const handleNavClick = (e) => {
     // Check if user is logged in
     if (!isLoggedIn) {
       e.preventDefault();
@@ -139,7 +139,7 @@ const Navbar = ({ userRole = 'student', isLoggedIn: isLoggedInProp = false, onLo
               to={item.path}
               className={`nav-link ${isActive(item.path) ? 'active' : ''} ${item.special ? 'special-link' : ''}`}
               title={item.label}
-              onClick={(e) => handleNavClick(e, item.path)}
+              onClick={(e) => handleNavClick(e)}
             >
               {item.icon && <i className={`fas ${item.icon}`}></i>}
               <span>{item.label}</span>
@@ -182,7 +182,7 @@ const Navbar = ({ userRole = 'student', isLoggedIn: isLoggedInProp = false, onLo
               to={item.path}
               className={`mobile-nav-link ${isActive(item.path) ? 'active' : ''} ${item.special ? 'special-link' : ''}`}
               onClick={(e) => {
-                handleNavClick(e, item.path);
+                handleNavClick(e);
                 if (isLoggedIn) setIsMenuOpen(false);
               }}
             >
