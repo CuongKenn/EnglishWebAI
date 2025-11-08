@@ -59,9 +59,7 @@ const ManageAccounts = () => {
       setUsers(Array.isArray(data) ? data : []);
       setCurrentPage(1); // Reset về trang 1 khi reload
       
-      if (!data || data.length === 0) {
-
-      }
+      // Empty data check (currently no action needed)
     } catch (e) {
       console.error('❌ Error loading users:', e);
       setError(`Không tải được danh sách người dùng: ${e.message || 'Unknown error'}`);
@@ -150,7 +148,8 @@ const ManageAccounts = () => {
       }
       await loadUsers();
       handleCloseModal();
-    } catch (err) {
+    } catch {
+      // Error saving account
       alert('Có lỗi khi lưu tài khoản');
     }
   };
@@ -160,7 +159,8 @@ const ManageAccounts = () => {
       try {
         await adminAPI.deleteUser(userId);
         await loadUsers();
-      } catch (e) {
+      } catch {
+        // Error deleting account
         alert('Xóa tài khoản thất bại');
       }
     }

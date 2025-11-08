@@ -61,11 +61,7 @@ const AISettings = () => {
     });
   };
 
-  const maskApiKey = (key) => {
-    if (!key) return '••••••••••••••••••••';
-    if (key.length <= 8) return '••••••••';
-    return key.substring(0, 4) + '••••••••••••' + key.substring(key.length - 4);
-  };
+  // maskApiKey defined but currently not used in UI - could be used for display security later
 
   const apiProviders = [
     {

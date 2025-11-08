@@ -11,8 +11,7 @@ const ManageClasses = () => {
   const [teachers, setTeachers] = useState([]);
 
   const [classes, setClasses] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  // loading and error state declared but currently not used in UI
 
   const [formData, setFormData] = useState({
     name: '',
@@ -30,22 +29,18 @@ const ManageClasses = () => {
       const res = await apiClient.get('/api/v1/admin/teachers');
       const data = res.data;
       setTeachers(Array.isArray(data) ? data : []);
-    } catch (e) {
-      // silent
+    } catch {
+      // Silent error - teachers list optional
     }
   };
 
   const loadClasses = async () => {
     try {
-      setLoading(true);
-      setError('');
       const res = await apiClient.get('/api/v1/admin/classes', { params: { search: searchTerm || undefined } });
       const data = res.data;
       setClasses(Array.isArray(data) ? data : []);
-    } catch (e) {
-      setError('Không tải được danh sách lớp học');
-    } finally {
-      setLoading(false);
+    } catch {
+      // Error loading classes - will show empty list
     }
   };
 

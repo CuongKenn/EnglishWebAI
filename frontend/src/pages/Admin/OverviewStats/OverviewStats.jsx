@@ -21,7 +21,8 @@ const OverviewStats = () => {
       setError('');
       const res = await apiClient.get('/api/v1/admin/stats/overview');
       setStats(res.data || {});
-    } catch (e) {
+    } catch {
+      // Error loading overview stats
       setError('Không tải được thống kê');
     } finally {
       setLoading(false);

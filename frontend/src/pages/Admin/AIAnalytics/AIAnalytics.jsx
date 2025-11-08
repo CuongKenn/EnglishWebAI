@@ -15,7 +15,8 @@ const AIAnalytics = () => {
       setError('');
       const data = await adminGetAIAnalytics(timeRange);
       setStats(data);
-    } catch (e) {
+    } catch {
+      // Error fetching analytics data
       setError('Không tải được dữ liệu. Vui lòng thử lại.');
     } finally {
       setLoading(false);

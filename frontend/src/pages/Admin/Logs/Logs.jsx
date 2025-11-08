@@ -73,8 +73,8 @@ const Logs = () => {
       // Attempt to load from API
       const res = await apiClient.get('/api/v1/admin/logs');
       setLogs(res.data || mockLogs);
-    } catch (error) {
-      // Fall back to mock data
+    } catch {
+      // Fall back to mock data on API error
       setLogs(mockLogs);
     } finally {
       setLoading(false);
