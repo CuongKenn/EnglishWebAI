@@ -90,8 +90,8 @@ export default function SubmissionGradingPage() {
               found = (res.data || []).find((s) => String(s.id) === String(submissionId));
               if (found) setIsExam(true);
             }
-          } catch (examError) {
-
+          } catch {
+            /* Error fetching exam submissions - will fallback to exercise submissions */
           }
         }
         

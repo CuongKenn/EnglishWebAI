@@ -172,8 +172,8 @@ export default function ExerciseHub() {
             ...exam,
             className: cls.name
           }))];
-        } catch (err) {
-
+        } catch {
+          /* Error fetching exams for this class - skip and continue */
         }
       }
       

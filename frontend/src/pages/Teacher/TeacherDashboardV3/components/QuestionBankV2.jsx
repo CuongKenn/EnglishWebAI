@@ -1758,7 +1758,7 @@ export default function QuestionBankV2() {
                     return;
                   }
                 } else {
-
+                  /* No audio file for listening question - use existing media_url if available */
                 }
                 
                 payload = {
