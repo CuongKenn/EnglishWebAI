@@ -51,9 +51,8 @@ const ExamViewer = ({ examId, onSubmitSuccess }) => {
         const submissionData = await examService.getMySubmission(examId);
         setSubmission(submissionData);
         setAnswers(submissionData.answers || {});
-      } catch (err) {
-        // No submission yet
-
+      } catch {
+        // No existing submission yet; start button will be shown.
       }
     } catch (err) {
       console.error('Load exam error:', err);
