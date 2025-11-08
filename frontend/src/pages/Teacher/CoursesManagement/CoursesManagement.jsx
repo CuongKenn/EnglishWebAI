@@ -30,7 +30,7 @@ const LEVELS = [
 const GRADES = Array.from({ length: 12 }, (_, i) => i + 1);
 
 const CoursesManagement = () => {
-  const { showWarning, hideToast } = useToast();
+  const { hideToast } = useToast();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -1334,7 +1334,7 @@ const UnitQuestionsModal = ({ unit, course, onClose, onRefresh }) => {
 
 // Course Detail Modal Component
 const CourseDetailModal = ({ course, onClose, onEdit }) => {
-  const { toast, showWarning, hideToast, showSuccess, showError } = useToast();
+  const { toast, hideToast, showSuccess, showError } = useToast();
   const [units, setUnits] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isAddUnitOpen, setIsAddUnitOpen] = useState(false);

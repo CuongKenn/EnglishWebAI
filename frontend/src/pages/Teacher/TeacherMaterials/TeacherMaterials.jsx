@@ -5,7 +5,7 @@ import Toast from '../../../components/Toast/Toast';
 import useToast from '../../../hooks/useToast';
 
 const TeacherMaterials = () => {
-  const { toast, showError, showWarning, hideToast } = useToast();
+  const { toast, showWarning, hideToast } = useToast();
   const [classes, setClasses] = useState([]);
   const [selectedClassId, setSelectedClassId] = useState('');
   const [materials, setMaterials] = useState([]);

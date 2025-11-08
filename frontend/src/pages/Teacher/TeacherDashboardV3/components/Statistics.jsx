@@ -9,7 +9,7 @@ import Toast from '../../../../components/Toast/Toast';
 import useToast from '../../../../hooks/useToast';
 
 const Statistics = () => {
-  const { toast, showError, showWarning, hideToast } = useToast();
+  const { toast, showError, hideToast } = useToast();
   const [selectedClass, setSelectedClass] = useState('all');
   const [selectedPeriod, setSelectedPeriod] = useState('month');
   const [loading, setLoading] = useState(true);

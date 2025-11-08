@@ -12,7 +12,6 @@ import { Textarea } from '../../../../components/ui/textarea';
 const Schedule = () => {
   const [currentDate, setCurrentDate] = useState(new Date(2025, 9, 26)); // Oct 26, 2025
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState(null);
 
   const events = [
     {
@@ -103,10 +102,6 @@ const Schedule = () => {
 
   const weekDates = getWeekDates();
 
-  const formatDate = (date) => {
-    return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
-  };
-
   const getEventsForDate = (date) => {
     const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
     return events.filter(event => event.date === dateStr);
@@ -121,15 +116,6 @@ const Schedule = () => {
       pink: 'bg-pink-100 text-pink-700 border-pink-300'
     };
     return colors[color] || colors.blue;
-  };
-
-  const getTypeIcon = (type) => {
-    switch (type) {
-      case 'class': return <Users className="w-3 h-3" />;
-      case 'meeting': return <Users className="w-3 h-3" />;
-      case 'task': return <Clock className="w-3 h-3" />;
-      default: return <Calendar className="w-3 h-3" />;
-    }
   };
 
   const navigateWeek = (direction) => {
