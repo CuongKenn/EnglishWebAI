@@ -6,12 +6,12 @@ import { useToast } from '../../../components/ui/Toast';
 import './GradingReview.css';
 
 const GradingReview = () => {
-  const navigate = useNavigate();
+  // navigate not currently used
   const toast = useToast();
   const [pendingSubmissions, setPendingSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedSubmission, setSelectedSubmission] = useState(null);
-  const [reviewMode, setReviewMode] = useState(false);
+  // reviewMode not currently used
   const [reviewData, setReviewData] = useState({
     approved: true,
     final_score: null,
