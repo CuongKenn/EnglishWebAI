@@ -947,10 +947,10 @@ export default function ClassManagement() {
 
       <div className="class-content-wrapper">
         {/* Classes List */}
-        <div className="classes-sidebar">
+          <div className="classes-sidebar">
           <div className="sidebar-title">
-            <Users size={20} />
-      <span>Lớp học của tôi</span>
+            <Users size={24} strokeWidth={2.5} color="#1f2937" />
+            <span>Lớp học của tôi</span>
           </div>
           <div className="classes-list">
             {loading && classes.length === 0 ? (
