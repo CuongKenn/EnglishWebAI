@@ -50,17 +50,11 @@ const MyCourses = () => {
   const navigate = useNavigate();
   const [selectedGrade, setSelectedGrade] = useState('Lớp 3');
   const [filterCategory, setFilterCategory] = useState('all');
-  const [activeMenuItem, setActiveMenuItem] = useState('my-courses');
+  // activeMenuItem and setActiveMenuItem not used - menu handled by parent layout
+  // menuItems not used - menu defined in parent layout
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  const menuItems = [
-    { id: 'overview', label: 'Tổng quan', icon: Home, path: '/lessons' },
-    { id: 'study-plan', label: 'Kế hoạch học tập', icon: Calendar, path: '/study-plan' },
-    { id: 'my-courses', label: 'Khóa học của tôi', icon: BookOpen, path: '/my-courses' },
-    { id: 'profile', label: 'Hồ sơ học tập', icon: User, path: '/learning-profile' }
-  ];
 
   // Fixed 12 grades for selector
   const grades = Array.from({ length: 12 }, (_, i) => `Lớp ${i + 1}`);

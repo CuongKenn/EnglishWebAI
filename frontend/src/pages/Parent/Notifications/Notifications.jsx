@@ -14,7 +14,7 @@ import {
 import './Notifications.css';
 
 const Notifications = () => {
-  const navigate = useNavigate();
+  // navigate not currently used
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState('all');

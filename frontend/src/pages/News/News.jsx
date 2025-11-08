@@ -64,8 +64,8 @@ const News = () => {
       // Fetch detail to increase view count and update views
       const data = await newsAPI.getNewsDetail(post.id);
       setSelectedNews(prev => prev ? { ...prev, views: data.views } : { ...post, views: data.views });
-    } catch (e) {
-      // ignore if detail fetch fails; still show modal
+    } catch {
+      // Ignore if detail fetch fails - still show modal with existing data
     }
   };
 
@@ -78,8 +78,9 @@ const News = () => {
     try {
       const res = await newsAPI.likeNews(selectedNews.id);
       setSelectedNews({ ...selectedNews, likes: res.likes });
-    } catch (err) {
-      alert(err?.detail || 'Vui lòng đăng nhập để thích bài viết');
+    } catch {
+      // Error liking news - user may need to log in
+      alert('Vui lòng đăng nhập để thích bài viết');
     }
   };
 

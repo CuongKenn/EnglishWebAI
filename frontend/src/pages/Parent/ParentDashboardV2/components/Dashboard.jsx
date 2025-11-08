@@ -13,7 +13,8 @@ import './Dashboard.css';
 import Toast from '../../../../components/Toast/Toast';
 import useToast from '../../../../hooks/useToast';
 
-const Dashboard = ({ onNavigate }) => {
+const Dashboard = () => {
+  // onNavigate prop removed - not used in component
   const { toast, showSuccess, showError, showWarning, hideToast } = useToast();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);

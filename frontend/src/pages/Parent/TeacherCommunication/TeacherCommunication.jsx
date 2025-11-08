@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import messageService from '../../../services/messageService';
 import { getCurrentUser } from '../../../services/userService';
-import { apiV1 } from '../../../services/api';
+// apiV1 imported but not used - could be used for future features
 import Navbar from '../../../components/Navbar/Navbar';
 import authService from '../../../services/authService';
 import { parentAPI } from '../../../services/parentService';

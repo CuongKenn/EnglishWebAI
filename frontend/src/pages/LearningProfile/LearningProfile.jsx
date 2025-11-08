@@ -115,7 +115,8 @@ const LearningProfile = () => {
   }, []);
 
   // Generate achievements based on real stats
-  const generateAchievements = (stats, skills) => {
+  const generateAchievements = (stats) => {
+    // skills parameter removed - not used in function
     const achievementsList = [];
     
     // Streak achievement

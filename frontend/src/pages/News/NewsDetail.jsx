@@ -34,18 +34,8 @@ const NewsDetail = () => {
   const [isLiked, setIsLiked] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
 
-  const getCategoryColor = (category) => {
-    const colors = {
-      'Khuyến mãi': 'bg-red-500',
-      'Học tập': 'bg-teal-500',
-      'Hướng dẫn': 'bg-blue-500',
-      'Sự kiện': 'bg-orange-500',
-      'Tính năng mới': 'bg-green-500',
-      'Thông báo': 'bg-purple-500',
-    };
-    return colors[category] || 'bg-indigo-500';
-  };
-
+  // getCategoryColor helper not currently used in this component
+  
   const getCategoryIcon = (category) => {
     const iconMap = {
       'Khuyến mãi': PartyPopper,
@@ -71,7 +61,8 @@ const NewsDetail = () => {
         setShareUrl(shareUrl);
         setShowShareModal(true);
       }
-    } catch (err) {
+    } catch {
+      // Error sharing or user cancelled - show fallback modal
       setShareUrl(shareUrl);
       setShowShareModal(true);
     }

@@ -101,8 +101,8 @@ const ReadingExercise = () => {
         setReadingData(transformedData);
         setLoading(false);
         return; // Success - exit early
-      } catch (apiErr) {
-        // 404 is expected when no rich content - fallback silently
+      } catch {
+        // 404 is expected when no rich content - fallback silently to legacy data
         // Continue to fallback...
       }
       
