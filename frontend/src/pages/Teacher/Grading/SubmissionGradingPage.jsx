@@ -150,36 +150,6 @@ export default function SubmissionGradingPage() {
     fetchData();
   }, [submissionId, classId, exerciseId, examId]);
 
-  const runAutoGrade = async () => {
-    if (!submission) return;
-    setLoading(true);
-    try {
-      // Use appropriate endpoint based on submission type
-      const endpoint = isExam 
-        ? `/exam-assessments/submissions/${submission.id}/auto-grade`
-        : `/exercises/teacher-grading/submissions/${submission.id}/auto-grade`;
-      
-      const res = await apiV1.post(endpoint);
-      const updated = isExam ? res.data.submission : res.data;
-      setSubmission((prev) => ({ ...prev, ...updated }));
-      setScoreInput(String(updated.ai_score ?? updated.score ?? ''));
-      setFeedbackInput(updated.ai_feedback ?? updated.feedback ?? '');
-      setDetailedFeedbackInput(updated.rubrics_scores?.detailed_feedback || '');
-    } catch (e) {
-      console.error('Auto-grade failed', e);
-      alert('Lỗi khi chấm tự động!');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const applyAIResultToForm = () => {
-    if (!submission) return;
-    if (typeof submission.ai_score === 'number') setScoreInput(String(submission.ai_score));
-    if (submission.ai_feedback) setFeedbackInput(submission.ai_feedback);
-    if (submission.rubrics_scores?.detailed_feedback) setDetailedFeedbackInput(submission.rubrics_scores.detailed_feedback);
-  };
-
   const saveGrade = async () => {
     if (!submission) return;
     try {

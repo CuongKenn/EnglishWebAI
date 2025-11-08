@@ -236,11 +236,6 @@ export default function QuestionBankV2() {
     setSelectedQuestions(new Set(allIds));
   };
   
-  // Deselect all
-  const deselectAll = () => {
-    setSelectedQuestions(new Set());
-  };
-  
   const handleDuplicateQuestion = useCallback(async (question) => {
     try {
       await questionBankAPI.duplicate(question.id);

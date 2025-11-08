@@ -39,12 +39,6 @@ const formatSkillLabel = (value) => {
 
 const grades = Array.from({ length: 12 }, (_, idx) => `Lớp ${idx + 1}`);
 
-const statusLabelMap = {
-  completed: 'Đã hoàn thành',
-  'in-progress': 'Đang học',
-  'not-started': 'Chưa học'
-};
-
 const getStatusBadgeClass = (status) => {
   switch (status) {
     case 'completed':
