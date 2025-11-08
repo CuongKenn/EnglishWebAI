@@ -405,8 +405,8 @@ const SpeakingExercise = () => {
           mediaRecorderRef.current.stop();
         }
         mediaRecorderRef.current?.stream?.getTracks().forEach(t => t.stop());
-      } catch (e) {
-        // noop
+      } catch {
+        /* Error stopping media recorder - ignore */
       }
       objectUrlSetRef.current.forEach((url) => URL.revokeObjectURL(url));
       objectUrlSetRef.current.clear();

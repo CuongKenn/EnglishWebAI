@@ -317,7 +317,8 @@ export default function QuestionBankV2() {
           showWarning('⚠️ Cảnh báo: Một số kỹ năng không tạo được câu hỏi:\n\n' + mismatches.join('\n') + '\n\nVui lòng:\n1. Bỏ tick "Tránh trùng với ngân hàng"\n2. Kiểm tra GEMINI_API_KEY\n3. Xem log backend để biết chi tiết');
         }
       }
-    } catch (e) {
+    } catch {
+      /* Error generating test with AI */
       showError('Tạo đề thi bằng AI thất bại');
     } finally {
       setIsGenerating(false);
@@ -394,7 +395,8 @@ export default function QuestionBankV2() {
       const classId = classIdStr && !isNaN(parseInt(classIdStr)) ? parseInt(classIdStr) : null;
       const res = await questionBankAPI.createExerciseFromTest(payload, classId);
       showSuccess(`Đã tạo bài tập #${res.id}${res.class_id ? ' cho lớp ' + res.class_id : ''}`);
-    } catch (e) {
+    } catch {
+      /* Error creating exercise */
       showError('Tạo bài tập thất bại');
     }
   };
@@ -1610,7 +1612,8 @@ export default function QuestionBankV2() {
                             utter.lang = 'en-US';
                             window.speechSynthesis.cancel();
                             window.speechSynthesis.speak(utter);
-                          } catch (e) {
+                          } catch {
+                            /* Browser doesn't support speech synthesis */
                             showError('Trình duyệt không hỗ trợ phát giọng nói.');
                           }
                         }}
