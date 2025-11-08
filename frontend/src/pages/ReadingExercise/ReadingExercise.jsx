@@ -248,22 +248,6 @@ const ReadingExercise = () => {
     }));
   };
 
-  // Handle answer selection (legacy)
-  const handleAnswerSelect = (questionId, answerId) => {
-    setUserAnswers(prev => ({
-      ...prev,
-      [questionId]: answerId
-    }));
-  };
-
-  // Handle paragraph matching (legacy)
-  const handleParagraphMatch = (paragraphId, headingId) => {
-    setUserAnswers(prev => ({
-      ...prev,
-      [`paragraph_${paragraphId}`]: headingId
-    }));
-  };
-
   // Check answers and calculate score
   const checkAnswers = () => {
     let correctCount = 0;
@@ -418,7 +402,7 @@ const ReadingExercise = () => {
         </div>
 
         {/* Paragraphs with Questions */}
-        {readingData.passage.paragraphs.map((paragraph, paragraphIndex) => (
+        {readingData.passage.paragraphs.map((paragraph) => (
           <div key={paragraph.id} className="paragraph-section">
             {/* Paragraph Content */}
             <div className="paragraph-container">

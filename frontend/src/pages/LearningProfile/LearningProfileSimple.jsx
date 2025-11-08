@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { 
   Calendar, GraduationCap, BookOpen, Target,
   Award, TrendingUp, Clock, CheckCircle, Star, Trophy,

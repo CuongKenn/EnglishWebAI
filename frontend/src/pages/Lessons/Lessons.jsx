@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
   ArrowTrendingUpIcon, ClockIcon, TrophyIcon, CheckCircleIcon, 
   CalendarIcon, ChartBarIcon, SparklesIcon, PlayIcon, 
