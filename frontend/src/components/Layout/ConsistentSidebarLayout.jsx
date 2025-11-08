@@ -114,10 +114,12 @@ const ConsistentSidebarLayout = ({
                 <div className="tip-text">Học đều đặn mỗi ngày để tiến bộ nhanh hơn!</div>
               </div>
             </div>
-            <button className="back-to-home-btn" onClick={() => navigate('/')}>
-              <ArrowLeftIcon className="w-4 h-4" />
-              <span>Trở về trang chủ</span>
-            </button>
+            {showBackButton && (
+              <button className="back-to-home-btn" onClick={() => navigate('/')}>
+                <ArrowLeftIcon className="w-4 h-4" />
+                <span>Trở về trang chủ</span>
+              </button>
+            )}
           </div>
         </div>
       </aside>
