@@ -1,5 +1,7 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 
+// Component that attaches global scroll/observer driven animations.
+// No JSX output; cleans up listeners on unmount.
 const ScrollAnimations = () => {
   useEffect(() => {
     // Intersection Observer for scroll animations
@@ -76,20 +78,20 @@ const ScrollAnimations = () => {
     // Counter animation
     const animateCounters = () => {
       const counters = document.querySelectorAll('.counter');
-      
       counters.forEach((counter) => {
         const target = parseInt(counter.dataset.target);
+        if (Number.isNaN(target)) return; // guard invalid target
         const duration = parseInt(counter.dataset.duration) || 2000;
-        const increment = target / (duration / 16);
+        const steps = Math.max(Math.floor(duration / 16), 1);
+        const increment = target / steps;
         let current = 0;
-        
         const timer = setInterval(() => {
           current += increment;
           if (current >= target) {
             current = target;
             clearInterval(timer);
           }
-          counter.textContent = Math.floor(current);
+          counter.textContent = String(Math.floor(current));
         }, 16);
       });
     };
