@@ -8,7 +8,6 @@ const StudentAnalytics = () => {
   const [classes, setClasses] = useState([]);
   const [selectedClass, setSelectedClass] = useState(null);
   const [analytics, setAnalytics] = useState([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchTeacherClasses();
@@ -28,9 +27,8 @@ const StudentAnalytics = () => {
         setSelectedClass(response.data[0]);
       }
     } catch (error) {
+      /* Error fetching teacher classes */
       console.error('Error:', error);
-    } finally {
-      setLoading(false);
     }
   };
 

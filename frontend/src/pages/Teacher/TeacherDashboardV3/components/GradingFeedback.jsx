@@ -13,7 +13,6 @@ import Toast from '../../../../components/Toast/Toast';
 import useToast from '../../../../hooks/useToast';
 
 export default function GradingFeedback() {
-  const [exercises, setExercises] = useState([]);
   const [submissions, setSubmissions] = useState([]);
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [showGradingModal, setShowGradingModal] = useState(false);

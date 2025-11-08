@@ -8,7 +8,7 @@ import Toast from '../../../../../components/Toast/Toast';
 import useToast from '../../../../../hooks/useToast';
 
 const ExerciseDetailModal = memo(function ExerciseDetailModal({ exercise, onClose, onUpdate, onDelete }) {
-  const { toast, showSuccess, showError, showWarning, hideToast } = useToast();
+  const { toast, showSuccess, showWarning, hideToast } = useToast();
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedExercise, setEditedExercise] = useState(exercise);
   const [copied, setCopied] = useState(false);

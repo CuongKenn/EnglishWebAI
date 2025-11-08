@@ -31,7 +31,6 @@ export default function QuestionBankV2() {
   
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState(null);
-  const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [showTestSetDetailModal, setShowTestSetDetailModal] = useState(false);
   const [expandedQuestionId, setExpandedQuestionId] = useState(null);
   const [filterSkill, setFilterSkill] = useState('');

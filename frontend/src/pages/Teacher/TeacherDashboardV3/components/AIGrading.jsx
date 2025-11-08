@@ -16,7 +16,6 @@ const AIGrading = () => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [editedFeedback, setEditedFeedback] = useState('');
   const [editedScore, setEditedScore] = useState(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchTeacherClasses();
@@ -36,9 +35,8 @@ const AIGrading = () => {
         setSelectedClass(response.data[0]);
       }
     } catch (error) {
+      /* Error fetching classes */
       console.error('Error:', error);
-    } finally {
-      setLoading(false);
     }
   };
 

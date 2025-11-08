@@ -19,7 +19,6 @@ const MyClassesTeacher = () => {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
-  const [isCreateLessonOpen, setIsCreateLessonOpen] = useState(false);
   const [isCreateExerciseOpen, setIsCreateExerciseOpen] = useState(false);
 
   useEffect(() => {
@@ -68,7 +67,6 @@ const MyClassesTeacher = () => {
   const handleCreateLesson = async (lessonData) => {
     try {
       await apiV1.post(`/classes/${selectedClass.id}/lessons`, lessonData);
-      setIsCreateLessonOpen(false);
       fetchClassDetails(selectedClass.id);
     } catch (error) {
       console.error('Error creating lesson:', error);
@@ -290,7 +288,7 @@ const MyClassesTeacher = () => {
                   <Card className="p-12 text-center">
                     <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                     <p className="text-gray-600">Chưa có bài giảng nào</p>
-                    <Button className="mt-4" onClick={() => setIsCreateLessonOpen(true)}>
+                    <Button className="mt-4" disabled>
                       Tạo bài giảng đầu tiên
                     </Button>
                   </Card>

@@ -11,7 +11,6 @@ import { Textarea } from '../../../../components/ui/textarea';
 
 const Schedule = () => {
   const [currentDate, setCurrentDate] = useState(new Date(2025, 9, 26)); // Oct 26, 2025
-  const [viewMode, setViewMode] = useState('week'); // 'week' or 'month'
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
 

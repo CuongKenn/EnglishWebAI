@@ -13,7 +13,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../../components
 const OnlineTeaching = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [selectedSession, setSelectedSession] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
 
   const sessions = [

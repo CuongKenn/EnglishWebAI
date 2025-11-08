@@ -22,7 +22,7 @@ export default function ClassManagement() {
     description: '',
     type: 'file'
   });
-  const { toast, showSuccess, showError, showWarning, showInfo, hideToast } = useToast();
+  const { toast, showSuccess, showError, showWarning, hideToast } = useToast();
   // Import students state
   const [importFile, setImportFile] = useState(null);
   const [importing, setImporting] = useState(false);

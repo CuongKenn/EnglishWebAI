@@ -9,7 +9,7 @@ import Toast from '../../../../../components/Toast/Toast';
 import useToast from '../../../../../hooks/useToast';
 
 export default function ExerciseManagementV2() {
-  const { toast, showSuccess, showError, showWarning, hideToast } = useToast();
+  const { toast, showSuccess, showError, hideToast } = useToast();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState(null);
