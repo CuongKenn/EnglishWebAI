@@ -99,17 +99,18 @@ const Courses = () => {
     }
   };
 
-  // Get skill icon component
-  const getSkillIcon = (skill, size = 16) => {
+  // Get skill icon component (supports custom size and className)
+  const getSkillIcon = (skill, size = 40, className = '') => {
+    const common = { size, className };
     const iconMap = {
-      'speaking': <MessageSquare size={size} />,
-      'writing': <PenLine size={size} />,
-      'reading': <BookOpen size={size} />,
-      'listening': <Headphones size={size} />,
-      'vocabulary': <BookMarked size={size} />,
-      'grammar': <FileText size={size} />
+      'speaking': <MessageSquare {...common} />,
+      'writing': <PenLine {...common} />,
+      'reading': <BookOpen {...common} />,
+      'listening': <Headphones {...common} />,
+      'vocabulary': <BookMarked {...common} />,
+      'grammar': <FileText {...common} />
     };
-    return iconMap[skill] || <BookMarked size={size} />;
+    return iconMap[skill] || <BookMarked {...common} />;
   };
 
   // Get skill color
@@ -371,14 +372,26 @@ const Courses = () => {
             return (
               <Card key={course.id} className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
                 <div className="relative">
-                  <div className={`h-40 flex items-center justify-center text-6xl ${
-                    course.category === 'speaking' ? 'bg-purple-100' :
-                    course.category === 'writing' ? 'bg-orange-100' :
-                    course.category === 'reading' ? 'bg-blue-100' :
-                    course.category === 'listening' ? 'bg-green-100' :
-                    course.category === 'vocabulary' ? 'bg-yellow-100' : 'bg-pink-100'
-                  }`}>
-                    {getSkillIcon(course.category, 24)}
+                  <div
+                    className={`h-40 flex items-center justify-center ${
+                      course.category === 'speaking' ? 'bg-purple-100' :
+                      course.category === 'writing' ? 'bg-orange-100' :
+                      course.category === 'reading' ? 'bg-blue-100' :
+                      course.category === 'listening' ? 'bg-green-100' :
+                      course.category === 'vocabulary' ? 'bg-yellow-100' : 'bg-pink-100'
+                    }`}
+                  >
+                    <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl bg-white/60 backdrop-blur-sm shadow-sm flex items-center justify-center">
+                      {getSkillIcon(
+                        course.category,
+                        48,
+                        course.category === 'speaking' ? 'text-purple-600' :
+                        course.category === 'writing' ? 'text-orange-600' :
+                        course.category === 'reading' ? 'text-blue-600' :
+                        course.category === 'listening' ? 'text-green-600' :
+                        course.category === 'vocabulary' ? 'text-yellow-600' : 'text-pink-600'
+                      )}
+                    </div>
                   </div>
                   <Badge className="absolute top-3 right-3 bg-orange-500 text-white">
                     {course.level}
