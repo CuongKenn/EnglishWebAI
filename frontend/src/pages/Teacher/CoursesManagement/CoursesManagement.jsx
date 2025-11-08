@@ -30,7 +30,7 @@ const LEVELS = [
 const GRADES = Array.from({ length: 12 }, (_, i) => i + 1);
 
 const CoursesManagement = () => {
-  const { toast, showWarning, hideToast } = useToast();
+  const { showWarning, hideToast } = useToast();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');

@@ -29,7 +29,6 @@ const TeacherOverview = () => {
   });
   const [recentActivities, setRecentActivities] = useState([]);
   const [upcomingClasses, setUpcomingClasses] = useState([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadOverviewData();
@@ -37,7 +36,6 @@ const TeacherOverview = () => {
 
   const loadOverviewData = async () => {
     try {
-      setLoading(true);
       // Load classes
       const classesRes = await apiClient.get('/api/v1/classes/teaching');
       const classes = classesRes.data || [];
@@ -70,9 +68,8 @@ const TeacherOverview = () => {
       ]);
 
     } catch (error) {
+      /* Error loading overview data */
       console.error('Failed to load overview data:', error);
-    } finally {
-      setLoading(false);
     }
   };
 

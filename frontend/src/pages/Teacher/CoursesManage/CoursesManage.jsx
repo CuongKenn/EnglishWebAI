@@ -208,7 +208,7 @@ const CoursesManage = () => {
               <div className="empty">Không có khoá học phù hợp</div>
             )}
             {filtered.map((c) => (
-              <CourseRow key={c.id} course={c} onChanged={loadCourses} />
+              <CourseRow key={c.id} course={c} />
             ))}
           </div>
         </div>
@@ -217,7 +217,8 @@ const CoursesManage = () => {
   );
 };
 
-const CourseRow = ({ course, onChanged }) => {
+const CourseRow = ({ course }) => {
+  /* onChanged prop unused - can be added back when needed for refresh on changes */
   const [show, setShow] = useState(false);
   const [units, setUnits] = useState([]);
   const [newUnit, setNewUnit] = useState({ title: '', week_index: 1, unit_type: 'lesson', max_cups: 2 });
