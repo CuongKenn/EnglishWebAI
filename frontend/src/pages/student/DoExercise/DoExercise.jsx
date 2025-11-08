@@ -36,7 +36,7 @@ export default function DoExercise() {
   const [isRecording, setIsRecording] = useState(false);
   const [recordedAudio, setRecordedAudio] = useState(null); // { url, blob, mimeType }
   const [recordingError, setRecordingError] = useState(null);
-  const [prepTime, setPrepTime] = useState(0);
+  // Removed unused prepTime state (was not referenced elsewhere)
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const objectUrlRef = useRef(new Set());
@@ -179,8 +179,7 @@ export default function DoExercise() {
       setIsFullscreen(true);
 
       return true;
-    } catch (error) {
-
+    } catch {
       // Only show error on initial attempt, not on re-entry
       if (showStartScreenRef.current) {
         showError('Không thể vào chế độ toàn màn hình. Vui lòng thử lại hoặc cho phép quyền fullscreen trong trình duyệt.');
@@ -221,8 +220,8 @@ export default function DoExercise() {
         document.msExitFullscreen();
       }
       setIsFullscreen(false);
-    } catch (error) {
-
+    } catch {
+      // Ignore exit fullscreen errors
       setIsFullscreen(false);
     }
   };
@@ -247,8 +246,8 @@ export default function DoExercise() {
           mediaRecorderRef.current.stop();
         }
         mediaRecorderRef.current?.stream?.getTracks().forEach((track) => track.stop());
-      } catch (error) {
-
+      } catch {
+        // Ignore recorder cleanup errors on unmount
       }
       
       // Exit fullscreen when component unmounts
@@ -450,8 +449,8 @@ export default function DoExercise() {
             );
             formData.append('audio_file', audioFile);
             mergedAnswers['speaking_main'] = '[speaking-audio-attached]';
-          } catch (e) {
-
+          } catch {
+            // Ignore speaking_main audio extraction errors
           }
         }
         
@@ -471,8 +470,8 @@ export default function DoExercise() {
             );
             formData.append('audio_file', audioFile);
             mergedAnswers[firstQId] = '[speaking-audio-attached]';
-          } catch (e) {
-
+          } catch {
+            // Ignore first speaking answer audio extraction errors
           }
         }
         
@@ -657,8 +656,8 @@ export default function DoExercise() {
       showError(message);
       try {
         mediaRecorderRef.current?.stream?.getTracks().forEach(track => track.stop());
-      } catch (cleanupError) {
-
+      } catch {
+        // Ignore cleanup errors
       }
     }
   };
