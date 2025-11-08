@@ -11,8 +11,7 @@ import useToast from '../../../hooks/useToast';
 import './LessonPlans.css';
 
 const LessonPlans = () => {
-  const { toast, showSuccess, showError, hideToast } = useToast();
-  // showWarning removed - not used in component
+  const { toast, showSuccess, showError, showWarning, hideToast } = useToast();
   const [lessonPlans, setLessonPlans] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedGrade, setSelectedGrade] = useState('all');

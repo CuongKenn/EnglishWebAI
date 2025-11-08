@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
-// useMemo imported but not used in current implementation
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { 
   Plus, Search, FileQuestion, Zap, TrendingUp, AlertTriangle,
   Edit, Copy, Trash2, Upload, Download, Sparkles, Database, X, 

@@ -76,7 +76,6 @@ const GradingReview = () => {
       await apiV1.post(`/teacher/${selectedSubmission.id}/review`, reviewData);
       toast.success('Đã duyệt bài thành công!');
       setSelectedSubmission(null);
-      setReviewMode(false);
       fetchPendingSubmissions();
       fetchStats();
     } catch (error) {

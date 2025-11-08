@@ -20,7 +20,7 @@ export default function ExamGradingPage() {
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [showGradingModal, setShowGradingModal] = useState(false);
   const [loading, setLoading] = useState(false);
-  // aiLoading state declared but not used - could be used for AI grading feature
+  const [aiLoading, setAiLoading] = useState(false);
   const [scoreInput, setScoreInput] = useState('');
   const [feedbackInput, setFeedbackInput] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
