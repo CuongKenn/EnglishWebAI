@@ -142,9 +142,8 @@ const Login = ({ onLogin }) => {
     setTimeout(() => ripple.remove(), 600);
   };
 
-  const handleSocialLogin = (provider) => {
-
-  };
+  // Placeholder for future social login (Google, etc.) - currently unused; kept minimal to avoid eslint unused var
+  const handleSocialLogin = () => {};
 
   const handleForgotPassword = () => {
     navigate('/forgot-password');
