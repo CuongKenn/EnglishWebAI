@@ -1225,7 +1225,15 @@ async def list_exercises_by_class_teacher(
     _ensure_can_manage_class(db, current_user, class_id)
     
     # Get exercises with submission count
-    exercises = db.query(Exercise).filter(Exercise.class_id == class_id).all()
+    exercises = (
+        db.query(Exercise)
+        .filter(
+            Exercise.class_id == class_id,
+            Exercise.is_active == True,
+            Exercise.is_archived == False,
+        )
+        .all()
+    )
     
     results = []
     for exercise in exercises:
@@ -1265,7 +1273,15 @@ async def list_exercises_by_lesson_teacher(
     if not lesson:
         raise HTTPException(status_code=404, detail="Không tìm thấy bài học")
     _ensure_can_manage_class(db, current_user, int(lesson.class_id))
-    rows = db.query(Exercise).filter(Exercise.lesson_id == lesson_id).all()
+    rows = (
+        db.query(Exercise)
+        .filter(
+            Exercise.lesson_id == lesson_id,
+            Exercise.is_active == True,
+            Exercise.is_archived == False,
+        )
+        .all()
+    )
     return rows
 
 

@@ -21,6 +21,8 @@ class Exercise(Base):
     enable_ai_grading = Column(Boolean, default=False)  # Enable AI grading for this exercise
     rubrics = Column(JSON, nullable=True)  # Rubrics for grading (4 skills)
     content = Column(JSON, nullable=True)  # Exercise content/questions in JSON format
+    is_active = Column(Boolean, nullable=False, server_default="true", default=True)
+    is_archived = Column(Boolean, nullable=False, server_default="false", default=False)
 
     classroom = relationship("Classroom", back_populates="exercises")
     lesson = relationship("Lesson", back_populates="exercises")
