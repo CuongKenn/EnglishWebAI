@@ -1,16 +1,6 @@
-import { useState, useEffect, createContext, useContext } from 'react';
+import { useState } from 'react';
+import { ToastContext } from './toast-context';
 import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react';
-
-// Toast Context
-const ToastContext = createContext();
-
-export const useToast = () => {
-  const context = useContext(ToastContext);
-  if (!context) {
-    throw new Error('useToast must be used within ToastProvider');
-  }
-  return context;
-};
 
 // Toast Provider Component
 export const ToastProvider = ({ children }) => {
@@ -58,7 +48,7 @@ const ToastContainer = ({ toasts, onRemove }) => {
 };
 
 // Individual Toast Component
-const Toast = ({ id, message, type, onClose }) => {
+const Toast = ({ message, type, onClose }) => {
   const [isExiting, setIsExiting] = useState(false);
 
   const handleClose = () => {
