@@ -19,7 +19,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   
   // Classes from API
   const [classes, setClasses] = useState([]);
-  const [loadingClasses, setLoadingClasses] = useState(true);
+  // loadingClasses state not used in UI
   
   // Form fields
   const [title, setTitle] = useState('');
@@ -70,12 +70,10 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   // AI Generation states
   const [aiSource, setAiSource] = useState('curriculum'); // 'curriculum', 'files', 'question_bank'
   const [aiFiles, setAiFiles] = useState([]);
-  const [aiPrompt, setAiPrompt] = useState('');
-  const [qbNumQuestions, setQbNumQuestions] = useState(20);
-  const [qbDifficulty, setQbDifficulty] = useState('mixed');
+  // aiPrompt, qbNumQuestions, qbDifficulty - declared but not used in current implementation
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [aiFormData, setAiFormData] = useState({ semester: '1' });
-  const aiFilesInputRef = useRef(null);
+  // aiFilesInputRef not used in current implementation
   
   // Logic helpers
   const requiresSkill = testType === 'skill_exercise' || testType === 'test_15min';
@@ -294,10 +292,11 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   };
   
   // AI file handlers
-  const handleAiFilesUpload = (e) => {
-    const files = Array.from(e.target.files);
-    setAiFiles([...aiFiles, ...files]);
-  };
+  // handleAiFilesUpload not currently used - could be used for AI file upload feature
+  // const handleAiFilesUpload = (e) => {
+  //   const files = Array.from(e.target.files);
+  //   setAiFiles([...aiFiles, ...files]);
+  // };
   
   const removeAiFile = (index) => {
     setAiFiles(aiFiles.filter((_, i) => i !== index));
