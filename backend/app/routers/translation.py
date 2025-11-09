@@ -53,7 +53,7 @@ async def translate_text(
 
     except Exception as e:
         logger.error(f"Translation API error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/translate/batch", response_model=BatchTranslationResponse)
@@ -87,7 +87,7 @@ async def translate_batch(
 
     except Exception as e:
         logger.error(f"Batch translation API error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/translate/bidirectional", response_model=TranslationResponse)
@@ -126,7 +126,7 @@ async def translate_bidirectional(
 
     except Exception as e:
         logger.error(f"Bidirectional translation API error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/detect-language", response_model=LanguageDetectionResponse)
@@ -152,7 +152,7 @@ async def detect_language(
 
     except Exception as e:
         logger.error(f"Language detection API error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/supported-languages")
@@ -172,7 +172,7 @@ async def get_supported_languages(
 
     except Exception as e:
         logger.error(f"Get languages API error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/health")

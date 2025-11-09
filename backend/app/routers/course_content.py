@@ -94,7 +94,7 @@ async def create_reading_passage(
         return passage
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/units/{unit_id}/reading", response_model=ReadingPassageResponse)
@@ -315,7 +315,7 @@ async def create_listening_audio(
         return audio
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/units/{unit_id}/listening", response_model=ListeningAudioResponse)
@@ -420,7 +420,7 @@ async def create_speaking_prompt(
         return prompt
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/units/{unit_id}/speaking", response_model=SpeakingPromptResponse)
