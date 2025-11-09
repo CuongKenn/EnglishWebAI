@@ -61,7 +61,7 @@ async def generate_listening_lesson(
             raise HTTPException(
                 status_code=503,
                 detail="AI service is not available. Please contact administrator to configure OPENAI_API_KEY."
-            )
+            ) from e
 
         # Level-specific prompts
         level_specs = {
@@ -139,13 +139,13 @@ Important:
             raise HTTPException(
                 status_code=503,
                 detail="AI service is not configured. Please add OPENAI_API_KEY to .env file. Get your API key at: https://platform.openai.com/api-keys"
-            )
+            ) from ve
         except Exception as ge:
             logger.error(f"[AI-LISTENING] OpenAI API error: {ge}")
             raise HTTPException(
                 status_code=503,
                 detail=f"Failed to generate lesson with AI: {str(ge)}"
-            )
+            ) from ge
 
         # Clean response
         response_text = response_text.strip()
@@ -166,7 +166,7 @@ Important:
             raise HTTPException(
                 status_code=500,
                 detail="AI response format invalid. Please try again."
-            )
+            ) from e
 
         # Validate required fields
         required_fields = ["title", "transcript", "duration", "questions"]
@@ -238,7 +238,7 @@ Important:
         raise HTTPException(
             status_code=500,
             detail=f"Failed to generate listening lesson: {str(e)}"
-        )
+        ) from e
 
 
 # ===================== Submit Answers =====================
@@ -272,7 +272,7 @@ async def submit_listening_answers(
         raise HTTPException(
             status_code=500,
             detail="Failed to submit answers"
-        )
+        ) from e
 
 
 # ===================== Text to Speech (Optional) =====================
@@ -302,5 +302,5 @@ async def text_to_speech(
         raise HTTPException(
             status_code=500,
             detail="Text-to-Speech service unavailable"
-        )
+        ) from e
 
