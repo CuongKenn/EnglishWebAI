@@ -19,7 +19,6 @@ export default function ExerciseManagementV2() {
   const [filterStatus, setFilterStatus] = useState('');
   const [exercises, setExercises] = useState([]);
   const [classes, setClasses] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('cards'); // 'cards' | 'table'
 
   useEffect(() => {
@@ -38,7 +37,6 @@ export default function ExerciseManagementV2() {
 
   const fetchExercises = async () => {
     try {
-      setLoading(true);
       const classesResponse = await apiV1.get('/classes/teaching');
       let allExercises = [];
       
@@ -68,15 +66,13 @@ export default function ExerciseManagementV2() {
       setExercises(allExercises);
     } catch (error) {
       console.error('Error fetching exercises:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleCreateExercise = async (newExercise) => {
     try {
       // Call API to create exercise
-      const response = await apiV1.post('/exercises/', {
+      await apiV1.post('/exercises/', {
         class_id: parseInt(newExercise.classId),
         title: newExercise.title,
         description: newExercise.description || '',
