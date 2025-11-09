@@ -878,10 +878,7 @@ Trả về JSON với format:
                 # Parse student answer as JSON if it's a string
                 if isinstance(student_ans, str):
                     try:
-                        if student_ans.strip():  # Only parse if not empty
-                            student_ans = json.loads(student_ans)
-                        else:
-                            student_ans = {}
+                        student_ans = json.loads(student_ans) if student_ans.strip() else {}
                     except json.JSONDecodeError as e:
                         logger.info(f"Error grading fill blank: {e}")
                         logger.info(f"Failed to parse matching answer: '{student_ans}'")

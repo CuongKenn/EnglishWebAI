@@ -625,9 +625,8 @@ async def get_exercises(
         my_sub = submissions.get(exercise.id)
 
         # Filter by status if requested
-        if status:
-            if status == "pending" and my_sub is not None or status == "submitted" and (my_sub is None or my_sub.status != "submitted") or status == "graded" and (my_sub is None or my_sub.status != "graded"):
-                continue
+        if status and (status == "pending" and my_sub is not None or status == "submitted" and (my_sub is None or my_sub.status != "submitted") or status == "graded" and (my_sub is None or my_sub.status != "graded")):
+            continue
 
         result.append({
             "id": exercise.id,
@@ -1056,10 +1055,9 @@ async def get_my_submission(
     teacher_reviewed = getattr(submission, 'teacher_reviewed', False)
 
     # If student and not reviewed yet, hide scores and feedback
-    if current_user.role == UserRole.STUDENT and not teacher_reviewed:
-        if grading_status in ['pending', 'grading', 'ai_graded']:
-            # Return submission but hide results
-            return SubmissionResponse(
+    if current_user.role == UserRole.STUDENT and not teacher_reviewed and grading_status in ['pending', 'grading', 'ai_graded']:
+        # Return submission but hide results
+        return SubmissionResponse(
                 id=submission.id,
                 exercise_id=submission.exercise_id,
                 student_id=submission.student_id,

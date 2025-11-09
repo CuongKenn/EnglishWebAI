@@ -54,14 +54,14 @@ class NotificationService:
     def notify_parents_on_grading(
         db: Session,
         submission: Submission,
-        teacher_name: str
+        _teacher_name: str
     ):
         """
         Thông báo cho phụ huynh khi giáo viên chấm bài
 
         Args:
             submission: Submission đã được chấm
-            teacher_name: Tên giáo viên
+            _teacher_name: Tên giáo viên (reserved for future use)
         """
         # Lấy thông tin bài tập
         exercise = db.query(Exercise).filter(Exercise.id == submission.exercise_id).first()
@@ -342,14 +342,14 @@ class NotificationService:
     def notify_parents_on_exam_grading(
         db: Session,
         submission: ExamSubmission,
-        teacher_name: str
+        _teacher_name: str
     ):
         """
         Thông báo cho phụ huynh khi giáo viên chấm bài thi
 
         Args:
             submission: ExamSubmission đã được chấm
-            teacher_name: Tên giáo viên
+            _teacher_name: Tên giáo viên (reserved for future use)
         """
         # Lấy thông tin đề thi
         exam = db.query(ExamAssessment).filter(ExamAssessment.id == submission.exam_id).first()

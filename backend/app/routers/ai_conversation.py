@@ -3,12 +3,13 @@ AI Conversation Router
 Handles AI-powered conversation endpoints
 """
 
+import builtins
+import contextlib
 import logging
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
 logger = logging.getLogger(__name__)
-import builtins
 import contextlib
 import os
 import tempfile
@@ -57,11 +58,8 @@ async def chat_with_ai(
         )
 
         # Log usage
-        try:
+        with contextlib.suppress(Exception):
             AIAnalyticsService.log_usage(db, user_id=current_user.id, feature="conversation", metadata={"action": "chat"})
-        except Exception:
-            # Do not block response on logging errors
-            pass
 
         return ConversationResponse(
             response=ai_response,

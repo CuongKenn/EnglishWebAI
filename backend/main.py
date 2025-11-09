@@ -1,3 +1,4 @@
+import contextlib
 import logging
 import sys
 
@@ -134,11 +135,8 @@ app.include_router(error_analysis_export.router, tags=["Error Analysis Export"])
 app.include_router(media.router, prefix=f"{settings.API_PREFIX}/media", tags=["Media"])
 
 # Serve media files if available (e.g., uploaded materials)
-try:
+with contextlib.suppress(Exception):
     app.mount("/media", StaticFiles(directory="media", check_dir=False), name="media")
-except Exception:
-    # If StaticFiles fails due to version mismatch or other issues, skip mounting
-    pass
 
 @app.on_event("startup")
 async def startup_event():

@@ -577,7 +577,7 @@ async def import_file(
 async def import_csv_file(file: UploadFile, db: Session, current_user: User) -> ImportResult:
     # Simple CSV import: expected headers in first line
     content = (await file.read()).decode("utf-8", errors="ignore")
-    lines = [l for l in content.splitlines() if l.strip()]
+    lines = [line for line in content.splitlines() if line.strip()]
     if not lines:
         return ImportResult(imported=0, failed=0, errors=[])
     headers = [h.strip() for h in lines[0].split(",")]

@@ -539,7 +539,8 @@ async def create_course_unit(
         # Ensure table/columns exist (defensive for legacy DBs)
         try:
             from app.utils.db_migrations import ensure_course_units_columns, ensure_course_units_tables
-            ensure_course_units_tables(); ensure_course_units_columns()
+            ensure_course_units_tables()
+            ensure_course_units_columns()
         except Exception:
             pass
         from app.models.course import CourseUnit

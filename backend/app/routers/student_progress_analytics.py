@@ -1328,6 +1328,7 @@ async def export_progress_report(
     from fastapi.responses import StreamingResponse
     from openpyxl import Workbook
     from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+    from openpyxl.utils import get_column_letter
 
     logger.info(f"[EXPORT] Progress report: class_id={class_id}, period={period_days}")
 
