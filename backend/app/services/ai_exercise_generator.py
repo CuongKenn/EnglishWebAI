@@ -2,17 +2,16 @@
 AI Exercise Generator Service
 Generates exercises based on Vietnam's 2018 Foreign Language Curriculum
 """
-import logging
-
-from openai import OpenAI
-
-logger = logging.getLogger(__name__)
 import json
+import logging
 import os
 import time
 import uuid
 
 import azure.cognitiveservices.speech as speechsdk
+from openai import OpenAI
+
+logger = logging.getLogger(__name__)
 
 # Vietnam's 2018 Curriculum Topics by Grade
 CURRICULUM_TOPICS = {
@@ -440,7 +439,7 @@ Chỉ trả về JSON, không có text khác."""
                             f.write(f"Content:\n{content}\n\n")
                             f.write(f"Fixed attempt:\n{content_fixed}")
                         logger.info(f"[AI Generate] Error details saved to {error_file}")
-                    except:
+                    except Exception:
                         pass
                     raise json_err
 
@@ -614,154 +613,4 @@ Trả về JSON:
         except Exception as e:
             logger.info(f"Error generating full exam: {str(e)}")
             raise
-
-    async def generate_skill_exercise(
-        self,
-        skill: str,
-        test_type: str,
-        grade: str,
-        semester: str
-    ) -> dict:
-        """
-        Generate exercise for a single skill
-        """
-        topics = self._get_topics(grade, semester)
-        topics_str = ", ".join(topics)
-
-        {
-            "listening": "Nghe",
-            "speaking": "Nói",
-            "reading": "Đọc",
-            "writing": "Viết"
-        }.get(skill, skill)
-
-        if skill == "listening":
-            prompt = f"""Tạo bài tập NGHE cho học sinh lớp {grade}, học kỳ {semester}.
-Chủ đề: {topics_str}
-
-Yêu cầu:
-1. Tạo đoạn hội thoại hoặc monologue (150-200 từ)
-2. Tạo transcript đầy đủ
-3. Tạo 8 câu hỏi trắc nghiệm về nội dung
-4. Câu hỏi phải test khả năng listening comprehension
-
-Trả về JSON:
-{{
-    "title": "Bài tập Nghe - Lớp {grade}",
-    "listening": {{
-        "script": "...",
-        "transcript": "...",
-        "show_transcript": false,
-        "questions": [
-            {{
-                "id": 1,
-                "question": "...",
-                "type": "multiple_choice",
-                "options": ["A...", "B...", "C...", "D..."],
-                "correct_answer": "A",
-                "points": 2
-            }}
-        ]
-    }}
-}}"""
-
-        elif skill == "reading":
-            prompt = f"""Tạo bài tập ĐỌC cho học sinh lớp {grade}, học kỳ {semester}.
-Chủ đề: {topics_str}
-
-Yêu cầu:
-1. Tạo đoạn văn thú vị (250-300 từ)
-2. Tạo 10 câu hỏi đa dạng: trắc nghiệm, điền từ, đúng/sai
-3. Câu hỏi test các kỹ năng: main idea, details, inference, vocabulary
-
-Trả về JSON:
-{{
-    "title": "Bài tập Đọc - Lớp {grade}",
-    "reading": {{
-        "passage": "...",
-        "word_count": 250,
-        "questions": [...]
-    }}
-}}"""
-
-        elif skill == "speaking":
-            prompt = f"""Tạo bài tập NÓI cho học sinh lớp {grade}, học kỳ {semester}.
-Chủ đề: {topics_str}
-
-Yêu cầu:
-1. Tạo đề bài nói về một chủ đề thú vị
-2. Có hướng dẫn chi tiết
-3. Thời gian chuẩn bị và thời gian nói phù hợp
-
-Trả về JSON:
-{{
-    "title": "Bài tập Nói - Lớp {grade}",
-    "speaking": {{
-        "prompt": "...",
-        "instructions": ["...", "..."],
-        "prep_time": 60,
-        "speak_time": 120
-    }}
-}}"""
-
-        else:  # writing
-            prompt = f"""Tạo bài tập VIẾT cho học sinh lớp {grade}, học kỳ {semester}.
-Chủ đề: {topics_str}
-
-Yêu cầu:
-1. Tạo đề bài viết thú vị và phù hợp
-2. Có hướng dẫn chi tiết
-3. Yêu cầu độ dài phù hợp với lớp
-
-Trả về JSON:
-{{
-    "title": "Bài tập Viết - Lớp {grade}",
-    "writing": {{
-        "prompt": "...",
-        "type": "essay",
-        "instructions": ["...", "..."],
-        "min_words": 150,
-        "max_words": 200
-    }}
-}}"""
-
-        try:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": "You are an expert English teacher in Vietnam."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.7,
-                max_tokens=2000
-            )
-
-            content = response.choices[0].message.content.strip()
-
-            # Clean and parse JSON
-            if content.startswith("```json"):
-                content = content[7:]
-            if content.startswith("```"):
-                content = content[3:]
-            if content.endswith("```"):
-                content = content[:-3]
-            content = content.strip()
-
-            exercise_data = json.loads(content)
-
-            # Generate audio for listening exercise
-            if skill == "listening" and exercise_data.get("listening", {}).get("script"):
-                logger.info("🎧 Generating audio for listening exercise...")
-                script = exercise_data["listening"]["script"]
-                audio_url = await self._generate_audio_from_text(script)
-                if audio_url:
-                    exercise_data["listening"]["audio_url"] = audio_url
-                    logger.info(f"✅ Audio URL: {audio_url}")
-
-            return exercise_data
-
-        except Exception as e:
-            logger.info(f"Error generating {skill} exercise: {str(e)}")
-            raise
-
 

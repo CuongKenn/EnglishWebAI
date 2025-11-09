@@ -24,8 +24,7 @@ router = APIRouter(prefix="/api/v1/error-analysis", tags=["Error Analysis Export
 
 try:
     from openpyxl import Workbook
-    from openpyxl.chart import BarChart, PieChart, Reference
-    from openpyxl.styles import Alignment, Border, Color, Font, PatternFill, Side
+    from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
     from openpyxl.utils import get_column_letter
     EXCEL_AVAILABLE = True
 except ImportError:
@@ -100,7 +99,7 @@ def auto_adjust_column_width(ws, min_width=10, max_width=80):
                     max_line_length = max(len(line) for line in lines) if lines else 0
                     if max_line_length > max_length:
                         max_length = max_line_length
-            except:
+            except Exception:
                 pass
 
         adjusted_width = min(max(max_length + 2, min_width), max_width)

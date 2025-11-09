@@ -687,7 +687,7 @@ async def _auto_grade_weekly_submission(submission: WeeklySubmission, assessment
                 if isinstance(student_answer, str):
                     try:
                         student_answer = json.loads(student_answer) if student_answer else {}
-                    except:
+                    except Exception:
                         student_answer = {}
                 grade_result = await ai_grading.grade_matching(question, student_answer)
             else:

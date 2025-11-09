@@ -1489,7 +1489,7 @@ async def export_docx(payload: ExportDocxRequest):
     try:
         from docx import Document
         from docx.enum.text import WD_ALIGN_PARAGRAPH
-        from docx.shared import Inches, Pt, RGBColor
+        from docx.shared import Pt, RGBColor
     except ImportError as e:
         logger.error(f"[EXPORT-DOCX] Missing python-docx: {e}")
         raise HTTPException(

@@ -131,9 +131,6 @@ class ExerciseWithStatsResponse(BaseModel):
     class Config:
         from_attributes = True
 
-    class Config:
-        from_attributes = True
-
 # Helper function for auto-grading
 async def _auto_grade_submission(submission: Submission, exercise: Exercise, db: Session):
     """
@@ -850,7 +847,7 @@ async def submit_exercise(
     if answers:
         try:
             parsed_answers = json.loads(answers) if isinstance(answers, str) else answers
-        except:
+        except Exception:
             parsed_answers = None
 
     # Handle audio file upload for speaking exercises

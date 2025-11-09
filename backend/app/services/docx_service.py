@@ -70,7 +70,7 @@ class DocxService:
                 text = pypandoc.convert_file(tmp_doc_path, 'plain', format='doc')
                 logger.info("[DOC Extraction] Successfully extracted text using pypandoc")
                 return text
-            except:
+            except Exception:
                 pass
 
             # Last resort: suggest manual conversion
@@ -84,7 +84,7 @@ class DocxService:
             try:
                 if os.path.exists(tmp_doc_path):
                     os.remove(tmp_doc_path)
-            except:
+            except Exception:
                 pass
 
     def extract_content(self, file_content: bytes, save_images: bool = True) -> dict:
@@ -243,7 +243,7 @@ class DocxService:
                         try:
                             img = Image.open(io.BytesIO(image_blob))
                             width, height = img.size
-                        except:
+                        except Exception:
                             width, height = 0, 0
 
                         images.append({

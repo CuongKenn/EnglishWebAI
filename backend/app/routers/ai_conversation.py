@@ -215,7 +215,7 @@ Chỉ trả về JSON, không có text khác."""
             })
 
         # Add vocabulary comments
-        for idx, vocab in enumerate(openai_data.get('vocabulary_comments', [])[:5]):  # Limit to 5
+        for _idx, vocab in enumerate(openai_data.get('vocabulary_comments', [])[:5]):  # Limit to 5
             detailed_feedback.append({
                 "type": vocab.get('type', 'good'),
                 "text": vocab.get('text', ''),

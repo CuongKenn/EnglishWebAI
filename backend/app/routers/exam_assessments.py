@@ -163,7 +163,7 @@ async def _auto_grade_exam_submission(submission: ExamSubmission, db: Session):
                     if isinstance(student_answer, str):
                         try:
                             student_answer = json.loads(student_answer) if student_answer else {}
-                        except:
+                        except Exception:
                             student_answer = {}
 
                     grade_result = await ai_grading_service.grade_matching(

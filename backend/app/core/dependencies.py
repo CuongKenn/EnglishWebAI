@@ -52,7 +52,7 @@ async def get_current_user_optional(
             return None
 
         return db.query(User).filter(User.id == user_id).first()
-    except:
+    except Exception:
         return None
 
 async def get_current_active_user(

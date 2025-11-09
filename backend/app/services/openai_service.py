@@ -1038,7 +1038,7 @@ STUDENT'S WRITING:
 GRADING CRITERIA (Total: {max_score} points):
 """
 
-            for key, value in criteria.items():
+            for _key, value in criteria.items():
                 grading_prompt += f"\n- {value['name']}: {value['weight'] * 100}%"
 
             grading_prompt += """

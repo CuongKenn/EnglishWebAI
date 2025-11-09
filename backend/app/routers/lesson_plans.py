@@ -25,7 +25,6 @@ from app.services.openai_service import openai_service
 try:
     from docx import Document
     from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
-    from docx.shared import Inches, Pt, RGBColor
     HAS_DOCX = True
 except ImportError:
     HAS_DOCX = False

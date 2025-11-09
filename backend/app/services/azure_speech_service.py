@@ -210,7 +210,7 @@ class AzureSpeechService:
             try:
                 if wav_path and wav_path != str(audio_file_path) and os.path.exists(wav_path):
                     os.unlink(wav_path)
-            except:
+            except Exception:
                 pass
 
     def calculate_speaking_score(self, assessment_result: dict, max_score: float = 10.0) -> dict:

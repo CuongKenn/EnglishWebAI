@@ -838,7 +838,7 @@ async def get_detailed_student_analysis(
                         err_data = sub.error_analysis
                     if isinstance(err_data, dict):
                         errors = list(err_data.keys())[:5]
-                except:
+                except Exception:
                     pass
 
             recent_submissions_detail.append(SubmissionDetail(

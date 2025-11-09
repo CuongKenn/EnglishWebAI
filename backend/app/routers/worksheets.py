@@ -30,7 +30,6 @@ logger = logging.getLogger(__name__)
 try:
     from docx import Document
     from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
-    from docx.shared import Inches, Pt, RGBColor
     HAS_DOCX = True
     logger.info("python-docx imported successfully")
 except ImportError as e:

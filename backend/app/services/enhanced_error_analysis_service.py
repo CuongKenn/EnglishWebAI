@@ -112,7 +112,7 @@ class EnhancedErrorAnalysisService:
         total_scores = []
         skill_scores = {skill: [] for skill in skills_to_analyze}
 
-        for submission, assessment, student_name, username, email in results:
+        for submission, _assessment, _student_name, _username, _email in results:
             # Overall score
             if submission.total_score is not None:
                 total_scores.append(submission.total_score)
@@ -173,7 +173,7 @@ class EnhancedErrorAnalysisService:
             student_data[student_name]['total_assessments'] += 1
 
         # Calculate student averages and trends
-        for student_name, data in student_data.items():
+        for _student_name, data in student_data.items():
             data['average_total_score'] = self._calculate_average([s['total_score'] for s in data['submissions'] if s['total_score'] is not None])
 
             for skill in skills_to_analyze:
