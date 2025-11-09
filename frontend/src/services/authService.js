@@ -10,26 +10,16 @@ class AuthService {
    * Đăng ký tài khoản mới
    */
   async register(userData) {
-    try {
-      const response = await authAPI.register(userData);
-      return response;
-    } catch (error) {
-      // Throw lỗi trực tiếp để giữ nguyên structure
-      throw error;
-    }
+    const response = await authAPI.register(userData);
+    return response;
   }
 
   /**
    * Đăng nhập
    */
   async login(credentials) {
-    try {
-      const response = await authAPI.login(credentials);
-      return response;
-    } catch (error) {
-      // Throw lỗi trực tiếp để giữ nguyên structure
-      throw error;
-    }
+    const response = await authAPI.login(credentials);
+    return response;
   }
 
   /**

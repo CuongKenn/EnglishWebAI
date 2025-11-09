@@ -11,17 +11,13 @@ const examService = {
    * @returns {Promise<Object>} Upload response
    */
   uploadExamFromWord: async (formData) => {
-    try {
-      const response = await api.post('/api/v1/exam-assessments/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-        timeout: 600000, // 10 minutes for AI parsing (large files need more time)
-      });
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const response = await api.post('/api/v1/exam-assessments/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      timeout: 600000, // 10 minutes for AI parsing (large files need more time)
+    });
+    return response.data;
   },
 
   /**
@@ -31,13 +27,9 @@ const examService = {
    * @returns {Promise<Array>} List of exams
    */
   getClassExams: async (classId, examType = null) => {
-    try {
-      const params = examType ? { exam_type: examType } : {};
-      const response = await api.get(`/api/v1/exam-assessments/classes/${classId}`, { params });
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const params = examType ? { exam_type: examType } : {};
+    const response = await api.get(`/api/v1/exam-assessments/classes/${classId}`, { params });
+    return response.data;
   },
 
   /**
@@ -46,12 +38,8 @@ const examService = {
    * @returns {Promise<Object>} Exam detail
    */
   getExamDetail: async (examId) => {
-    try {
-      const response = await api.get(`/api/v1/exam-assessments/${examId}`);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const response = await api.get(`/api/v1/exam-assessments/${examId}`);
+    return response.data;
   },
 
   /**
@@ -61,12 +49,8 @@ const examService = {
    * @returns {Promise<Object>} Updated exam
    */
   updateExam: async (examId, updateData) => {
-    try {
-      const response = await api.put(`/api/v1/exam-assessments/${examId}`, updateData);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const response = await api.put(`/api/v1/exam-assessments/${examId}`, updateData);
+    return response.data;
   },
 
   /**
@@ -75,11 +59,7 @@ const examService = {
    * @returns {Promise<void>}
    */
   deleteExam: async (examId) => {
-    try {
-      await api.delete(`/api/v1/exam-assessments/${examId}`);
-    } catch (error) {
-      throw error;
-    }
+    await api.delete(`/api/v1/exam-assessments/${examId}`);
   },
 
   /**
@@ -88,14 +68,10 @@ const examService = {
    * @returns {Promise<Object>} Submission
    */
   startExam: async (examId) => {
-    try {
-      const formData = new FormData();
-      formData.append('exam_id', examId);
-      const response = await api.post('/api/v1/exam-assessments/submissions/start', formData);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const formData = new FormData();
+    formData.append('exam_id', examId);
+    const response = await api.post('/api/v1/exam-assessments/submissions/start', formData);
+    return response.data;
   },
 
   /**
@@ -106,15 +82,11 @@ const examService = {
    * @returns {Promise<Object>} Updated submission
    */
   updateSubmission: async (submissionId, answers, status = 'in_progress') => {
-    try {
-      const response = await api.put(`/api/v1/exam-assessments/submissions/${submissionId}`, {
-        answers,
-        status,
-      });
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const response = await api.put(`/api/v1/exam-assessments/submissions/${submissionId}`, {
+      answers,
+      status,
+    });
+    return response.data;
   },
 
   /**
@@ -124,14 +96,10 @@ const examService = {
    * @returns {Promise<Object>} Submitted submission
    */
   submitExam: async (submissionId, answers) => {
-    try {
-      const response = await api.post(`/api/v1/exam-assessments/submissions/${submissionId}/submit`, {
-        answers,
-      });
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const response = await api.post(`/api/v1/exam-assessments/submissions/${submissionId}/submit`, {
+      answers,
+    });
+    return response.data;
   },
 
   /**
@@ -140,12 +108,8 @@ const examService = {
    * @returns {Promise<Array>} List of submissions
    */
   getExamSubmissions: async (examId) => {
-    try {
-      const response = await api.get(`/api/v1/exam-assessments/submissions/exam/${examId}`);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const response = await api.get(`/api/v1/exam-assessments/submissions/exam/${examId}`);
+    return response.data;
   },
 
   /**
@@ -154,12 +118,8 @@ const examService = {
    * @returns {Promise<Object>} Submission
    */
   getMySubmission: async (examId) => {
-    try {
-      const response = await api.get(`/api/v1/exam-assessments/submissions/my/${examId}`);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const response = await api.get(`/api/v1/exam-assessments/submissions/my/${examId}`);
+    return response.data;
   },
 
   /**
@@ -169,12 +129,8 @@ const examService = {
    * @returns {Promise<Object>} Graded submission
    */
   gradeSubmission: async (submissionId, gradeData) => {
-    try {
-      const response = await api.post(`/api/v1/exam-assessments/submissions/${submissionId}/grade`, gradeData);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const response = await api.post(`/api/v1/exam-assessments/submissions/${submissionId}/grade`, gradeData);
+    return response.data;
   },
 
   /**
