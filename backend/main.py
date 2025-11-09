@@ -1,34 +1,53 @@
-from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
-from fastapi.middleware.cors import CORSMiddleware
-from app.core.config import settings
-from app.core.database import engine, Base, SessionLocal
-from app.routers import auth, users, otp, parent
-from app.routers import admin as admin_router
-from app.routers import classes, lessons, exercises, materials, discussions, news, notifications, messages
-from app.routers import courses as courses_router
-from app.routers import ai_conversation, ai_writing, ai_reading, ai_listening, ai_flashcard
-from app.routers import question_bank as question_bank_router
-from app.routers import ai_usage, ai_analytics
-from app.routers import student_profile
-from app.routers import teacher_grading as teacher_router
-from app.routers import teacher_analytics
-from app.routers import teacher_dashboard
-from app.routers import course_content
-from app.routers import exports
-from app.routers import lesson_plans, worksheets, weekly_assessments
-from app.routers import enhanced_weekly_assessments
-from app.routers import media
-from app.routers import error_analysis_export
+import logging
+import sys
 
-from app.routers import exam_assessments
-from app.routers import translation
-from app.models import User
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+
+from app.core.config import settings
+from app.core.database import Base, SessionLocal, engine
 
 # Import all models to ensure they're registered with SQLAlchemy metadata
 from app.models import *
-import os
-import logging
+from app.routers import admin as admin_router
+from app.routers import (
+    ai_analytics,
+    ai_conversation,
+    ai_flashcard,
+    ai_listening,
+    ai_reading,
+    ai_usage,
+    ai_writing,
+    auth,
+    classes,
+    course_content,
+    discussions,
+    enhanced_weekly_assessments,
+    error_analysis_export,
+    exam_assessments,
+    exercises,
+    exports,
+    lesson_plans,
+    lessons,
+    materials,
+    media,
+    messages,
+    news,
+    notifications,
+    otp,
+    parent,
+    student_profile,
+    teacher_analytics,
+    teacher_dashboard,
+    translation,
+    users,
+    weekly_assessments,
+    worksheets,
+)
+from app.routers import courses as courses_router
+from app.routers import question_bank as question_bank_router
+from app.routers import teacher_grading as teacher_router
 
 # Setup logging
 logging.basicConfig(
@@ -59,10 +78,8 @@ def health_check():
     """Health check endpoint"""
     return {"status": "healthy", "service": "english-learning-api"}
 
-# Increase file upload size limit to 50MB
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
-import sys
-sys.setrecursionlimit(5000)  # Increase recursion limit for large files
+# Increase recursion limit for large files
+sys.setrecursionlimit(5000)
 
 # CORS Middleware
 app.add_middleware(
@@ -104,7 +121,7 @@ app.include_router(question_bank_router.router, prefix=f"{settings.API_PREFIX}/q
 app.include_router(exports.router, tags=["Exports"])
 app.include_router(teacher_router.router, prefix=f"{settings.API_PREFIX}/teacher", tags=["Teacher"])
 app.include_router(teacher_analytics.router, prefix=f"{settings.API_PREFIX}/teacher", tags=["Teacher Analytics"])
-app.include_router(teacher_dashboard.router, tags=["Teacher Dashboard"]) 
+app.include_router(teacher_dashboard.router, tags=["Teacher Dashboard"])
 app.include_router(course_content.router, prefix=f"{settings.API_PREFIX}/content", tags=["Course Content"])
 
 app.include_router(lesson_plans.router, tags=["Lesson Plans"])
@@ -127,11 +144,11 @@ except Exception:
 async def startup_event():
     """Run on application startup"""
     logger.info("Starting EnglishWebAI Backend...")
-    
+
     # Note: Alembic migrations are run by docker-compose.yml before server starts
     # This ensures database schema is up-to-date before application startup
     # See docker-compose.yml command: "alembic upgrade head"
-    
+
     # Fallback: lightweight schema ensure (for non-Docker environments)
     try:
         from app.utils.db_migrations import ensure_schema
@@ -141,9 +158,9 @@ async def startup_event():
         logger.warning(f"Schema ensure failed: {e}")
 
     # Auto-seed database if empty
-    from app.utils.seed import seed_users
     from app.models.user import User
-    
+    from app.utils.seed import seed_users
+
     db = SessionLocal()
     try:
         user_count = db.query(User).count()
@@ -161,21 +178,22 @@ async def startup_event():
 
         # Seed public courses if none exist
         try:
-            from app.utils.seed import seed_courses, seed_course_units_questions
+            from app.utils.seed import seed_course_units_questions, seed_courses
             seed_courses(db)
             seed_course_units_questions(db)
         except Exception as se:
             logger.warning(f"Course seeding skipped: {se}")
-        
+
     except Exception as e:
         logger.error(f"Startup error: {str(e)}")
     finally:
         db.close()
-    
+
     # Start background grading queue worker
     import asyncio
+
     from app.services.grading_queue_service import GradingQueueService
-    
+
     async def run_grading_worker():
         """Background task to process grading queue"""
         grading_service = GradingQueueService()
@@ -185,24 +203,24 @@ async def startup_event():
                 try:
                     # Process next pending item
                     processed = await grading_service.process_next_pending(db)
-                    
+
                     if not processed:
                         # No items in queue, wait before checking again
                         await asyncio.sleep(10)  # Check every 10 seconds
                     else:
                         # Item processed, check for next immediately
                         await asyncio.sleep(1)
-                        
+
                 except Exception as e:
                     logger.error(f"Grading worker error: {e}")
                     await asyncio.sleep(30)  # Wait longer on error
                 finally:
                     db.close()
-                    
+
             except Exception as e:
                 logger.critical(f"Grading worker critical error: {e}")
                 await asyncio.sleep(60)
-    
+
     # Start worker task in background
     asyncio.create_task(run_grading_worker())
     logger.info("Grading queue worker started!")
@@ -215,13 +233,9 @@ async def root():
         "docs": f"{settings.API_PREFIX}/docs"
     }
 
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy"}
-
 if __name__ == "__main__":
     import uvicorn
-    
+
     # Configure for large file uploads (50MB)
     config = uvicorn.Config(
         "main:app",

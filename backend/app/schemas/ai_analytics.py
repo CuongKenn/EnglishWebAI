@@ -1,6 +1,6 @@
-from pydantic import BaseModel, Field
-from typing import Dict, List, Optional, Literal, Any
+from typing import Any, Literal
 
+from pydantic import BaseModel, Field
 
 AI_FEATURES = Literal[
     "translate",
@@ -14,7 +14,7 @@ AI_FEATURES = Literal[
 
 class AIUsageCreate(BaseModel):
     feature: AI_FEATURES
-    metadata: Optional[Dict[str, Any]] = None
+    metadata: dict[str, Any] | None = None
 
 
 class RequestsByDayItem(BaseModel):
@@ -24,8 +24,8 @@ class RequestsByDayItem(BaseModel):
 
 class AIAnalyticsResponse(BaseModel):
     totalRequests: int = Field(..., ge=0)
-    requestsByFeature: Dict[str, int]
-    requestsByDay: List[RequestsByDayItem]
+    requestsByFeature: dict[str, int]
+    requestsByDay: list[RequestsByDayItem]
     activeUsers: int = Field(..., ge=0)
 
 

@@ -1,6 +1,8 @@
 import pytest
+
 from app.models.news import NewsPost
 from tests.conftest import client
+
 
 @pytest.fixture
 def test_news(db_session):
@@ -58,7 +60,7 @@ def test_get_news_multiple_categories(db_session):
     response = client.get("/api/v1/news/")
     assert response.status_code == 200
     data = response.json()
-    
+
     # Check that we have news
     assert len(data) > 0
 
@@ -74,7 +76,7 @@ def test_news_response_structure(db_session):
     response = client.get("/api/v1/news/")
     assert response.status_code == 200
     data = response.json()
-    
+
     # Check first item structure
     if len(data) > 0:
         news_item = data[0]
@@ -141,7 +143,7 @@ def test_update_news_as_author(db_session, test_teacher, teacher_token):
         headers={"Authorization": f"Bearer {teacher_token}"}
     )
     news_id = create_response.json()["id"]
-    
+
     # Update news
     update_data = {
         "title": "Updated Title",
@@ -171,7 +173,7 @@ def test_update_news_not_author(db_session, test_teacher, test_student, teacher_
         headers={"Authorization": f"Bearer {teacher_token}"}
     )
     news_id = create_response.json()["id"]
-    
+
     # Try to update as student
     update_data = {
         "title": "Hacked Title"
@@ -210,7 +212,7 @@ def test_delete_news_as_author(db_session, test_teacher, teacher_token):
         headers={"Authorization": f"Bearer {teacher_token}"}
     )
     news_id = create_response.json()["id"]
-    
+
     # Delete news
     response = client.delete(
         f"/api/v1/news/{news_id}",
@@ -218,7 +220,7 @@ def test_delete_news_as_author(db_session, test_teacher, teacher_token):
     )
     assert response.status_code == 200
     assert "xóa" in response.json()["message"].lower()
-    
+
     # Verify deleted from database
     deleted_news = db_session.query(NewsPost).filter(
         NewsPost.id == news_id
@@ -239,7 +241,7 @@ def test_delete_news_not_author(db_session, test_teacher, test_student, teacher_
         headers={"Authorization": f"Bearer {teacher_token}"}
     )
     news_id = create_response.json()["id"]
-    
+
     # Try to delete as student
     response = client.delete(
         f"/api/v1/news/{news_id}",

@@ -3,6 +3,7 @@ Utility functions for Alembic migrations
 Helps handle idempotent migrations on existing databases
 """
 from sqlalchemy import text
+
 from alembic import op
 
 

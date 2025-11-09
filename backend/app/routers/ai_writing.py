@@ -3,19 +3,17 @@ AI Writing Router
 Handles AI-powered writing check and feedback
 """
 
+import contextlib
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from app.schemas.ai_writing import (
-    WritingCheckRequest, 
-    WritingCheckResponse,
-    WritingTopicRequest,
-    WritingTopicResponse
-)
-from app.services.openai_service import openai_service
-from app.core.dependencies import get_current_user
+
 from app.core.database import get_db
-from app.services.ai_analytics_service import AIAnalyticsService
+from app.core.dependencies import get_current_user
 from app.models.user import User
+from app.schemas.ai_writing import WritingCheckRequest, WritingCheckResponse, WritingTopicRequest, WritingTopicResponse
+from app.services.ai_analytics_service import AIAnalyticsService
+from app.services.openai_service import openai_service
 
 router = APIRouter(prefix="/api/v1/ai/writing")
 
@@ -28,13 +26,13 @@ async def check_writing(
 ):
     """
     Check English writing and provide detailed feedback
-    
+
     Requires authentication.
-    
+
     Args:
         request: Writing check request with text, type, and level
         current_user: Current authenticated user
-        
+
     Returns:
         Detailed feedback including scores, errors, and suggestions
     """
@@ -45,11 +43,9 @@ async def check_writing(
         level=request.level
     )
     # Log usage (non-blocking)
-    try:
+    with contextlib.suppress(Exception):
         AIAnalyticsService.log_usage(db, user_id=current_user.id, feature="writing", metadata={"action": "check", "writing_type": request.writing_type, "level": request.level})
-    except Exception:
-        pass
-    
+
     return WritingCheckResponse(**feedback)
 
 
@@ -61,13 +57,13 @@ async def generate_topic(
 ):
     """
     Generate a writing topic/prompt based on type and level
-    
+
     Requires authentication.
-    
+
     Args:
         request: Topic generation request with type and level
         current_user: Current authenticated user
-        
+
     Returns:
         Generated topic with title, prompt, word count, and tips
     """
@@ -77,9 +73,7 @@ async def generate_topic(
         level=request.level
     )
     # Log usage (non-blocking)
-    try:
+    with contextlib.suppress(Exception):
         AIAnalyticsService.log_usage(db, user_id=current_user.id, feature="writing", metadata={"action": "generate_topic", "writing_type": request.writing_type, "level": request.level})
-    except Exception:
-        pass
-    
+
     return WritingTopicResponse(**topic_data)

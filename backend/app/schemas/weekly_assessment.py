@@ -2,9 +2,10 @@
 Weekly Assessment Schemas
 Pydantic schemas for weekly skill assessments and submissions
 """
-from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
 from datetime import datetime
+from typing import Any
+
+from pydantic import BaseModel, Field
 
 
 # ============= Weekly Assessment Schemas =============
@@ -14,11 +15,11 @@ class WeeklyAssessmentCreate(BaseModel):
     week_number: int
     skill_type: str = Field(..., pattern="^(reading|writing|listening|speaking)$")
     title: str
-    description: Optional[str] = None
-    content: Optional[Dict[str, Any]] = None
-    rubrics: Optional[Dict[str, Any]] = None
-    max_score: Optional[float] = 10.0
-    duration: Optional[int] = None  # Duration in minutes
+    description: str | None = None
+    content: dict[str, Any] | None = None
+    rubrics: dict[str, Any] | None = None
+    max_score: float | None = 10.0
+    duration: int | None = None  # Duration in minutes
 
 
 class WeeklyAssessmentGenerate(BaseModel):
@@ -27,19 +28,19 @@ class WeeklyAssessmentGenerate(BaseModel):
     week_number: int
     skill_type: str = Field(..., pattern="^(reading|writing|listening|speaking)$")
     grade_level: int
-    unit: Optional[str] = None
+    unit: str | None = None
     difficulty_level: str = "medium"
 
 
 class WeeklyAssessmentUpdate(BaseModel):
     """Update weekly assessment"""
-    title: Optional[str] = None
-    description: Optional[str] = None
-    content: Optional[Dict[str, Any]] = None
-    rubrics: Optional[Dict[str, Any]] = None
-    max_score: Optional[float] = None
-    duration: Optional[int] = None
-    is_active: Optional[bool] = None
+    title: str | None = None
+    description: str | None = None
+    content: dict[str, Any] | None = None
+    rubrics: dict[str, Any] | None = None
+    max_score: float | None = None
+    duration: int | None = None
+    is_active: bool | None = None
 
 
 class WeeklyAssessmentResponse(BaseModel):
@@ -50,15 +51,15 @@ class WeeklyAssessmentResponse(BaseModel):
     week_number: int
     skill_type: str
     title: str
-    description: Optional[str]
-    content: Optional[Dict[str, Any]]
-    rubrics: Optional[Dict[str, Any]]
-    max_score: Optional[float]
-    duration: Optional[int]
+    description: str | None
+    content: dict[str, Any] | None
+    rubrics: dict[str, Any] | None
+    max_score: float | None
+    duration: int | None
     ai_generated: bool
     is_active: bool
     created_at: datetime
-    updated_at: Optional[datetime]
+    updated_at: datetime | None
 
     class Config:
         from_attributes = True
@@ -86,20 +87,20 @@ class WeeklySubmissionCreate(BaseModel):
 
 class WeeklySubmissionUpdate(BaseModel):
     """Update weekly submission (save answers)"""
-    answers: Dict[str, Any]
-    status: Optional[str] = "in_progress"
+    answers: dict[str, Any]
+    status: str | None = "in_progress"
 
 
 class WeeklySubmissionSubmit(BaseModel):
     """Submit weekly assessment for grading"""
-    answers: Dict[str, Any]
+    answers: dict[str, Any]
 
 
 class WeeklySubmissionGrade(BaseModel):
     """Grade weekly submission"""
     score: float
-    rubrics_scores: Optional[Dict[str, Any]] = None
-    feedback: Optional[str] = None
+    rubrics_scores: dict[str, Any] | None = None
+    feedback: str | None = None
 
 
 class WeeklySubmissionResponse(BaseModel):
@@ -107,17 +108,17 @@ class WeeklySubmissionResponse(BaseModel):
     id: int
     assessment_id: int
     student_id: int
-    answers: Dict[str, Any]
-    score: Optional[float]
-    ai_score: Optional[float]
-    rubrics_scores: Optional[Dict[str, Any]]
-    feedback: Optional[str]
-    ai_feedback: Optional[str]
-    error_analysis: Optional[Dict[str, Any]]
+    answers: dict[str, Any]
+    score: float | None
+    ai_score: float | None
+    rubrics_scores: dict[str, Any] | None
+    feedback: str | None
+    ai_feedback: str | None
+    error_analysis: dict[str, Any] | None
     status: str
     started_at: datetime
-    submitted_at: Optional[datetime]
-    graded_at: Optional[datetime]
+    submitted_at: datetime | None
+    graded_at: datetime | None
 
     class Config:
         from_attributes = True
@@ -128,11 +129,11 @@ class ErrorAnalysisExportRequest(BaseModel):
     """Request to export error analysis"""
     class_id: int
     assessment_type: str = Field(..., pattern="^(weekly|exam)$")  # weekly or exam
-    assessment_id: Optional[int] = None  # Specific assessment ID
-    student_id: Optional[int] = None  # Filter by student
-    skill_type: Optional[str] = None  # Filter by skill
-    week_number: Optional[int] = None  # For weekly assessments
-    exam_type: Optional[str] = None  # For exam assessments (midterm, final)
+    assessment_id: int | None = None  # Specific assessment ID
+    student_id: int | None = None  # Filter by student
+    skill_type: str | None = None  # Filter by skill
+    week_number: int | None = None  # For weekly assessments
+    exam_type: str | None = None  # For exam assessments (midterm, final)
     format: str = Field("excel", pattern="^(excel|csv|json)$")
     include_feedback: bool = True
     include_suggestions: bool = True
@@ -142,7 +143,7 @@ class ErrorAnalysisStats(BaseModel):
     """Error analysis statistics"""
     total_submissions: int
     avg_score: float
-    common_errors: List[Dict[str, Any]]
-    skill_breakdown: Dict[str, Any]
-    improvement_suggestions: List[str]
+    common_errors: list[dict[str, Any]]
+    skill_breakdown: dict[str, Any]
+    improvement_suggestions: list[str]
 

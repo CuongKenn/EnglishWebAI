@@ -3,24 +3,22 @@ Translation API Router
 Provides translation endpoints using deep-translator library
 """
 
-from fastapi import APIRouter, HTTPException, Depends
-from typing import Dict, List, Optional
-from sqlalchemy.orm import Session
+import logging
 
+from fastapi import APIRouter, Depends, HTTPException
+
+from app.core.dependencies import get_current_user_optional
+from app.models.user import User
 from app.schemas.translation import (
-    TranslationRequest,
-    TranslationResponse,
     BatchTranslationRequest,
     BatchTranslationResponse,
     BidirectionalTranslationRequest,
     LanguageDetectionRequest,
-    LanguageDetectionResponse
+    LanguageDetectionResponse,
+    TranslationRequest,
+    TranslationResponse,
 )
 from app.services.translation_service import translation_service
-from app.core.database import get_db
-from app.core.dependencies import get_current_user_optional
-from app.models.user import User
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -30,11 +28,11 @@ router = APIRouter()
 @router.post("/translate", response_model=TranslationResponse)
 async def translate_text(
     request: TranslationRequest,
-    current_user: Optional[User] = Depends(get_current_user_optional)
+    current_user: User | None = Depends(get_current_user_optional)
 ):
     """
     Translate text to target language
-    
+
     - **text**: Text to translate
     - **target_language**: Target language code (e.g., 'vi', 'en', 'es')
     - **source_language**: Source language code or 'auto' for auto-detection
@@ -47,12 +45,12 @@ async def translate_text(
             source_lang=request.source_language if request.source_language != 'auto' else None,
             engine=request.engine
         )
-        
+
         if not result.get('success'):
             raise HTTPException(status_code=400, detail=result.get('error', 'Translation failed'))
-        
+
         return TranslationResponse(**result)
-        
+
     except Exception as e:
         logger.error(f"Translation API error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -61,11 +59,11 @@ async def translate_text(
 @router.post("/translate/batch", response_model=BatchTranslationResponse)
 async def translate_batch(
     request: BatchTranslationRequest,
-    current_user: Optional[User] = Depends(get_current_user_optional)
+    current_user: User | None = Depends(get_current_user_optional)
 ):
     """
     Translate multiple texts at once
-    
+
     - **texts**: List of texts to translate
     - **target_language**: Target language code
     - **source_language**: Source language code or 'auto'
@@ -78,15 +76,15 @@ async def translate_batch(
             source_lang=request.source_language if request.source_language != 'auto' else None,
             engine=request.engine
         )
-        
+
         response_results = [TranslationResponse(**r) for r in results]
-        
+
         return BatchTranslationResponse(
             success=True,
             results=response_results,
             total_count=len(response_results)
         )
-        
+
     except Exception as e:
         logger.error(f"Batch translation API error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -95,12 +93,12 @@ async def translate_batch(
 @router.post("/translate/bidirectional", response_model=TranslationResponse)
 async def translate_bidirectional(
     request: BidirectionalTranslationRequest,
-    current_user: Optional[User] = Depends(get_current_user_optional)
+    current_user: User | None = Depends(get_current_user_optional)
 ):
     """
     Bidirectional translation - automatically detects source language
     and translates between two languages
-    
+
     - **text**: Text to translate
     - **language1**: First language (e.g., 'en')
     - **language2**: Second language (e.g., 'vi')
@@ -113,10 +111,10 @@ async def translate_bidirectional(
             lang2=request.language2,
             engine=request.engine
         )
-        
+
         if not result.get('success'):
             raise HTTPException(status_code=400, detail=result.get('error', 'Translation failed'))
-        
+
         return TranslationResponse(
             success=True,
             original_text=result['original_text'],
@@ -125,7 +123,7 @@ async def translate_bidirectional(
             target_language=result['translated_language'],
             message=result.get('direction')
         )
-        
+
     except Exception as e:
         logger.error(f"Bidirectional translation API error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -134,24 +132,24 @@ async def translate_bidirectional(
 @router.post("/detect-language", response_model=LanguageDetectionResponse)
 async def detect_language(
     request: LanguageDetectionRequest,
-    current_user: Optional[User] = Depends(get_current_user_optional)
+    current_user: User | None = Depends(get_current_user_optional)
 ):
     """
     Detect the language of given text
-    
+
     - **text**: Text to detect language
     """
     try:
         detected_lang = translation_service.detect_language(request.text)
         lang_name = translation_service.SUPPORTED_LANGUAGES.get(detected_lang, 'Unknown')
-        
+
         return LanguageDetectionResponse(
             success=True,
             text=request.text,
             detected_language=detected_lang,
             language_name=lang_name
         )
-        
+
     except Exception as e:
         logger.error(f"Language detection API error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -159,7 +157,7 @@ async def detect_language(
 
 @router.get("/supported-languages")
 async def get_supported_languages(
-    current_user: Optional[User] = Depends(get_current_user_optional)
+    current_user: User | None = Depends(get_current_user_optional)
 ):
     """
     Get list of supported languages
@@ -171,7 +169,7 @@ async def get_supported_languages(
             'languages': languages,
             'total_count': len(languages)
         }
-        
+
     except Exception as e:
         logger.error(f"Get languages API error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -189,7 +187,7 @@ async def translation_health_check():
             target_lang="vi",
             source_lang="en"
         )
-        
+
         return {
             'status': 'healthy' if test_result.get('success') else 'unhealthy',
             'service': 'translation',

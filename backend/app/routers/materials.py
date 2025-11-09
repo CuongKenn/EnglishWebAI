@@ -1,29 +1,30 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
-from sqlalchemy.orm import Session
-from sqlalchemy import func, and_, or_
-from typing import List, Optional
+import contextlib
 import os
 import shutil
 from datetime import datetime
+
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from sqlalchemy import and_, func
+from sqlalchemy.orm import Session
+
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
-from app.models.user import User, UserRole
-from app.models.material import Material
-from app.models.lesson import Lesson
 from app.models.classroom import Classroom
 from app.models.enrollment import Enrollment
-from app.schemas.student import MaterialListResponse, MaterialResponse
-from app.schemas.student import MaterialCreate, MaterialUpdate
+from app.models.lesson import Lesson
+from app.models.material import Material
+from app.models.user import User, UserRole
+from app.schemas.student import MaterialCreate, MaterialListResponse, MaterialResponse, MaterialUpdate
 
 router = APIRouter()
 
 
 # ===================== Student: Access Materials =====================
 
-@router.get("/student/materials/", response_model=List[MaterialListResponse])
+@router.get("/student/materials/", response_model=list[MaterialListResponse])
 async def get_student_materials_list(
-    class_id: Optional[int] = None,
-    type: Optional[str] = None,
+    class_id: int | None = None,
+    type: str | None = None,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -40,15 +41,15 @@ async def get_student_materials_list(
             Enrollment.status == "active"
         )
     ).all()
-    
+
     enrolled_class_ids = [c[0] for c in enrolled_class_ids]
-    
+
     if not enrolled_class_ids:
         return []
-    
+
     # Query materials
     query = db.query(Material).filter(Material.class_id.in_(enrolled_class_ids))
-    
+
     # Filters
     if class_id:
         if class_id not in enrolled_class_ids:
@@ -57,21 +58,20 @@ async def get_student_materials_list(
                 detail="Bạn không có quyền truy cập lớp học này"
             )
         query = query.filter(Material.class_id == class_id)
-    
+
     if type:
         query = query.filter(Material.type == type)
-    
+
     query = query.order_by(Material.created_at.desc())
-    materials = query.all()
-    
-    return materials
+    return query.all()
+
 
 # ===================== Public/Legacy Endpoints =====================
 
-@router.get("/", response_model=List[MaterialListResponse])
+@router.get("/", response_model=list[MaterialListResponse])
 async def get_student_materials(
-    class_id: Optional[int] = None,
-    type: Optional[str] = None,
+    class_id: int | None = None,
+    type: str | None = None,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -88,15 +88,15 @@ async def get_student_materials(
             Enrollment.status == "active"
         )
     ).all()
-    
+
     enrolled_class_ids = [c[0] for c in enrolled_class_ids]
-    
+
     if not enrolled_class_ids:
         return []
-    
+
     # Query materials
     query = db.query(Material).filter(Material.class_id.in_(enrolled_class_ids))
-    
+
     # Filters
     if class_id:
         if class_id not in enrolled_class_ids:
@@ -105,14 +105,13 @@ async def get_student_materials(
                 detail="Bạn không có quyền truy cập lớp học này"
             )
         query = query.filter(Material.class_id == class_id)
-    
+
     if type:
         query = query.filter(Material.type == type)
-    
+
     query = query.order_by(Material.created_at.desc())
-    materials = query.all()
-    
-    return materials
+    return query.all()
+
 
 
 @router.get("/student/materials/{material_id}", response_model=MaterialResponse)
@@ -126,26 +125,26 @@ async def get_student_material_detail(
     - Kiểm tra quyền truy cập: học sinh phải tham gia lớp chứa học liệu
     """
     material = db.query(Material).filter(Material.id == material_id).first()
-    
+
     if not material:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Không tìm thấy học liệu"
         )
-    
+
     # Determine class_id
     class_id = material.class_id
     if not class_id and material.lesson_id:
         lesson = db.query(Lesson).filter(Lesson.id == material.lesson_id).first()
         if lesson:
             class_id = lesson.class_id
-    
+
     if not class_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Học liệu không thuộc lớp học nào"
         )
-    
+
     # Check enrollment
     enrollment = db.query(Enrollment).filter(
         and_(
@@ -155,20 +154,20 @@ async def get_student_material_detail(
             Enrollment.status == "active"
         )
     ).first()
-    
+
     if not enrollment:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Bạn không có quyền truy cập học liệu này"
         )
-    
+
     return material
 
 
-@router.get("/student/materials/by-class/{class_id}", response_model=List[MaterialResponse])
+@router.get("/student/materials/by-class/{class_id}", response_model=list[MaterialResponse])
 async def get_student_materials_by_class(
     class_id: int,
-    type: Optional[str] = None,
+    type: str | None = None,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -185,23 +184,22 @@ async def get_student_materials_by_class(
             Enrollment.status == "active"
         )
     ).first()
-    
+
     if not enrollment:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Bạn không có quyền truy cập lớp học này"
         )
-    
+
     # Query materials
     query = db.query(Material).filter(Material.class_id == class_id)
-    
+
     if type:
         query = query.filter(Material.type == type)
-    
+
     query = query.order_by(Material.created_at.desc())
-    materials = query.all()
-    
-    return materials
+    return query.all()
+
 
 
 @router.get("/student/materials/statistics")
@@ -228,22 +226,22 @@ async def get_student_materials_statistics(
             Enrollment.status == "active"
         )
     ).all()
-    
+
     if not enrolled_classes:
         return {
             "total_materials": 0,
             "by_type": {},
             "by_class": []
         }
-    
+
     enrolled_class_ids = [c[0] for c in enrolled_classes]
     class_names = {c[0]: c[1] for c in enrolled_classes}
-    
+
     # Tổng số materials
     total = db.query(func.count(Material.id)).filter(
         Material.class_id.in_(enrolled_class_ids)
     ).scalar()
-    
+
     # Phân loại theo type
     by_type = db.query(
         Material.type,
@@ -251,9 +249,9 @@ async def get_student_materials_statistics(
     ).filter(
         Material.class_id.in_(enrolled_class_ids)
     ).group_by(Material.type).all()
-    
+
     by_type_dict = {t[0]: t[1] for t in by_type}
-    
+
     # Phân loại theo class
     by_class = db.query(
         Material.class_id,
@@ -261,7 +259,7 @@ async def get_student_materials_statistics(
     ).filter(
         Material.class_id.in_(enrolled_class_ids)
     ).group_by(Material.class_id).all()
-    
+
     by_class_list = [
         {
             "class_id": c[0],
@@ -270,7 +268,7 @@ async def get_student_materials_statistics(
         }
         for c in by_class
     ]
-    
+
     return {
         "total_materials": total,
         "by_type": by_type_dict,
@@ -347,14 +345,14 @@ async def get_materials(
             ]
         }
     ]
-    
+
     # Filter by parameters
     filtered = mock_materials
     if grade:
         filtered = [mat for mat in filtered if mat["grade"] == grade]
     if subject:
         filtered = [mat for mat in filtered if mat["subject"] == subject]
-    
+
     return filtered
 
 @router.get("/{material_id}", response_model=MaterialResponse)
@@ -366,13 +364,13 @@ async def get_material(
     Lấy thông tin chi tiết của học liệu
     """
     material = db.query(Material).filter(Material.id == material_id).first()
-    
+
     if not material:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Không tìm thấy học liệu"
         )
-    
+
     return material
 
 @router.post("/{material_id}/progress")
@@ -386,13 +384,13 @@ async def update_material_progress(
     Cập nhật tiến độ học liệu
     """
     material = db.query(Material).filter(Material.id == material_id).first()
-    
+
     if not material:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Không tìm thấy học liệu"
         )
-    
+
     # TODO: Implement MaterialProgress model and logic
     return {
         "message": "Đã cập nhật tiến độ học liệu",
@@ -410,19 +408,19 @@ async def download_material(
     Tải xuống học liệu
     """
     material = db.query(Material).filter(Material.id == material_id).first()
-    
+
     if not material:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Không tìm thấy học liệu"
         )
-    
+
     if not material.file_path and not material.url:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Học liệu không có file để tải xuống"
         )
-    
+
     # TODO: Implement file download logic
     return {
         "url": material.url or material.file_path,
@@ -433,7 +431,7 @@ async def download_material(
 # ===================== Teacher/Admin: CRUD Materials =====================
 
 def _ensure_can_manage_class(db: Session, current_user: User, class_id: int) -> Classroom:
-    classroom: Optional[Classroom] = db.query(Classroom).filter(Classroom.id == class_id).first()
+    classroom: Classroom | None = db.query(Classroom).filter(Classroom.id == class_id).first()
     if not classroom:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy lớp học")
     if current_user.role in (UserRole.ADMIN, UserRole.SUPERADMIN):
@@ -443,7 +441,7 @@ def _ensure_can_manage_class(db: Session, current_user: User, class_id: int) -> 
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Không có quyền quản lý lớp học này")
 
 
-def _get_material_class_id(db: Session, material: Material) -> Optional[int]:
+def _get_material_class_id(db: Session, material: Material) -> int | None:
     if material.class_id:
         return material.class_id
     if material.lesson_id:
@@ -453,7 +451,7 @@ def _get_material_class_id(db: Session, material: Material) -> Optional[int]:
     return None
 
 
-@router.get("/by-class/{class_id}", response_model=List[MaterialResponse])
+@router.get("/by-class/{class_id}", response_model=list[MaterialResponse])
 async def list_materials_by_class(
     class_id: int,
     current_user: User = Depends(get_current_user),
@@ -461,11 +459,10 @@ async def list_materials_by_class(
 ):
     """Danh sách học liệu theo lớp (giáo viên lớp hoặc admin)"""
     _ensure_can_manage_class(db, current_user, class_id)
-    materials = db.query(Material).filter(Material.class_id == class_id).all()
-    return materials
+    return db.query(Material).filter(Material.class_id == class_id).all()
 
 
-@router.get("/by-lesson/{lesson_id}", response_model=List[MaterialResponse])
+@router.get("/by-lesson/{lesson_id}", response_model=list[MaterialResponse])
 async def list_materials_by_lesson(
     lesson_id: int,
     current_user: User = Depends(get_current_user),
@@ -476,8 +473,7 @@ async def list_materials_by_lesson(
     if not lesson:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy bài học")
     _ensure_can_manage_class(db, current_user, int(lesson.class_id))
-    materials = db.query(Material).filter(Material.lesson_id == lesson_id).all()
-    return materials
+    return db.query(Material).filter(Material.lesson_id == lesson_id).all()
 
 
 @router.post("/", response_model=MaterialResponse, status_code=status.HTTP_201_CREATED)
@@ -495,7 +491,7 @@ async def create_material(
         raise HTTPException(status_code=400, detail="Cần cung cấp class_id hoặc lesson_id")
 
     # Determine class_id and ensure permission
-    class_id: Optional[int] = payload.class_id
+    class_id: int | None = payload.class_id
     if payload.lesson_id and not class_id:
         lesson = db.query(Lesson).filter(Lesson.id == payload.lesson_id).first()
         if not lesson:
@@ -631,9 +627,9 @@ async def upload_material_file(
     current_user: User = Depends(get_current_user),
 ):
     """Upload file học liệu, trả về đường dẫn lưu trữ.
-    
+
     Hỗ trợ các định dạng: PDF, Word, PowerPoint, Excel, Images, Audio, Video, Text
-    
+
     Lưu ý: endpoint này chỉ upload file, chưa tạo bản ghi Material.
     Dùng đường dẫn trả về (file_path) khi gọi API tạo học liệu.
     """
@@ -652,7 +648,7 @@ async def upload_material_file(
     original = os.path.basename(file.filename or "material")
     name, ext = os.path.splitext(original)
     ext = ext.lower()
-    
+
     # Validate file type
     allowed_extensions = {
         # Documents
@@ -668,13 +664,13 @@ async def upload_material_file(
         # Archives
         '.zip', '.rar'
     }
-    
+
     if ext and ext not in allowed_extensions:
         raise HTTPException(
-            status_code=400, 
+            status_code=400,
             detail=f"Định dạng file không được hỗ trợ. Cho phép: {', '.join(allowed_extensions)}"
         )
-    
+
     # Determine file type
     file_type = "file"  # default
     if ext in ['.pdf']:
@@ -693,7 +689,7 @@ async def upload_material_file(
         file_type = "video"
     elif ext in ['.txt', '.md', '.csv']:
         file_type = "text"
-    
+
     ts = datetime.utcnow().strftime("%H%M%S%f")
     filename = f"{name}_{ts}{ext}" if ext else f"{name}_{ts}"
     file_path = os.path.join(save_dir, filename)
@@ -710,8 +706,8 @@ async def upload_material_file(
     text_content = None
     try:
         name_lower = original.lower()
-        if (file.content_type or "").startswith("text/") or name_lower.endswith(".txt") or name_lower.endswith(".md"):
-            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+        if (file.content_type or "").startswith("text/") or name_lower.endswith((".txt", ".md")):
+            with open(file_path, encoding="utf-8", errors="ignore") as f:
                 # Cap to ~200 KB to avoid overly large payloads
                 text_content = f.read(200_000)
     except Exception:
@@ -719,10 +715,8 @@ async def upload_material_file(
 
     # Return info
     size = 0
-    try:
+    with contextlib.suppress(Exception):
         size = os.path.getsize(file_path)
-    except Exception:
-        pass
     # Try compute public URL if stored under project media
     public_url = None
     proj_media_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "media"))

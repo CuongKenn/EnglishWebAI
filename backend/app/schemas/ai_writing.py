@@ -3,8 +3,8 @@ AI Writing Schemas
 Pydantic models for AI writing check requests and responses
 """
 
+
 from pydantic import BaseModel, Field
-from typing import List, Optional
 
 
 class GrammarError(BaseModel):
@@ -24,11 +24,11 @@ class VocabularySuggestion(BaseModel):
 class WritingCheckRequest(BaseModel):
     """Request to check writing"""
     text: str = Field(..., min_length=10, max_length=5000, description="Text to check")
-    writing_type: Optional[str] = Field(
+    writing_type: str | None = Field(
         default="general",
         description="Type of writing: essay, email, story, letter, article"
     )
-    level: Optional[str] = Field(
+    level: str | None = Field(
         default="intermediate",
         description="English level: beginner, intermediate, advanced"
     )
@@ -41,27 +41,27 @@ class WritingCheckResponse(BaseModel):
     vocabulary_score: int = Field(..., ge=0, le=100, description="Vocabulary score")
     structure_score: int = Field(..., ge=0, le=100, description="Structure/organization score")
     coherence_score: int = Field(..., ge=0, le=100, description="Coherence and cohesion score")
-    
-    grammar_errors: List[GrammarError] = Field(default_factory=list, description="List of grammar errors")
-    vocabulary_suggestions: List[VocabularySuggestion] = Field(
+
+    grammar_errors: list[GrammarError] = Field(default_factory=list, description="List of grammar errors")
+    vocabulary_suggestions: list[VocabularySuggestion] = Field(
         default_factory=list,
         description="Vocabulary improvement suggestions"
     )
-    
-    strengths: List[str] = Field(default_factory=list, description="Writing strengths")
-    improvements: List[str] = Field(default_factory=list, description="Areas for improvement")
-    
+
+    strengths: list[str] = Field(default_factory=list, description="Writing strengths")
+    improvements: list[str] = Field(default_factory=list, description="Areas for improvement")
+
     corrected_text: str = Field(..., description="Fully corrected version of the text")
     overall_comment: str = Field(..., description="Overall encouraging feedback")
 
 
 class WritingTopicRequest(BaseModel):
     """Request to generate a writing topic"""
-    writing_type: Optional[str] = Field(
+    writing_type: str | None = Field(
         default="general",
         description="Type of writing: essay, email, story, letter, article"
     )
-    level: Optional[str] = Field(
+    level: str | None = Field(
         default="intermediate",
         description="English level: beginner, intermediate, advanced"
     )
@@ -72,4 +72,4 @@ class WritingTopicResponse(BaseModel):
     title: str = Field(..., description="Topic title")
     prompt: str = Field(..., description="Writing prompt/instructions")
     word_count: str = Field(..., description="Recommended word count")
-    tips: List[str] = Field(default_factory=list, description="Writing tips")
+    tips: list[str] = Field(default_factory=list, description="Writing tips")

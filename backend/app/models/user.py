@@ -1,7 +1,10 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Enum
-from sqlalchemy.sql import func
-from app.core.database import Base
 import enum
+
+from sqlalchemy import Boolean, Column, DateTime, Enum, Integer, String
+from sqlalchemy.sql import func
+
+from app.core.database import Base
+
 
 class UserRole(str, enum.Enum):
     """
@@ -14,35 +17,35 @@ class UserRole(str, enum.Enum):
     TEACHER = "teacher"
     ADMIN = "admin"
     SUPERADMIN = "superadmin"
-    
+
     @property
     def display_name(self) -> str:
         """Get user-friendly display name for the role"""
         if self == UserRole.USER:
             return "student"
         return self.value
-    
+
     @classmethod
     def from_string(cls, role_str: str) -> 'UserRole':
         """
         Create UserRole from string, supporting 'student' alias
-        
+
         Args:
             role_str: Role as string ('student', 'user', 'teacher', etc.)
-            
+
         Returns:
             UserRole enum
-            
+
         Examples:
             UserRole.from_string("student") -> UserRole.USER
             UserRole.from_string("user") -> UserRole.USER
         """
         role_str_lower = role_str.lower()
-        
+
         # Map 'student' to USER
         if role_str_lower == "student":
             return cls.USER
-        
+
         # Try direct mapping
         try:
             return cls(role_str_lower)

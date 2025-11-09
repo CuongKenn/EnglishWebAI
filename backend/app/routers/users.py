@@ -1,19 +1,21 @@
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 import logging
 
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+
 logger = logging.getLogger(__name__)
-from sqlalchemy.orm import Session
-from typing import List
-from pathlib import Path
 import os
 import uuid
+from pathlib import Path
+
+from sqlalchemy.orm import Session
+
 from app.core.database import get_db
 from app.core.dependencies import get_current_active_user
-from app.schemas.user import User, UserUpdate, PasswordChange, LinkParentRequest, ParentStudentLink
-from app.schemas.auth import ResetPasswordRequest
-from app.services.user_service import UserService
-from app.services.parent_service import ParentService
 from app.models.user import User as UserModel
+from app.schemas.auth import ResetPasswordRequest
+from app.schemas.user import LinkParentRequest, ParentStudentLink, PasswordChange, User, UserUpdate
+from app.services.parent_service import ParentService
+from app.services.user_service import UserService
 
 router = APIRouter()
 
@@ -44,17 +46,17 @@ async def upload_avatar(
     allowed_types = {"image/jpeg", "image/png", "image/gif", "image/webp", "image/jpg"}
     if not file.content_type or file.content_type.lower() not in allowed_types:
         raise HTTPException(status_code=400, detail="Định dạng ảnh không hỗ trợ. Chỉ chấp nhận: JPG, PNG, GIF, WEBP")
-    
+
     # Read and validate file size
     content = await file.read()
     max_bytes = 5 * 1024 * 1024  # 5MB
     if len(content) > max_bytes:
         raise HTTPException(status_code=400, detail="Kích thước ảnh vượt quá 5MB")
-    
+
     # Create avatars directory
     media_dir = Path("media") / "avatars"
     media_dir.mkdir(parents=True, exist_ok=True)
-    
+
     # Delete old avatar file if exists
     if current_user.avatar_url:
         try:
@@ -67,7 +69,7 @@ async def upload_avatar(
         except Exception as e:
             # Log but don't fail if old file deletion fails
             logger.info(f"Warning: Could not delete old avatar: {e}")
-    
+
     # Generate unique filename
     ext = os.path.splitext(file.filename or "")[1].lower()
     if ext not in {".jpg", ".jpeg", ".png", ".gif", ".webp"}:
@@ -80,23 +82,23 @@ async def upload_avatar(
             "image/webp": ".webp",
         }
         ext = ct_map.get((file.content_type or "").lower(), ".jpg")
-    
+
     filename = f"user_{current_user.id}_{uuid.uuid4().hex}{ext}"
     file_path = media_dir / filename
-    
+
     # Save file
     try:
         with open(file_path, "wb") as f:
             f.write(content)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Không thể lưu file: {str(e)}")
-    
+
     # Update user avatar_url in database
     # Store relative path in database for portability
     avatar_url = f"/media/avatars/{filename}"
     user_update = UserUpdate(avatar_url=avatar_url)
     updated_user = UserService.update_user(db, current_user.id, user_update)
-    
+
     # For response, include both relative and potentially full URL
     # Frontend can use relative path which works with backend's /media mount
     return {
@@ -129,7 +131,7 @@ async def reset_password(
     UserService.reset_password(db, reset_data.email, reset_data.new_password)
     return {"message": "Password reset successfully"}
 
-@router.get("/", response_model=List[User])
+@router.get("/", response_model=list[User])
 async def get_users(
     skip: int = 0,
     limit: int = 100,
@@ -171,8 +173,7 @@ async def link_parent(
     db: Session = Depends(get_db)
 ):
     """Link a parent account to current student"""
-    link = ParentService.link_parent(db, current_user.id, link_data.parent_email)
-    return link
+    return ParentService.link_parent(db, current_user.id, link_data.parent_email)
 
 @router.delete("/me/unlink-parent/{parent_id}")
 async def unlink_parent(
@@ -184,7 +185,7 @@ async def unlink_parent(
     ParentService.unlink_parent(db, current_user.id, parent_id)
     return {"message": "Parent unlinked successfully"}
 
-@router.get("/me/parents", response_model=List[ParentStudentLink])
+@router.get("/me/parents", response_model=list[ParentStudentLink])
 async def get_my_parents(
     current_user: UserModel = Depends(get_current_active_user),
     db: Session = Depends(get_db)

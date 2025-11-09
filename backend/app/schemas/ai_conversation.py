@@ -2,8 +2,8 @@
 Schemas for AI Conversation
 """
 
+
 from pydantic import BaseModel, Field
-from typing import List, Optional
 
 
 class ChatMessage(BaseModel):
@@ -15,8 +15,8 @@ class ChatMessage(BaseModel):
 class ConversationRequest(BaseModel):
     """Request for AI conversation"""
     message: str = Field(..., description="User's message", min_length=1, max_length=1000)
-    chat_history: Optional[List[ChatMessage]] = Field(default=None, description="Previous chat history")
-    system_prompt: Optional[str] = Field(default=None, description="Custom system prompt")
+    chat_history: list[ChatMessage] | None = Field(default=None, description="Previous chat history")
+    system_prompt: str | None = Field(default=None, description="Custom system prompt")
 
 
 class ConversationResponse(BaseModel):
@@ -27,9 +27,9 @@ class ConversationResponse(BaseModel):
 
 class ConversationSuggestionsRequest(BaseModel):
     """Request for conversation suggestions"""
-    topic: Optional[str] = Field(default=None, description="Topic for suggestions")
+    topic: str | None = Field(default=None, description="Topic for suggestions")
 
 
 class ConversationSuggestionsResponse(BaseModel):
     """Response with conversation suggestions"""
-    suggestions: List[str] = Field(..., description="List of conversation starters")
+    suggestions: list[str] = Field(..., description="List of conversation starters")

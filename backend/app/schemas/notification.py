@@ -1,6 +1,6 @@
-from pydantic import BaseModel
 from datetime import datetime
-from typing import Optional
+
+from pydantic import BaseModel
 
 
 class NotificationBase(BaseModel):
@@ -11,20 +11,20 @@ class NotificationBase(BaseModel):
 
 class NotificationCreate(NotificationBase):
     user_id: int
-    related_id: Optional[int] = None
-    related_type: Optional[str] = None
+    related_id: int | None = None
+    related_type: str | None = None
 
 
 class NotificationUpdate(BaseModel):
-    is_read: Optional[bool] = None
+    is_read: bool | None = None
 
 
 class NotificationResponse(NotificationBase):
     id: int
     user_id: int
     is_read: bool
-    related_id: Optional[int] = None
-    related_type: Optional[str] = None
+    related_id: int | None = None
+    related_type: str | None = None
     created_at: datetime
 
     class Config:

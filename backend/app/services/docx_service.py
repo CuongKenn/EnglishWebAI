@@ -5,48 +5,46 @@ Extracts both text and images for exam generation
 """
 import io
 import os
-import sys
 import uuid
 from pathlib import Path
-from typing import Dict, List, Tuple
+
 from docx import Document
-from docx.opc.constants import RELATIONSHIP_TYPE as RT
 from PIL import Image
 
 
 class DocxService:
     """Service for reading and extracting content from DOCX and DOC files"""
-    
+
     def __init__(self, media_root: str = "media/exam_images"):
         """
         Initialize DOCX service
-        
+
         Args:
             media_root: Root directory to save extracted images
         """
         self.media_root = Path(media_root)
         self.media_root.mkdir(parents=True, exist_ok=True)
-    
+
     def _extract_text_from_doc(self, doc_content: bytes) -> str:
         """
         Extract text from .doc (Word 97-2003) file
         Uses pypandoc to convert to plain text
         Note: This extracts text only, no images or formatting
-        
+
         Args:
             doc_content: Binary content of .doc file
-            
+
         Returns:
             Extracted text content
         """
-        import tempfile
         import subprocess
-        
+        import tempfile
+
         # Save .doc to temp file
         with tempfile.NamedTemporaryFile(suffix='.doc', delete=False) as tmp_doc:
             tmp_doc.write(doc_content)
             tmp_doc_path = tmp_doc.name
-        
+
         try:
             # Try using antiword (works in Docker/Linux)
             try:
@@ -57,27 +55,27 @@ class DocxService:
                     check=True
                 )
                 text = result.stdout
-                logger.info(f"[DOC Extraction] Successfully extracted text using antiword")
+                logger.info("[DOC Extraction] Successfully extracted text using antiword")
                 return text
             except (subprocess.CalledProcessError, FileNotFoundError):
                 # antiword not available, try textract or other methods
                 pass
-            
+
             # Fallback: Use pypandoc if available
             try:
                 import pypandoc
                 text = pypandoc.convert_file(tmp_doc_path, 'plain', format='doc')
-                logger.info(f"[DOC Extraction] Successfully extracted text using pypandoc")
+                logger.info("[DOC Extraction] Successfully extracted text using pypandoc")
                 return text
             except:
                 pass
-            
+
             # Last resort: suggest manual conversion
             raise Exception(
                 "⚠️ File .doc (Word 97-2003) chỉ có thể trích xuất text, không có hình ảnh. "
                 "Để có trải nghiệm tốt nhất, vui lòng mở file trong Word và Save As định dạng .docx"
             )
-                
+
         finally:
             # Cleanup temp file
             try:
@@ -85,15 +83,15 @@ class DocxService:
                     os.remove(tmp_doc_path)
             except:
                 pass
-    
-    def extract_content(self, file_content: bytes, save_images: bool = True) -> Dict:
+
+    def extract_content(self, file_content: bytes, save_images: bool = True) -> dict:
         """
         Extract text and images from DOCX file
-        
+
         Args:
             file_content: Binary content of the DOCX file
             save_images: Whether to save images to disk
-            
+
         Returns:
             Dictionary with extracted content:
             {
@@ -117,7 +115,7 @@ class DocxService:
                 zipfile.ZipFile(io.BytesIO(file_content))
             except zipfile.BadZipFile:
                 is_docx = False
-            
+
             if not is_docx:
                 # It's a .doc file - text extraction only (no images)
                 logger.info("[DOCX Service] Detected .doc file - extracting text only")
@@ -133,20 +131,20 @@ class DocxService:
                     }
                 except Exception as doc_error:
                     raise Exception(f"Không thể đọc file .doc: {str(doc_error)}. Vui lòng chuyển đổi sang .docx để có đầy đủ tính năng (bao gồm hình ảnh).")
-            
+
             # It's a .docx file - full processing with images
             doc = Document(io.BytesIO(file_content))
-            
+
             # Extract images
             images = []
             if save_images:
                 images = self._extract_images(doc)
-            
+
             # Extract content with structure
             structure = []
             paragraphs = []
             tables = []
-            
+
             # Process document elements in order
             for element in doc.element.body:
                 # Check if it's a paragraph
@@ -156,7 +154,7 @@ class DocxService:
                         if p._element == element:
                             para = p
                             break
-                    
+
                     if para:
                         text = para.text.strip()
                         if text:
@@ -166,7 +164,7 @@ class DocxService:
                                 "content": text,
                                 "style": para.style.name if para.style else "Normal"
                             })
-                        
+
                         # Check for images in paragraph
                         for run in para.runs:
                             if 'graphicData' in run._element.xml:
@@ -178,7 +176,7 @@ class DocxService:
                                         "path": img["path"]
                                     })
                                     break
-                
+
                 # Check if it's a table
                 elif element.tag.endswith('tbl'):
                     tbl = None
@@ -186,7 +184,7 @@ class DocxService:
                         if t._element == element:
                             tbl = t
                             break
-                    
+
                     if tbl:
                         table_data = self._extract_table(tbl)
                         tables.append(table_data)
@@ -194,10 +192,10 @@ class DocxService:
                             "type": "table",
                             "rows": table_data
                         })
-            
+
             # Full text
             full_text = "\n".join(paragraphs)
-            
+
             return {
                 "text": full_text,
                 "paragraphs": paragraphs,
@@ -205,22 +203,22 @@ class DocxService:
                 "tables": tables,
                 "structure": structure
             }
-            
+
         except Exception as e:
             raise Exception(f"Failed to extract content from DOCX: {str(e)}")
-    
-    def _extract_images(self, doc: Document) -> List[Dict]:
+
+    def _extract_images(self, doc: Document) -> list[dict]:
         """
         Extract all images from document and save them
-        
+
         Args:
             doc: python-docx Document object
-            
+
         Returns:
             List of image info dictionaries
         """
         images = []
-        
+
         try:
             # Get all image relationships
             for rel in doc.part.rels.values():
@@ -228,23 +226,23 @@ class DocxService:
                     try:
                         # Get image binary
                         image_blob = rel.target_part.blob
-                        
+
                         # Generate unique filename
                         ext = rel.target_ref.split('.')[-1]
                         filename = f"{uuid.uuid4()}.{ext}"
                         filepath = self.media_root / filename
-                        
+
                         # Save image
                         with open(filepath, 'wb') as f:
                             f.write(image_blob)
-                        
+
                         # Get image dimensions
                         try:
                             img = Image.open(io.BytesIO(image_blob))
                             width, height = img.size
                         except:
                             width, height = 0, 0
-                        
+
                         images.append({
                             "path": str(filepath),
                             "filename": filename,
@@ -257,16 +255,16 @@ class DocxService:
                         continue
         except Exception as e:
             logger.info(f"Error extracting images: {e}")
-        
+
         return images
-    
-    def _extract_table(self, table) -> List[List[str]]:
+
+    def _extract_table(self, table) -> list[list[str]]:
         """
         Extract table data
-        
+
         Args:
             table: python-docx Table object
-            
+
         Returns:
             2D list of table cells
         """
@@ -277,15 +275,15 @@ class DocxService:
                 cells.append(cell.text.strip())
             rows.append(cells)
         return rows
-    
-    def create_exam_prompt(self, extracted_content: Dict, exam_type: str = "midterm") -> str:
+
+    def create_exam_prompt(self, extracted_content: dict, exam_type: str = "midterm") -> str:
         """
         Create a prompt for OpenAI to parse the exam content
-        
+
         Args:
             extracted_content: Dictionary from extract_content()
             exam_type: Type of exam (midterm, final, quiz)
-            
+
         Returns:
             Formatted prompt for OpenAI
         """
@@ -298,11 +296,11 @@ NỘI DUNG ĐỀ THI:
 {extracted_content['text']}
 
 """
-        
+
         # Add image information
         if extracted_content['images']:
             prompt += f"\nĐỀ THI CÓ {len(extracted_content['images'])} HÌNH ẢNH đi kèm.\n"
-        
+
         # Add table information
         if extracted_content['tables']:
             prompt += f"\nĐỀ THI CÓ {len(extracted_content['tables'])} BẢNG:\n"
@@ -310,7 +308,7 @@ NỘI DUNG ĐỀ THI:
                 prompt += f"\nBảng {idx + 1}:\n"
                 for row in table[:5]:  # Only show first 5 rows
                     prompt += f"{' | '.join(row)}\n"
-        
+
         prompt += """
 
 YÊU CẦU PHÂN TÍCH:
@@ -421,7 +419,7 @@ CHÚ Ý:
 RESPONSE:
 Chỉ trả về JSON, không thêm giải thích.
 """
-        
+
         return prompt
 
 

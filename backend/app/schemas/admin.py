@@ -1,6 +1,5 @@
-from pydantic import BaseModel, EmailStr, Field
-from typing import Optional, List
 
+from pydantic import BaseModel, EmailStr, Field
 
 # -------- Users (Manage Accounts) --------
 
@@ -12,7 +11,7 @@ class AdminUserBase(BaseModel):
 
 
 class AdminUserCreate(AdminUserBase):
-    username: Optional[str] = Field(
+    username: str | None = Field(
         None,
         min_length=3,
         max_length=30,
@@ -22,11 +21,11 @@ class AdminUserCreate(AdminUserBase):
 
 
 class AdminUserUpdate(BaseModel):
-    name: Optional[str] = None
-    email: Optional[EmailStr] = None
-    role: Optional[str] = Field(None, pattern=r"^(user|parent|teacher|admin|superadmin)$")
-    status: Optional[str] = Field(None, pattern=r"^(active|inactive)$")
-    password: Optional[str] = Field(None, min_length=6)
+    name: str | None = None
+    email: EmailStr | None = None
+    role: str | None = Field(None, pattern=r"^(user|parent|teacher|admin|superadmin)$")
+    status: str | None = Field(None, pattern=r"^(active|inactive)$")
+    password: str | None = Field(None, min_length=6)
 
 
 class AdminUserOut(BaseModel):
@@ -53,13 +52,13 @@ class AdminTeacherOut(BaseModel):
 class AdminClassBase(BaseModel):
     name: str
     code: str
-    teacherId: Optional[int] = None
-    grade: Optional[int] = Field(None, ge=1, le=12)
-    skill: Optional[str] = Field(None, pattern=r"^(listening|speaking|reading|writing)$")
-    maxStudents: Optional[int] = None
-    schedule: Optional[str] = None
+    teacherId: int | None = None
+    grade: int | None = Field(None, ge=1, le=12)
+    skill: str | None = Field(None, pattern=r"^(listening|speaking|reading|writing)$")
+    maxStudents: int | None = None
+    schedule: str | None = None
     status: str = Field("active", pattern=r"^(active|inactive)$")
-    description: Optional[str] = None
+    description: str | None = None
 
 
 class AdminClassCreate(AdminClassBase):
@@ -67,30 +66,30 @@ class AdminClassCreate(AdminClassBase):
 
 
 class AdminClassUpdate(BaseModel):
-    name: Optional[str] = None
-    code: Optional[str] = None
-    teacherId: Optional[int] = None
-    grade: Optional[int] = Field(None, ge=1, le=12)
-    skill: Optional[str] = Field(None, pattern=r"^(listening|speaking|reading|writing)$")
-    maxStudents: Optional[int] = None
-    schedule: Optional[str] = None
-    status: Optional[str] = Field(None, pattern=r"^(active|inactive)$")
-    description: Optional[str] = None
+    name: str | None = None
+    code: str | None = None
+    teacherId: int | None = None
+    grade: int | None = Field(None, ge=1, le=12)
+    skill: str | None = Field(None, pattern=r"^(listening|speaking|reading|writing)$")
+    maxStudents: int | None = None
+    schedule: str | None = None
+    status: str | None = Field(None, pattern=r"^(active|inactive)$")
+    description: str | None = None
 
 
 class AdminClassOut(BaseModel):
     id: int
     name: str
     code: str
-    teacher: Optional[str] = None
-    teacherId: Optional[int] = None
-    grade: Optional[int] = None
-    skill: Optional[str] = None
+    teacher: str | None = None
+    teacherId: int | None = None
+    grade: int | None = None
+    skill: str | None = None
     students: int
-    maxStudents: Optional[int] = None
-    schedule: Optional[str] = None
+    maxStudents: int | None = None
+    schedule: str | None = None
     status: str
-    description: Optional[str] = None
+    description: str | None = None
 
     class Config:
         from_attributes = True

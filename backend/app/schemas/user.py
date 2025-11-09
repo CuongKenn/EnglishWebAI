@@ -1,7 +1,8 @@
-from pydantic import BaseModel, EmailStr, Field, validator
-from typing import Optional
 from datetime import datetime
 from enum import Enum
+
+from pydantic import BaseModel, EmailStr, Field
+
 
 class UserRole(str, Enum):
     """
@@ -14,7 +15,7 @@ class UserRole(str, Enum):
     TEACHER = "teacher"
     ADMIN = "admin"
     SUPERADMIN = "superadmin"
-    
+
     @classmethod
     def normalize(cls, value: str) -> 'UserRole':
         """Normalize role value, accepting 'student' as alias for 'user'"""
@@ -26,9 +27,9 @@ class UserRole(str, Enum):
 class UserBase(BaseModel):
     email: EmailStr
     username: str = Field(..., min_length=3, max_length=50)
-    full_name: Optional[str] = None
+    full_name: str | None = None
     role: UserRole = UserRole.USER
-    phone: Optional[str] = None
+    phone: str | None = None
 
 # Schema for creating a user
 class UserCreate(UserBase):
@@ -36,20 +37,20 @@ class UserCreate(UserBase):
 
 # Schema for updating a user
 class UserUpdate(BaseModel):
-    email: Optional[EmailStr] = None
-    username: Optional[str] = None
-    full_name: Optional[str] = None
-    phone: Optional[str] = None
-    avatar_url: Optional[str] = None
+    email: EmailStr | None = None
+    username: str | None = None
+    full_name: str | None = None
+    phone: str | None = None
+    avatar_url: str | None = None
 
 # Schema for user in database
 class UserInDB(UserBase):
     id: int
     is_active: bool
     is_verified: bool
-    avatar_url: Optional[str] = None
+    avatar_url: str | None = None
     created_at: datetime
-    updated_at: Optional[datetime] = None
+    updated_at: datetime | None = None
 
     class Config:
         from_attributes = True
@@ -74,9 +75,9 @@ class ParentStudentLink(BaseModel):
     student_id: int
     is_verified: bool
     created_at: datetime
-    verified_at: Optional[datetime] = None
-    parent: Optional[User] = None
-    student: Optional[User] = None
+    verified_at: datetime | None = None
+    parent: User | None = None
+    student: User | None = None
 
     class Config:
         from_attributes = True

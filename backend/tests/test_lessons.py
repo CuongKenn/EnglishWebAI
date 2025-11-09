@@ -1,7 +1,9 @@
 import pytest
-from app.models.lesson import Lesson
+
 from app.models.classroom import Classroom
+from app.models.lesson import Lesson
 from tests.conftest import client
+
 
 @pytest.fixture
 def test_classroom(db_session, test_teacher):

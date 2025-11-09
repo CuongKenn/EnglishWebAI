@@ -3,26 +3,27 @@ OpenAI AI Service
 Handles interactions with OpenAI API (ChatGPT) for AI conversation
 """
 
-import openai
 import asyncio
 import json
-import os
 import logging
-from typing import List, Dict
+import os
+
+import openai
 
 logger = logging.getLogger(__name__)
 
 from app.core.config import settings
 
+
 class OpenAIService:
     """Service for handling OpenAI (ChatGPT) conversations"""
-    
+
     def __init__(self):
         """Initialize OpenAI with API key"""
         api_key = settings.OPENAI_API_KEY if hasattr(settings, 'OPENAI_API_KEY') else os.getenv('OPENAI_API_KEY')
         self.api_key = api_key
         self.client = None
-        
+
         if api_key and api_key.strip():
             try:
                 model_name = settings.OPENAI_MODEL if hasattr(settings, 'OPENAI_MODEL') else os.getenv('OPENAI_MODEL', 'gpt-5-nano')
@@ -34,20 +35,20 @@ class OpenAIService:
                 self.client = None
         else:
             logger.info("Warning: OPENAI_API_KEY not configured")
-    
+
     def generate_content(self, prompt: str) -> str:
         """
         Generate content from a prompt using OpenAI
-        
+
         Args:
             prompt: The prompt to send to OpenAI
-            
+
         Returns:
             Generated text content
         """
         if not self.client:
             raise ValueError("OpenAI API is not configured. Please add OPENAI_API_KEY to your .env file. Get your API key at: https://platform.openai.com/api-keys")
-        
+
         try:
             response = self.client.chat.completions.create(
                 model=self.model,
@@ -60,64 +61,64 @@ class OpenAIService:
         except Exception as e:
             logger.info(f"Error generating content: {str(e)}")
             raise
-    
+
     async def generate_text(self, prompt: str) -> str:
         """
         Async wrapper for generate_content
-        
+
         Args:
             prompt: The prompt to send to OpenAI
-            
+
         Returns:
             Generated text content
         """
         return await asyncio.to_thread(self.generate_content, prompt)
-    
+
     async def chat_conversation(
-        self, 
-        message: str, 
-        chat_history: List[Dict[str, str]] = None,
+        self,
+        message: str,
+        chat_history: list[dict[str, str]] = None,
         system_prompt: str = None
     ) -> str:
         """
         Send a message to OpenAI and get a response
-        
+
         Args:
             message: User's message
             chat_history: List of previous messages [{"role": "user/assistant", "content": "..."}]
             system_prompt: Optional system instructions for the AI
-            
+
         Returns:
             AI's response text
         """
         try:
             if system_prompt is None:
-                system_prompt = """You are a friendly English conversation partner. 
+                system_prompt = """You are a friendly English conversation partner.
                 Your role is to help users practice English conversation naturally.
                 - Always respond in English
                 - Keep responses conversational and engaging
                 - Correct grammar mistakes gently
                 - Ask follow-up questions to keep the conversation going
                 - Be encouraging and supportive"""
-            
+
             # Build messages array
             messages = [{"role": "system", "content": system_prompt}]
-            
+
             # Add chat history if exists
             if chat_history:
                 for msg in chat_history:
                     role = msg.get("role", "user")
                     content = msg.get("content", "")
-                    
+
                     # Convert 'ai' role to 'assistant' for OpenAI
                     if role == "ai":
                         role = "assistant"
-                    
+
                     messages.append({"role": role, "content": content})
-            
+
             # Add current message
             messages.append({"role": "user", "content": message})
-            
+
             # Get response from OpenAI
             response = await asyncio.to_thread(
                 self.client.chat.completions.create,
@@ -125,44 +126,44 @@ class OpenAIService:
                 messages=messages,
                 temperature=0.7,
             )
-            
+
             return response.choices[0].message.content
-            
+
         except Exception as e:
             # Log error and return a friendly message
             logger.info(f"OpenAI API Error: {str(e)}")
             return "I'm sorry, I'm having trouble responding right now. Please try again in a moment."
-    
-    async def get_conversation_suggestions(self, topic: str = None) -> List[str]:
+
+    async def get_conversation_suggestions(self, topic: str = None) -> list[str]:
         """
         Get conversation starter suggestions
-        
+
         Args:
             topic: Optional topic for suggestions
-            
+
         Returns:
             List of conversation starter suggestions
         """
         try:
-            prompt = f"""Generate 5 interesting English conversation starters"""
+            prompt = """Generate 5 interesting English conversation starters"""
             if topic:
                 prompt += f""" about {topic}"""
             prompt += """. Return only the questions, one per line, without numbering."""
-            
+
             response = await asyncio.to_thread(
                 self.client.chat.completions.create,
                 model=self.model,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.8,
             )
-            
+
             suggestions = response.choices[0].message.content.strip().split('\n')
-            
+
             # Clean up suggestions
             suggestions = [s.strip() for s in suggestions if s.strip()]
-            
+
             return suggestions[:5]  # Return max 5 suggestions
-            
+
         except Exception as e:
             logger.info(f"Error generating suggestions: {str(e)}")
             return [
@@ -172,28 +173,28 @@ class OpenAIService:
                 "What's your dream vacation destination?",
                 "What do you like to do in your free time?"
             ]
-    
+
     async def check_writing(
         self,
         text: str,
         writing_type: str = "general",
         level: str = "intermediate"
-    ) -> Dict:
+    ) -> dict:
         """
         Check and provide feedback on English writing
-        
+
         Args:
             text: The writing text to check
             writing_type: Type of writing (essay, email, story, etc.)
             level: English level (beginner, intermediate, advanced)
-            
+
         Returns:
             Dict with feedback including grammar, vocabulary, structure scores and suggestions
         """
         try:
             system_prompt = f"""You are an experienced English teacher checking a student's {writing_type} writing.
             The student's level is {level}.
-            
+
             Analyze the writing and provide detailed feedback in JSON format with the following structure:
             {{
                 "overall_score": <number 0-100>,
@@ -212,11 +213,11 @@ class OpenAIService:
                 "corrected_text": "full corrected version of the text",
                 "overall_comment": "encouraging feedback for the student"
             }}
-            
+
             Be constructive, encouraging, and specific in your feedback."""
-            
+
             prompt = f"{system_prompt}\n\nStudent's writing:\n{text}"
-            
+
             response = await asyncio.to_thread(
                 self.client.chat.completions.create,
                 model=self.model,
@@ -224,19 +225,18 @@ class OpenAIService:
                 temperature=0.5,
                 response_format={"type": "json_object"}
             )
-            
+
             result_text = response.choices[0].message.content.strip()
-            
+
             # Try to parse JSON from response
             # Remove markdown code blocks if present
             if "```json" in result_text:
                 result_text = result_text.split("```json")[1].split("```")[0].strip()
             elif "```" in result_text:
                 result_text = result_text.split("```")[1].split("```")[0].strip()
-            
-            feedback = json.loads(result_text)
-            return feedback
-            
+
+            return json.loads(result_text)
+
         except Exception as e:
             logger.info(f"Error checking writing: {str(e)}")
             # Return fallback response
@@ -253,19 +253,19 @@ class OpenAIService:
                 "corrected_text": text,
                 "overall_comment": "I'm having trouble analyzing your writing right now. Please try again in a moment."
             }
-    
+
     async def generate_writing_topic(
         self,
         writing_type: str = "general",
         level: str = "intermediate"
-    ) -> Dict:
+    ) -> dict:
         """
         Generate a writing topic/prompt based on type and level
-        
+
         Args:
             writing_type: Type of writing (essay, email, story, etc.)
             level: English level (beginner, intermediate, advanced)
-            
+
         Returns:
             Dict with topic, prompt, and guidelines
         """
@@ -275,7 +275,7 @@ class OpenAIService:
                 "intermediate": "varied vocabulary, compound sentences, 200-250 words",
                 "advanced": "sophisticated vocabulary, complex structures, 300-400 words"
             }
-            
+
             type_instructions = {
                 "essay": "an argumentative or opinion essay topic",
                 "email": "a formal or informal email scenario",
@@ -284,10 +284,10 @@ class OpenAIService:
                 "article": "an article topic for publication",
                 "general": "a general writing topic"
             }
-            
+
             guideline = level_guidelines.get(level, level_guidelines["intermediate"])
             type_inst = type_instructions.get(writing_type, type_instructions["general"])
-            
+
             prompt = f"""Generate a {level} level English writing prompt for {type_inst}.
 
 Return a JSON object with this structure:
@@ -306,7 +306,7 @@ The topic should:
 
 Type: {writing_type}
 Level: {level}"""
-            
+
             response = await asyncio.to_thread(
                 self.client.chat.completions.create,
                 model=self.model,
@@ -314,19 +314,18 @@ Level: {level}"""
                 temperature=0.8,
                 response_format={"type": "json_object"}
             )
-            
+
             result_text = response.choices[0].message.content.strip()
-            
+
             # Try to parse JSON from response
             # Remove markdown code blocks if present
             if "```json" in result_text:
                 result_text = result_text.split("```json")[1].split("```")[0].strip()
             elif "```" in result_text:
                 result_text = result_text.split("```")[1].split("```")[0].strip()
-            
-            topic_data = json.loads(result_text)
-            return topic_data
-            
+
+            return json.loads(result_text)
+
         except Exception as e:
             logger.info(f"Error generating topic: {str(e)}")
             # Return fallback topic based on type and level
@@ -372,12 +371,12 @@ Level: {level}"""
                     }
                 }
             }
-            
+
             # Get fallback or default
             type_fallbacks = fallback_topics.get(writing_type, fallback_topics["essay"])
             return type_fallbacks.get(level, type_fallbacks["intermediate"])
 
-    async def generate_listening_segment(self, num_questions: int = 4) -> Dict:
+    async def generate_listening_segment(self, num_questions: int = 4) -> dict:
         """Generate a short listening transcript with comprehension questions.
 
         Returns JSON: { title, transcript, questions: [{question, question_format, options, correct_answer}] }
@@ -415,14 +414,13 @@ Rules:
                 temperature=0.7,
                 response_format={"type": "json_object"}
             )
-            
+
             text = response.choices[0].message.content.strip()
             if "```json" in text:
                 text = text.split("```json")[1].split("```")[0].strip()
             elif "```" in text:
                 text = text.split("```")[1].split("```")[0].strip()
-            data = json.loads(text)
-            return data
+            return json.loads(text)
         except Exception as e:
             logger.info(f"Error generating listening segment: {e}")
             # Fallback minimal
@@ -439,7 +437,7 @@ Rules:
                 ]
             }
 
-    async def generate_speaking_tasks(self, count: int = 3) -> Dict:
+    async def generate_speaking_tasks(self, count: int = 3) -> dict:
         """Generate speaking prompts with brief instructions.
 
         Returns: { tasks: [ { topic, prompt, instructions: [..], prep_time, speak_time } ] }
@@ -468,14 +466,13 @@ Keep prompts realistic for intermediate learners.
                 temperature=0.7,
                 response_format={"type": "json_object"}
             )
-            
+
             text = response.choices[0].message.content.strip()
             if "```json" in text:
                 text = text.split("```json")[1].split("```")[0].strip()
             elif "```" in text:
                 text = text.split("```")[1].split("```")[0].strip()
-            data = json.loads(text)
-            return data
+            return json.loads(text)
         except Exception as e:
             logger.info(f"Error generating speaking tasks: {e}")
             return {
@@ -489,21 +486,21 @@ Keep prompts realistic for intermediate learners.
                     }
                 ]
             }
-    
+
     async def generate_reading_passage(
         self,
         reading_type: str = "article",
         level: str = "intermediate",
         topic: str = None
-    ) -> Dict:
+    ) -> dict:
         """
         Generate a reading passage with comprehension questions
-        
+
         Args:
             reading_type: Type of reading (story, article, news, essay, letter)
             level: English level (beginner, intermediate, advanced)
             topic: Optional specific topic
-            
+
         Returns:
             Dict with passage, questions, and metadata
         """
@@ -528,10 +525,10 @@ Keep prompts realistic for intermediate learners.
                     "sentence_structure": "complex sentences with subordinate clauses"
                 }
             }
-            
+
             specs = level_specs.get(level, level_specs["intermediate"])
             topic_instruction = f" about {topic}" if topic else ""
-            
+
             prompt = f"""Generate a {level} level English reading passage for {reading_type}{topic_instruction}.
 
 Specifications:
@@ -550,7 +547,7 @@ QUESTION FORMATS (use variety):
 CONTENT TYPES to cover:
 - Main Idea (1 question)
 - Specific Details (2 questions)
-- Inference/Conclusion (1 question)  
+- Inference/Conclusion (1 question)
 - Vocabulary in Context (2 questions - at least 1 fill-in-blank)
 - True/False factual statement (2 questions)
 
@@ -600,41 +597,41 @@ IMPORTANT:
                 temperature=0.7,
                 response_format={"type": "json_object"}
             )
-            
+
             result_text = response.choices[0].message.content.strip()
-            
+
             logger.info(f"[AI Reading] Raw response from OpenAI (first 500 chars): {result_text[:500]}")
-            
+
             # Parse JSON from response
             # Remove markdown code blocks if present
             if "```json" in result_text:
                 result_text = result_text.split("```json")[1].split("```")[0].strip()
             elif "```" in result_text:
                 result_text = result_text.split("```")[1].split("```")[0].strip()
-            
+
             logger.info(f"[AI Reading] Cleaned JSON (first 300 chars): {result_text[:300]}")
-            
+
             reading_data = json.loads(result_text)
-            
+
             # Validate structure
             if not reading_data.get('questions'):
                 raise ValueError("No questions in response")
-            
+
             # Ensure all questions have required fields
             for idx, q in enumerate(reading_data.get('questions', [])):
                 if not q.get('question'):
                     raise ValueError(f"Question {idx} missing 'question' field")
                 if not q.get('question_format'):
                     q['question_format'] = 'multiple_choice'  # default
-            
+
             # Add level and type to response
             reading_data["level"] = level
             reading_data["reading_type"] = reading_type
-            
+
             logger.info(f"[AI Reading] Successfully generated passage with {len(reading_data['questions'])} questions")
-            
+
             return reading_data
-            
+
         except Exception as e:
             logger.info(f"Error generating reading passage: {str(e)}")
             import traceback
@@ -877,24 +874,24 @@ IMPORTANT:
                     "reading_type": reading_type
                 }
             }
-            
+
             return fallback_passages.get(level, fallback_passages["intermediate"])
-    
+
     async def check_reading_answers(
         self,
         passage_title: str,
-        questions: List[Dict],
-        user_answers: List
-    ) -> Dict:
+        questions: list[dict],
+        user_answers: list
+    ) -> dict:
         """
         Check reading comprehension answers and provide feedback
         Supports multiple question formats: multiple_choice, true_false, fill_blank
-        
+
         Args:
             passage_title: Title of the reading passage
             questions: List of questions with correct answers
             user_answers: List of user's answers (can be int or str)
-            
+
         Returns:
             Dict with score, feedback, and recommendations
         """
@@ -902,20 +899,20 @@ IMPORTANT:
             total_questions = len(questions)
             correct_count = 0
             results = []
-            
-            for idx, (question, user_answer) in enumerate(zip(questions, user_answers)):
+
+            for idx, (question, user_answer) in enumerate(zip(questions, user_answers, strict=False)):
                 question_format = question.get('question_format', 'multiple_choice')
                 correct_answer = question.get('correct_answer')
                 acceptable_answers = question.get('acceptable_answers', [])
-                
+
                 is_correct = False
                 explanation = ""
-                
+
                 # Check answer based on question format
                 if question_format in ['multiple_choice', 'true_false']:
                     # For MC and T/F, answer is index
                     is_correct = user_answer == correct_answer
-                    
+
                     if is_correct:
                         explanation = "Correct! Well done."
                     else:
@@ -923,21 +920,21 @@ IMPORTANT:
                             explanation = f"The correct answer is '{question['options'][correct_answer]}'."
                         else:
                             explanation = f"Incorrect. The correct answer is: {correct_answer}"
-                            
+
                 elif question_format == 'fill_blank':
                     # For fill-in-blank, answer is string - check against acceptable answers
                     user_answer_lower = str(user_answer).lower().strip()
                     correct_answer_lower = str(correct_answer).lower().strip()
-                    
+
                     # Check if answer matches any acceptable answer
                     if acceptable_answers:
                         is_correct = any(
-                            user_answer_lower == acceptable.lower().strip() 
+                            user_answer_lower == acceptable.lower().strip()
                             for acceptable in acceptable_answers
                         )
                     else:
                         is_correct = user_answer_lower == correct_answer_lower
-                    
+
                     if is_correct:
                         explanation = f"Correct! '{user_answer}' is a valid answer."
                     else:
@@ -945,10 +942,10 @@ IMPORTANT:
                             explanation = f"Incorrect. Acceptable answers: {', '.join(acceptable_answers)}"
                         else:
                             explanation = f"Incorrect. The correct answer is: {correct_answer}"
-                
+
                 if is_correct:
                     correct_count += 1
-                
+
                 results.append({
                     "question_index": idx,
                     "is_correct": is_correct,
@@ -957,9 +954,9 @@ IMPORTANT:
                     "explanation": explanation,
                     "acceptable_answers": acceptable_answers if question_format == 'fill_blank' else None
                 })
-            
+
             score = int((correct_count / total_questions) * 100)
-            
+
             # Determine level recommendation
             level_recommendation = None
             if score >= 90:
@@ -970,7 +967,7 @@ IMPORTANT:
                 level_recommendation = "Keep practicing at this level to improve."
             else:
                 level_recommendation = "Consider trying an easier level to build confidence."
-            
+
             # Generate personalized feedback
             feedback = f"You scored {score}% ({correct_count}/{total_questions} correct). "
             if score >= 80:
@@ -979,7 +976,7 @@ IMPORTANT:
                 feedback += "Good work! You understood most of the passage well."
             else:
                 feedback += "Keep practicing! Try reading more slowly and carefully."
-            
+
             return {
                 "score": score,
                 "total_questions": total_questions,
@@ -988,7 +985,7 @@ IMPORTANT:
                 "level_recommendation": level_recommendation,
                 "feedback": feedback
             }
-            
+
         except Exception as e:
             logger.info(f"Error checking reading answers: {str(e)}")
             return {
@@ -999,7 +996,7 @@ IMPORTANT:
                 "level_recommendation": "Error occurred while checking answers",
                 "feedback": "Sorry, we couldn't check your answers. Please try again."
             }
-    
+
     def grade_writing_sync(
         self,
         writing_text: str,
@@ -1009,13 +1006,13 @@ IMPORTANT:
     ) -> dict:
         """
         Grade writing assignment using OpenAI
-        
+
         Args:
             writing_text: Student's writing content
             prompt: Writing prompt/topic (optional)
             max_score: Maximum score (default 10)
             criteria: Grading criteria dict (optional)
-        
+
         Returns:
             dict: Grading result with score, feedback, and breakdown
         """
@@ -1029,7 +1026,7 @@ IMPORTANT:
                     "grammar": {"weight": 0.2, "name": "Ngữ pháp"},
                     "mechanics": {"weight": 0.1, "name": "Chính tả & Dấu câu"}
                 }
-            
+
             # Build grading prompt
             grading_prompt = f"""You are an experienced English teacher grading a student's writing assignment.
 
@@ -1040,10 +1037,10 @@ STUDENT'S WRITING:
 
 GRADING CRITERIA (Total: {max_score} points):
 """
-            
+
             for key, value in criteria.items():
                 grading_prompt += f"\n- {value['name']}: {value['weight'] * 100}%"
-            
+
             grading_prompt += """
 
 Please evaluate the writing and provide:
@@ -1082,7 +1079,7 @@ Return your response in JSON format:
     "suggestions": "Specific suggestions for improvement in Vietnamese"
 }
 """
-            
+
             # Get AI response
             if not self.client:
                 raise ValueError("OpenAI API is not configured. Please set OPENAI_API_KEY.")
@@ -1093,9 +1090,9 @@ Return your response in JSON format:
                 temperature=0.5,
                 response_format={"type": "json_object"}
             )
-            
+
             result_text = response.choices[0].message.content.strip()
-            
+
             # Clean up JSON (remove markdown code blocks if present)
             if result_text.startswith("```json"):
                 result_text = result_text[7:]
@@ -1104,14 +1101,14 @@ Return your response in JSON format:
             if result_text.endswith("```"):
                 result_text = result_text[:-3]
             result_text = result_text.strip()
-            
+
             # Parse JSON response
             grading_result = json.loads(result_text)
-            
+
             # Calculate final score based on max_score
             overall_percentage = grading_result.get('overall_score', 0)
             final_score = (overall_percentage / 100) * max_score
-            
+
             # Build detailed breakdown
             breakdown = {}
             for key, value in criteria.items():
@@ -1122,7 +1119,7 @@ Return your response in JSON format:
                     "name": value['name'],
                     "weighted_contribution": round((criterion_score / 100) * value['weight'] * max_score, 2)
                 }
-            
+
             return {
                 "score": round(final_score, 2),
                 "max_score": max_score,
@@ -1136,14 +1133,14 @@ Return your response in JSON format:
                 "suggestions": grading_result.get('suggestions', ''),
                 "raw_scores": grading_result.get('scores', {})
             }
-            
+
         except json.JSONDecodeError as e:
             logger.info(f"Error parsing OpenAI JSON response: {str(e)}")
             logger.info(f"Raw response: {result_text[:500]}")
             # Fallback: basic scoring
             word_count = len(writing_text.split())
             basic_score = min(max_score, (word_count / 100) * max_score * 0.7)
-            
+
             return {
                 "score": round(basic_score, 2),
                 "max_score": max_score,
@@ -1157,7 +1154,7 @@ Return your response in JSON format:
                 "suggestions": "Hãy kiểm tra ngữ pháp và từ vựng.",
                 "error": "JSON parsing failed"
             }
-            
+
         except Exception as e:
             logger.info(f"Error grading writing: {str(e)}")
             return {
@@ -1199,15 +1196,15 @@ Return your response in JSON format:
         unit: str,
         lesson_number: str = "Lesson 1",
         duration: int = 45,
-        focus_skills: List[str] = None,
+        focus_skills: list[str] = None,
         language_functions: str = None,
-        vocabulary_topics: List[str] = None,
-        grammar_points: List[str] = None,
+        vocabulary_topics: list[str] = None,
+        grammar_points: list[str] = None,
         additional_notes: str = None
-    ) -> Dict:
+    ) -> dict:
         """
         Generate a complete lesson plan based on Vietnamese Ngoại ngữ 2018 curriculum
-        
+
         Args:
             grade: Khối lớp (1-12)
             unit: Unit/Chủ đề (VD: Unit 7 - Technology)
@@ -1218,7 +1215,7 @@ Return your response in JSON format:
             vocabulary_topics: Chủ đề từ vựng
             grammar_points: Điểm ngữ pháp
             additional_notes: Ghi chú thêm
-            
+
         Returns:
             Dict với đầy đủ thông tin giáo án
         """
@@ -1232,7 +1229,7 @@ THÔNG TIN BÀI HỌC:
 - Tiết học: {lesson_number}
 - Thời lượng: {duration} phút
 """
-            
+
             if focus_skills:
                 prompt += f"- Kỹ năng tập trung: {', '.join(focus_skills)}\n"
             if language_functions:
@@ -1243,7 +1240,7 @@ THÔNG TIN BÀI HỌC:
                 prompt += f"- Điểm ngữ pháp: {', '.join(grammar_points)}\n"
             if additional_notes:
                 prompt += f"- Ghi chú: {additional_notes}\n"
-            
+
             prompt += """
 YÊU CẦU:
 1. BÁM SÁT Chương trình Giáo dục phổ thông môn Ngoại ngữ 2018
@@ -1261,7 +1258,7 @@ Hãy tạo giáo án chi tiết theo cấu trúc JSON sau:
         ],
         "skills": [
             "Kỹ năng Listening",
-            "Kỹ năng Speaking", 
+            "Kỹ năng Speaking",
             "Kỹ năng Reading",
             "Kỹ năng Writing"
         ],
@@ -1339,7 +1336,7 @@ QUAN TRỌNG:
 - Hoạt động đa dạng: cá nhân, cặp đôi, nhóm
 - Thời gian mỗi hoạt động hợp lý (tổng = """ + str(duration) + """ phút)
 """
-            
+
             # Generate with OpenAI
             response = await asyncio.to_thread(
                 self.client.chat.completions.create,
@@ -1348,19 +1345,18 @@ QUAN TRỌNG:
                 temperature=0.7,
                 response_format={"type": "json_object"}
             )
-            
+
             result_text = response.choices[0].message.content.strip()
-            
+
             # Parse JSON
             if "```json" in result_text:
                 result_text = result_text.split("```json")[1].split("```")[0].strip()
             elif "```" in result_text:
                 result_text = result_text.split("```")[1].split("```")[0].strip()
-            
-            lesson_plan_data = json.loads(result_text)
-            
-            return lesson_plan_data
-            
+
+            return json.loads(result_text)
+
+
         except Exception as e:
             logger.info(f"Error generating lesson plan: {str(e)}")
             # Return fallback lesson plan structure
@@ -1434,7 +1430,7 @@ QUAN TRỌNG:
                 "notes": "Lưu ý phù hợp với trình độ học sinh",
                 "homework": "Ôn tập từ vựng và làm bài tập"
             }
-    
+
     async def generate_worksheet(
         self,
         grade: int,
@@ -1444,14 +1440,14 @@ QUAN TRỌNG:
         difficulty_level: str = "medium",
         num_questions: int = 10,
         duration: int = 30,
-        vocabulary_topics: List[str] = None,
-        grammar_points: List[str] = None,
+        vocabulary_topics: list[str] = None,
+        grammar_points: list[str] = None,
         language_functions: str = None,
         additional_notes: str = None
-    ) -> Dict:
+    ) -> dict:
         """
         Generate worksheet (phiếu học tập) for English learning
-        
+
         Args:
             grade: Khối lớp (1-12)
             unit: Unit/Chủ đề
@@ -1464,7 +1460,7 @@ QUAN TRỌNG:
             grammar_points: Điểm ngữ pháp
             language_functions: Chức năng ngôn ngữ
             additional_notes: Ghi chú thêm
-            
+
         Returns:
             Dict với đầy đủ nội dung phiếu học tập
         """
@@ -1479,17 +1475,17 @@ QUAN TRỌNG:
                 "situational": "Bài tập tình huống thực tế cần vận dụng kiến thức",
                 "mixed": "Kết hợp nhiều dạng bài tập"
             }
-            
+
             # Difficulty descriptions
             difficulty_desc = {
                 "easy": "dễ, phù hợp với học sinh cần củng cố cơ bản",
                 "medium": "trung bình, phù hợp với đa số học sinh",
                 "hard": "khó, phù hợp với học sinh khá giỏi"
             }
-            
+
             type_desc = type_descriptions.get(worksheet_type, worksheet_type)
             diff_desc = difficulty_desc.get(difficulty_level, "trung bình")
-            
+
             prompt = f"""Bạn là giáo viên Tiếng Anh, đang tạo phiếu học tập cho học sinh theo Chương trình 2018.
 
 THÔNG TIN PHIẾU HỌC TẬP:
@@ -1501,7 +1497,7 @@ THÔNG TIN PHIẾU HỌC TẬP:
 - Số câu hỏi: {num_questions}
 - Thời gian: {duration} phút
 """
-            
+
             if vocabulary_topics:
                 prompt += f"- Chủ đề từ vựng: {', '.join(vocabulary_topics)}\n"
             if grammar_points:
@@ -1510,7 +1506,7 @@ THÔNG TIN PHIẾU HỌC TẬP:
                 prompt += f"- Chức năng ngôn ngữ: {language_functions}\n"
             if additional_notes:
                 prompt += f"- Ghi chú: {additional_notes}\n"
-            
+
             # Specific instructions based on worksheet type
             if worksheet_type == "multiple_choice":
                 prompt += """
@@ -1538,7 +1534,7 @@ Tạo phiếu học tập trắc nghiệm với format JSON:
     "total_points": 10
 }
 """
-            
+
             elif worksheet_type == "fill_in_blank":
                 prompt += """
 Tạo phiếu điền khuyết với format JSON:
@@ -1565,7 +1561,7 @@ Tạo phiếu điền khuyết với format JSON:
     "total_points": 10
 }
 """
-            
+
             elif worksheet_type == "essay":
                 prompt += """
 Tạo phiếu bài tập viết với format JSON:
@@ -1596,7 +1592,7 @@ Tạo phiếu bài tập viết với format JSON:
     "total_points": 10
 }
 """
-            
+
             else:  # mixed or other types
                 prompt += """
 Tạo phiếu học tập đa dạng với format JSON:
@@ -1620,7 +1616,7 @@ Tạo phiếu học tập đa dạng với format JSON:
     "total_points": 10
 }
 """
-            
+
             prompt += f"""
 YÊU CẦU:
 - Nội dung phù hợp với khối {grade}, độ khó {difficulty_level}
@@ -1630,7 +1626,7 @@ YÊU CẦU:
 - Thời gian làm bài hợp lý ({duration} phút)
 - Bám sát chương trình 2018
 """
-            
+
             # Generate with OpenAI
             response = await asyncio.to_thread(
                 self.client.chat.completions.create,
@@ -1639,19 +1635,18 @@ YÊU CẦU:
                 temperature=0.7,
                 response_format={"type": "json_object"}
             )
-            
+
             result_text = response.choices[0].message.content.strip()
-            
+
             # Parse JSON
             if "```json" in result_text:
                 result_text = result_text.split("```json")[1].split("```")[0].strip()
             elif "```" in result_text:
                 result_text = result_text.split("```")[1].split("```")[0].strip()
-            
-            worksheet_data = json.loads(result_text)
-            
-            return worksheet_data
-            
+
+            return json.loads(result_text)
+
+
         except Exception as e:
             logger.info(f"Error generating worksheet: {str(e)}")
             # Return fallback worksheet

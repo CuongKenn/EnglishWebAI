@@ -1,25 +1,38 @@
 """
 API Router for rich course content (Reading, Writing, Listening, Speaking)
 """
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
-from typing import List
 import json
+
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_active_user
-from app.models.user import User, UserRole
 from app.models.course_content import (
-    ReadingPassage, ReadingParagraph, ReadingQuestion,
-    WritingPrompt, WritingRubric,
-    ListeningAudio, ListeningQuestion,
-    SpeakingPrompt, SpeakingCriteria
+    ListeningAudio,
+    ListeningQuestion,
+    ReadingParagraph,
+    ReadingPassage,
+    ReadingQuestion,
+    SpeakingCriteria,
+    SpeakingPrompt,
+    WritingPrompt,
+    WritingRubric,
 )
+from app.models.user import User, UserRole
 from app.schemas.course_content import (
-    ReadingPassageCreate, ReadingPassageUpdate, ReadingPassageResponse,
-    WritingPromptCreate, WritingPromptUpdate, WritingPromptResponse,
-    ListeningAudioCreate, ListeningAudioUpdate, ListeningAudioResponse,
-    SpeakingPromptCreate, SpeakingPromptUpdate, SpeakingPromptResponse
+    ListeningAudioCreate,
+    ListeningAudioResponse,
+    ListeningAudioUpdate,
+    ReadingPassageCreate,
+    ReadingPassageResponse,
+    ReadingPassageUpdate,
+    SpeakingPromptCreate,
+    SpeakingPromptResponse,
+    SpeakingPromptUpdate,
+    WritingPromptCreate,
+    WritingPromptResponse,
+    WritingPromptUpdate,
 )
 
 router = APIRouter()
@@ -37,7 +50,7 @@ async def create_reading_passage(
     """Create reading passage with paragraphs and questions for a unit"""
     if current_user.role not in (UserRole.TEACHER, UserRole.ADMIN, UserRole.SUPERADMIN):
         raise HTTPException(status_code=403, detail="Chỉ giáo viên mới được tạo nội dung")
-    
+
     try:
         # Create passage
         passage = ReadingPassage(
@@ -50,7 +63,7 @@ async def create_reading_passage(
         )
         db.add(passage)
         db.flush()
-        
+
         # Create paragraphs and questions
         for para_data in payload.paragraphs:
             paragraph = ReadingParagraph(
@@ -62,7 +75,7 @@ async def create_reading_passage(
             )
             db.add(paragraph)
             db.flush()
-            
+
             # Create questions for this paragraph
             for q_data in para_data.questions:
                 question = ReadingQuestion(
@@ -75,7 +88,7 @@ async def create_reading_passage(
                     order_index=q_data.order_index
                 )
                 db.add(question)
-        
+
         db.commit()
         db.refresh(passage)
         return passage
@@ -106,11 +119,11 @@ async def update_reading_passage(
     """Update reading passage metadata"""
     if current_user.role not in (UserRole.TEACHER, UserRole.ADMIN, UserRole.SUPERADMIN):
         raise HTTPException(status_code=403, detail="Chỉ giáo viên mới được sửa nội dung")
-    
+
     passage = db.query(ReadingPassage).filter(ReadingPassage.id == passage_id).first()
     if not passage:
         raise HTTPException(status_code=404, detail="Không tìm thấy reading passage")
-    
+
     if payload.title is not None:
         passage.title = payload.title
     if payload.subtitle is not None:
@@ -119,7 +132,7 @@ async def update_reading_passage(
         passage.difficulty = payload.difficulty
     if payload.estimated_time is not None:
         passage.estimated_time = payload.estimated_time
-    
+
     db.commit()
     db.refresh(passage)
     return passage
@@ -134,14 +147,14 @@ async def delete_reading_passage(
     """Delete reading passage"""
     if current_user.role not in (UserRole.TEACHER, UserRole.ADMIN, UserRole.SUPERADMIN):
         raise HTTPException(status_code=403, detail="Chỉ giáo viên mới được xóa nội dung")
-    
+
     passage = db.query(ReadingPassage).filter(ReadingPassage.id == passage_id).first()
     if not passage:
         raise HTTPException(status_code=404, detail="Không tìm thấy reading passage")
-    
+
     db.delete(passage)
     db.commit()
-    return None
+    return
 
 
 # ============= WRITING ENDPOINTS =============
@@ -156,7 +169,7 @@ async def create_writing_prompt(
     """Create writing prompt with rubrics for a unit"""
     if current_user.role not in (UserRole.TEACHER, UserRole.ADMIN, UserRole.SUPERADMIN):
         raise HTTPException(status_code=403, detail="Chỉ giáo viên mới được tạo nội dung")
-    
+
     try:
         prompt = WritingPrompt(
             unit_id=unit_id,
@@ -174,7 +187,7 @@ async def create_writing_prompt(
         )
         db.add(prompt)
         db.flush()
-        
+
         # Create rubrics
         for rubric_data in payload.rubrics:
             rubric = WritingRubric(
@@ -185,7 +198,7 @@ async def create_writing_prompt(
                 order_index=rubric_data.order_index
             )
             db.add(rubric)
-        
+
         db.commit()
         db.refresh(prompt)
         return prompt
@@ -216,17 +229,17 @@ async def update_writing_prompt(
     """Update writing prompt"""
     if current_user.role not in (UserRole.TEACHER, UserRole.ADMIN, UserRole.SUPERADMIN):
         raise HTTPException(status_code=403, detail="Chỉ giáo viên mới được sửa nội dung")
-    
+
     prompt = db.query(WritingPrompt).filter(WritingPrompt.id == prompt_id).first()
     if not prompt:
         raise HTTPException(status_code=404, detail="Không tìm thấy writing prompt")
-    
+
     for field, value in payload.dict(exclude_unset=True).items():
         if field == 'hints' and value is not None:
-            setattr(prompt, 'hints_json', json.dumps(value, ensure_ascii=False))
+            prompt.hints_json = json.dumps(value, ensure_ascii=False)
         else:
             setattr(prompt, field, value)
-    
+
     db.commit()
     db.refresh(prompt)
     return prompt
@@ -241,14 +254,14 @@ async def delete_writing_prompt(
     """Delete writing prompt"""
     if current_user.role not in (UserRole.TEACHER, UserRole.ADMIN, UserRole.SUPERADMIN):
         raise HTTPException(status_code=403, detail="Chỉ giáo viên mới được xóa nội dung")
-    
+
     prompt = db.query(WritingPrompt).filter(WritingPrompt.id == prompt_id).first()
     if not prompt:
         raise HTTPException(status_code=404, detail="Không tìm thấy writing prompt")
-    
+
     db.delete(prompt)
     db.commit()
-    return None
+    return
 
 
 # ============= LISTENING ENDPOINTS =============
@@ -263,7 +276,7 @@ async def create_listening_audio(
     """Create listening audio with questions for a unit"""
     if current_user.role not in (UserRole.TEACHER, UserRole.ADMIN, UserRole.SUPERADMIN):
         raise HTTPException(status_code=403, detail="Chỉ giáo viên mới được tạo nội dung")
-    
+
     try:
         audio = ListeningAudio(
             unit_id=unit_id,
@@ -281,7 +294,7 @@ async def create_listening_audio(
         )
         db.add(audio)
         db.flush()
-        
+
         # Create questions
         for q_data in payload.questions:
             question = ListeningQuestion(
@@ -296,7 +309,7 @@ async def create_listening_audio(
                 order_index=q_data.order_index
             )
             db.add(question)
-        
+
         db.commit()
         db.refresh(audio)
         return audio
@@ -327,14 +340,14 @@ async def update_listening_audio(
     """Update listening audio"""
     if current_user.role not in (UserRole.TEACHER, UserRole.ADMIN, UserRole.SUPERADMIN):
         raise HTTPException(status_code=403, detail="Chỉ giáo viên mới được sửa nội dung")
-    
+
     audio = db.query(ListeningAudio).filter(ListeningAudio.id == audio_id).first()
     if not audio:
         raise HTTPException(status_code=404, detail="Không tìm thấy listening audio")
-    
+
     for field, value in payload.dict(exclude_unset=True).items():
         setattr(audio, field, value)
-    
+
     db.commit()
     db.refresh(audio)
     return audio
@@ -349,14 +362,14 @@ async def delete_listening_audio(
     """Delete listening audio"""
     if current_user.role not in (UserRole.TEACHER, UserRole.ADMIN, UserRole.SUPERADMIN):
         raise HTTPException(status_code=403, detail="Chỉ giáo viên mới được xóa nội dung")
-    
+
     audio = db.query(ListeningAudio).filter(ListeningAudio.id == audio_id).first()
     if not audio:
         raise HTTPException(status_code=404, detail="Không tìm thấy listening audio")
-    
+
     db.delete(audio)
     db.commit()
-    return None
+    return
 
 
 # ============= SPEAKING ENDPOINTS =============
@@ -371,7 +384,7 @@ async def create_speaking_prompt(
     """Create speaking prompt with criteria for a unit"""
     if current_user.role not in (UserRole.TEACHER, UserRole.ADMIN, UserRole.SUPERADMIN):
         raise HTTPException(status_code=403, detail="Chỉ giáo viên mới được tạo nội dung")
-    
+
     try:
         prompt = SpeakingPrompt(
             unit_id=unit_id,
@@ -390,7 +403,7 @@ async def create_speaking_prompt(
         )
         db.add(prompt)
         db.flush()
-        
+
         # Create criteria
         for criteria_data in payload.criteria:
             criteria = SpeakingCriteria(
@@ -401,7 +414,7 @@ async def create_speaking_prompt(
                 order_index=criteria_data.order_index
             )
             db.add(criteria)
-        
+
         db.commit()
         db.refresh(prompt)
         return prompt
@@ -432,19 +445,19 @@ async def update_speaking_prompt(
     """Update speaking prompt"""
     if current_user.role not in (UserRole.TEACHER, UserRole.ADMIN, UserRole.SUPERADMIN):
         raise HTTPException(status_code=403, detail="Chỉ giáo viên mới được sửa nội dung")
-    
+
     prompt = db.query(SpeakingPrompt).filter(SpeakingPrompt.id == prompt_id).first()
     if not prompt:
         raise HTTPException(status_code=404, detail="Không tìm thấy speaking prompt")
-    
+
     for field, value in payload.dict(exclude_unset=True).items():
         if field == 'tips' and value is not None:
-            setattr(prompt, 'tips_json', json.dumps(value, ensure_ascii=False))
+            prompt.tips_json = json.dumps(value, ensure_ascii=False)
         elif field == 'vocabulary' and value is not None:
-            setattr(prompt, 'vocabulary_json', json.dumps(value, ensure_ascii=False))
+            prompt.vocabulary_json = json.dumps(value, ensure_ascii=False)
         else:
             setattr(prompt, field, value)
-    
+
     db.commit()
     db.refresh(prompt)
     return prompt
@@ -459,12 +472,12 @@ async def delete_speaking_prompt(
     """Delete speaking prompt"""
     if current_user.role not in (UserRole.TEACHER, UserRole.ADMIN, UserRole.SUPERADMIN):
         raise HTTPException(status_code=403, detail="Chỉ giáo viên mới được xóa nội dung")
-    
+
     prompt = db.query(SpeakingPrompt).filter(SpeakingPrompt.id == prompt_id).first()
     if not prompt:
         raise HTTPException(status_code=404, detail="Không tìm thấy speaking prompt")
-    
+
     db.delete(prompt)
     db.commit()
-    return None
+    return
 

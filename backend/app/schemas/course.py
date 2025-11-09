@@ -1,15 +1,15 @@
-from typing import Optional, List
 from datetime import datetime
+
 from pydantic import BaseModel, Field
 
 
 class CourseBase(BaseModel):
     title: str
-    description: Optional[str] = None
+    description: str | None = None
     grade: int = Field(ge=1, le=12)
     skill: str = Field(pattern=r"^(listening|speaking|reading|writing|vocabulary|grammar)$")
-    level: Optional[str] = None
-    is_active: Optional[bool] = True
+    level: str | None = None
+    is_active: bool | None = True
 
 
 class CourseCreate(CourseBase):
@@ -17,12 +17,12 @@ class CourseCreate(CourseBase):
 
 
 class CourseUpdate(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
-    grade: Optional[int] = Field(default=None, ge=1, le=12)
-    skill: Optional[str] = Field(default=None, pattern=r"^(listening|speaking|reading|writing|vocabulary|grammar)$")
-    level: Optional[str] = None
-    is_active: Optional[bool] = None
+    title: str | None = None
+    description: str | None = None
+    grade: int | None = Field(default=None, ge=1, le=12)
+    skill: str | None = Field(default=None, pattern=r"^(listening|speaking|reading|writing|vocabulary|grammar)$")
+    level: str | None = None
+    is_active: bool | None = None
 
 
 class CourseListItem(BaseModel):
@@ -35,15 +35,15 @@ class CourseListItem(BaseModel):
     cupsEarned: int
     totalCups: int
     status: str  # completed|in-progress|not-started|locked
-    instructor: Optional[str] = None
-    level: Optional[str] = None
+    instructor: str | None = None
+    level: str | None = None
 
 
 class CourseResponse(CourseBase):
     id: int
-    created_by: Optional[int]
+    created_by: int | None
     created_at: datetime
-    updated_at: Optional[datetime]
+    updated_at: datetime | None
     is_premium: bool = False
 
     class Config:
@@ -52,11 +52,11 @@ class CourseResponse(CourseBase):
 
 class CourseExerciseBase(BaseModel):
     title: str
-    description: Optional[str] = None
+    description: str | None = None
     type: str = "assignment"
-    max_score: Optional[int] = None
-    order_index: Optional[int] = None
-    content: Optional[dict] = None  # question configuration (skill-specific)
+    max_score: int | None = None
+    order_index: int | None = None
+    content: dict | None = None  # question configuration (skill-specific)
 
 
 class CourseExerciseCreate(CourseExerciseBase):
@@ -73,24 +73,24 @@ class CourseExerciseResponse(CourseExerciseBase):
 
 
 class CourseSubmissionCreate(BaseModel):
-    content_text: Optional[str] = None
-    content_url: Optional[str] = None
-    score: Optional[int] = None
-    time_spent: Optional[int] = None
+    content_text: str | None = None
+    content_url: str | None = None
+    score: int | None = None
+    time_spent: int | None = None
 
 
 class CourseSubmissionResponse(BaseModel):
     id: int
     exercise_id: int
     student_id: int
-    content_text: Optional[str]
-    content_url: Optional[str]
-    score: Optional[int]
-    feedback: Optional[str]
+    content_text: str | None
+    content_url: str | None
+    score: int | None
+    feedback: str | None
     status: str
     submitted_at: datetime
-    graded_at: Optional[datetime]
-    time_spent: Optional[int]
+    graded_at: datetime | None
+    time_spent: int | None
 
     class Config:
         from_attributes = True
@@ -100,9 +100,9 @@ class CourseSubmissionResponse(BaseModel):
 
 class CourseUnitBase(BaseModel):
     title: str
-    description: Optional[str] = None
-    week_index: Optional[int] = None
-    order_index: Optional[int] = None
+    description: str | None = None
+    week_index: int | None = None
+    order_index: int | None = None
 
 
 class CourseUnitCreate(CourseUnitBase):
@@ -113,7 +113,7 @@ class CourseUnitResponse(CourseUnitBase):
     id: int
     course_id: int
     created_at: datetime
-    questions: Optional[int] = 0
+    questions: int | None = 0
 
     class Config:
         from_attributes = True
@@ -122,11 +122,11 @@ class CourseUnitResponse(CourseUnitBase):
 class CourseQuestionBase(BaseModel):
     type: str = Field(pattern=r"^(mcq|fill-blank|short|mcq-audio|dictation|prompt|essay)$")
     prompt: str
-    options: Optional[List[str]] = None
-    answer: Optional[dict] = None
-    media_url: Optional[str] = None
-    points: Optional[int] = None
-    order_index: Optional[int] = None
+    options: list[str] | None = None
+    answer: dict | None = None
+    media_url: str | None = None
+    points: int | None = None
+    order_index: int | None = None
 
 
 class CourseQuestionCreate(CourseQuestionBase):

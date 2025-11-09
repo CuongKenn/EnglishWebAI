@@ -1,30 +1,36 @@
 """
 Seed data for development and testing
 """
-from sqlalchemy.orm import Session
-from app.core.database import SessionLocal
-from app.models.user import User, UserRole
-from app.models.discussion import DiscussionThread, DiscussionPost
-from app.models.classroom import Classroom
-from app.core.security import get_password_hash
-from app.models.course import Course, CourseExercise, CourseUnit, CourseQuestion
+import logging
 from datetime import datetime, timedelta
+
+from sqlalchemy.orm import Session
+
+from app.core.database import SessionLocal
+from app.core.security import get_password_hash
+from app.models.classroom import Classroom
+from app.models.course import Course, CourseExercise, CourseQuestion, CourseUnit
+from app.models.discussion import DiscussionPost, DiscussionThread
+from app.models.user import User, UserRole
+
+logger = logging.getLogger(__name__)
+
 
 def seed_users(db: Session, force: bool = False):
     """Seed users with different roles"""
-    
+
     # Check if users already exist
     existing_user = db.query(User).first()
     if existing_user and not force:
         logger.info("⚠️  Database already has users. Use --force to reset and seed.")
         return
-    
+
     # If force, delete all existing users
     if force:
         db.query(User).delete()
         db.commit()
         logger.info("🗑️  Cleared existing users.")
-    
+
     users_data = [
         {
             "username": "admin",
@@ -127,13 +133,13 @@ def seed_users(db: Session, force: bool = False):
             "is_verified": True
         }
     ]
-    
+
     created_users = []
     for user_data in users_data:
         user = User(**user_data)
         db.add(user)
         created_users.append(user)
-    
+
     try:
         db.commit()
         logger.info(f"✅ Successfully seeded {len(created_users)} users:")
@@ -151,32 +157,32 @@ def seed_users(db: Session, force: bool = False):
 
 def seed_discussions(db: Session, force: bool = False):
     """Seed discussion threads and posts"""
-    
+
     # Check if discussions already exist
     existing_discussion = db.query(DiscussionThread).first()
     if existing_discussion and not force:
         logger.info("⚠️  Database already has discussions. Use --force to reset and seed.")
         return
-    
+
     # If force, delete all existing discussions
     if force:
         db.query(DiscussionPost).delete()
         db.query(DiscussionThread).delete()
         db.commit()
         logger.info("🗑️  Cleared existing discussions.")
-    
+
     # Get users for assigning as authors
     students = db.query(User).filter(User.role == UserRole.USER).all()
     teachers = db.query(User).filter(User.role == UserRole.TEACHER).all()
-    
+
     if not students or not teachers:
         logger.info("⚠️  Need users to seed discussions. Run seed_users first.")
         return
-    
+
     # Get a classroom if exists
     classroom = db.query(Classroom).first()
     class_id = classroom.id if classroom else None
-    
+
     discussions_data = [
         {
             "title": "Cách phân biệt Present Simple và Present Continuous?",
@@ -250,7 +256,7 @@ def seed_discussions(db: Session, force: bool = False):
             ]
         }
     ]
-    
+
     created_threads = []
     try:
         for disc_data in discussions_data:
@@ -263,7 +269,7 @@ def seed_discussions(db: Session, force: bool = False):
             )
             db.add(thread)
             db.flush()  # Get thread.id
-            
+
             # Create posts
             for i, post_data in enumerate(disc_data.get("posts", [])):
                 post = DiscussionPost(
@@ -273,9 +279,9 @@ def seed_discussions(db: Session, force: bool = False):
                     created_at=datetime.utcnow() - timedelta(days=len(created_threads), hours=i)
                 )
                 db.add(post)
-            
+
             created_threads.append(thread)
-        
+
         db.commit()
         logger.info(f"✅ Successfully seeded {len(created_threads)} discussion threads with posts")
         for thread in created_threads:

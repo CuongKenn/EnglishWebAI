@@ -2,19 +2,16 @@
 AI Exercise Generator Service
 Generates exercises based on Vietnam's 2018 Foreign Language Curriculum
 """
-from openai import OpenAI
 import logging
 
+from openai import OpenAI
+
 logger = logging.getLogger(__name__)
-import os
-
 import json
-
+import os
+import time
 import uuid
 
-import time
-
-from typing import Dict, List, Optional
 import azure.cognitiveservices.speech as speechsdk
 
 # Vietnam's 2018 Curriculum Topics by Grade
@@ -82,11 +79,11 @@ class AIExerciseGenerator:
         # Azure Speech Config
         self.speech_key = os.getenv("AZURE_SPEECH_KEY")
         self.speech_region = os.getenv("AZURE_SPEECH_REGION", "eastasia")
-    
-    def _get_topics(self, grade: str, semester: str) -> List[str]:
+
+    def _get_topics(self, grade: str, semester: str) -> list[str]:
         """Get curriculum topics for grade and semester"""
         return CURRICULUM_TOPICS.get(grade, {}).get(semester, [])
-    
+
     async def _generate_audio_from_text(self, text: str, filename: str = None) -> str:
         """
         Generate audio file from text using Azure Text-to-Speech
@@ -95,65 +92,64 @@ class AIExerciseGenerator:
         if not self.speech_key:
             logger.info("Azure Speech Key not found, skipping audio generation")
             return ""
-        
+
         try:
             # Create speech config
             speech_config = speechsdk.SpeechConfig(
-                subscription=self.speech_key, 
+                subscription=self.speech_key,
                 region=self.speech_region
             )
-            
+
             # Set voice (British English female for better educational content)
             speech_config.speech_synthesis_voice_name = "en-GB-SoniaNeural"
-            
+
             # Generate unique filename if not provided
             if not filename:
                 filename = f"listening_{uuid.uuid4().hex[:8]}.mp3"
-            
+
             # Create audio output directory if not exists
             audio_dir = "media/audio"
             os.makedirs(audio_dir, exist_ok=True)
-            
+
             # Full path to audio file
             audio_path = os.path.join(audio_dir, filename)
-            
+
             # Configure audio output to file
             audio_config = speechsdk.audio.AudioOutputConfig(filename=audio_path)
-            
+
             # Create synthesizer
             speech_synthesizer = speechsdk.SpeechSynthesizer(
-                speech_config=speech_config, 
+                speech_config=speech_config,
                 audio_config=audio_config
             )
-            
+
             # Synthesize text to audio
             result = speech_synthesizer.speak_text_async(text).get()
-            
+
             if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
                 logger.info(f"✅ Audio generated successfully: {audio_path}")
                 # Return URL path for frontend
                 return f"/api/v1/media/files/audio/{filename}"
-            else:
-                logger.info(f"❌ Speech synthesis failed: {result.reason}")
-                return ""
-                
+            logger.info(f"❌ Speech synthesis failed: {result.reason}")
+            return ""
+
         except Exception as e:
             logger.info(f"Error generating audio: {e}")
             return ""
-    
+
     async def generate_full_exam(
-        self, 
-        test_type: str, 
-        grade: str, 
+        self,
+        test_type: str,
+        grade: str,
         semester: str,
         difficulty: str = 'mixed',
         questions_per_skill: int = 10,
         additional_notes: str = None
-    ) -> Dict:
+    ) -> dict:
         """
         Generate full exam with all 4 skills (Listening, Speaking, Reading, Writing)
         Following Vietnam's 2018 Curriculum
-        
+
         Args:
             test_type: 'midterm' or 'final'
             grade: Student grade (1-12)
@@ -164,9 +160,9 @@ class AIExerciseGenerator:
         """
         topics = self._get_topics(grade, semester)
         topics_str = ", ".join(topics)
-        
+
         exam_name = "Kiểm tra Giữa kỳ" if test_type == "midterm" else "Kiểm tra Cuối kỳ"
-        
+
         # Map difficulty to Vietnamese
         difficulty_map = {
             'easy': 'Dễ - phù hợp với học sinh trung bình yếu',
@@ -175,12 +171,12 @@ class AIExerciseGenerator:
             'mixed': 'Trộn lẫn các mức độ từ dễ đến khó'
         }
         difficulty_desc = difficulty_map.get(difficulty, difficulty_map['mixed'])
-        
+
         # Calculate points per question
         points_per_question = round(2.5 / questions_per_skill, 2)
-        
+
         additional_instructions = f"\n\nYÊU CẦU BỔ SUNG TỪ GIÁO VIÊN:\n{additional_notes}" if additional_notes else ""
-        
+
         prompt = f"""Bạn là một giáo viên tiếng Anh chuyên nghiệp tại Việt Nam.
 Hãy tạo một đề {exam_name} học kỳ {semester} cho học sinh lớp {grade} theo Chương trình Giáo dục phổ thông môn Ngoại ngữ 2018 của Việt Nam.
 
@@ -333,17 +329,17 @@ Chỉ trả về JSON, không có text khác."""
             max_tokens = min(3000 + (questions_per_skill * 400), 8000)
             logger.info(f"[AI Generate] Full Exam - Grade {grade}, Semester {semester}, {questions_per_skill} Q/skill")
             logger.info(f"[AI Generate] Using model={self.model}, max_tokens={max_tokens}, timeout=300s")
-            
+
             # Determine if model supports max_tokens or max_completion_tokens
             # GPT-4o and newer models use max_completion_tokens
             use_max_completion_tokens = any(x in self.model.lower() for x in ['gpt-4o', 'gpt-5', 'o1'])
-            
+
             # Some models (like gpt-5-nano, o1) only support temperature=1
             temperature = 1 if any(x in self.model.lower() for x in ['gpt-5', 'o1']) else 0.7
-            
+
             # Some models (like o1) don't support system messages
             use_system_message = not any(x in self.model.lower() for x in ['o1', 'gpt-5'])
-            
+
             # Prepare messages
             if use_system_message:
                 messages = [
@@ -354,7 +350,7 @@ Chỉ trả về JSON, không có text khác."""
                 # Merge system message into user prompt for models that don't support it
                 combined_prompt = "You are an expert English teacher in Vietnam, following the 2018 curriculum. Generate well-structured exams with complete JSON format. Ensure all JSON is valid with proper commas and quotes.\n\n" + prompt
                 messages = [{"role": "user", "content": combined_prompt}]
-            
+
             # Prepare common parameters
             common_params = {
                 "model": self.model,
@@ -362,13 +358,13 @@ Chỉ trả về JSON, không có text khác."""
                 "temperature": temperature,
                 "timeout": 300  # 5 minutes timeout
             }
-            
+
             # Add the appropriate token parameter
             if use_max_completion_tokens:
                 common_params["max_completion_tokens"] = max_tokens
             else:
                 common_params["max_tokens"] = max_tokens
-            
+
             # Try configured model first
             try:
                 logger.info(f"[AI Generate] Attempting with {self.model} (using {'max_completion_tokens' if use_max_completion_tokens else 'max_tokens'})")
@@ -385,13 +381,13 @@ Chỉ trả về JSON, không có text khác."""
                     response = self.client.chat.completions.create(**fallback_params)
                 else:
                     raise
-            
+
             # Extract JSON from response
             content = response.choices[0].message.content.strip()
-            
+
             # Log raw response for debugging
             logger.info(f"[AI Generate] Raw response length: {len(content)} chars")
-            
+
             # Remove markdown code blocks if present
             if content.startswith("```json"):
                 content = content[7:]
@@ -400,37 +396,37 @@ Chỉ trả về JSON, không có text khác."""
             if content.endswith("```"):
                 content = content[:-3]
             content = content.strip()
-            
+
             # Parse JSON with better error handling
             try:
                 result = json.loads(content)
             except json.JSONDecodeError as json_err:
                 logger.info(f"[AI Generate] ❌ JSON Parse Error: {json_err}")
                 logger.info(f"[AI Generate] Error at position {json_err.pos}")
-                logger.info(f"[AI Generate] Context around error:")
+                logger.info("[AI Generate] Context around error:")
                 start = max(0, json_err.pos - 150)
                 end = min(len(content), json_err.pos + 150)
                 logger.info(f"...{content[start:end]}...")
-                
+
                 # Try to fix common JSON issues
                 logger.info("[AI Generate] Attempting to fix common JSON errors...")
-                
+
                 # Fix common issues:
                 # 1. Unescaped quotes and newlines in strings
                 # 2. Trailing commas
                 # 3. Missing commas
                 import re
-                
+
 
                 content_fixed = content
-                
+
                 # Replace literal newlines within strings with \n
                 content_fixed = re.sub(r'(?<!\\)\n(?=[^}{\[\]]*["}])', r'\\n', content_fixed)
-                
+
                 # Fix unescaped quotes (but be careful not to break valid JSON)
                 # Remove any trailing commas before closing brackets/braces
                 content_fixed = re.sub(r',(\s*[}\]])', r'\1', content_fixed)
-                
+
                 try:
                     result = json.loads(content_fixed)
                     logger.info("[AI Generate] ✅ Fixed JSON successfully after error recovery")
@@ -447,7 +443,7 @@ Chỉ trả về JSON, không có text khác."""
                     except:
                         pass
                     raise json_err
-            
+
             # Transform comprehensive test structure
             # GPT returns: {"questions": [{"section": "listening", ...}, {"section": "reading", ...}]}
             # We need: {"type": "comprehensive_test", "listening": {...}, "reading": {...}, ...}
@@ -456,16 +452,16 @@ Chỉ trả về JSON, không có text khác."""
                     "type": "comprehensive_test",
                     "title": result.get("title", "Comprehensive Test")
                 }
-                
+
                 for section in result["questions"]:
                     section_name = section.get("section", "").lower()
                     if section_name in ["listening", "reading", "writing", "speaking"]:
                         # Remove the 'section' key and store under section name
                         section_data = {k: v for k, v in section.items() if k != "section"}
                         transformed[section_name] = section_data
-                
+
                 result = transformed
-            
+
             # Generate audio for listening section
             if result.get("listening") and result["listening"].get("script"):
                 logger.info("🎧 Generating audio for listening section...")
@@ -473,33 +469,33 @@ Chỉ trả về JSON, không có text khác."""
                 if audio_url:
                     result["listening"]["audio_url"] = audio_url
                     logger.info(f"✅ Audio URL: {audio_url}")
-            
+
             return result
-            
+
         except Exception as e:
             logger.info(f"Error generating full exam: {e}")
             raise
-    
+
     async def generate_skill_exercise(
-        self, 
-        skill: str, 
-        test_type: str, 
-        grade: str, 
+        self,
+        skill: str,
+        test_type: str,
+        grade: str,
         semester: str
-    ) -> Dict:
+    ) -> dict:
         """
         Generate exercise for a single skill
         """
         topics = self._get_topics(grade, semester)
         topics_str = ", ".join(topics)
-        
-        skill_name = {
+
+        {
             "listening": "Nghe",
             "speaking": "Nói",
             "reading": "Đọc",
             "writing": "Viết"
         }.get(skill, skill)
-        
+
         if skill == "listening":
             prompt = f"""Tạo bài tập NGHE cho học sinh lớp {grade}, học kỳ {semester}.
 Chủ đề: {topics_str}
@@ -529,7 +525,7 @@ Trả về JSON:
         ]
     }}
 }}"""
-        
+
         elif skill == "reading":
             prompt = f"""Tạo bài tập ĐỌC cho học sinh lớp {grade}, học kỳ {semester}.
 Chủ đề: {topics_str}
@@ -548,7 +544,7 @@ Trả về JSON:
         "questions": [...]
     }}
 }}"""
-        
+
         elif skill == "speaking":
             prompt = f"""Tạo bài tập NÓI cho học sinh lớp {grade}, học kỳ {semester}.
 Chủ đề: {topics_str}
@@ -568,7 +564,7 @@ Trả về JSON:
         "speak_time": 120
     }}
 }}"""
-        
+
         else:  # writing
             prompt = f"""Tạo bài tập VIẾT cho học sinh lớp {grade}, học kỳ {semester}.
 Chủ đề: {topics_str}
@@ -589,7 +585,7 @@ Trả về JSON:
         "max_words": 200
     }}
 }}"""
-        
+
         try:
             response = self.client.chat.completions.create(
                 model=self.model,
@@ -600,9 +596,9 @@ Trả về JSON:
                 temperature=0.7,
                 max_tokens=3000
             )
-            
+
             content = response.choices[0].message.content.strip()
-            
+
             # Parse JSON
             # Remove markdown code blocks if present
             if content.startswith("```json"):
@@ -612,34 +608,33 @@ Trả về JSON:
             if content.endswith("```"):
                 content = content[:-3]
             content = content.strip()
-            
-            exercise_data = json.loads(content)
-            return exercise_data
-            
+
+            return json.loads(content)
+
         except Exception as e:
             logger.info(f"Error generating full exam: {str(e)}")
             raise
-    
+
     async def generate_skill_exercise(
-        self, 
-        skill: str, 
-        test_type: str, 
-        grade: str, 
+        self,
+        skill: str,
+        test_type: str,
+        grade: str,
         semester: str
-    ) -> Dict:
+    ) -> dict:
         """
         Generate exercise for a single skill
         """
         topics = self._get_topics(grade, semester)
         topics_str = ", ".join(topics)
-        
-        skill_name = {
+
+        {
             "listening": "Nghe",
             "speaking": "Nói",
             "reading": "Đọc",
             "writing": "Viết"
         }.get(skill, skill)
-        
+
         if skill == "listening":
             prompt = f"""Tạo bài tập NGHE cho học sinh lớp {grade}, học kỳ {semester}.
 Chủ đề: {topics_str}
@@ -669,7 +664,7 @@ Trả về JSON:
         ]
     }}
 }}"""
-        
+
         elif skill == "reading":
             prompt = f"""Tạo bài tập ĐỌC cho học sinh lớp {grade}, học kỳ {semester}.
 Chủ đề: {topics_str}
@@ -688,7 +683,7 @@ Trả về JSON:
         "questions": [...]
     }}
 }}"""
-        
+
         elif skill == "speaking":
             prompt = f"""Tạo bài tập NÓI cho học sinh lớp {grade}, học kỳ {semester}.
 Chủ đề: {topics_str}
@@ -708,7 +703,7 @@ Trả về JSON:
         "speak_time": 120
     }}
 }}"""
-        
+
         else:  # writing
             prompt = f"""Tạo bài tập VIẾT cho học sinh lớp {grade}, học kỳ {semester}.
 Chủ đề: {topics_str}
@@ -729,7 +724,7 @@ Trả về JSON:
         "max_words": 200
     }}
 }}"""
-        
+
         try:
             response = self.client.chat.completions.create(
                 model=self.model,
@@ -740,9 +735,9 @@ Trả về JSON:
                 temperature=0.7,
                 max_tokens=2000
             )
-            
+
             content = response.choices[0].message.content.strip()
-            
+
             # Clean and parse JSON
             if content.startswith("```json"):
                 content = content[7:]
@@ -751,9 +746,9 @@ Trả về JSON:
             if content.endswith("```"):
                 content = content[:-3]
             content = content.strip()
-            
+
             exercise_data = json.loads(content)
-            
+
             # Generate audio for listening exercise
             if skill == "listening" and exercise_data.get("listening", {}).get("script"):
                 logger.info("🎧 Generating audio for listening exercise...")
@@ -762,9 +757,9 @@ Trả về JSON:
                 if audio_url:
                     exercise_data["listening"]["audio_url"] = audio_url
                     logger.info(f"✅ Audio URL: {audio_url}")
-            
+
             return exercise_data
-            
+
         except Exception as e:
             logger.info(f"Error generating {skill} exercise: {str(e)}")
             raise

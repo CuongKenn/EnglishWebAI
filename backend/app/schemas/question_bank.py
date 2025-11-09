@@ -1,6 +1,6 @@
-from typing import List, Optional, Literal, Any
-from pydantic import BaseModel, Field
+from typing import Any, Literal
 
+from pydantic import BaseModel, Field
 
 SkillType = Literal["listening", "speaking", "reading", "writing"]
 QuestionType = Literal["multiple_choice", "fill_blank", "true_false", "short_answer", "task"]
@@ -11,21 +11,21 @@ class QuestionBankBase(BaseModel):
     skill_type: SkillType
     question_type: QuestionType
     difficulty: Difficulty = "medium"
-    topic: Optional[str] = None
-    question_text: Optional[str] = None
-    options: Optional[List[str]] = None
-    correct_answer: Optional[Any] = None
-    acceptable_answers: Optional[List[str]] = None
-    media_url: Optional[str] = None
-    transcript: Optional[str] = None
-    passage_text: Optional[str] = None
-    passage_url: Optional[str] = None
-    writing_type: Optional[str] = None
-    word_limit_min: Optional[int] = None
-    word_limit_max: Optional[int] = None
-    requirements: Optional[List[str]] = None
-    tags: Optional[List[str]] = None
-    points: Optional[int] = 1
+    topic: str | None = None
+    question_text: str | None = None
+    options: list[str] | None = None
+    correct_answer: Any | None = None
+    acceptable_answers: list[str] | None = None
+    media_url: str | None = None
+    transcript: str | None = None
+    passage_text: str | None = None
+    passage_url: str | None = None
+    writing_type: str | None = None
+    word_limit_min: int | None = None
+    word_limit_max: int | None = None
+    requirements: list[str] | None = None
+    tags: list[str] | None = None
+    points: int | None = 1
 
 
 class QuestionBankCreate(QuestionBankBase):
@@ -33,77 +33,77 @@ class QuestionBankCreate(QuestionBankBase):
 
 
 class QuestionBankUpdate(BaseModel):
-    skill_type: Optional[SkillType] = None
-    question_type: Optional[QuestionType] = None
-    difficulty: Optional[Difficulty] = None
-    topic: Optional[str] = None
-    question_text: Optional[str] = None
-    options: Optional[List[str]] = None
-    correct_answer: Optional[Any] = None
-    acceptable_answers: Optional[List[str]] = None
-    media_url: Optional[str] = None
-    transcript: Optional[str] = None
-    passage_text: Optional[str] = None
-    passage_url: Optional[str] = None
-    writing_type: Optional[str] = None
-    word_limit_min: Optional[int] = None
-    word_limit_max: Optional[int] = None
-    requirements: Optional[List[str]] = None
-    tags: Optional[List[str]] = None
-    points: Optional[int] = None
-    times_used: Optional[int] = None
+    skill_type: SkillType | None = None
+    question_type: QuestionType | None = None
+    difficulty: Difficulty | None = None
+    topic: str | None = None
+    question_text: str | None = None
+    options: list[str] | None = None
+    correct_answer: Any | None = None
+    acceptable_answers: list[str] | None = None
+    media_url: str | None = None
+    transcript: str | None = None
+    passage_text: str | None = None
+    passage_url: str | None = None
+    writing_type: str | None = None
+    word_limit_min: int | None = None
+    word_limit_max: int | None = None
+    requirements: list[str] | None = None
+    tags: list[str] | None = None
+    points: int | None = None
+    times_used: int | None = None
 
 
 class QuestionBankItemOut(QuestionBankBase):
     id: int
-    times_used: Optional[int] = 0
-    created_at: Optional[str] = None
+    times_used: int | None = 0
+    created_at: str | None = None
 
     class Config:
         from_attributes = True
 
 
 class QuestionBankListResponse(BaseModel):
-    items: List[QuestionBankItemOut]
+    items: list[QuestionBankItemOut]
     total: int
 
 
 class ImportResult(BaseModel):
     imported: int
     failed: int
-    errors: List[str] = Field(default_factory=list)
+    errors: list[str] = Field(default_factory=list)
 
 
 class GenerateTestConfig(BaseModel):
-    testName: Optional[str] = None
+    testName: str | None = None
     totalQuestions: int = 10
     timeLimit: int = 60
     skillDistribution: dict = Field(default_factory=lambda: {"listening": 25, "speaking": 25, "reading": 25, "writing": 25})
-    topics: Optional[List[str]] = None
-    difficultyDistribution: Optional[dict] = None
-    aiOnly: Optional[bool] = True
-    avoidDuplicates: Optional[bool] = True  # Try to avoid duplicates vs bank
-    maxAIAttempts: Optional[int] = 5       # Retry AI up to N times to reach targets
+    topics: list[str] | None = None
+    difficultyDistribution: dict | None = None
+    aiOnly: bool | None = True
+    avoidDuplicates: bool | None = True  # Try to avoid duplicates vs bank
+    maxAIAttempts: int | None = 5       # Retry AI up to N times to reach targets
 
 
 class GeneratedTestQuestion(BaseModel):
     question_text: str
     question_type: QuestionType
     skill_type: SkillType
-    options: Optional[List[str]] = None
-    correct_answer: Optional[Any] = None
+    options: list[str] | None = None
+    correct_answer: Any | None = None
     difficulty: Difficulty = "medium"
-    topic: Optional[str] = None
-    tags: Optional[List[str]] = None
+    topic: str | None = None
+    tags: list[str] | None = None
     points: int = 1
     # Optional rich fields for certain skills
-    transcript: Optional[str] = None  # For listening
-    passage_text: Optional[str] = None  # For reading
+    transcript: str | None = None  # For listening
+    passage_text: str | None = None  # For reading
 
 
 class GeneratedTestResponse(BaseModel):
     name: str
-    questions: List[GeneratedTestQuestion]
+    questions: list[GeneratedTestQuestion]
     timeLimit: int
     totalPoints: int
     skillDistribution: dict
@@ -112,14 +112,14 @@ class GeneratedTestResponse(BaseModel):
 
 class ExportDocxRequest(BaseModel):
     name: str
-    timeLimit: Optional[int] = None
-    totalPoints: Optional[int] = None
-    questions: List[GeneratedTestQuestion]
+    timeLimit: int | None = None
+    totalPoints: int | None = None
+    questions: list[GeneratedTestQuestion]
 
 
 class SaveFromTestRequest(BaseModel):
-    name: Optional[str] = None
-    timeLimit: Optional[int] = None
-    totalPoints: Optional[int] = None
+    name: str | None = None
+    timeLimit: int | None = None
+    totalPoints: int | None = None
     # Accept any question shape to avoid 422; router will coerce
-    questions: List[Any]
+    questions: list[Any]

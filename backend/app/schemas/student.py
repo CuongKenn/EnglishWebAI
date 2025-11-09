@@ -1,34 +1,34 @@
-from pydantic import BaseModel, EmailStr, Field
-from typing import Optional, List
 from datetime import datetime
+
+from pydantic import BaseModel, EmailStr, Field
 
 # ============= Classroom Schemas =============
 
 class ClassroomBase(BaseModel):
     name: str
-    code: Optional[str] = None
-    description: Optional[str] = None
-    max_students: Optional[int] = None
-    schedule: Optional[str] = None
+    code: str | None = None
+    description: str | None = None
+    max_students: int | None = None
+    schedule: str | None = None
 
 class ClassroomCreate(ClassroomBase):
-    teacher_id: Optional[int] = None
+    teacher_id: int | None = None
 
 class ClassroomUpdate(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    max_students: Optional[int] = None
-    schedule: Optional[str] = None
-    status: Optional[str] = None
+    name: str | None = None
+    description: str | None = None
+    max_students: int | None = None
+    schedule: str | None = None
+    status: str | None = None
 
 class ClassroomResponse(ClassroomBase):
     id: int
-    teacher_id: Optional[int]
+    teacher_id: int | None
     status: str
     is_active: bool
     created_at: datetime
-    updated_at: Optional[datetime]
-    student_count: Optional[int] = 0
+    updated_at: datetime | None
+    student_count: int | None = 0
 
     class Config:
         from_attributes = True
@@ -36,16 +36,16 @@ class ClassroomResponse(ClassroomBase):
 class ClassroomListResponse(BaseModel):
     id: int
     name: str
-    description: Optional[str] = None
-    schedule: Optional[str] = None
-    max_students: Optional[int] = None
+    description: str | None = None
+    schedule: str | None = None
+    max_students: int | None = None
     student_count: int
-    teacher_name: Optional[str] = None
-    subject: Optional[str] = None
-    grade: Optional[str] = None
-    skill: Optional[str] = None
-    image: Optional[str] = "📚"
-    color: Optional[str] = "blue"
+    teacher_name: str | None = None
+    subject: str | None = None
+    grade: str | None = None
+    skill: str | None = None
+    image: str | None = "📚"
+    color: str | None = "blue"
 
     class Config:
         from_attributes = True
@@ -70,7 +70,7 @@ class EnrollmentResponse(BaseModel):
 # ============= Class Students Management (Teacher/Admin) =============
 
 class AddStudentsRequest(BaseModel):
-    identifiers: List[str]
+    identifiers: list[str]
     idType: str = Field("username", pattern=r"^(username|email|id)$")
     role: str = Field("student", pattern=r"^(student)$")
     status: str = Field("active", pattern=r"^(active|inactive)$")
@@ -79,10 +79,10 @@ class AddStudentsRequest(BaseModel):
 class ClassStudentOut(BaseModel):
     id: int
     username: str
-    name: Optional[str] = None
-    email: Optional[EmailStr] = None
+    name: str | None = None
+    email: EmailStr | None = None
     status: str
-    joined_at: Optional[datetime] = None
+    joined_at: datetime | None = None
 
     class Config:
         from_attributes = True
@@ -93,41 +93,41 @@ class ClassStudentOut(BaseModel):
 class AttendanceRecordItem(BaseModel):
     userId: int
     status: str = Field("present", pattern=r"^(present|absent|late|excused)$")
-    note: Optional[str] = None
+    note: str | None = None
 
 
 class AttendanceUpsertRequest(BaseModel):
     date: str  # YYYY-MM-DD
-    records: List[AttendanceRecordItem]
+    records: list[AttendanceRecordItem]
 
 
 class AttendanceRecordOut(BaseModel):
     userId: int
     status: str
-    note: Optional[str] = None
+    note: str | None = None
 
 
 # ============= Lesson Schemas =============
 
 class LessonBase(BaseModel):
     title: str
-    content: Optional[str] = None
-    order_index: Optional[int] = None
+    content: str | None = None
+    order_index: int | None = None
 
 class LessonCreate(LessonBase):
-    class_id: Optional[int] = None
+    class_id: int | None = None
 
 class LessonUpdate(BaseModel):
-    title: Optional[str] = None
-    content: Optional[str] = None
-    order_index: Optional[int] = None
+    title: str | None = None
+    content: str | None = None
+    order_index: int | None = None
 
 class LessonResponse(LessonBase):
     id: int
     class_id: int
-    published_at: Optional[datetime]
+    published_at: datetime | None
     created_at: datetime
-    updated_at: Optional[datetime]
+    updated_at: datetime | None
 
     class Config:
         from_attributes = True
@@ -135,16 +135,16 @@ class LessonResponse(LessonBase):
 class LessonListResponse(BaseModel):
     id: int
     title: str
-    description: Optional[str]
-    subject: Optional[str]
-    grade: Optional[str]
-    difficulty: Optional[str]
+    description: str | None
+    subject: str | None
+    grade: str | None
+    difficulty: str | None
     lessons: int
-    duration: Optional[str]
+    duration: str | None
     progress: int = 0
-    image: Optional[str] = "📚"
-    color: Optional[str] = "blue"
-    chapters: Optional[List[dict]] = []
+    image: str | None = "📚"
+    color: str | None = "blue"
+    chapters: list[dict] | None = []
 
     class Config:
         from_attributes = True
@@ -155,63 +155,63 @@ class QuestionItem(BaseModel):
     id: str
     question: str
     type: str  # multiple_choice | fill_blank | true_false | short_answer
-    options: Optional[List[str]] = None
+    options: list[str] | None = None
     points: int
-    correct_answer: Optional[str] = None  # For teacher/creation only
+    correct_answer: str | None = None  # For teacher/creation only
 
 class ExerciseContentListening(BaseModel):
     audio_url: str
-    transcript: Optional[str] = None
+    transcript: str | None = None
     show_transcript: bool = False
-    questions: List[QuestionItem]
+    questions: list[QuestionItem]
 
 class ExerciseContentSpeaking(BaseModel):
     prompt: str
-    instructions: List[str]
+    instructions: list[str]
     prep_time: int  # seconds
     max_duration: int  # seconds
-    sample_answer: Optional[str] = None
+    sample_answer: str | None = None
 
 class ExerciseContentReading(BaseModel):
     passage: str
     word_count: int
-    questions: List[QuestionItem]
+    questions: list[QuestionItem]
 
 class ExerciseContentWriting(BaseModel):
     prompt: str
-    instructions: List[str]
+    instructions: list[str]
     word_limit: dict  # {"min": 150, "max": 250}
-    sample_essay: Optional[str] = None
+    sample_essay: str | None = None
 
 class ExerciseBase(BaseModel):
     title: str
-    description: Optional[str] = None
+    description: str | None = None
     type: str = "assignment"  # assignment | quiz | test
-    skill_type: Optional[str] = None  # listening | speaking | reading | writing | mixed
-    max_score: Optional[float] = None
-    duration: Optional[int] = None  # minutes
-    content: Optional[dict] = None  # JSON content based on skill_type
+    skill_type: str | None = None  # listening | speaking | reading | writing | mixed
+    max_score: float | None = None
+    duration: int | None = None  # minutes
+    content: dict | None = None  # JSON content based on skill_type
 
 class ExerciseCreate(ExerciseBase):
-    class_id: Optional[int] = None
-    lesson_id: Optional[int] = None
-    due_at: Optional[datetime] = None
+    class_id: int | None = None
+    lesson_id: int | None = None
+    due_at: datetime | None = None
     enable_ai_grading: bool = False
-    rubrics: Optional[dict] = None
+    rubrics: dict | None = None
 
 class ExerciseUpdate(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
-    max_score: Optional[float] = None
-    due_at: Optional[datetime] = None
-    content: Optional[dict] = None
-    duration: Optional[int] = None
+    title: str | None = None
+    description: str | None = None
+    max_score: float | None = None
+    due_at: datetime | None = None
+    content: dict | None = None
+    duration: int | None = None
 
 class ExerciseResponse(ExerciseBase):
     id: int
-    class_id: Optional[int]
-    lesson_id: Optional[int]
-    due_at: Optional[datetime]
+    class_id: int | None
+    lesson_id: int | None
+    due_at: datetime | None
     created_at: datetime
     enable_ai_grading: bool
 
@@ -223,27 +223,27 @@ class SubmissionSummary(BaseModel):
     id: int
     exercise_id: int
     student_id: int
-    content_text: Optional[str] = None
-    content_url: Optional[str] = None
-    answers: Optional[dict] = None
-    score: Optional[float] = None
-    ai_score: Optional[float] = None
-    feedback: Optional[str] = None
-    ai_feedback: Optional[str] = None
-    rubrics_scores: Optional[dict] = None
+    content_text: str | None = None
+    content_url: str | None = None
+    answers: dict | None = None
+    score: float | None = None
+    ai_score: float | None = None
+    feedback: str | None = None
+    ai_feedback: str | None = None
+    rubrics_scores: dict | None = None
     status: str
-    grading_status: Optional[str] = None
-    teacher_reviewed: Optional[bool] = None
-    submitted_at: Optional[datetime] = None
-    graded_at: Optional[datetime] = None
-    ai_graded_at: Optional[datetime] = None
+    grading_status: str | None = None
+    teacher_reviewed: bool | None = None
+    submitted_at: datetime | None = None
+    graded_at: datetime | None = None
+    ai_graded_at: datetime | None = None
 
     class Config:
         from_attributes = True
 
 
 class ExerciseWithSubmissionResponse(ExerciseResponse):
-    my_submission: Optional[SubmissionSummary] = None
+    my_submission: SubmissionSummary | None = None
 
     class Config:
         from_attributes = True
@@ -251,16 +251,16 @@ class ExerciseWithSubmissionResponse(ExerciseResponse):
 class ExerciseListResponse(BaseModel):
     id: int
     title: str
-    description: Optional[str]
-    subject: Optional[str]
-    grade: Optional[str]
-    difficulty: Optional[str]
+    description: str | None
+    subject: str | None
+    grade: str | None
+    difficulty: str | None
     questions: int
     timeLimit: int
-    image: Optional[str] = "✏️"
-    color: Optional[str] = "blue"
+    image: str | None = "✏️"
+    color: str | None = "blue"
     completed: bool = False
-    score: Optional[int] = None
+    score: int | None = None
 
     class Config:
         from_attributes = True
@@ -270,24 +270,24 @@ class ExerciseListResponse(BaseModel):
 class MaterialBase(BaseModel):
     title: str
     type: str = "file"
-    url: Optional[str] = None
-    file_path: Optional[str] = None
-    description: Optional[str] = None
+    url: str | None = None
+    file_path: str | None = None
+    description: str | None = None
 
 class MaterialCreate(MaterialBase):
-    class_id: Optional[int] = None
-    lesson_id: Optional[int] = None
+    class_id: int | None = None
+    lesson_id: int | None = None
 
 class MaterialUpdate(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
-    url: Optional[str] = None
-    lesson_id: Optional[int] = None
+    title: str | None = None
+    description: str | None = None
+    url: str | None = None
+    lesson_id: int | None = None
 
 class MaterialResponse(MaterialBase):
     id: int
-    class_id: Optional[int]
-    lesson_id: Optional[int]
+    class_id: int | None
+    lesson_id: int | None
     created_at: datetime
 
     class Config:
@@ -296,16 +296,16 @@ class MaterialResponse(MaterialBase):
 class MaterialListResponse(BaseModel):
     id: int
     title: str
-    description: Optional[str]
-    subject: Optional[str]
-    grade: Optional[str]
-    difficulty: Optional[str]
+    description: str | None
+    subject: str | None
+    grade: str | None
+    difficulty: str | None
     lessons: int
-    duration: Optional[str]
+    duration: str | None
     progress: int = 0
-    image: Optional[str] = "📚"
-    color: Optional[str] = "blue"
-    chapters: Optional[List[dict]] = []
+    image: str | None = "📚"
+    color: str | None = "blue"
+    chapters: list[dict] | None = []
 
     class Config:
         from_attributes = True
@@ -314,36 +314,36 @@ class MaterialListResponse(BaseModel):
 
 class DiscussionThreadCreate(BaseModel):
     title: str
-    class_id: Optional[int] = None
-    subject: Optional[str] = None  # Kĩ năng nghe/nói/đọc/viết (label hiển thị)
-    content: Optional[str] = None  # Nội dung câu hỏi ban đầu (tạo post đầu tiên)
+    class_id: int | None = None
+    subject: str | None = None  # Kĩ năng nghe/nói/đọc/viết (label hiển thị)
+    content: str | None = None  # Nội dung câu hỏi ban đầu (tạo post đầu tiên)
 
 class DiscussionPostCreate(BaseModel):
     content: str
-    parent_post_id: Optional[int] = None
+    parent_post_id: int | None = None
 
 class DiscussionPostResponse(BaseModel):
     id: int
     thread_id: int
-    author_id: Optional[int]
+    author_id: int | None
     content: str
-    parent_post_id: Optional[int]
+    parent_post_id: int | None
     created_at: datetime
-    author_name: Optional[str]
-    author_role: Optional[str]
-    author_avatar: Optional[str]
+    author_name: str | None
+    author_role: str | None
+    author_avatar: str | None
 
     class Config:
         from_attributes = True
 
 class DiscussionThreadResponse(BaseModel):
     id: int
-    class_id: Optional[int]
+    class_id: int | None
     title: str
-    created_by: Optional[int]
+    created_by: int | None
     created_at: datetime
     post_count: int = 0
-    latest_post: Optional[DiscussionPostResponse] = None
+    latest_post: DiscussionPostResponse | None = None
 
     class Config:
         from_attributes = True
@@ -355,9 +355,9 @@ class DiscussionListResponse(BaseModel):
     author: str
     authorUsername: str  # Username for comparison
     authorRole: str
-    subject: Optional[str]
-    grade: Optional[str]
-    tags: List[str] = []
+    subject: str | None
+    grade: str | None
+    tags: list[str] = []
     answers: int = 0
     views: int = 0
     likes: int = 0
@@ -365,7 +365,7 @@ class DiscussionListResponse(BaseModel):
     createdAt: str
     isAnswered: bool = False
     isVip: bool = False
-    avatar: Optional[str] = "👤"
+    avatar: str | None = "👤"
 
     class Config:
         from_attributes = True
@@ -378,20 +378,20 @@ class NewsPostCreate(BaseModel):
     status: str = "published"
 
 class NewsPostUpdate(BaseModel):
-    title: Optional[str] = None
-    content: Optional[str] = None
-    status: Optional[str] = None
+    title: str | None = None
+    content: str | None = None
+    status: str | None = None
 
 class NewsPostResponse(BaseModel):
     id: int
     title: str
     content: str
-    author_id: Optional[int]
+    author_id: int | None
     status: str
-    published_at: Optional[datetime]
+    published_at: datetime | None
     created_at: datetime
-    views: Optional[int] = 0
-    likes: Optional[int] = 0
+    views: int | None = 0
+    likes: int | None = 0
 
     class Config:
         from_attributes = True
@@ -401,39 +401,39 @@ class NewsListResponse(BaseModel):
     title: str
     description: str
     content: str
-    icon: Optional[str] = "📰"
+    icon: str | None = "📰"
     type: str = "announcement"
     category: str
     date: str
-    image: Optional[str]
-    views: Optional[int] = 0
-    likes: Optional[int] = 0
-    reading_time: Optional[int] = 5
-    author_name: Optional[str] = "Admin"
-    author_role: Optional[str] = "admin"
+    image: str | None
+    views: int | None = 0
+    likes: int | None = 0
+    reading_time: int | None = 5
+    author_name: str | None = "Admin"
+    author_role: str | None = "admin"
 
     class Config:
         from_attributes = True
 
 class NewsCreate(BaseModel):
     title: str
-    description: Optional[str] = ""
+    description: str | None = ""
     content: str
-    icon: Optional[str] = "📰"
+    icon: str | None = "📰"
     type: str = "announcement"
     category: str = "Thông báo"
-    image: Optional[str] = None
+    image: str | None = None
     status: str = "published"
 
 class NewsUpdate(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
-    content: Optional[str] = None
-    icon: Optional[str] = None
-    type: Optional[str] = None
-    category: Optional[str] = None
-    image: Optional[str] = None
-    status: Optional[str] = None
+    title: str | None = None
+    description: str | None = None
+    content: str | None = None
+    icon: str | None = None
+    type: str | None = None
+    category: str | None = None
+    image: str | None = None
+    status: str | None = None
 
 
 # ============= News Management (Admin/Teacher) =============
@@ -445,28 +445,28 @@ class NewsStatusUpdate(BaseModel):
 class NewsManageItem(BaseModel):
     id: int
     title: str
-    description: Optional[str]
+    description: str | None
     content: str
     category: str
-    icon: Optional[str] = None
-    type: Optional[str] = None
-    image: Optional[str] = None
+    icon: str | None = None
+    type: str | None = None
+    image: str | None = None
     status: str
     views: int = 0
     likes: int = 0
-    reading_time: Optional[int] = 5
-    author_name: Optional[str] = None
-    author_id: Optional[int] = None
-    published_at: Optional[datetime] = None
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    reading_time: int | None = 5
+    author_name: str | None = None
+    author_id: int | None = None
+    published_at: datetime | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
     class Config:
         from_attributes = True
 
 
 class NewsManageListResponse(BaseModel):
-    items: List[NewsManageItem]
+    items: list[NewsManageItem]
     total: int
     skip: int
     limit: int

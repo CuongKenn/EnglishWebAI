@@ -1,30 +1,32 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query, BackgroundTasks
-from sqlalchemy.orm import Session
-from typing import Optional, List
-from app.core.database import get_db
-from app.core.dependencies import get_current_user
-from app.models.user import User
-from app.models.question_bank import QuestionBankItem
-from app.schemas.question_bank import (
-    QuestionBankCreate,
-    QuestionBankUpdate,
-    QuestionBankItemOut,
-    QuestionBankListResponse,
-    ImportResult,
-    GenerateTestConfig,
-    GeneratedTestResponse,
-    GeneratedTestQuestion,
-    ExportDocxRequest,
-    SaveFromTestRequest,
-)
-import os
-import json
 import asyncio
+import builtins
+import contextlib
+import json
+import logging
+import os
 import random
 from datetime import datetime
+
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from fastapi.responses import StreamingResponse
-from functools import lru_cache
-import logging
+from sqlalchemy.orm import Session
+
+from app.core.database import get_db
+from app.core.dependencies import get_current_user
+from app.models.question_bank import QuestionBankItem
+from app.models.user import User
+from app.schemas.question_bank import (
+    ExportDocxRequest,
+    GeneratedTestQuestion,
+    GeneratedTestResponse,
+    GenerateTestConfig,
+    ImportResult,
+    QuestionBankCreate,
+    QuestionBankItemOut,
+    QuestionBankListResponse,
+    QuestionBankUpdate,
+    SaveFromTestRequest,
+)
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -37,7 +39,7 @@ def _media_dir() -> str:
     return path
 
 
-def _safe_json_loads(s: Optional[str]) -> Optional[any]:
+def _safe_json_loads(s: str | None) -> any | None:
     """Safely parse JSON string with error handling"""
     if not s:
         return None
@@ -78,16 +80,16 @@ def _to_item_out(q: QuestionBankItem) -> QuestionBankItemOut:
 def list_questions(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    q: Optional[str] = Query(None, description="Search in question text and topic"),
-    skill: Optional[str] = Query(None, description="Filter by skill type"),
-    qtype: Optional[str] = Query(None, description="Filter by question type"),
-    difficulty: Optional[str] = Query(None, description="Filter by difficulty"),
+    q: str | None = Query(None, description="Search in question text and topic"),
+    skill: str | None = Query(None, description="Filter by skill type"),
+    qtype: str | None = Query(None, description="Filter by question type"),
+    difficulty: str | None = Query(None, description="Filter by difficulty"),
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(100, ge=1, le=500, description="Items per page"),
 ):
     """
     List questions with advanced filtering and pagination.
-    
+
     Performance optimizations:
     - Indexed filters for fast lookups
     - Efficient pagination with limit/offset
@@ -96,12 +98,12 @@ def list_questions(
     try:
         # Build query with filters
         qry = db.query(QuestionBankItem).filter(QuestionBankItem.owner_id == current_user.id)
-        
+
         # Apply filters (all columns are indexed)
         if q:
             search_pattern = f"%{q}%"
             qry = qry.filter(
-                (QuestionBankItem.question_text.ilike(search_pattern)) | 
+                (QuestionBankItem.question_text.ilike(search_pattern)) |
                 (QuestionBankItem.topic.ilike(search_pattern))
             )
         if skill:
@@ -113,7 +115,7 @@ def list_questions(
 
         # Get total count efficiently
         total = qry.count()
-        
+
         # Get paginated items with ordering
         items = (
             qry.order_by(QuestionBankItem.created_at.desc())
@@ -121,13 +123,13 @@ def list_questions(
             .limit(page_size)
             .all()
         )
-        
+
         # Convert to response format
         return QuestionBankListResponse(
-            items=[_to_item_out(x) for x in items], 
+            items=[_to_item_out(x) for x in items],
             total=total
         )
-        
+
     except Exception as e:
         logger.error(f"Error listing questions: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to list questions: {str(e)}")
@@ -141,7 +143,7 @@ def create_question(
 ):
     """
     Create a new question in the bank.
-    
+
     Validation:
     - Required fields: skill_type, question_type, question_text
     - JSON fields are properly serialized
@@ -151,7 +153,7 @@ def create_question(
         # Validate required fields
         if not payload.question_text or not payload.question_text.strip():
             raise HTTPException(status_code=400, detail="Question text is required")
-        
+
         # Create question item
         q = QuestionBankItem(
             owner_id=current_user.id,
@@ -175,14 +177,14 @@ def create_question(
             points=payload.points if payload.points is not None else 1,
             times_used=0,
         )
-        
+
         db.add(q)
         db.commit()
         db.refresh(q)
-        
+
         logger.info(f"Created question {q.id} for user {current_user.id}")
         return _to_item_out(q)
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -200,23 +202,23 @@ def update_question(
 ):
     """
     Update an existing question.
-    
+
     Only updates fields that are provided (partial update).
     Validates ownership before updating.
     """
     try:
         # Find question with ownership check
         q = db.query(QuestionBankItem).filter(
-            QuestionBankItem.id == item_id, 
+            QuestionBankItem.id == item_id,
             QuestionBankItem.owner_id == current_user.id
         ).first()
-        
+
         if not q:
             raise HTTPException(status_code=404, detail="Question not found or you don't have permission")
 
         # Update only provided fields
         update_data = payload.model_dump(exclude_unset=True)
-        
+
         for field, value in update_data.items():
             if field in ("options", "acceptable_answers", "requirements", "tags"):
                 # Serialize list fields to JSON
@@ -232,10 +234,10 @@ def update_question(
 
         db.commit()
         db.refresh(q)
-        
+
         logger.info(f"Updated question {item_id} for user {current_user.id}")
         return _to_item_out(q)
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -252,25 +254,25 @@ def delete_question(
 ):
     """
     Delete a question from the bank.
-    
+
     Validates ownership before deletion.
     Returns success message on completion.
     """
     try:
         q = db.query(QuestionBankItem).filter(
-            QuestionBankItem.id == item_id, 
+            QuestionBankItem.id == item_id,
             QuestionBankItem.owner_id == current_user.id
         ).first()
-        
+
         if not q:
             raise HTTPException(status_code=404, detail="Question not found or you don't have permission")
-        
+
         db.delete(q)
         db.commit()
-        
+
         logger.info(f"Deleted question {item_id} for user {current_user.id}")
         return {"message": "Question deleted successfully", "id": item_id}
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -287,19 +289,19 @@ def duplicate_question(
 ):
     """
     Duplicate an existing question.
-    
+
     Creates a copy with " (Copy)" appended to the text.
     Resets times_used to 0 for the new copy.
     """
     try:
         q = db.query(QuestionBankItem).filter(
-            QuestionBankItem.id == item_id, 
+            QuestionBankItem.id == item_id,
             QuestionBankItem.owner_id == current_user.id
         ).first()
-        
+
         if not q:
             raise HTTPException(status_code=404, detail="Question not found or you don't have permission")
-        
+
         copy = QuestionBankItem(
             owner_id=current_user.id,
             skill_type=q.skill_type,
@@ -322,14 +324,14 @@ def duplicate_question(
             points=q.points,
             times_used=0,
         )
-        
+
         db.add(copy)
         db.commit()
         db.refresh(copy)
-        
+
         logger.info(f"Duplicated question {item_id} -> {copy.id} for user {current_user.id}")
         return _to_item_out(copy)
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -340,35 +342,35 @@ def duplicate_question(
 
 @router.post("/bulk-delete")
 def bulk_delete_questions(
-    question_ids: List[int],
+    question_ids: list[int],
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """
     Delete multiple questions at once.
-    
+
     Only deletes questions owned by the current user.
     Returns count of successfully deleted questions.
     """
     try:
         if not question_ids:
             raise HTTPException(status_code=400, detail="No question IDs provided")
-        
+
         # Delete only owned questions
         deleted = db.query(QuestionBankItem).filter(
             QuestionBankItem.id.in_(question_ids),
             QuestionBankItem.owner_id == current_user.id
         ).delete(synchronize_session=False)
-        
+
         db.commit()
-        
+
         logger.info(f"Bulk deleted {deleted} questions for user {current_user.id}")
         return {
             "message": f"Successfully deleted {deleted} question(s)",
             "deleted_count": deleted,
             "requested_count": len(question_ids)
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -382,41 +384,41 @@ async def upload_audio(file: UploadFile = File(...), current_user: User = Depend
     """Upload audio file for listening questions"""
     try:
         logger.info(f"[UPLOAD AUDIO] START - Filename: {file.filename}, ContentType: {file.content_type}, Size: {file.size if hasattr(file, 'size') else 'unknown'}")
-        
+
         allowed = {
-            "audio/mpeg", "audio/wav", "audio/x-wav", "audio/mp3", 
+            "audio/mpeg", "audio/wav", "audio/x-wav", "audio/mp3",
             "audio/x-m4a", "audio/aac", "audio/webm", "audio/ogg",
             "audio/mp4", "audio/flac", "audio/x-flac",
             "application/octet-stream"  # Some browsers send generic type
         }
-        
+
         # Also check by file extension as fallback
         filename_lower = file.filename.lower()
         allowed_extensions = {".mp3", ".wav", ".m4a", ".aac", ".webm", ".ogg", ".mp4", ".flac"}
         has_valid_extension = any(filename_lower.endswith(ext) for ext in allowed_extensions)
-        
+
         logger.info(f"[UPLOAD AUDIO] Validation - has_valid_extension: {has_valid_extension}, content_type_allowed: {file.content_type in allowed}")
-        
+
         if file.content_type not in allowed and not has_valid_extension:
-            logger.info(f"[UPLOAD AUDIO] REJECTED - Invalid file type")
+            logger.info("[UPLOAD AUDIO] REJECTED - Invalid file type")
             raise HTTPException(
-                status_code=400, 
+                status_code=400,
                 detail=f"Unsupported audio type: {file.content_type}. Please upload .mp3, .wav, .m4a, .aac, .webm, .ogg, or .flac files."
             )
-        
+
         # Read file content
         content = await file.read()
         if not content:
-            logger.info(f"[UPLOAD AUDIO] REJECTED - File is empty")
+            logger.info("[UPLOAD AUDIO] REJECTED - File is empty")
             raise HTTPException(status_code=400, detail="File is empty")
-        
+
         # Check file size (max 100MB)
         file_size_mb = len(content) / 1024 / 1024
         logger.info(f"[UPLOAD AUDIO] File size: {file_size_mb:.2f} MB")
         if file_size_mb > 100:
-            logger.info(f"[UPLOAD AUDIO] REJECTED - File too large")
+            logger.info("[UPLOAD AUDIO] REJECTED - File too large")
             raise HTTPException(status_code=400, detail=f"File too large ({file_size_mb:.1f}MB). Maximum size is 100MB.")
-        
+
         # Save file
         try:
             save_dir = os.path.join(_media_dir(), "audio")
@@ -425,24 +427,24 @@ async def upload_audio(file: UploadFile = File(...), current_user: User = Depend
         except Exception as e:
             logger.info(f"[UPLOAD AUDIO] Failed to create directory: {e}")
             raise HTTPException(status_code=500, detail=f"Failed to create upload directory: {str(e)}")
-        
+
         # Sanitize filename
         try:
             safe_filename = file.filename.replace(" ", "_").replace("/", "_").replace("\\", "_")
             timestamp = int(datetime.utcnow().timestamp())
             filename = f"{current_user.id}_{timestamp}_{safe_filename}"
             path = os.path.join(save_dir, filename)
-            
+
             logger.info(f"[UPLOAD AUDIO] Saving to: {path}")
-            
+
             with open(path, "wb") as f:
                 f.write(content)
-            
-            logger.info(f"[UPLOAD AUDIO] File saved successfully")
+
+            logger.info("[UPLOAD AUDIO] File saved successfully")
         except Exception as e:
             logger.info(f"[UPLOAD AUDIO] Failed to save file: {e}")
             raise HTTPException(status_code=500, detail=f"Failed to save audio file: {str(e)}")
-        
+
         sanitized_filename = filename.rstrip("'\"")
         url = f"/media/question_bank/audio/{sanitized_filename}"
         logger.info(f"[UPLOAD AUDIO] Success: {url}")
@@ -462,30 +464,31 @@ async def parse_docx(file: UploadFile = File(...), current_user: User = Depends(
     try:
         if not file.filename.lower().endswith(('.docx', '.doc')):
             raise HTTPException(status_code=400, detail="Please upload a .docx or .doc file")
-        
-        from docx import Document
+
         from io import BytesIO
-        
+
+        from docx import Document
+
         content = await file.read()
         if not content:
             raise HTTPException(status_code=400, detail="File is empty")
-        
+
         doc = Document(BytesIO(content))
-        
+
         # Extract all text from paragraphs
         text_parts = []
         for paragraph in doc.paragraphs:
             text = paragraph.text.strip()
             if text:  # Only add non-empty paragraphs
                 text_parts.append(text)
-        
+
         full_text = '\n\n'.join(text_parts)
-        
+
         if not full_text:
             raise HTTPException(status_code=400, detail="No text found in document")
-        
+
         logger.info(f"[PARSE DOCX] Successfully parsed {len(text_parts)} paragraphs, {len(full_text)} characters")
-        
+
         return {
             "text": full_text,
             "paragraphs": len(text_parts),
@@ -506,39 +509,39 @@ async def upload_passage(file: UploadFile = File(...), current_user: User = Depe
     try:
         # Accept common doc types and plain text
         allowed = {
-            "text/plain", 
-            "application/pdf", 
-            "application/msword", 
+            "text/plain",
+            "application/pdf",
+            "application/msword",
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             "application/octet-stream"  # Some browsers send generic type
         }
-        
+
         # Also check by file extension as fallback
         filename_lower = file.filename.lower()
         allowed_extensions = {".txt", ".pdf", ".doc", ".docx"}
         has_valid_extension = any(filename_lower.endswith(ext) for ext in allowed_extensions)
-        
+
         if file.content_type not in allowed and not has_valid_extension:
             raise HTTPException(
-                status_code=400, 
+                status_code=400,
                 detail=f"Unsupported file type: {file.content_type}. Please upload .txt, .pdf, .doc, or .docx files."
             )
-        
+
         save_dir = os.path.join(_media_dir(), "passage")
         os.makedirs(save_dir, exist_ok=True)
-        
+
         # Sanitize filename
         safe_filename = file.filename.replace(" ", "_").replace("/", "_")
         filename = f"{current_user.id}_{int(datetime.utcnow().timestamp())}_{safe_filename}"
         path = os.path.join(save_dir, filename)
-        
+
         content = await file.read()
         if not content:
             raise HTTPException(status_code=400, detail="File is empty")
-        
+
         with open(path, "wb") as f:
             f.write(content)
-        
+
         url = f"/media/question_bank/passage/{filename}"
         logger.info(f"[UPLOAD PASSAGE] Success: {url}")
         return {"url": url}
@@ -558,18 +561,17 @@ async def import_file(
     current_user: User = Depends(get_current_user),
 ):
     """Import questions from CSV or DOCX file.
-    
+
     CSV format: skill_type,question_type,question_text,options,correct_answer,...
     DOCX format: Each paragraph is a question, with markers for skill/type
     """
     filename_lower = file.filename.lower()
-    
+
     if filename_lower.endswith(".docx"):
         return await import_docx(file, db, current_user)
-    elif filename_lower.endswith(".csv"):
+    if filename_lower.endswith(".csv"):
         return await import_csv_file(file, db, current_user)
-    else:
-        raise HTTPException(status_code=400, detail="Please upload a CSV or DOCX file")
+    raise HTTPException(status_code=400, detail="Please upload a CSV or DOCX file")
 
 
 async def import_csv_file(file: UploadFile, db: Session, current_user: User) -> ImportResult:
@@ -584,7 +586,7 @@ async def import_csv_file(file: UploadFile, db: Session, current_user: User) -> 
         return ImportResult(imported=0, failed=0, errors=["Missing required headers: skill_type, question_type, question_text"])
     imported = 0
     failed = 0
-    errors: List[str] = []
+    errors: list[str] = []
     for i, line in enumerate(lines[1:], start=2):
         try:
             cols = [c.strip() for c in line.split(",")]
@@ -628,14 +630,14 @@ async def import_csv_file(file: UploadFile, db: Session, current_user: User) -> 
 
 async def import_docx(file: UploadFile, db: Session, current_user: User) -> ImportResult:
     """Import questions from DOCX file.
-    
+
     Expected format:
     - Each question starts with [SKILL_TYPE] marker: [LISTENING], [SPEAKING], [READING], [WRITING]
     - Followed by question text
     - For multiple choice: Options A, B, C, D on separate lines
     - Answer line: "Answer: B" or "Correct: B"
     - Blank line separates questions
-    
+
     Example:
         [LISTENING] What is the main topic?
         A. Weather
@@ -643,7 +645,7 @@ async def import_docx(file: UploadFile, db: Session, current_user: User) -> Impo
         C. Music
         D. Travel
         Answer: C
-        
+
         [READING] Fill in the blank: He ___ to school every day.
         Answer: goes
     """
@@ -654,16 +656,16 @@ async def import_docx(file: UploadFile, db: Session, current_user: User) -> Impo
         doc = Document(BytesIO(content))
     except Exception as e:
         return ImportResult(imported=0, failed=0, errors=[f"Failed to parse DOCX: {str(e)}"])
-    
+
     imported = 0
     failed = 0
-    errors: List[str] = []
-    
+    errors: list[str] = []
+
     # Parse paragraphs into questions
     current_question = {}
     current_options = []
     line_num = 0
-    
+
     def save_question():
         nonlocal imported, failed, current_question, current_options
         if not current_question.get("question_text"):
@@ -679,7 +681,7 @@ async def import_docx(file: UploadFile, db: Session, current_user: User) -> Impo
                 question_type = "fill_blank"
             elif current_question.get("question_text", "").lower().strip().endswith("?") and not current_options:
                 question_type = "short_answer"
-            
+
             item = QuestionBankItem(
                 owner_id=current_user.id,
                 skill_type=current_question.get("skill_type", "reading"),
@@ -707,7 +709,7 @@ async def import_docx(file: UploadFile, db: Session, current_user: User) -> Impo
         except Exception as e:
             failed += 1
             errors.append(f"Question at line ~{line_num}: {str(e)}")
-    
+
     for para in doc.paragraphs:
         line_num += 1
         text = para.text.strip()
@@ -718,7 +720,7 @@ async def import_docx(file: UploadFile, db: Session, current_user: User) -> Impo
                 current_question = {}
                 current_options = []
             continue
-        
+
         # Check for skill marker
         if text.startswith("[") and "]" in text:
             # Save previous question if exists
@@ -726,12 +728,12 @@ async def import_docx(file: UploadFile, db: Session, current_user: User) -> Impo
                 save_question()
                 current_question = {}
                 current_options = []
-            
+
             # Parse new question
             marker_end = text.index("]")
             skill_text = text[1:marker_end].strip().lower()
             question_text = text[marker_end+1:].strip()
-            
+
             current_question = {
                 "skill_type": skill_text,
                 "question_text": question_text,
@@ -754,11 +756,11 @@ async def import_docx(file: UploadFile, db: Session, current_user: User) -> Impo
             # First line without marker = question text
             current_question["question_text"] = text
             current_question["skill_type"] = "reading"  # default
-    
+
     # Save last question
     if current_question:
         save_question()
-    
+
     db.commit()
     return ImportResult(imported=imported, failed=failed, errors=errors)
 
@@ -774,8 +776,8 @@ async def generate_test(
 
     total = max(1, min(50, config.totalQuestions))
     sd = config.skillDistribution or {"listening": 25, "speaking": 25, "reading": 25, "writing": 25}
-    
-    logger.info(f"[DEBUG] ===== AI Test Generation Started =====")
+
+    logger.info("[DEBUG] ===== AI Test Generation Started =====")
     logger.info(f"[DEBUG] Total questions: {total}")
     logger.info(f"[DEBUG] Skill distribution received: {sd}")
     logger.info(f"[DEBUG] Avoid duplicates: {config.avoidDuplicates}")
@@ -792,16 +794,16 @@ async def generate_test(
     if assigned != total:
         # add/rem to reading by default
         skill_targets["reading"] = max(0, (skill_targets.get("reading", 0) or 0) + (total - assigned))
-    
+
     logger.info(f"[DEBUG] Skill targets calculated: {skill_targets}")
     logger.info(f"[DEBUG] Total assigned: {sum(skill_targets.values())}")
 
-    out_questions: List[GeneratedTestQuestion] = []
+    out_questions: list[GeneratedTestQuestion] = []
 
     # Build duplicate baselines from user's bank if requested
-    bank_questions: List[str] = []
-    bank_passages: List[str] = []
-    bank_transcripts: List[str] = []
+    bank_questions: list[str] = []
+    bank_passages: list[str] = []
+    bank_transcripts: list[str] = []
     if config.avoidDuplicates:
         rows = db.query(QuestionBankItem).filter(QuestionBankItem.owner_id == current_user.id).all()
         for r in rows:
@@ -830,10 +832,7 @@ async def generate_test(
             if _similar(t, q) >= 0.90:
                 return True
         # Check within current output
-        for q in out_questions:
-            if _similar(t, q.question_text) >= 0.95:
-                return True
-        return False
+        return any(_similar(t, q.question_text) >= 0.95 for q in out_questions)
 
     def is_dup_passage(passage: str) -> bool:
         if not config.avoidDuplicates or not passage:
@@ -843,10 +842,7 @@ async def generate_test(
             if _similar(p, s) >= 0.85:
                 return True
         # Check in current generation
-        for q in out_questions:
-            if getattr(q, "passage_text", None) and _similar(p, getattr(q, "passage_text")) >= 0.90:
-                return True
-        return False
+        return any(getattr(q, "passage_text", None) and _similar(p, q.passage_text) >= 0.9 for q in out_questions)
 
     def is_dup_transcript(trans: str) -> bool:
         if not config.avoidDuplicates or not trans:
@@ -855,12 +851,9 @@ async def generate_test(
         for s in bank_transcripts:
             if _similar(p, s) >= 0.85:
                 return True
-        for q in out_questions:
-            if getattr(q, "transcript", None) and _similar(p, getattr(q, "transcript")) >= 0.90:
-                return True
-        return False
+        return any(getattr(q, "transcript", None) and _similar(p, q.transcript) >= 0.9 for q in out_questions)
 
-    def _ensure_multiple_choice(questions: List[GeneratedTestQuestion]):
+    def _ensure_multiple_choice(questions: list[GeneratedTestQuestion]):
         """Ensure at least one multiple_choice among provided questions.
         If none exists, convert the first question to a simple MC by
         synthesizing generic distractors.
@@ -933,16 +926,16 @@ async def generate_test(
             # Dynamic timeout: more time for larger targets
             timeout_seconds = min(20 + (reading_target // 5) * 5, 40)  # 20-40 seconds
             logger.info(f"[DEBUG] Max attempts: {max_attempts}, Timeout: {timeout_seconds}s")
-            
+
             while len([x for x in out_questions if x.skill_type == "reading"]) < reading_target and attempts < max_attempts:
                 attempts += 1
                 logger.info(f"[DEBUG] Reading attempt {attempts}/{max_attempts}")
                 reading = await asyncio.wait_for(openai_service.generate_reading_passage(), timeout=timeout_seconds)
                 # Skip duplicate passages
                 if is_dup_passage(reading.get("passage")):
-                    logger.info(f"[DEBUG] Skipped duplicate passage")
+                    logger.info("[DEBUG] Skipped duplicate passage")
                     continue
-                
+
                 successful_attempts += 1
                 # Add questions, filtering duplicates by text
                 rq = reading.get("questions", [])
@@ -952,7 +945,7 @@ async def generate_test(
                     if len([x for x in out_questions if x.skill_type == "reading"]) >= reading_target:
                         break
                     if is_dup_question(q.get("question", "")):
-                        logger.info(f"[DEBUG] Skipped duplicate question")
+                        logger.info("[DEBUG] Skipped duplicate question")
                         continue
                     out_questions.append(GeneratedTestQuestion(
                         question_text=q.get("question", ""),
@@ -972,7 +965,7 @@ async def generate_test(
                     ))
                     questions_added += 1
                 logger.info(f"[DEBUG] Added {questions_added} reading questions to test")
-            
+
             logger.info(f"[DEBUG] Total reading questions generated: {len([x for x in out_questions if x.skill_type == 'reading'])}")
             # Ensure variety: at least one MC
             _ensure_multiple_choice([x for x in out_questions if x.skill_type == "reading"])
@@ -1032,7 +1025,7 @@ async def generate_test(
                         passage_text=passage,
                     ))
                 # Ensure variety on fallback
-                _ensure_multiple_choice([x for x in out_questions if x.skill_type == "reading"]) 
+                _ensure_multiple_choice([x for x in out_questions if x.skill_type == "reading"])
 
     # Listening: create transcript + MC/fill questions via OpenAI
     listening_target = skill_targets.get("listening", 0)
@@ -1044,7 +1037,7 @@ async def generate_test(
             max_attempts = max(5, min(listening_target // 2 + 3, 20))
             timeout_seconds = min(20 + (listening_target // 5) * 5, 40)
             logger.info(f"[DEBUG] Max attempts: {max_attempts}, Timeout: {timeout_seconds}s")
-            
+
             while len([x for x in out_questions if x.skill_type == "listening"]) < listening_target and attempts < max_attempts:
                 attempts += 1
                 logger.info(f"[DEBUG] Listening attempt {attempts}/{max_attempts}")
@@ -1171,7 +1164,7 @@ async def generate_test(
     logger.info(f"[DEBUG] Writing target: {writing_target} questions")
     if writing_target > 0:
         try:
-            logger.info(f"[DEBUG] Generating writing prompts...")
+            logger.info("[DEBUG] Generating writing prompts...")
             timeout_seconds = min(12 + (writing_target // 3) * 3, 30)
             # Generate all requested writing questions (no limit)
             for i in range(writing_target):
@@ -1259,7 +1252,7 @@ async def generate_test(
     # If still short, fill proportionally by skill deficit (not randomly!)
     if len(out_questions) < total:
         logger.info(f"[DEBUG] Total short by {total - len(out_questions)} questions. Filling by skill deficit...")
-        
+
         # Calculate deficit per skill
         skill_deficits = {}
         for skill in ["reading", "listening", "speaking", "writing"]:
@@ -1269,7 +1262,7 @@ async def generate_test(
             if deficit > 0:
                 skill_deficits[skill] = deficit
                 logger.info(f"[DEBUG] {skill} deficit: {deficit} questions")
-        
+
         # Fill from bank proportionally by deficit
         if not config.aiOnly and skill_deficits:
             for skill, deficit in sorted(skill_deficits.items(), key=lambda x: -x[1]):  # Largest deficit first
@@ -1277,7 +1270,7 @@ async def generate_test(
                 if extra:
                     logger.info(f"[DEBUG] Filled {len(extra)} {skill} questions from bank")
                     out_questions.extend(extra)
-        
+
         # As a final guard, if still short, duplicate proportionally by deficit
         import random as _rand
         while len(out_questions) < total and skill_deficits:
@@ -1390,9 +1383,9 @@ async def generate_test(
 
     out_questions = out_questions[:total]
     total_points = sum([q.points for q in out_questions])
-    
+
     # Log final results
-    logger.info(f"[DEBUG] ===== Generation Complete =====")
+    logger.info("[DEBUG] ===== Generation Complete =====")
     skill_counts = {}
     for skill in ["listening", "speaking", "reading", "writing"]:
         count = len([q for q in out_questions if q.skill_type == skill])
@@ -1403,7 +1396,7 @@ async def generate_test(
         logger.info(f"[DEBUG] {status} {skill.capitalize()}: {count} questions (target: {target}, delta: {delta:+d})")
     logger.info(f"[DEBUG] Total questions: {len(out_questions)} (target: {total})")
     logger.info(f"[DEBUG] Total points: {total_points}")
-    
+
     # Force rebalance if severely imbalanced
     for skill in ["reading", "writing", "speaking"]:  # Don't touch listening first
         target = skill_targets.get(skill, 0)
@@ -1492,15 +1485,15 @@ async def generate_test(
 async def export_docx(payload: ExportDocxRequest):
     """Return a DOCX file built from the generated test payload with enhanced formatting."""
     logger.info(f"[EXPORT-DOCX] Starting export for '{payload.name}' with {len(payload.questions)} questions")
-    
+
     try:
         from docx import Document
-        from docx.shared import Pt, RGBColor, Inches
         from docx.enum.text import WD_ALIGN_PARAGRAPH
+        from docx.shared import Inches, Pt, RGBColor
     except ImportError as e:
         logger.error(f"[EXPORT-DOCX] Missing python-docx: {e}")
         raise HTTPException(
-            status_code=500, 
+            status_code=500,
             detail="Server configuration error: python-docx not installed. Please contact administrator."
         )
 
@@ -1531,7 +1524,7 @@ async def export_docx(payload: ExportDocxRequest):
         # Questions
         printed_passages = set()
         printed_transcripts = set()
-        
+
         for idx, q in enumerate(payload.questions, start=1):
             # Get question data safely
             skill_type = getattr(q, 'skill_type', None)
@@ -1543,7 +1536,7 @@ async def export_docx(payload: ExportDocxRequest):
             points = getattr(q, 'points', 1)
             passage_text = getattr(q, 'passage_text', None)
             transcript = getattr(q, 'transcript', None)
-            
+
             # Print reading passage once per unique passage
             if skill_type == 'reading' and passage_text:
                 key = f"passage_{passage_text[:50]}"
@@ -1555,17 +1548,15 @@ async def export_docx(payload: ExportDocxRequest):
                     if passage_header.runs:
                         passage_header.runs[0].font.bold = True
                         passage_header.runs[0].font.size = Pt(13)
-                        try:
+                        with contextlib.suppress(builtins.BaseException):
                             passage_header.runs[0].font.color.rgb = RGBColor(34, 139, 34)
-                        except:
-                            pass
                     # Passage text
                     passage_p = doc.add_paragraph(passage_text)
                     if passage_p.runs:
                         passage_p.runs[0].font.size = Pt(11)
                         passage_p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
                     doc.add_paragraph()  # Blank line after
-            
+
             # Print listening transcript once per unique transcript
             if skill_type == 'listening' and transcript:
                 key = f"transcript_{transcript[:50]}"
@@ -1577,10 +1568,8 @@ async def export_docx(payload: ExportDocxRequest):
                     if trans_header.runs:
                         trans_header.runs[0].font.bold = True
                         trans_header.runs[0].font.size = Pt(13)
-                        try:
+                        with contextlib.suppress(builtins.BaseException):
                             trans_header.runs[0].font.color.rgb = RGBColor(30, 144, 255)
-                        except:
-                            pass
                     # Transcript text
                     trans_p = doc.add_paragraph(transcript)
                     if trans_p.runs:
@@ -1588,7 +1577,7 @@ async def export_docx(payload: ExportDocxRequest):
                         trans_p.runs[0].italic = True
                         trans_p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
                     doc.add_paragraph()  # Blank line after
-            
+
             # Question number and text
             q_para = doc.add_paragraph()
             q_run = q_para.add_run(f"Question {idx}. ")
@@ -1596,7 +1585,7 @@ async def export_docx(payload: ExportDocxRequest):
             q_run.font.size = Pt(12)
             q_text_run = q_para.add_run(question_text)
             q_text_run.font.size = Pt(12)
-            
+
             # Metadata line
             meta_parts = []
             if skill_type:
@@ -1607,15 +1596,13 @@ async def export_docx(payload: ExportDocxRequest):
                 meta_parts.append(f"Points: {points}")
             if topic:
                 meta_parts.append(f"Topic: {topic}")
-            
+
             if meta_parts:
                 meta_line = doc.add_paragraph(f"[{' | '.join(meta_parts)}]")
                 if meta_line.runs:
                     meta_line.runs[0].font.size = Pt(9)
-                    try:
+                    with contextlib.suppress(builtins.BaseException):
                         meta_line.runs[0].font.color.rgb = RGBColor(128, 128, 128)
-                    except:
-                        pass
 
             # Answer options based on question type
             if question_type == 'multiple_choice' and options:
@@ -1625,25 +1612,25 @@ async def export_docx(payload: ExportDocxRequest):
                     opt_text = opt
                     if opt and len(opt) > 2 and opt[0] in labels and opt[1] in ['.', ')', ':']:
                         opt_text = opt[2:].strip()
-                    
+
                     opt_para = doc.add_paragraph(f"   {labels[i]}. {opt_text}")
                     opt_para.runs[0].font.size = Pt(11)
-                    
+
             elif question_type == 'true_false':
                 tf_para = doc.add_paragraph("   ○ True          ○ False")
                 tf_para.runs[0].font.size = Pt(11)
-                
+
             elif question_type == 'fill_blank':
                 blank_para = doc.add_paragraph("   Answer: _________________________________")
                 blank_para.runs[0].font.size = Pt(11)
-                
+
             elif question_type in ['short_answer', 'task']:
                 space_para = doc.add_paragraph("   Answer:")
                 space_para.runs[0].font.size = Pt(11)
                 for _ in range(3):
                     line_para = doc.add_paragraph("   " + "_" * 60)
                     line_para.runs[0].font.size = Pt(11)
-            
+
             doc.add_paragraph()  # Blank line after each question
 
         # Save to BytesIO
@@ -1651,21 +1638,21 @@ async def export_docx(payload: ExportDocxRequest):
         buf = BytesIO()
         doc.save(buf)
         buf.seek(0)
-        
+
         # Clean filename
         safe_name = payload.name or "test"
         safe_name = safe_name.replace("/", "_").replace("\\", "_").replace(":", "_")
         safe_name = "".join(c for c in safe_name if c.isalnum() or c in (' ', '-', '_')).strip()
         filename = f"{safe_name}.docx"
-        
+
         logger.info(f"Exported DOCX: {filename} with {len(payload.questions)} questions")
-        
+
         return StreamingResponse(
             buf,
             media_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             headers={'Content-Disposition': f'attachment; filename="{filename}"'}
         )
-        
+
     except Exception as e:
         logger.error(f"[EXPORT-DOCX] Error exporting DOCX: {e}")
         import traceback
@@ -1678,15 +1665,15 @@ async def export_docx(payload: ExportDocxRequest):
 @router.post("/create-exercise")
 async def create_exercise_from_test(
     payload: GeneratedTestResponse,
-    class_id: Optional[int] = Query(None),
+    class_id: int | None = Query(None),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Create an Exercise from AI test; class_id optional.
     Stores full test JSON in Exercise.content for later delivery.
     """
-    from app.models.exercise import Exercise
     from app.models.classroom import Classroom
+    from app.models.exercise import Exercise
     from app.models.user import UserRole
 
     if class_id:
@@ -1722,7 +1709,7 @@ async def save_from_test_to_bank(
 
     Returns: { saved: int, ids: [int] }
     """
-    saved_ids: List[int] = []
+    saved_ids: list[int] = []
     for q in payload.questions:
         try:
             # q may be pydantic object or dict depending on request
@@ -1801,7 +1788,7 @@ async def get_testsets(
     db: Session = Depends(get_db),
 ):
     """Get all saved test sets for the current user.
-    
+
     Returns: List of test sets with metadata
     """
     from app.models.question_bank_test import QuestionBankTest
@@ -1809,7 +1796,7 @@ async def get_testsets(
         tests = db.query(QuestionBankTest).filter(
             QuestionBankTest.owner_id == current_user.id
         ).order_by(QuestionBankTest.created_at.desc()).all()
-        
+
         results = []
         for test in tests:
             try:
@@ -1818,7 +1805,7 @@ async def get_testsets(
             except Exception:
                 questions = []
                 skill_dist = {}
-            
+
             results.append({
                 "id": test.id,
                 "name": test.name,
@@ -1828,7 +1815,7 @@ async def get_testsets(
                 "skillDistribution": skill_dist,
                 "createdAt": test.created_at.isoformat() if test.created_at else None,
             })
-        
+
         return {"testsets": results, "total": len(results)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch test sets: {e}")
@@ -1841,7 +1828,7 @@ async def get_testset_detail(
     db: Session = Depends(get_db),
 ):
     """Get detailed test set including all questions.
-    
+
     Returns: Complete test set with questions
     """
     from app.models.question_bank_test import QuestionBankTest
@@ -1850,17 +1837,17 @@ async def get_testset_detail(
             QuestionBankTest.id == test_id,
             QuestionBankTest.owner_id == current_user.id
         ).first()
-        
+
         if not test:
             raise HTTPException(status_code=404, detail="Test set not found")
-        
+
         try:
             questions = json.loads(test.questions_json) if test.questions_json else []
             skill_dist = json.loads(test.skill_distribution_json) if test.skill_distribution_json else {}
         except Exception:
             questions = []
             skill_dist = {}
-        
+
         return {
             "id": test.id,
             "name": test.name,
@@ -1883,7 +1870,7 @@ async def delete_testset(
     db: Session = Depends(get_db),
 ):
     """Delete a test set.
-    
+
     Returns: Success message
     """
     from app.models.question_bank_test import QuestionBankTest
@@ -1892,10 +1879,10 @@ async def delete_testset(
             QuestionBankTest.id == test_id,
             QuestionBankTest.owner_id == current_user.id
         ).first()
-        
+
         if not test:
             raise HTTPException(status_code=404, detail="Test set not found")
-        
+
         db.delete(test)
         db.commit()
         return {"message": "Test set deleted successfully"}

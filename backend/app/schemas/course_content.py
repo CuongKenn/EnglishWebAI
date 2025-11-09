@@ -1,20 +1,18 @@
 """
 Pydantic schemas for rich course content API
 """
-from typing import Optional, List, Any
 from datetime import datetime
-from pydantic import BaseModel, Field, field_validator
-import json
 
+from pydantic import BaseModel
 
 # ============= READING SCHEMAS =============
 
 class ReadingQuestionBase(BaseModel):
     type: str  # multiple-choice|matching|true-false|short-answer
     instruction: str
-    options: Optional[List[str]] = None
-    correct_answer: Optional[int] = None
-    points: Optional[int] = 1
+    options: list[str] | None = None
+    correct_answer: int | None = None
+    points: int | None = 1
     order_index: int = 0
 
 
@@ -33,19 +31,19 @@ class ReadingQuestionResponse(ReadingQuestionBase):
 
 class ReadingParagraphBase(BaseModel):
     paragraph_id: str  # A, B, C, etc.
-    heading: Optional[str] = None
+    heading: str | None = None
     content: str
     order_index: int = 0
 
 
 class ReadingParagraphCreate(ReadingParagraphBase):
-    questions: List[ReadingQuestionCreate] = []
+    questions: list[ReadingQuestionCreate] = []
 
 
 class ReadingParagraphResponse(ReadingParagraphBase):
     id: int
     passage_id: int
-    questions: List[ReadingQuestionResponse] = []
+    questions: list[ReadingQuestionResponse] = []
     created_at: datetime
 
     class Config:
@@ -54,29 +52,29 @@ class ReadingParagraphResponse(ReadingParagraphBase):
 
 class ReadingPassageBase(BaseModel):
     title: str
-    subtitle: Optional[str] = None
-    difficulty: Optional[str] = None
-    estimated_time: Optional[int] = None  # minutes
-    total_questions: Optional[int] = None
+    subtitle: str | None = None
+    difficulty: str | None = None
+    estimated_time: int | None = None  # minutes
+    total_questions: int | None = None
 
 
 class ReadingPassageCreate(ReadingPassageBase):
-    paragraphs: List[ReadingParagraphCreate] = []
+    paragraphs: list[ReadingParagraphCreate] = []
 
 
 class ReadingPassageUpdate(BaseModel):
-    title: Optional[str] = None
-    subtitle: Optional[str] = None
-    difficulty: Optional[str] = None
-    estimated_time: Optional[int] = None
+    title: str | None = None
+    subtitle: str | None = None
+    difficulty: str | None = None
+    estimated_time: int | None = None
 
 
 class ReadingPassageResponse(ReadingPassageBase):
     id: int
     unit_id: int
-    paragraphs: List[ReadingParagraphResponse] = []
+    paragraphs: list[ReadingParagraphResponse] = []
     created_at: datetime
-    updated_at: Optional[datetime]
+    updated_at: datetime | None
 
     class Config:
         from_attributes = True
@@ -109,39 +107,39 @@ class WritingPromptBase(BaseModel):
     type: str  # essay|paragraph|letter|email|story|description
     instruction: str
     prompt: str
-    additional_instruction: Optional[str] = None
-    min_words: Optional[int] = 100
-    max_words: Optional[int] = 300
-    time_limit: Optional[int] = None
-    difficulty: Optional[str] = None
-    sample_answer: Optional[str] = None
-    hints: Optional[List[str]] = None
+    additional_instruction: str | None = None
+    min_words: int | None = 100
+    max_words: int | None = 300
+    time_limit: int | None = None
+    difficulty: str | None = None
+    sample_answer: str | None = None
+    hints: list[str] | None = None
 
 
 class WritingPromptCreate(WritingPromptBase):
-    rubrics: List[WritingRubricCreate] = []
+    rubrics: list[WritingRubricCreate] = []
 
 
 class WritingPromptUpdate(BaseModel):
-    title: Optional[str] = None
-    type: Optional[str] = None
-    instruction: Optional[str] = None
-    prompt: Optional[str] = None
-    additional_instruction: Optional[str] = None
-    min_words: Optional[int] = None
-    max_words: Optional[int] = None
-    time_limit: Optional[int] = None
-    difficulty: Optional[str] = None
-    sample_answer: Optional[str] = None
-    hints: Optional[List[str]] = None
+    title: str | None = None
+    type: str | None = None
+    instruction: str | None = None
+    prompt: str | None = None
+    additional_instruction: str | None = None
+    min_words: int | None = None
+    max_words: int | None = None
+    time_limit: int | None = None
+    difficulty: str | None = None
+    sample_answer: str | None = None
+    hints: list[str] | None = None
 
 
 class WritingPromptResponse(WritingPromptBase):
     id: int
     unit_id: int
-    rubrics: List[WritingRubricResponse] = []
+    rubrics: list[WritingRubricResponse] = []
     created_at: datetime
-    updated_at: Optional[datetime]
+    updated_at: datetime | None
 
     class Config:
         from_attributes = True
@@ -152,11 +150,11 @@ class WritingPromptResponse(WritingPromptBase):
 class ListeningQuestionBase(BaseModel):
     type: str  # multiple-choice|fill-blank|matching|true-false
     question_text: str
-    options: Optional[List[str]] = None
-    correct_answer: Optional[str] = None
-    explanation: Optional[str] = None
-    timestamp: Optional[float] = None
-    points: Optional[int] = 1
+    options: list[str] | None = None
+    correct_answer: str | None = None
+    explanation: str | None = None
+    timestamp: float | None = None
+    points: int | None = 1
     order_index: int = 0
 
 
@@ -175,41 +173,41 @@ class ListeningQuestionResponse(ListeningQuestionBase):
 
 class ListeningAudioBase(BaseModel):
     title: str
-    description: Optional[str] = None
+    description: str | None = None
     audio_url: str
-    duration: Optional[int] = None
-    difficulty: Optional[str] = None
-    topic: Optional[str] = None
-    accent: Optional[str] = None
-    speed: Optional[str] = None
-    transcript: Optional[str] = None
+    duration: int | None = None
+    difficulty: str | None = None
+    topic: str | None = None
+    accent: str | None = None
+    speed: str | None = None
+    transcript: str | None = None
     has_transcript: bool = True
-    total_questions: Optional[int] = None
+    total_questions: int | None = None
 
 
 class ListeningAudioCreate(ListeningAudioBase):
-    questions: List[ListeningQuestionCreate] = []
+    questions: list[ListeningQuestionCreate] = []
 
 
 class ListeningAudioUpdate(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
-    audio_url: Optional[str] = None
-    duration: Optional[int] = None
-    difficulty: Optional[str] = None
-    topic: Optional[str] = None
-    accent: Optional[str] = None
-    speed: Optional[str] = None
-    transcript: Optional[str] = None
-    has_transcript: Optional[bool] = None
+    title: str | None = None
+    description: str | None = None
+    audio_url: str | None = None
+    duration: int | None = None
+    difficulty: str | None = None
+    topic: str | None = None
+    accent: str | None = None
+    speed: str | None = None
+    transcript: str | None = None
+    has_transcript: bool | None = None
 
 
 class ListeningAudioResponse(ListeningAudioBase):
     id: int
     unit_id: int
-    questions: List[ListeningQuestionResponse] = []
+    questions: list[ListeningQuestionResponse] = []
     created_at: datetime
-    updated_at: Optional[datetime]
+    updated_at: datetime | None
 
     class Config:
         from_attributes = True
@@ -242,41 +240,41 @@ class SpeakingPromptBase(BaseModel):
     type: str  # conversation|presentation|description|roleplay|discussion
     instruction: str
     prompt: str
-    context: Optional[str] = None
-    preparation_time: Optional[int] = None
-    response_time: Optional[int] = None
-    difficulty: Optional[str] = None
-    sample_response: Optional[str] = None
-    sample_audio_url: Optional[str] = None
-    tips: Optional[List[str]] = None
-    vocabulary: Optional[dict] = None
+    context: str | None = None
+    preparation_time: int | None = None
+    response_time: int | None = None
+    difficulty: str | None = None
+    sample_response: str | None = None
+    sample_audio_url: str | None = None
+    tips: list[str] | None = None
+    vocabulary: dict | None = None
 
 
 class SpeakingPromptCreate(SpeakingPromptBase):
-    criteria: List[SpeakingCriteriaCreate] = []
+    criteria: list[SpeakingCriteriaCreate] = []
 
 
 class SpeakingPromptUpdate(BaseModel):
-    title: Optional[str] = None
-    type: Optional[str] = None
-    instruction: Optional[str] = None
-    prompt: Optional[str] = None
-    context: Optional[str] = None
-    preparation_time: Optional[int] = None
-    response_time: Optional[int] = None
-    difficulty: Optional[str] = None
-    sample_response: Optional[str] = None
-    sample_audio_url: Optional[str] = None
-    tips: Optional[List[str]] = None
-    vocabulary: Optional[dict] = None
+    title: str | None = None
+    type: str | None = None
+    instruction: str | None = None
+    prompt: str | None = None
+    context: str | None = None
+    preparation_time: int | None = None
+    response_time: int | None = None
+    difficulty: str | None = None
+    sample_response: str | None = None
+    sample_audio_url: str | None = None
+    tips: list[str] | None = None
+    vocabulary: dict | None = None
 
 
 class SpeakingPromptResponse(SpeakingPromptBase):
     id: int
     unit_id: int
-    criteria: List[SpeakingCriteriaResponse] = []
+    criteria: list[SpeakingCriteriaResponse] = []
     created_at: datetime
-    updated_at: Optional[datetime]
+    updated_at: datetime | None
 
     class Config:
         from_attributes = True

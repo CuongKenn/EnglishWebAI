@@ -1,7 +1,8 @@
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-from typing import Optional
+
 from app.core.database import get_db
 from app.core.security import decode_access_token
 from app.models.user import User, UserRole
@@ -18,40 +19,39 @@ async def get_current_user(
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    
+
     payload = decode_access_token(token)
     if payload is None:
         raise credentials_exception
-    
+
     user_id: int = payload.get("sub")
     if user_id is None:
         raise credentials_exception
-    
+
     user = db.query(User).filter(User.id == user_id).first()
     if user is None:
         raise credentials_exception
-    
+
     return user
 
 async def get_current_user_optional(
-    token: Optional[str] = Depends(oauth2_scheme),
+    token: str | None = Depends(oauth2_scheme),
     db: Session = Depends(get_db)
-) -> Optional[User]:
+) -> User | None:
     """Get current user if authenticated, None otherwise (for optional auth)"""
     if not token:
         return None
-    
+
     try:
         payload = decode_access_token(token)
         if payload is None:
             return None
-        
+
         user_id: int = payload.get("sub")
         if user_id is None:
             return None
-        
-        user = db.query(User).filter(User.id == user_id).first()
-        return user
+
+        return db.query(User).filter(User.id == user_id).first()
     except:
         return None
 

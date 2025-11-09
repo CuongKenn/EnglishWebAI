@@ -2,30 +2,32 @@
 Azure Speech Service
 Handles speech-to-text and pronunciation assessment using Azure Cognitive Services Speech SDK
 """
-import os
 import json
-import tempfile
-import subprocess
 import logging
+import os
+import subprocess
+import tempfile
 from pathlib import Path
+
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 import azure.cognitiveservices.speech as speechsdk
 import openai
 
+
 class AzureSpeechService:
     """Service for Azure Speech API - Pronunciation Assessment using Speech SDK"""
-    
+
     def __init__(self):
         """Initialize Azure Speech Service"""
         self.speech_key = settings.AZURE_SPEECH_KEY if hasattr(settings, 'AZURE_SPEECH_KEY') else os.getenv('AZURE_SPEECH_KEY')
         self.speech_region = settings.AZURE_SPEECH_REGION if hasattr(settings, 'AZURE_SPEECH_REGION') else os.getenv('AZURE_SPEECH_REGION', 'eastus')
-        
+
         logger.info(f"[AzureSpeechService.__init__] speech_key present: {bool(self.speech_key)}, region: {self.speech_region}")
         if not self.speech_key:
             logger.info("WARNING: AZURE_SPEECH_KEY not found. Speech grading will not work.")
-        
+
         # Initialize Speech SDK config
         if self.speech_key:
             self.speech_config = speechsdk.SpeechConfig(
@@ -34,7 +36,7 @@ class AzureSpeechService:
             )
         else:
             self.speech_config = None
-        
+
         # Initialize OpenAI for feedback generation
         self.openai_api_key = settings.OPENAI_API_KEY if hasattr(settings, 'OPENAI_API_KEY') else os.getenv('OPENAI_API_KEY')
         if self.openai_api_key:
@@ -43,21 +45,21 @@ class AzureSpeechService:
         else:
             self.openai_model = None
             logger.info("WARNING: OPENAI_API_KEY not found. Will use template feedback.")
-    
+
     def assess_pronunciation(self, audio_file_path: str, reference_text: str, language: str = "en-US") -> dict:
         """
         Assess pronunciation using Azure Speech SDK
-        
+
         Args:
             audio_file_path: Path to audio file (wav, mp3, webm, etc.)
             reference_text: The text that should be spoken
             language: Language code (en-US, vi-VN, etc.)
-        
+
         Returns:
             dict: Assessment results with scores
         """
         logger.info(f"[assess_pronunciation] START - audio: {audio_file_path}, ref: {reference_text[:50] if reference_text else None}")
-        
+
         if not self.speech_config:
             logger.info("[assess_pronunciation] ERROR: No Azure key configured")
             return {
@@ -67,14 +69,14 @@ class AzureSpeechService:
                 "completeness_score": 0,
                 "pronunciation_score": 0
             }
-        
+
         wav_path = None
         try:
             # Convert audio to 16kHz mono PCM WAV for Azure Speech SDK
             src_path = Path(audio_file_path)
             fd, wav_path = tempfile.mkstemp(suffix='.wav')
             os.close(fd)
-            
+
             try:
                 # ffmpeg conversion
                 cmd = [
@@ -94,10 +96,10 @@ class AzureSpeechService:
                 if os.path.exists(wav_path):
                     os.unlink(wav_path)
                 wav_path = str(src_path)
-            
+
             # Configure audio input from file
             audio_config = speechsdk.audio.AudioConfig(filename=wav_path)
-            
+
             # Configure pronunciation assessment
             pronunciation_config = speechsdk.PronunciationAssessmentConfig(
                 reference_text=reference_text or "",
@@ -105,41 +107,41 @@ class AzureSpeechService:
                 granularity=speechsdk.PronunciationAssessmentGranularity.Phoneme,
                 enable_miscue=True
             )
-            
+
             # Create speech recognizer
             self.speech_config.speech_recognition_language = language
             recognizer = speechsdk.SpeechRecognizer(
                 speech_config=self.speech_config,
                 audio_config=audio_config
             )
-            
+
             # Apply pronunciation config to recognizer
             pronunciation_config.apply_to(recognizer)
-            
-            logger.info(f"[assess_pronunciation] Calling Azure Speech SDK recognize_once()...")
-            
+
+            logger.info("[assess_pronunciation] Calling Azure Speech SDK recognize_once()...")
+
             # Perform recognition
             result = recognizer.recognize_once()
-            
+
             logger.info(f"[assess_pronunciation] Recognition result reason: {result.reason}")
-            
+
             if result.reason == speechsdk.ResultReason.RecognizedSpeech:
                 logger.info(f"[assess_pronunciation] Recognized text: {result.text}")
-                
+
                 # Get pronunciation assessment result
                 pronunciation_result = speechsdk.PronunciationAssessmentResult(result)
-                
+
                 logger.info(f"[assess_pronunciation] Pronunciation scores - "
                       f"Accuracy: {pronunciation_result.accuracy_score}, "
                       f"Fluency: {pronunciation_result.fluency_score}, "
                       f"Completeness: {pronunciation_result.completeness_score}, "
                       f"Pronunciation: {pronunciation_result.pronunciation_score}")
-                
+
                 # Get detailed JSON result
                 json_result = json.loads(
                     result.properties.get(speechsdk.PropertyId.SpeechServiceResponse_JsonResult)
                 )
-                
+
                 return {
                     "recognized_text": result.text,
                     "reference_text": reference_text,  # Store reference for feedback
@@ -151,8 +153,8 @@ class AzureSpeechService:
                     "fallback_freeform": False,
                     "json_result": json_result
                 }
-            
-            elif result.reason == speechsdk.ResultReason.NoMatch:
+
+            if result.reason == speechsdk.ResultReason.NoMatch:
                 logger.info(f"[assess_pronunciation] No speech recognized. Details: {result.no_match_details}")
                 return {
                     "error": "No speech could be recognized",
@@ -161,8 +163,8 @@ class AzureSpeechService:
                     "completeness_score": 0,
                     "pronunciation_score": 0
                 }
-            
-            elif result.reason == speechsdk.ResultReason.Canceled:
+
+            if result.reason == speechsdk.ResultReason.Canceled:
                 cancellation = result.cancellation_details
                 logger.info(f"[assess_pronunciation] Recognition canceled: {cancellation.reason}")
                 if cancellation.reason == speechsdk.CancellationReason.Error:
@@ -174,25 +176,23 @@ class AzureSpeechService:
                         "completeness_score": 0,
                         "pronunciation_score": 0
                     }
-                else:
-                    return {
-                        "error": f"Recognition canceled: {cancellation.reason}",
-                        "accuracy_score": 0,
-                        "fluency_score": 0,
-                        "completeness_score": 0,
-                        "pronunciation_score": 0
-                    }
-            
-            else:
-                logger.info(f"[assess_pronunciation] Recognition failed with reason: {result.reason}")
                 return {
-                    "error": f"Recognition failed: {result.reason}",
+                    "error": f"Recognition canceled: {cancellation.reason}",
                     "accuracy_score": 0,
                     "fluency_score": 0,
                     "completeness_score": 0,
                     "pronunciation_score": 0
                 }
-        
+
+            logger.info(f"[assess_pronunciation] Recognition failed with reason: {result.reason}")
+            return {
+                "error": f"Recognition failed: {result.reason}",
+                "accuracy_score": 0,
+                "fluency_score": 0,
+                "completeness_score": 0,
+                "pronunciation_score": 0
+            }
+
         except Exception as e:
             logger.info(f"[assess_pronunciation] Exception: {str(e)}")
             import traceback
@@ -211,11 +211,11 @@ class AzureSpeechService:
                     os.unlink(wav_path)
             except:
                 pass
-    
+
     def calculate_speaking_score(self, assessment_result: dict, max_score: float = 10.0) -> dict:
         """
         Calculate final speaking score from Azure assessment
-        
+
         Scoring breakdown:
         - Pronunciation (40%): How accurately words are pronounced
         - Fluency (30%): How smoothly and naturally spoken
@@ -234,13 +234,13 @@ class AzureSpeechService:
                 },
                 "feedback": f"Lỗi: {assessment_result['error']}"
             }
-        
+
         # Get scores (0-100 scale from Azure)
         pronunciation = assessment_result.get('pronunciation_score', 0)
         fluency = assessment_result.get('fluency_score', 0)
         completeness = assessment_result.get('completeness_score', 0)
         accuracy = assessment_result.get('accuracy_score', 0)
-        
+
         # Calculate weighted score
         weighted_score = (
             pronunciation * 0.4 +
@@ -248,34 +248,34 @@ class AzureSpeechService:
             completeness * 0.2 +
             accuracy * 0.1
         )
-        
+
         # Convert to max_score scale
         final_score = (weighted_score / 100) * max_score
-        
+
         # Generate feedback
         feedback_parts = []
-        
+
         if pronunciation >= 80:
             feedback_parts.append("✅ Phát âm rất tốt")
         elif pronunciation >= 60:
             feedback_parts.append("⚠️ Phát âm cần cải thiện")
         else:
             feedback_parts.append("❌ Phát âm cần luyện tập nhiều hơn")
-        
+
         if fluency >= 80:
             feedback_parts.append("✅ Nói trôi chảy tự nhiên")
         elif fluency >= 60:
             feedback_parts.append("⚠️ Cần nói tự nhiên hơn")
         else:
             feedback_parts.append("❌ Cần luyện tập để nói trôi chảy hơn")
-        
+
         if completeness >= 80:
             feedback_parts.append("✅ Hoàn thành đầy đủ nội dung")
         elif completeness >= 60:
             feedback_parts.append("⚠️ Thiếu một số phần")
         else:
             feedback_parts.append("❌ Nội dung chưa đầy đủ")
-        
+
         return {
             "score": round(final_score, 2),
             "max_score": max_score,
@@ -289,23 +289,23 @@ class AzureSpeechService:
             "used_freeform": bool(assessment_result.get('fallback_freeform', False)),
             "feedback": " | ".join(feedback_parts),
             "detailed_feedback": self._generate_detailed_feedback(
-                pronunciation, 
-                fluency, 
-                completeness, 
+                pronunciation,
+                fluency,
+                completeness,
                 accuracy,
                 reference_text=assessment_result.get('reference_text', ''),
                 recognized_text=assessment_result.get('recognized_text', ''),
                 words_detail=assessment_result.get('words', [])
             )
         }
-    
+
     def _generate_detailed_feedback(self, pronunciation: float, fluency: float, completeness: float, accuracy: float, reference_text: str = "", recognized_text: str = "", words_detail: list = None) -> str:
         """Generate detailed feedback using OpenAI based on Azure pronunciation scores"""
-        
+
         # If OpenAI not available, use template feedback
         if not self.openai_model:
             return self._generate_template_feedback(pronunciation, fluency, completeness, accuracy)
-        
+
         try:
             # Prepare detailed context for OpenAI
             prompt = f"""Bạn là giáo viên tiếng Anh đang chấm bài nói của học sinh. Hãy đưa ra nhận xét chi tiết bằng tiếng Việt dựa trên kết quả đánh giá phát âm từ Azure Speech API.
@@ -349,16 +349,16 @@ Viết theo phong cách động viên, khích lệ học sinh. Dùng emoji phù 
             feedback = response.choices[0].message.content.strip()
             logger.info(f"[_generate_detailed_feedback] OpenAI feedback generated: {len(feedback)} chars")
             return feedback
-            
+
         except Exception as e:
             logger.info(f"[_generate_detailed_feedback] OpenAI error: {e}")
             # Fallback to template
             return self._generate_template_feedback(pronunciation, fluency, completeness, accuracy)
-    
+
     def _generate_template_feedback(self, pronunciation: float, fluency: float, completeness: float, accuracy: float) -> str:
         """Generate template feedback when OpenAI is not available"""
         feedback = []
-        
+
         feedback.append(f"**Phát âm (Pronunciation):** {pronunciation:.1f}/100")
         if pronunciation >= 80:
             feedback.append("- Phát âm chuẩn xác, rõ ràng")
@@ -366,7 +366,7 @@ Viết theo phong cách động viên, khích lệ học sinh. Dùng emoji phù 
             feedback.append("- Cần chú ý phát âm một số từ cho chuẩn hơn")
         else:
             feedback.append("- Nên luyện tập phát âm các từ khó, nghe và lặp lại nhiều lần")
-        
+
         feedback.append(f"\n**Độ trôi chảy (Fluency):** {fluency:.1f}/100")
         if fluency >= 80:
             feedback.append("- Nói trôi chảy, tự nhiên")
@@ -374,7 +374,7 @@ Viết theo phong cách động viên, khích lệ học sinh. Dùng emoji phù 
             feedback.append("- Có thể ngắt quãng ở một số chỗ, cần luyện tập để tự nhiên hơn")
         else:
             feedback.append("- Nên đọc to nhiều lần để quen với nhịp điệu và tốc độ nói")
-        
+
         feedback.append(f"\n**Tính hoàn chỉnh (Completeness):** {completeness:.1f}/100")
         if completeness >= 80:
             feedback.append("- Hoàn thành đầy đủ nội dung yêu cầu")
@@ -382,9 +382,9 @@ Viết theo phong cách động viên, khích lệ học sinh. Dùng emoji phù 
             feedback.append("- Thiếu một số phần, hãy đảm bảo đọc/nói hết nội dung")
         else:
             feedback.append("- Chưa hoàn thành đủ nội dung, cần đọc/nói đầy đủ hơn")
-        
+
         feedback.append(f"\n**Độ chính xác (Accuracy):** {accuracy:.1f}/100")
-        
+
         return "\n".join(feedback)
 
 

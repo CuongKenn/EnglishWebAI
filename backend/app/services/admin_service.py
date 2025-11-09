@@ -1,23 +1,22 @@
-from typing import List, Optional, Dict, Any
-from sqlalchemy.orm import Session
-from sqlalchemy import func, distinct
-from datetime import datetime
-
-from app.models.user import User, UserRole
-from app.models.classroom import Classroom
-from app.models.enrollment import Enrollment
-from app.schemas.admin import (
-    AdminUserCreate, AdminUserUpdate,
-    AdminClassCreate, AdminClassUpdate
-)
-from app.core.security import get_password_hash
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-from fastapi import UploadFile
+import contextlib
 import csv
 import io
+from datetime import datetime
+from typing import Any
+
+from fastapi import UploadFile
+from sqlalchemy import distinct, func
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.orm import Session
+
+from app.core.security import get_password_hash
+from app.models.classroom import Classroom
+from app.models.enrollment import Enrollment
+from app.models.user import User, UserRole
+from app.schemas.admin import AdminClassCreate, AdminClassUpdate, AdminUserCreate, AdminUserUpdate
 
 
-def _vn_date(dt: Optional[datetime]) -> str:
+def _vn_date(dt: datetime | None) -> str:
     if not dt:
         return ""
     return dt.strftime("%d/%m/%Y")
@@ -26,18 +25,16 @@ def _vn_date(dt: Optional[datetime]) -> str:
 class AdminService:
     # -------- Users --------
     @staticmethod
-    def list_users(db: Session, search: Optional[str] = None,
-                   role: Optional[str] = None, status: Optional[str] = None,
-                   skip: int = 0, limit: int = 100) -> List[Dict[str, Any]]:
+    def list_users(db: Session, search: str | None = None,
+                   role: str | None = None, status: str | None = None,
+                   skip: int = 0, limit: int = 100) -> list[dict[str, Any]]:
         q = db.query(User)
         if search:
             like = f"%{search}%"
             q = q.filter((User.full_name.ilike(like)) | (User.email.ilike(like)) | (User.username.ilike(like)))
         if role:
-            try:
+            with contextlib.suppress(Exception):
                 q = q.filter(User.role == UserRole(role))
-            except Exception:
-                pass
         if status:
             if status == "active":
                 q = q.filter(User.is_active.is_(True))
@@ -47,8 +44,8 @@ class AdminService:
 
         # Precompute teacher classes mapping and student counts
         teacher_ids = [u.id for u in users if u.role == UserRole.TEACHER]
-        teacher_class_counts: Dict[int, int] = {}
-        teacher_student_counts: Dict[int, int] = {}
+        teacher_class_counts: dict[int, int] = {}
+        teacher_student_counts: dict[int, int] = {}
         if teacher_ids:
             # classes per teacher
             rows = (
@@ -57,7 +54,7 @@ class AdminService:
                 .group_by(Classroom.teacher_id)
                 .all()
             )
-            teacher_class_counts = {tid: cnt for tid, cnt in rows}
+            teacher_class_counts = dict(rows)
 
             # unique students across teacher's classes
             rows2 = (
@@ -69,11 +66,11 @@ class AdminService:
                 .group_by(Classroom.teacher_id)
                 .all()
             )
-            teacher_student_counts = {tid: cnt for tid, cnt in rows2}
+            teacher_student_counts = dict(rows2)
 
         # student class counts
         student_ids = [u.id for u in users if u.role == UserRole.USER]
-        student_class_counts: Dict[int, int] = {}
+        student_class_counts: dict[int, int] = {}
         if student_ids:
             rows3 = (
                 db.query(Enrollment.user_id, func.count(Enrollment.id))
@@ -83,7 +80,7 @@ class AdminService:
                 .group_by(Enrollment.user_id)
                 .all()
             )
-            student_class_counts = {uid: cnt for uid, cnt in rows3}
+            student_class_counts = dict(rows3)
 
         out = []
         for u in users:
@@ -109,14 +106,14 @@ class AdminService:
         return out
 
     @staticmethod
-    def create_user(db: Session, payload: AdminUserCreate) -> Dict[str, Any]:
+    def create_user(db: Session, payload: AdminUserCreate) -> dict[str, Any]:
         # Username from payload if provided, otherwise email local-part
         username = (payload.username or payload.email.split("@")[0]).strip()
         # Create user
         # Normalize role (student -> user)
-        from app.core.role_utils import normalize_role, get_display_role
+        from app.core.role_utils import get_display_role, normalize_role
         normalized_role = normalize_role(payload.role)
-        
+
         user = User(
             email=payload.email,
             username=username,
@@ -141,9 +138,9 @@ class AdminService:
         }
 
     @staticmethod
-    def update_user(db: Session, user_id: int, payload: AdminUserUpdate) -> Dict[str, Any]:
-        from app.core.role_utils import normalize_role, get_display_role
-        
+    def update_user(db: Session, user_id: int, payload: AdminUserUpdate) -> dict[str, Any]:
+        from app.core.role_utils import get_display_role, normalize_role
+
         user = db.get(User, user_id)
         if not user:
             raise ValueError("User not found")
@@ -180,13 +177,13 @@ class AdminService:
         db.commit()
 
     @staticmethod
-    def list_teachers(db: Session) -> List[Dict[str, Any]]:
+    def list_teachers(db: Session) -> list[dict[str, Any]]:
         teachers = db.query(User).filter(User.role == UserRole.TEACHER, User.is_active.is_(True)).all()
         return [{"id": t.id, "name": t.full_name or t.username} for t in teachers]
 
     # -------- Classes --------
     @staticmethod
-    def list_classes(db: Session, search: Optional[str] = None) -> List[Dict[str, Any]]:
+    def list_classes(db: Session, search: str | None = None) -> list[dict[str, Any]]:
         q = db.query(Classroom)
         if search:
             like = f"%{search}%"
@@ -204,7 +201,7 @@ class AdminService:
 
         # Teacher names map
         teacher_ids = [c.teacher_id for c in classes if c.teacher_id]
-        names_map: Dict[int, str] = {}
+        names_map: dict[int, str] = {}
         if teacher_ids:
             rows = db.query(User.id, User.full_name, User.username).filter(User.id.in_(teacher_ids)).all()
             for i, full_name, username in rows:
@@ -229,7 +226,7 @@ class AdminService:
         return out
 
     @staticmethod
-    def create_class(db: Session, payload: AdminClassCreate) -> Dict[str, Any]:
+    def create_class(db: Session, payload: AdminClassCreate) -> dict[str, Any]:
         # Validate unique code
         exists = db.query(Classroom).filter(Classroom.code == payload.code).first()
         if exists:
@@ -260,18 +257,18 @@ class AdminService:
         db.add(c)
         try:
             db.commit()
-        except IntegrityError as e:
+        except IntegrityError:
             db.rollback()
             # Likely duplicate code or FK constraint
             raise ValueError("Database integrity error while creating class")
-        except SQLAlchemyError as e:
+        except SQLAlchemyError:
             db.rollback()
             raise ValueError("Database error while creating class")
         db.refresh(c)
         return AdminService.get_class(db, c.id)
 
     @staticmethod
-    def get_class(db: Session, class_id: int) -> Dict[str, Any]:
+    def get_class(db: Session, class_id: int) -> dict[str, Any]:
         c = db.get(Classroom, class_id)
         if not c:
             raise ValueError("Class not found")
@@ -300,7 +297,7 @@ class AdminService:
         }
 
     @staticmethod
-    def update_class(db: Session, class_id: int, payload: AdminClassUpdate) -> Dict[str, Any]:
+    def update_class(db: Session, class_id: int, payload: AdminClassUpdate) -> dict[str, Any]:
         c = db.query(Classroom).get(class_id)
         if not c:
             raise ValueError("Class not found")
@@ -337,7 +334,7 @@ class AdminService:
 
     # -------- Stats --------
     @staticmethod
-    def overview_stats(db: Session) -> Dict[str, Any]:
+    def overview_stats(db: Session) -> dict[str, Any]:
         total_users = db.query(func.count(User.id)).scalar() or 0
         total_teachers = db.query(func.count(User.id)).filter(User.role == UserRole.TEACHER).scalar() or 0
         total_students = db.query(func.count(User.id)).filter(User.role == UserRole.USER).scalar() or 0
@@ -366,7 +363,7 @@ class AdminService:
 
     # -------- Bulk Import Users (CSV) --------
     @staticmethod
-    def _normalize_role(raw: Optional[str]) -> str:
+    def _normalize_role(raw: str | None) -> str:
         if not raw:
             return "user"
         s = raw.strip().lower()
@@ -390,7 +387,7 @@ class AdminService:
         return cand
 
     @staticmethod
-    def import_users_csv(db: Session, file: UploadFile) -> Dict[str, Any]:
+    def import_users_csv(db: Session, file: UploadFile) -> dict[str, Any]:
         if not file.filename or not file.filename.lower().endswith((".csv", ".txt")):
             raise ValueError("Please upload a .csv or .txt file")
 
@@ -405,7 +402,7 @@ class AdminService:
         if not headers:
             raise ValueError("CSV has no headers")
 
-        def pick(row: dict, *names: str) -> Optional[str]:
+        def pick(row: dict, *names: str) -> str | None:
             for n in names:
                 if n in row and row[n]:
                     return str(row[n]).strip()
@@ -413,8 +410,8 @@ class AdminService:
 
         created = 0
         skipped = 0
-        errors: List[Dict[str, Any]] = []
-        preview: List[Dict[str, Any]] = []
+        errors: list[dict[str, Any]] = []
+        preview: list[dict[str, Any]] = []
 
         for idx, row in enumerate(reader, start=2):
             lower_row = {k.strip().lower(): (v.strip() if isinstance(v, str) else v) for k, v in row.items()}

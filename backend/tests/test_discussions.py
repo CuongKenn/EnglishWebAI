@@ -1,6 +1,8 @@
 import pytest
-from app.models.discussion import DiscussionThread, DiscussionPost
+
+from app.models.discussion import DiscussionPost, DiscussionThread
 from tests.conftest import client
+
 
 @pytest.fixture
 def test_discussion(db_session, test_student):
@@ -85,7 +87,7 @@ def test_delete_discussion(db_session, test_discussion, test_student, student_to
     )
     assert response.status_code == 200
     assert "xóa" in response.json()["message"].lower()
-    
+
     # Verify deleted from database
     deleted_thread = db_session.query(DiscussionThread).filter(
         DiscussionThread.id == test_discussion.id
@@ -170,7 +172,7 @@ def test_update_discussion_post(db_session, test_discussion, test_student, stude
         headers={"Authorization": f"Bearer {student_token}"}
     )
     post_id = create_response.json()["id"]
-    
+
     # Update the post
     update_data = {
         "content": "Updated content",
@@ -199,7 +201,7 @@ def test_update_post_unauthorized(db_session, test_discussion, test_student, ano
         headers={"Authorization": f"Bearer {student_token}"}
     )
     post_id = create_response.json()["id"]
-    
+
     # Try to update as another student
     update_data = {
         "content": "Hacked content",
@@ -239,7 +241,7 @@ def test_delete_discussion_post(db_session, test_discussion, test_student, stude
         headers={"Authorization": f"Bearer {student_token}"}
     )
     post_id = create_response.json()["id"]
-    
+
     # Delete the post
     response = client.delete(
         f"/api/v1/discussions/{test_discussion.id}/posts/{post_id}",
@@ -247,7 +249,7 @@ def test_delete_discussion_post(db_session, test_discussion, test_student, stude
     )
     assert response.status_code == 200
     assert "xóa" in response.json()["message"].lower()
-    
+
     # Verify deleted from database
     deleted_post = db_session.query(DiscussionPost).filter(
         DiscussionPost.id == post_id
@@ -267,7 +269,7 @@ def test_delete_post_unauthorized(db_session, test_discussion, test_student, ano
         headers={"Authorization": f"Bearer {student_token}"}
     )
     post_id = create_response.json()["id"]
-    
+
     # Try to delete as another student
     response = client.delete(
         f"/api/v1/discussions/{test_discussion.id}/posts/{post_id}",
@@ -297,7 +299,7 @@ def test_like_discussion_post(db_session, test_discussion, test_student, student
         headers={"Authorization": f"Bearer {student_token}"}
     )
     post_id = create_response.json()["id"]
-    
+
     # Like the post
     response = client.post(
         f"/api/v1/discussions/{test_discussion.id}/posts/{post_id}/like",
@@ -328,13 +330,13 @@ def test_unlike_discussion_post(db_session, test_discussion, test_student, stude
         headers={"Authorization": f"Bearer {student_token}"}
     )
     post_id = create_response.json()["id"]
-    
+
     # Like first
     client.post(
         f"/api/v1/discussions/{test_discussion.id}/posts/{post_id}/like",
         headers={"Authorization": f"Bearer {student_token}"}
     )
-    
+
     # Unlike the post
     response = client.delete(
         f"/api/v1/discussions/{test_discussion.id}/posts/{post_id}/like",

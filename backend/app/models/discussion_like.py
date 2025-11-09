@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, ForeignKey, DateTime, UniqueConstraint
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, UniqueConstraint
 from sqlalchemy.sql import func
+
 from app.core.database import Base
 
 

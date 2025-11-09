@@ -5,18 +5,19 @@ Quick script to test auto-grading flow without external AI keys.
 Run inside backend container:
   python scripts/test_autograde.py
 """
-import os
 import json
-from datetime import datetime
+import os
 
 # Ensure backend module path
 import sys
+from datetime import datetime
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app.core.database import SessionLocal
-from app.models.exam_assessment import ExamAssessment, ExamSubmission
 from app.models.classroom import Classroom
+from app.models.exam_assessment import ExamAssessment, ExamSubmission
 from app.models.user import User, UserRole
 from app.services.ai_grading_service import AIGradingService
 
@@ -121,11 +122,12 @@ def main():
     db = SessionLocal()
     try:
         exam, submission = create_sample_exam(db)
-        grader = AIGradingService()
+        AIGradingService()
 
         # Use router helper logic: import function to ensure same behavior
-        from app.routers.exam_assessments import _auto_grade_exam_submission
         import asyncio
+
+        from app.routers.exam_assessments import _auto_grade_exam_submission
         asyncio.run(_auto_grade_exam_submission(submission, db))
 
         db.commit()

@@ -2,9 +2,10 @@
 Exam Assessment Schemas
 Pydantic schemas for exam assessments and submissions
 """
-from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
 from datetime import datetime
+from typing import Any
+
+from pydantic import BaseModel, Field
 
 
 # ============= Question Schemas =============
@@ -13,11 +14,11 @@ class ExamQuestion(BaseModel):
     question_id: str
     question_text: str
     question_type: str  # matching, multiple_choice, checkbox, fill_blank, short_answer, essay
-    options: Optional[List[str]] = None
-    correct_answer: Optional[str] = None  # For answer key
+    options: list[str] | None = None
+    correct_answer: str | None = None  # For answer key
     points: float = 0.0
     has_image: bool = False
-    image_id: Optional[int] = None
+    image_id: int | None = None
 
 
 class ExamTask(BaseModel):
@@ -25,17 +26,17 @@ class ExamTask(BaseModel):
     task_number: int
     task_title: str
     task_type: str  # matching, multiple_choice, etc.
-    instructions: Optional[str] = None
+    instructions: str | None = None
     has_images: bool = False
-    image_positions: Optional[List[int]] = None
-    questions: List[ExamQuestion]
+    image_positions: list[int] | None = None
+    questions: list[ExamQuestion]
 
 
 class ExamSection(BaseModel):
     """Section of an exam (Listening, Reading, etc.)"""
     section_name: str
     section_points: float
-    tasks: List[ExamTask]
+    tasks: list[ExamTask]
 
 
 class ExamContent(BaseModel):
@@ -43,9 +44,9 @@ class ExamContent(BaseModel):
     exam_title: str
     exam_type: str = "midterm"
     total_points: float = 10.0
-    duration: Optional[int] = 60  # minutes
-    sections: List[ExamSection]
-    answer_key: Optional[Dict[str, str]] = None
+    duration: int | None = 60  # minutes
+    sections: list[ExamSection]
+    answer_key: dict[str, str] | None = None
 
 
 # ============= Exam Assessment Schemas =============
@@ -54,30 +55,30 @@ class ExamAssessmentCreate(BaseModel):
     class_id: int
     exam_type: str = Field(..., pattern="^(midterm|final|quiz|practice)$")
     title: str
-    description: Optional[str] = None
-    content: Dict[str, Any]  # Parsed exam content
-    answer_key: Optional[Dict[str, Any]] = None
-    rubrics: Optional[Dict[str, Any]] = None
+    description: str | None = None
+    content: dict[str, Any]  # Parsed exam content
+    answer_key: dict[str, Any] | None = None
+    rubrics: dict[str, Any] | None = None
     total_points: float = 10.0
-    duration: Optional[int] = None
-    start_time: Optional[datetime] = None
-    end_time: Optional[datetime] = None
+    duration: int | None = None
+    start_time: datetime | None = None
+    end_time: datetime | None = None
     is_published: bool = False
 
 
 class ExamAssessmentUpdate(BaseModel):
     """Update exam assessment"""
-    title: Optional[str] = None
-    description: Optional[str] = None
-    content: Optional[Dict[str, Any]] = None
-    answer_key: Optional[Dict[str, Any]] = None
-    rubrics: Optional[Dict[str, Any]] = None
-    total_points: Optional[float] = None
-    duration: Optional[int] = None
-    start_time: Optional[datetime] = None
-    end_time: Optional[datetime] = None
-    is_published: Optional[bool] = None
-    is_active: Optional[bool] = None
+    title: str | None = None
+    description: str | None = None
+    content: dict[str, Any] | None = None
+    answer_key: dict[str, Any] | None = None
+    rubrics: dict[str, Any] | None = None
+    total_points: float | None = None
+    duration: int | None = None
+    start_time: datetime | None = None
+    end_time: datetime | None = None
+    is_published: bool | None = None
+    is_active: bool | None = None
 
 
 class ExamAssessmentResponse(BaseModel):
@@ -87,20 +88,20 @@ class ExamAssessmentResponse(BaseModel):
     teacher_id: int
     exam_type: str
     title: str
-    description: Optional[str]
-    original_filename: Optional[str]
-    content: Dict[str, Any]
-    answer_key: Optional[Dict[str, Any]]
-    rubrics: Optional[Dict[str, Any]]
+    description: str | None
+    original_filename: str | None
+    content: dict[str, Any]
+    answer_key: dict[str, Any] | None
+    rubrics: dict[str, Any] | None
     total_points: float
-    duration: Optional[int]
-    start_time: Optional[datetime]
-    end_time: Optional[datetime]
+    duration: int | None
+    start_time: datetime | None
+    end_time: datetime | None
     ai_parsed: bool
     is_active: bool
     is_published: bool
     created_at: datetime
-    updated_at: Optional[datetime]
+    updated_at: datetime | None
 
     class Config:
         from_attributes = True
@@ -112,9 +113,9 @@ class ExamAssessmentListItem(BaseModel):
     class_id: int
     exam_type: str
     title: str
-    description: Optional[str]
+    description: str | None
     total_points: float
-    duration: Optional[int]
+    duration: int | None
     is_published: bool
     created_at: datetime
 
@@ -130,20 +131,20 @@ class ExamSubmissionCreate(BaseModel):
 
 class ExamSubmissionUpdate(BaseModel):
     """Update exam submission (save answers)"""
-    answers: Dict[str, Any]
-    status: Optional[str] = "in_progress"
+    answers: dict[str, Any]
+    status: str | None = "in_progress"
 
 
 class ExamSubmissionSubmit(BaseModel):
     """Submit exam for grading"""
-    answers: Dict[str, Any]
+    answers: dict[str, Any]
 
 
 class ExamSubmissionGrade(BaseModel):
     """Grade exam submission"""
     score: float
-    rubrics_scores: Optional[Dict[str, Any]] = None
-    feedback: Optional[str] = None
+    rubrics_scores: dict[str, Any] | None = None
+    feedback: str | None = None
 
 
 class ExamSubmissionResponse(BaseModel):
@@ -151,17 +152,17 @@ class ExamSubmissionResponse(BaseModel):
     id: int
     exam_id: int
     student_id: int
-    answers: Dict[str, Any]
-    score: Optional[float]
-    ai_score: Optional[float]
-    rubrics_scores: Optional[Dict[str, Any]]
-    feedback: Optional[str]
-    ai_feedback: Optional[str]
-    error_analysis: Optional[Dict[str, Any]]
+    answers: dict[str, Any]
+    score: float | None
+    ai_score: float | None
+    rubrics_scores: dict[str, Any] | None
+    feedback: str | None
+    ai_feedback: str | None
+    error_analysis: dict[str, Any] | None
     status: str
     started_at: datetime
-    submitted_at: Optional[datetime]
-    graded_at: Optional[datetime]
+    submitted_at: datetime | None
+    graded_at: datetime | None
 
     class Config:
         from_attributes = True
@@ -173,15 +174,15 @@ class ExamImportRequest(BaseModel):
     class_id: int
     exam_type: str = Field(..., pattern="^(midterm|final|quiz|practice)$")
     is_published: bool = False
-    start_time: Optional[datetime] = None
-    end_time: Optional[datetime] = None
+    start_time: datetime | None = None
+    end_time: datetime | None = None
 
 
 class ExamImportResponse(BaseModel):
     """Response after importing exam"""
     success: bool
     message: str
-    exam_id: Optional[int] = None
-    exam: Optional[ExamAssessmentResponse] = None
-    errors: Optional[List[str]] = None
+    exam_id: int | None = None
+    exam: ExamAssessmentResponse | None = None
+    errors: list[str] | None = None
 

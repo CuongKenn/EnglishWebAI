@@ -1,6 +1,7 @@
+import json
+
 from app.core.database import SessionLocal
 from app.models.submission import Submission
-import json
 
 db = SessionLocal()
 sub = db.query(Submission).filter(Submission.id == 11).first()
@@ -16,9 +17,9 @@ print("Trying to parse as JSON...")
 print("=" * 60)
 try:
     parsed = json.loads(sub.ai_feedback)
-    print(f"✅ Parsed successfully!")
+    print("✅ Parsed successfully!")
     print(f"Type: {type(parsed)}")
-    
+
     if isinstance(parsed, dict):
         print(f"Keys: {list(parsed.keys())}")
         print()

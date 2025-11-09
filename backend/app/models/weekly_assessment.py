@@ -1,6 +1,7 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON, Boolean, Float
-from sqlalchemy.sql import func
+from sqlalchemy import JSON, Boolean, Column, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
+
 from app.core.database import Base
 
 
@@ -16,24 +17,24 @@ class WeeklyAssessment(Base):
     teacher_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     week_number = Column(Integer, nullable=False)  # Tuần thứ mấy
     skill_type = Column(String, nullable=False)  # reading, writing, listening, speaking
-    
+
     # Assessment info
     title = Column(String, nullable=False)
     description = Column(Text, nullable=True)
     worksheet_id = Column(Integer, ForeignKey("worksheets.id", ondelete="SET NULL"), nullable=True)
-    
+
     # Content
     content = Column(JSON, nullable=True)  # Assessment questions/content
     rubrics = Column(JSON, nullable=True)  # Grading rubrics
     max_score = Column(Float, nullable=True)
     duration = Column(Integer, nullable=True)  # Duration in minutes
-    
+
     # Metadata
     ai_generated = Column(Boolean, default=False)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    
+
     # Relationships
     classroom = relationship("Classroom", back_populates="weekly_assessments")
     teacher = relationship("User", foreign_keys=[teacher_id])
@@ -52,28 +53,28 @@ class WeeklySubmission(Base):
     id = Column(Integer, primary_key=True, index=True)
     assessment_id = Column(Integer, ForeignKey("weekly_assessments.id", ondelete="CASCADE"), nullable=False, index=True)
     student_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    
+
     # Submission data
     answers = Column(JSON, nullable=False)  # Student's answers
-    
+
     # Grading
     score = Column(Float, nullable=True)
     ai_score = Column(Float, nullable=True)
     rubrics_scores = Column(JSON, nullable=True)  # Detailed scores by rubrics
-    
+
     # Feedback
     feedback = Column(Text, nullable=True)  # Teacher feedback
     ai_feedback = Column(Text, nullable=True)  # AI-generated feedback
     error_analysis = Column(JSON, nullable=True)  # Detailed error analysis
-    
+
     # Status
     status = Column(String, default="in_progress")  # in_progress, submitted, graded
-    
+
     # Timestamps
     started_at = Column(DateTime(timezone=True), server_default=func.now())
     submitted_at = Column(DateTime(timezone=True), nullable=True)
     graded_at = Column(DateTime(timezone=True), nullable=True)
-    
+
     # Relationships
     assessment = relationship("WeeklyAssessment", back_populates="submissions")
     student = relationship("User", foreign_keys=[student_id])

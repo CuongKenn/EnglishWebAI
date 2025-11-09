@@ -1,11 +1,10 @@
-from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Optional, Tuple
-from sqlalchemy.orm import Session
-from sqlalchemy import func
 import json
+from datetime import UTC, datetime, timedelta
+
+from sqlalchemy import func
+from sqlalchemy.orm import Session
 
 from app.models.ai_usage import AIUsageEvent
-
 
 FEATURE_KEYS = [
     "translate",
@@ -19,7 +18,7 @@ FEATURE_KEYS = [
 
 class AIAnalyticsService:
     @staticmethod
-    def log_usage(db: Session, user_id: Optional[int], feature: str, metadata: Optional[dict] = None) -> AIUsageEvent:
+    def log_usage(db: Session, user_id: int | None, feature: str, metadata: dict | None = None) -> AIUsageEvent:
         if feature not in FEATURE_KEYS:
             raise ValueError("Invalid feature")
 
@@ -44,7 +43,7 @@ class AIAnalyticsService:
     @staticmethod
     def get_analytics(db: Session, range_value: str = "30d") -> dict:
         days = AIAnalyticsService._range_to_days(range_value)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         start_time = now - timedelta(days=days - 1)
 
         # Total requests in range
@@ -62,7 +61,7 @@ class AIAnalyticsService:
             .group_by(AIUsageEvent.feature)
             .all()
         )
-        requests_by_feature: Dict[str, int] = {k: 0 for k in FEATURE_KEYS}
+        requests_by_feature: dict[str, int] = dict.fromkeys(FEATURE_KEYS, 0)
         for feature, count in rows:
             requests_by_feature[feature] = count
 
@@ -77,7 +76,7 @@ class AIAnalyticsService:
 
         # Requests by day
         # Pre-fill date buckets for continuous range
-        by_day_map: Dict[str, int] = {}
+        by_day_map: dict[str, int] = {}
         for i in range(days):
             d = (start_time + timedelta(days=i)).date().isoformat()
             by_day_map[d] = 0

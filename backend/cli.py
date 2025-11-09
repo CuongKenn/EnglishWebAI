@@ -16,16 +16,16 @@ def seed_database(force: bool = False):
 def main():
     """Main CLI entry point"""
     import argparse
-    
+
     parser = argparse.ArgumentParser(description='EnglishWebAI CLI')
     subparsers = parser.add_subparsers(dest='command', help='Available commands')
-    
+
     # Seed command
     parser_seed = subparsers.add_parser('seed', help='Seed database with initial data')
     parser_seed.add_argument('--force', action='store_true', help='Force reseed (delete existing data)')
-    
+
     args = parser.parse_args()
-    
+
     if args.command == 'seed':
         seed_database(force=args.force)
     else:

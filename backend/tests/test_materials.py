@@ -1,6 +1,8 @@
 import pytest
+
 from app.models.material import Material
 from tests.conftest import client
+
 
 @pytest.fixture
 def test_material(db_session):
@@ -107,7 +109,7 @@ def test_download_material_no_file(db_session, test_student, student_token):
     db_session.add(material)
     db_session.commit()
     db_session.refresh(material)
-    
+
     response = client.get(
         f"/api/v1/materials/{material.id}/download",
         headers={"Authorization": f"Bearer {student_token}"}

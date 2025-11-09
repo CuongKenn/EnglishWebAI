@@ -3,18 +3,17 @@ AI Flashcard Router
 Handles AI-powered vocabulary flashcards generation
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
-from typing import List, Optional
-from pydantic import BaseModel
-import logging
 import json
+import logging
 import random
 import time
 
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
+
 from app.core.database import get_db
 from app.services.openai_service import OpenAIService
-from app.models.user import User
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -39,7 +38,7 @@ class FlashcardProgressRequest(BaseModel):
 
 # ===================== Endpoints =====================
 
-@router.get("/flashcards", response_model=List[Flashcard])
+@router.get("/flashcards", response_model=list[Flashcard])
 async def get_flashcards(
     level: str = Query("B1", regex="^(A1|A2|B1|B2|C1|C2)$"),
     limit: int = Query(20, ge=1, le=50),
@@ -47,7 +46,7 @@ async def get_flashcards(
 ):
     """
     Generate vocabulary flashcards using AI
-    
+
     - **level**: CEFR level (A1, A2, B1, B2, C1, C2)
     - **limit**: Number of flashcards to generate (1-50)
     """
@@ -60,7 +59,7 @@ async def get_flashcards(
                 status_code=503,
                 detail="AI service is not available. Please contact administrator to configure OPENAI_API_KEY."
             )
-        
+
         # Level specifications
         level_specs = {
             "A1": {
@@ -94,9 +93,9 @@ async def get_flashcards(
                 "complexity": "highly sophisticated vocabulary"
             }
         }
-        
+
         spec = level_specs[level]
-        
+
         # Add randomization to ensure varied vocabulary each time
         random_seed = int(time.time() * 1000) % 10000
         random_topics = random.sample(spec['topics'].split(', '), min(3, len(spec['topics'].split(', '))))
@@ -108,7 +107,7 @@ async def get_flashcards(
             "include some phrasal verbs",
             "include common expressions"
         ])
-        
+
         prompt = f"""
 Generate {limit} UNIQUE and DIVERSE vocabulary flashcards for English learners at {level} level ({spec['description']}).
 
@@ -153,9 +152,9 @@ Technical Requirements:
 - No markdown, no code blocks, just pure JSON array
 - Ensure JSON is valid and properly formatted
 """
-        
+
         logger.info(f"[AI-FLASHCARD] Generating {limit} flashcards for level: {level}")
-        
+
         # Call OpenAI
         try:
             response_text = openai_svc.generate_content(prompt)
@@ -171,7 +170,7 @@ Technical Requirements:
                 status_code=503,
                 detail=f"Failed to generate flashcards with AI: {str(ge)}"
             )
-        
+
         # Clean response
         response_text = response_text.strip()
         if response_text.startswith("```json"):
@@ -181,7 +180,7 @@ Technical Requirements:
         if response_text.endswith("```"):
             response_text = response_text[:-3]
         response_text = response_text.strip()
-        
+
         # Parse JSON
         try:
             result = json.loads(response_text)
@@ -192,20 +191,20 @@ Technical Requirements:
                 status_code=500,
                 detail="AI response format invalid. Please try again."
             )
-        
+
         # Validate result is array
         if not isinstance(result, list):
             raise HTTPException(
                 status_code=500,
                 detail="AI did not return a list of flashcards"
             )
-        
+
         if len(result) == 0:
             raise HTTPException(
                 status_code=500,
                 detail="AI did not generate any flashcards"
             )
-        
+
         # Validate and build flashcard list
         flashcards = []
         for idx, card in enumerate(result):
@@ -217,7 +216,7 @@ Technical Requirements:
                         status_code=500,
                         detail=f"Flashcard {idx} missing required field: {field}"
                     )
-            
+
             flashcards.append(
                 Flashcard(
                     id=idx + 1,  # Generate ID based on index
@@ -229,11 +228,11 @@ Technical Requirements:
                     level=level
                 )
             )
-        
+
         logger.info(f"[AI-FLASHCARD] Successfully generated {len(flashcards)} flashcards for level {level}")
-        
+
         return flashcards
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -253,7 +252,7 @@ async def save_flashcard_progress(
 ):
     """
     Save user's flashcard learning progress
-    
+
     For now, just logs the progress. Can be extended to store in database.
     """
     try:
@@ -261,17 +260,17 @@ async def save_flashcard_progress(
             f"[AI-FLASHCARD] Flashcard progress: flashcard_id={payload.flashcard_id}, "
             f"known={payload.known}"
         )
-        
+
         # TODO: Store in database if needed
         # For example, create a FlashcardProgress model and save to DB
-        
+
         return {
             "success": True,
             "message": "Progress saved successfully",
             "flashcard_id": payload.flashcard_id,
             "known": payload.known
         }
-        
+
     except Exception as e:
         logger.error(f"[AI-FLASHCARD] Error saving progress: {e}")
         raise HTTPException(

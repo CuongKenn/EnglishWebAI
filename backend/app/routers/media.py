@@ -1,12 +1,12 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
+import os
+import shutil
+import uuid
+from datetime import datetime
+from pathlib import Path
+
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
-import shutil
-import os
-from pathlib import Path
-from datetime import datetime
-import uuid
-from typing import Optional
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
@@ -53,7 +53,7 @@ async def upload_media_file(
     try:
         # Get file extension
         file_ext = get_file_extension(file.filename)
-        
+
         # Determine file type and directory
         if file_ext in AUDIO_EXTENSIONS:
             upload_dir = AUDIO_DIR
@@ -69,19 +69,19 @@ async def upload_media_file(
                 status_code=400,
                 detail=f"File type {file_ext} is not supported. Supported types: audio, image, document"
             )
-        
+
         # Generate unique filename
         unique_filename = generate_unique_filename(file.filename)
         file_path = upload_dir / unique_filename
-        
+
         # Save file
         with file_path.open("wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
-        
+
         # Generate URL (accessible via static mount or API route)
         # Use the static mount path since main.py mounts /media as StaticFiles
         file_url = f"/media/{file_type}/{unique_filename}"
-        
+
         return {
             "success": True,
             "message": "File uploaded successfully",
@@ -91,7 +91,7 @@ async def upload_media_file(
             "file_type": file_type,
             "size": os.path.getsize(file_path)
         }
-        
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error uploading file: {str(e)}")
 
@@ -109,11 +109,11 @@ async def get_media_file(file_type: str, filename: str):
         file_path = DOCUMENT_DIR / filename
     else:
         raise HTTPException(status_code=400, detail="Invalid file type")
-    
+
     # Check if file exists
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="File not found")
-    
+
     return FileResponse(file_path)
 
 @router.delete("/files/{file_type}/{filename}")
@@ -129,7 +129,7 @@ async def delete_media_file(
     # Check if user is teacher or admin
     if current_user.role not in ["teacher", "admin"]:
         raise HTTPException(status_code=403, detail="Only teachers and admins can delete files")
-    
+
     # Determine directory based on file type
     if file_type == "audio":
         file_path = AUDIO_DIR / filename
@@ -139,11 +139,11 @@ async def delete_media_file(
         file_path = DOCUMENT_DIR / filename
     else:
         raise HTTPException(status_code=400, detail="Invalid file type")
-    
+
     # Check if file exists
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="File not found")
-    
+
     try:
         # Delete file
         os.remove(file_path)

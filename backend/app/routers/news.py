@@ -1,28 +1,28 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File
-from sqlalchemy.orm import Session
-from sqlalchemy import desc, asc, or_, func
-from typing import List, Optional
-from datetime import datetime
-from pathlib import Path
+import logging
 import os
 import uuid
-import logging
+from datetime import datetime
+from pathlib import Path
+
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from pydantic import BaseModel
+from sqlalchemy import asc, desc, func, or_
+from sqlalchemy.orm import Session
+
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
-from app.models.user import User, UserRole
 from app.models.news import NewsPost
 from app.models.news_like import NewsLike
+from app.models.user import User, UserRole
 from app.schemas.student import (
-    NewsListResponse,
-    NewsPostResponse,
     NewsCreate,
-    NewsUpdate,
-    NewsStatusUpdate,
-    NewsManageItem,
+    NewsListResponse,
     NewsManageListResponse,
+    NewsPostResponse,
+    NewsStatusUpdate,
+    NewsUpdate,
 )
 from app.services.openai_service import OpenAIService
-from pydantic import BaseModel
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -35,7 +35,7 @@ class AIGenerateNewsRequest(BaseModel):
     level: str = "intermediate"  # beginner, intermediate, advanced
     word_count: int = 300
 
-@router.get("/", response_model=List[NewsListResponse])
+@router.get("/", response_model=list[NewsListResponse])
 async def get_news(
     category: str = None,
     skip: int = 0,
@@ -46,23 +46,23 @@ async def get_news(
     Lấy danh sách tin tức và sự kiện - Trả về từ database
     """
     query = db.query(NewsPost).filter(NewsPost.status == "published")
-    
+
     # Filter by category if provided
     if category and category != "all":
         query = query.filter(NewsPost.category == category)
-    
+
     # Order by published_at descending (newest first)
     query = query.order_by(desc(NewsPost.published_at))
-    
+
     # Apply pagination
     news_posts = query.offset(skip).limit(limit).all()
-    
+
     # Transform to response format
     result = []
     for news in news_posts:
         # Get author info
         author = db.query(User).filter(User.id == news.author_id).first() if news.author_id else None
-        
+
         result.append({
             "id": news.id,
             "title": news.title,
@@ -79,7 +79,7 @@ async def get_news(
             "author_name": author.full_name if author else "Admin",
             "author_role": author.role.value if author else "admin"
         })
-    
+
     return result
 
 @router.get("/{news_id}", response_model=NewsPostResponse)
@@ -94,13 +94,13 @@ async def get_news_detail(
         NewsPost.id == news_id,
         NewsPost.status == "published"
     ).first()
-    
+
     if not news:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Không tìm thấy tin tức"
         )
-    
+
     # Increase views count (best-effort)
     try:
         news.views = (news.views or 0) + 1
@@ -126,11 +126,11 @@ async def create_news(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Chỉ giáo viên và admin mới có thể tạo tin tức"
         )
-    
+
     # Calculate reading time based on content length (approx 200 words per minute)
     word_count = len(news_data.content.split())
     reading_time = max(1, round(word_count / 200))
-    
+
     news = NewsPost(
         title=news_data.title,
         description=news_data.description,
@@ -144,11 +144,11 @@ async def create_news(
         status=news_data.status,
         published_at=datetime.now() if news_data.status == "published" else None
     )
-    
+
     db.add(news)
     db.commit()
     db.refresh(news)
-    
+
     return news
 
 @router.put("/{news_id}", response_model=NewsPostResponse)
@@ -162,32 +162,32 @@ async def update_news(
     Cập nhật tin tức (chỉ tác giả hoặc admin)
     """
     news = db.query(NewsPost).filter(NewsPost.id == news_id).first()
-    
+
     if not news:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Không tìm thấy tin tức"
         )
-    
+
     # Check permission
     if news.author_id != current_user.id and current_user.role not in [UserRole.ADMIN, UserRole.SUPERADMIN]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Bạn không có quyền sửa tin tức này"
         )
-    
+
     # Update fields
     update_data = news_data.dict(exclude_unset=True)
     for field, value in update_data.items():
         setattr(news, field, value)
-    
+
     # Update published_at if status changes to published
     if news_data.status == "published" and news.published_at is None:
         news.published_at = datetime.now()
-    
+
     db.commit()
     db.refresh(news)
-    
+
     return news
 
 @router.delete("/{news_id}")
@@ -200,23 +200,23 @@ async def delete_news(
     Xóa tin tức (chỉ tác giả hoặc admin)
     """
     news = db.query(NewsPost).filter(NewsPost.id == news_id).first()
-    
+
     if not news:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Không tìm thấy tin tức"
         )
-    
+
     # Check permission
     if news.author_id != current_user.id and current_user.role not in [UserRole.ADMIN, UserRole.SUPERADMIN]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Bạn không có quyền xóa tin tức này"
         )
-    
+
     db.delete(news)
     db.commit()
-    
+
     return {"message": "Đã xóa tin tức thành công"}
 
 # ===================== Admin/Teacher Management =====================
@@ -235,7 +235,7 @@ async def get_all_news_for_management(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Chỉ giáo viên và admin mới có thể xem tất cả tin tức"
         )
-    
+
     # Teacher chỉ thấy bài của mình, Admin thấy tất cả
     if current_user.role == UserRole.TEACHER:
         news_posts = db.query(NewsPost).filter(
@@ -243,7 +243,7 @@ async def get_all_news_for_management(
         ).order_by(desc(NewsPost.created_at)).all()
     else:
         news_posts = db.query(NewsPost).order_by(desc(NewsPost.created_at)).all()
-    
+
     result = []
     for news in news_posts:
         author = db.query(User).filter(User.id == news.author_id).first() if news.author_id else None
@@ -266,7 +266,7 @@ async def get_all_news_for_management(
             "created_at": news.created_at.isoformat() if news.created_at else None,
             "updated_at": news.updated_at.isoformat() if news.updated_at else None
         })
-    
+
     return result
 
 
@@ -274,10 +274,10 @@ async def get_all_news_for_management(
 
 @router.get("/manage", response_model=NewsManageListResponse)
 async def get_news_for_management(
-    q: Optional[str] = Query(None, description="Search by title/description/content"),
-    status_filter: Optional[str] = Query(None, alias="status", description="draft|published|archived"),
-    category: Optional[str] = Query(None),
-    author_id: Optional[int] = Query(None),
+    q: str | None = Query(None, description="Search by title/description/content"),
+    status_filter: str | None = Query(None, alias="status", description="draft|published|archived"),
+    category: str | None = Query(None),
+    author_id: int | None = Query(None),
     sort: str = Query("created_at", description="created_at|published_at|views|likes"),
     order: str = Query("desc", description="asc|desc"),
     skip: int = 0,
@@ -335,7 +335,7 @@ async def get_news_for_management(
         .all()
     )
 
-    items: List[dict] = []
+    items: list[dict] = []
     for news in rows:
         author = db.query(User).filter(User.id == news.author_id).first() if news.author_id else None
         items.append(
@@ -513,19 +513,19 @@ async def generate_news_article(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Chỉ giáo viên và admin mới có thể sinh bài viết bằng AI"
         )
-    
+
     try:
         openai_svc = OpenAIService()
-        
+
         # Build prompt based on level
         level_map = {
             "beginner": "A2-B1 (basic vocabulary and simple grammar)",
             "intermediate": "B1-B2 (moderate vocabulary and grammar)",
             "advanced": "B2-C1 (advanced vocabulary and complex grammar)"
         }
-        
+
         level_desc = level_map.get(payload.level, level_map["intermediate"])
-        
+
         prompt = f"""
 Generate an English news article for ESL learners at {level_desc} level.
 
@@ -551,12 +551,12 @@ Return ONLY valid JSON in this exact format:
 
 Do not include any markdown, code blocks, or extra formatting. Just the pure JSON object.
 """
-        
+
         logger.info(f"[AI-NEWS] Generating article for topic: {payload.topic}")
-        
+
         # Call OpenAI
         response_text = openai_svc.generate_content(prompt)
-        
+
         # Clean and parse response
         response_text = response_text.strip()
         # Remove markdown code blocks if present
@@ -567,7 +567,7 @@ Do not include any markdown, code blocks, or extra formatting. Just the pure JSO
         if response_text.endswith("```"):
             response_text = response_text[:-3]
         response_text = response_text.strip()
-        
+
         # Parse JSON
         import json
         try:
@@ -579,18 +579,18 @@ Do not include any markdown, code blocks, or extra formatting. Just the pure JSO
                 status_code=500,
                 detail="AI response không hợp lệ. Vui lòng thử lại."
             )
-        
+
         # Validate required fields
         if "title" not in result or "content" not in result:
             raise HTTPException(
                 status_code=500,
                 detail="AI response thiếu trường bắt buộc"
             )
-        
+
         # Calculate reading time
         word_count = len(result["content"].split())
         reading_time = max(1, round(word_count / 200))
-        
+
         # Get category icon
         category_icons = {
             "technology": "🤖",
@@ -602,11 +602,11 @@ Do not include any markdown, code blocks, or extra formatting. Just the pure JSO
             "business": "💼",
             "science": "🔬"
         }
-        
+
         icon = category_icons.get(payload.category.lower(), "📰")
-        
+
         logger.info(f"[AI-NEWS] Successfully generated article: {result['title'][:50]}...")
-        
+
         return {
             "title": result["title"],
             "description": result.get("description", "")[:300],  # Limit description
@@ -617,7 +617,7 @@ Do not include any markdown, code blocks, or extra formatting. Just the pure JSO
             "word_count": word_count,
             "icon": icon
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:

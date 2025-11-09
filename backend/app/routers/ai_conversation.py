@@ -3,26 +3,30 @@ AI Conversation Router
 Handles AI-powered conversation endpoints
 """
 
-from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
 import logging
 
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+
 logger = logging.getLogger(__name__)
-from sqlalchemy.orm import Session
-from typing import Optional
-import tempfile
+import builtins
+import contextlib
 import os
+import tempfile
+
+from sqlalchemy.orm import Session
+
+from app.core.database import get_db
+from app.core.dependencies import get_current_user
+from app.models.user import User
 from app.schemas.ai_conversation import (
     ConversationRequest,
     ConversationResponse,
     ConversationSuggestionsRequest,
-    ConversationSuggestionsResponse
+    ConversationSuggestionsResponse,
 )
-from app.services.openai_service import openai_service
-from app.services.azure_speech_service import azure_speech_service
-from app.models.user import User
-from app.core.dependencies import get_current_user
-from app.core.database import get_db
 from app.services.ai_analytics_service import AIAnalyticsService
+from app.services.azure_speech_service import azure_speech_service
+from app.services.openai_service import openai_service
 
 router = APIRouter(prefix="/api/v1/ai", tags=["AI Conversation"])
 
@@ -35,7 +39,7 @@ async def chat_with_ai(
 ):
     """
     Chat with AI using OpenAI (ChatGPT)
-    
+
     - Requires authentication
     - Returns AI's response to user's message
     """
@@ -44,14 +48,14 @@ async def chat_with_ai(
         chat_history = None
         if request.chat_history:
             chat_history = [msg.dict() for msg in request.chat_history]
-        
+
         # Get AI response
         ai_response = await openai_service.chat_conversation(
             message=request.message,
             chat_history=chat_history,
             system_prompt=request.system_prompt
         )
-        
+
         # Log usage
         try:
             AIAnalyticsService.log_usage(db, user_id=current_user.id, feature="conversation", metadata={"action": "chat"})
@@ -63,7 +67,7 @@ async def chat_with_ai(
             response=ai_response,
             success=True
         )
-        
+
     except Exception as e:
         raise HTTPException(
             status_code=500,
@@ -78,7 +82,7 @@ async def get_conversation_suggestions(
 ):
     """
     Get conversation starter suggestions
-    
+
     - Requires authentication
     - Returns list of conversation starters
     """
@@ -86,11 +90,11 @@ async def get_conversation_suggestions(
         suggestions = await openai_service.get_conversation_suggestions(
             topic=request.topic
         )
-        
+
         return ConversationSuggestionsResponse(
             suggestions=suggestions
         )
-        
+
     except Exception as e:
         raise HTTPException(
             status_code=500,
@@ -107,7 +111,7 @@ async def assess_speaking_practice(
 ):
     """
     Assess speaking practice audio using Azure Speech + OpenAI
-    
+
     - Receives audio recording and reference text
     - Returns pronunciation scores, transcription, and detailed AI feedback
     - Uses Azure for pronunciation assessment
@@ -120,27 +124,27 @@ async def assess_speaking_practice(
         content = await audio.read()
         temp_file.write(content)
         temp_file.close()
-        
+
         logger.info(f"[assess_speaking_practice] Audio saved: {temp_file.name}, ref: {reference_text[:50]}")
-        
+
         # Get Azure pronunciation assessment
         assessment = azure_speech_service.assess_pronunciation(
             audio_file_path=temp_file.name,
             reference_text=reference_text,
             language="en-US"
         )
-        
+
         if "error" in assessment:
             raise HTTPException(status_code=500, detail=assessment["error"])
-        
+
         recognized_text = assessment.get('recognized_text', '')
         pronunciation_score = assessment.get('pronunciation_score', 0)
         fluency_score = assessment.get('fluency_score', 0)
         completeness_score = assessment.get('completeness_score', 0)
         accuracy_score = assessment.get('accuracy_score', 0)
-        
+
         logger.info(f"[assess_speaking_practice] Azure scores - Pronunciation: {pronunciation_score}, Fluency: {fluency_score}")
-        
+
         # Use OpenAI to analyze grammar, vocabulary, and generate detailed feedback
         openai_prompt = f"""Phân tích chi tiết bài nói tiếng Anh của học sinh:
 
@@ -177,12 +181,9 @@ Chỉ trả về JSON, không có text khác."""
             import re
             # Extract JSON from markdown code block if present
             json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', openai_response, re.DOTALL)
-            if json_match:
-                openai_data = json.loads(json_match.group(1))
-            else:
-                openai_data = json.loads(openai_response)
-            
-            logger.info(f"[assess_speaking_practice] OpenAI analysis complete")
+            openai_data = json.loads(json_match.group(1)) if json_match else json.loads(openai_response)
+
+            logger.info("[assess_speaking_practice] OpenAI analysis complete")
         except Exception as e:
             logger.info(f"[assess_speaking_practice] OpenAI analysis failed: {e}")
             # Fallback values
@@ -194,15 +195,15 @@ Chỉ trả về JSON, không có text khác."""
                 "general_feedback": "Không thể phân tích chi tiết. Vui lòng thử lại.",
                 "improvement_tips": []
             }
-        
+
         # Calculate final detailed feedback from azure_speech_service
         score_result = azure_speech_service.calculate_speaking_score(assessment, max_score=10.0)
-        
+
         # Aggregate all errors and good expressions
         detailed_feedback = []
         error_count = len(openai_data.get('grammar_errors', []))
         good_count = len([v for v in openai_data.get('vocabulary_comments', []) if v.get('type') == 'good'])
-        
+
         # Add grammar errors
         for idx, error in enumerate(openai_data.get('grammar_errors', [])[:5]):  # Limit to 5
             detailed_feedback.append({
@@ -212,7 +213,7 @@ Chỉ trả về JSON, không có text khác."""
                 "suggestion": error.get('suggestion', ''),
                 "explanation": error.get('explanation', '')
             })
-        
+
         # Add vocabulary comments
         for idx, vocab in enumerate(openai_data.get('vocabulary_comments', [])[:5]):  # Limit to 5
             detailed_feedback.append({
@@ -221,18 +222,16 @@ Chỉ trả về JSON, không có text khác."""
                 "position": len(detailed_feedback) + 1,
                 "comment": vocab.get('comment', '')
             })
-        
+
         # Log usage
-        try:
+        with contextlib.suppress(Exception):
             AIAnalyticsService.log_usage(
-                db, 
-                user_id=current_user.id, 
+                db,
+                user_id=current_user.id,
                 feature="speaking_practice",
                 metadata={"action": "assess", "reference_length": len(reference_text)}
             )
-        except Exception:
-            pass
-        
+
         # Return comprehensive response
         return {
             "success": True,
@@ -251,7 +250,7 @@ Chỉ trả về JSON, không có text khác."""
             "aiGeneratedFeedback": score_result.get('detailed_feedback', ''),
             "improvementTips": openai_data.get('improvement_tips', [])
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -265,8 +264,6 @@ Chỉ trả về JSON, không có text khác."""
     finally:
         # Cleanup temp file
         if temp_file and os.path.exists(temp_file.name):
-            try:
+            with contextlib.suppress(builtins.BaseException):
                 os.unlink(temp_file.name)
-            except:
-                pass
 

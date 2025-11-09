@@ -1,13 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
-from app.core.database import get_db
-from app.core.dependencies import get_current_user
-from app.models.user import User
-from app.services.openai_service import OpenAIService
-from pydantic import BaseModel
-from typing import List, Optional
-import logging
 import json
+import logging
+
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
+
+from app.core.database import get_db
+from app.services.openai_service import OpenAIService
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -16,9 +15,9 @@ logger = logging.getLogger(__name__)
 # Schemas
 class Question(BaseModel):
     question: str
-    options: List[str]
+    options: list[str]
     correct: int
-    explanation: Optional[str] = None
+    explanation: str | None = None
 
 
 class ListeningLesson(BaseModel):
@@ -26,9 +25,9 @@ class ListeningLesson(BaseModel):
     title: str
     level: str
     duration: str
-    audio_url: Optional[str] = None
+    audio_url: str | None = None
     transcript: str
-    questions: List[Question]
+    questions: list[Question]
 
 
 class SubmitAnswersRequest(BaseModel):
@@ -54,7 +53,7 @@ async def generate_listening_lesson(
                 status_code=400,
                 detail="Invalid level. Must be: beginner, intermediate, or advanced"
             )
-        
+
         try:
             openai_svc = OpenAIService()
         except Exception as e:
@@ -63,7 +62,7 @@ async def generate_listening_lesson(
                 status_code=503,
                 detail="AI service is not available. Please contact administrator to configure OPENAI_API_KEY."
             )
-        
+
         # Level-specific prompts
         level_specs = {
             "beginner": {
@@ -85,9 +84,9 @@ async def generate_listening_lesson(
                 "num_questions": 10
             }
         }
-        
+
         spec = level_specs[level]
-        
+
         prompt = f"""
 Generate a listening comprehension exercise for English learners at {level} level ({spec['description']}).
 
@@ -129,9 +128,9 @@ Important:
   * Keep explanation clear and educational
 - No markdown, no code blocks, just pure JSON
 """
-        
+
         logger.info(f"[AI-LISTENING] Generating lesson for level: {level}")
-        
+
         # Call OpenAI
         try:
             response_text = openai_svc.generate_content(prompt)
@@ -147,7 +146,7 @@ Important:
                 status_code=503,
                 detail=f"Failed to generate lesson with AI: {str(ge)}"
             )
-        
+
         # Clean response
         response_text = response_text.strip()
         if response_text.startswith("```json"):
@@ -157,7 +156,7 @@ Important:
         if response_text.endswith("```"):
             response_text = response_text[:-3]
         response_text = response_text.strip()
-        
+
         # Parse JSON
         try:
             result = json.loads(response_text)
@@ -168,7 +167,7 @@ Important:
                 status_code=500,
                 detail="AI response format invalid. Please try again."
             )
-        
+
         # Validate required fields
         required_fields = ["title", "transcript", "duration", "questions"]
         for field in required_fields:
@@ -177,14 +176,14 @@ Important:
                     status_code=500,
                     detail=f"AI response missing required field: {field}"
                 )
-        
+
         # Validate questions
         if not result["questions"] or len(result["questions"]) == 0:
             raise HTTPException(
                 status_code=500,
                 detail="AI did not generate any questions"
             )
-        
+
         for q in result["questions"]:
             if "question" not in q or "options" not in q or "correct" not in q:
                 raise HTTPException(
@@ -204,13 +203,13 @@ Important:
             # Add default explanation if missing
             if "explanation" not in q or not q["explanation"]:
                 q["explanation"] = f"The correct answer is {chr(65 + q['correct'])}."
-        
+
         logger.info(f"[AI-LISTENING] Successfully generated lesson: {result['title']}")
-        
+
         # Generate unique ID (timestamp-based)
         import time
         lesson_id = int(time.time() * 1000)
-        
+
         # Return lesson
         return ListeningLesson(
             id=lesson_id,
@@ -229,7 +228,7 @@ Important:
                 for q in result["questions"]
             ]
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -259,7 +258,7 @@ async def submit_listening_answers(
             f"[AI-LISTENING] Submitted answers for lesson {payload.lesson_id}: "
             f"{len(payload.answers)} questions answered"
         )
-        
+
         # TODO: Store in database if needed
         # For now, just return success
         return {
@@ -267,7 +266,7 @@ async def submit_listening_answers(
             "message": "Answers submitted successfully",
             "answered_count": len(payload.answers)
         }
-        
+
     except Exception as e:
         logger.error(f"[AI-LISTENING] Error submitting answers: {e}")
         raise HTTPException(
@@ -292,12 +291,12 @@ async def text_to_speech(
         # This would integrate with Azure Speech Service
         # For now, return placeholder
         logger.info(f"[AI-LISTENING] TTS requested for {len(text)} characters")
-        
+
         return {
             "audio_url": None,
             "message": "Text-to-Speech not yet implemented. Will use browser's built-in speech synthesis."
         }
-        
+
     except Exception as e:
         logger.error(f"[AI-LISTENING] Error in TTS: {e}")
         raise HTTPException(

@@ -3,28 +3,29 @@ Lesson Plans Router
 API endpoints for lesson plan management and AI generation
 """
 
+from io import BytesIO
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
-from typing import List
-from io import BytesIO
+
 from app.core.database import get_db
 from app.core.dependencies import get_current_active_user
-from app.models.user import User
 from app.models.lesson_plan import LessonPlan
+from app.models.user import User
 from app.schemas.lesson_plan import (
+    LessonPlanAIGenerate,
     LessonPlanCreate,
-    LessonPlanUpdate,
-    LessonPlanResponse,
     LessonPlanListResponse,
-    LessonPlanAIGenerate
+    LessonPlanResponse,
+    LessonPlanUpdate,
 )
 from app.services.openai_service import openai_service
 
 try:
     from docx import Document
-    from docx.shared import Pt, RGBColor, Inches
     from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
+    from docx.shared import Inches, Pt, RGBColor
     HAS_DOCX = True
 except ImportError:
     HAS_DOCX = False
@@ -32,7 +33,7 @@ except ImportError:
 router = APIRouter(prefix="/api/v1/lesson-plans", tags=["lesson-plans"])
 
 
-@router.get("/", response_model=List[LessonPlanListResponse])
+@router.get("/", response_model=list[LessonPlanListResponse])
 async def get_lesson_plans(
     skip: int = 0,
     limit: int = 100,
@@ -45,13 +46,12 @@ async def get_lesson_plans(
     Teachers can only see their own lesson plans
     """
     query = db.query(LessonPlan).filter(LessonPlan.teacher_id == current_user.id)
-    
+
     if grade:
         query = query.filter(LessonPlan.grade == grade)
-    
-    lesson_plans = query.order_by(LessonPlan.created_at.desc()).offset(skip).limit(limit).all()
-    
-    return lesson_plans
+
+    return query.order_by(LessonPlan.created_at.desc()).offset(skip).limit(limit).all()
+
 
 
 @router.get("/{lesson_plan_id}", response_model=LessonPlanResponse)
@@ -67,13 +67,13 @@ async def get_lesson_plan(
         LessonPlan.id == lesson_plan_id,
         LessonPlan.teacher_id == current_user.id
     ).first()
-    
+
     if not lesson_plan:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Lesson plan not found"
         )
-    
+
     return lesson_plan
 
 
@@ -90,11 +90,11 @@ async def create_lesson_plan(
         teacher_id=current_user.id,
         **lesson_plan_data.dict()
     )
-    
+
     db.add(lesson_plan)
     db.commit()
     db.refresh(lesson_plan)
-    
+
     return lesson_plan
 
 
@@ -121,7 +121,7 @@ async def generate_lesson_plan_with_ai(
             grammar_points=generate_data.grammar_points,
             additional_notes=generate_data.additional_notes
         )
-        
+
         # Create lesson plan from AI result
         lesson_plan = LessonPlan(
             teacher_id=current_user.id,
@@ -140,13 +140,13 @@ async def generate_lesson_plan_with_ai(
             ai_generated=1,
             ai_prompt=f"Grade: {generate_data.grade}, Unit: {generate_data.unit}, Lesson: {generate_data.lesson_number}"
         )
-        
+
         db.add(lesson_plan)
         db.commit()
         db.refresh(lesson_plan)
-        
+
         return lesson_plan
-        
+
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -168,21 +168,21 @@ async def update_lesson_plan(
         LessonPlan.id == lesson_plan_id,
         LessonPlan.teacher_id == current_user.id
     ).first()
-    
+
     if not lesson_plan:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Lesson plan not found"
         )
-    
+
     # Update fields
     update_data = lesson_plan_update.dict(exclude_unset=True)
     for field, value in update_data.items():
         setattr(lesson_plan, field, value)
-    
+
     db.commit()
     db.refresh(lesson_plan)
-    
+
     return lesson_plan
 
 
@@ -199,17 +199,17 @@ async def delete_lesson_plan(
         LessonPlan.id == lesson_plan_id,
         LessonPlan.teacher_id == current_user.id
     ).first()
-    
+
     if not lesson_plan:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Lesson plan not found"
         )
-    
+
     db.delete(lesson_plan)
     db.commit()
-    
-    return None
+
+    return
 
 
 @router.get("/{lesson_plan_id}/export/word")
@@ -224,25 +224,25 @@ async def export_lesson_plan_word(
             status_code=status.HTTP_501_NOT_IMPLEMENTED,
             detail="Word export not available. Install python-docx package."
         )
-    
+
     lesson_plan = db.query(LessonPlan).filter(
         LessonPlan.id == lesson_plan_id,
         LessonPlan.teacher_id == current_user.id
     ).first()
-    
+
     if not lesson_plan:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Lesson plan not found"
         )
-    
+
     # Create Word document
     doc = Document()
-    
+
     # Title
     title = doc.add_heading(lesson_plan.title, level=0)
     title.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-    
+
     # Basic Info
     doc.add_heading('Thông tin cơ bản', level=1)
     doc.add_paragraph(f'Môn học: {lesson_plan.subject}')
@@ -253,7 +253,7 @@ async def export_lesson_plan_word(
         doc.add_paragraph(f'Tiết: {lesson_plan.lesson_number}')
     doc.add_paragraph(f'Thời lượng: {lesson_plan.duration} phút')
     doc.add_paragraph('')
-    
+
     # Objectives
     if lesson_plan.objectives:
         doc.add_heading('Mục tiêu bài học', level=1)
@@ -265,14 +265,14 @@ async def export_lesson_plan_word(
                     for item in items:
                         doc.add_paragraph(f'• {item}')
         doc.add_paragraph('')
-    
+
     # Teaching Aids
     if lesson_plan.teaching_aids:
         doc.add_heading('Thiết bị và học liệu', level=1)
         for aid in lesson_plan.teaching_aids:
             doc.add_paragraph(f'• {aid}')
         doc.add_paragraph('')
-    
+
     # Activities
     if lesson_plan.activities:
         doc.add_heading('Tiến trình dạy học', level=1)
@@ -294,28 +294,28 @@ async def export_lesson_plan_word(
                         if 'duration' in activity:
                             doc.add_paragraph(f'Thời lượng: {activity["duration"]} phút')
                     doc.add_paragraph('')
-    
+
     # Notes
     if lesson_plan.notes:
         doc.add_heading('Ghi chú', level=1)
         doc.add_paragraph(lesson_plan.notes)
         doc.add_paragraph('')
-    
+
     # Homework
     if lesson_plan.homework:
         doc.add_heading('Bài tập về nhà', level=1)
         doc.add_paragraph(lesson_plan.homework)
-    
+
     # Save to BytesIO
     file_stream = BytesIO()
     doc.save(file_stream)
     file_stream.seek(0)
-    
+
     # Return as downloadable file
     headers = {
         'Content-Disposition': f'attachment; filename="{lesson_plan.title}.docx"'
     }
-    
+
     return StreamingResponse(
         file_stream,
         media_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document',

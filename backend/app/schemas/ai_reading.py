@@ -1,6 +1,6 @@
-from pydantic import BaseModel, Field, field_validator
-from typing import List, Optional, Union
 from enum import Enum
+
+from pydantic import BaseModel, Field, field_validator
 
 
 class ReadingLevel(str, Enum):
@@ -27,16 +27,16 @@ class QuestionFormat(str, Enum):
 class Question(BaseModel):
     question: str
     question_format: str = "multiple_choice"  # Format: multiple_choice, true_false, fill_blank
-    question_type: Optional[str] = None  # Content type: main_idea, detail, inference, etc.
-    options: Optional[List[str]] = None  # For multiple_choice and true_false
-    correct_answer: Optional[Union[int, str]] = None  # int for MC/TF, str for fill_blank
-    acceptable_answers: Optional[List[str]] = None  # For fill_blank - multiple correct answers
+    question_type: str | None = None  # Content type: main_idea, detail, inference, etc.
+    options: list[str] | None = None  # For multiple_choice and true_false
+    correct_answer: int | str | None = None  # int for MC/TF, str for fill_blank
+    acceptable_answers: list[str] | None = None  # For fill_blank - multiple correct answers
 
 
 class GenerateReadingRequest(BaseModel):
     level: ReadingLevel
     reading_type: ReadingType
-    topic: Optional[str] = None
+    topic: str | None = None
 
     @field_validator('level')
     @classmethod
@@ -56,7 +56,7 @@ class GenerateReadingRequest(BaseModel):
 class GenerateReadingResponse(BaseModel):
     title: str
     passage: str
-    questions: List[Question]
+    questions: list[Question]
     level: str
     reading_type: str
     word_count: int
@@ -72,7 +72,7 @@ class GenerateReadingResponse(BaseModel):
 
 
 class CheckAnswersRequest(BaseModel):
-    answers: List[Union[int, str]]  # Can be int (for MC/TF) or str (for fill_blank)
+    answers: list[int | str]  # Can be int (for MC/TF) or str (for fill_blank)
 
     @field_validator('answers')
     @classmethod
@@ -87,16 +87,16 @@ class CheckAnswersRequest(BaseModel):
 class AnswerResult(BaseModel):
     question_index: int
     is_correct: bool
-    user_answer: Union[int, str]
-    correct_answer: Union[int, str]
+    user_answer: int | str
+    correct_answer: int | str
     explanation: str
-    acceptable_answers: Optional[List[str]] = None  # For fill_blank questions
+    acceptable_answers: list[str] | None = None  # For fill_blank questions
 
 
 class CheckAnswersResponse(BaseModel):
     score: int = Field(..., ge=0, le=100)
     total_questions: int
     correct_answers: int
-    results: List[AnswerResult]
-    level_recommendation: Optional[str] = None
+    results: list[AnswerResult]
+    level_recommendation: str | None = None
     feedback: str

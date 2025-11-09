@@ -7,7 +7,6 @@ from app.models.user import User
 from app.schemas.ai_analytics import AIUsageCreate
 from app.services.ai_analytics_service import AIAnalyticsService
 
-
 router = APIRouter(prefix="/api/v1/ai", tags=["AI Usage"])
 
 

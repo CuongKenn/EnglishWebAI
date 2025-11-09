@@ -1,28 +1,29 @@
+
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
-from app.core.dependencies import get_db, get_current_user
+from sqlalchemy.orm import Session
+
+from app.core.dependencies import get_current_user, get_db
 from app.models.user import User
 from app.services.email_service import EmailService
 from app.utils.otp import OTPService
-from typing import Optional
 
 router = APIRouter()
 
 
 class SendOTPRequest(BaseModel):
     email: EmailStr
-    purpose: Optional[str] = "verification"
+    purpose: str | None = "verification"
 
 
 class VerifyOTPRequest(BaseModel):
     email: EmailStr
     otp_code: str
-    purpose: Optional[str] = "verification"
+    purpose: str | None = "verification"
 
 
 class SendOTPToCurrentUserRequest(BaseModel):
-    purpose: Optional[str] = "verification"
+    purpose: str | None = "verification"
 
 
 @router.post("/send", status_code=status.HTTP_200_OK)
@@ -32,28 +33,28 @@ async def send_otp(
 ):
     """
     Send OTP to user email
-    
-    - **email**: User's email address  
+
+    - **email**: User's email address
     - **purpose**: Purpose of OTP (verification for registration, password_reset, etc.)
-    
+
     For 'verification': Creates temporary inactive user if needed (for registration flow)
     For 'password_reset': User must already exist
     """
+    import secrets
+
     from app.core.config import settings
     from app.core.security import get_password_hash
-    import secrets
-    
+
     # Check if user exists
     user = db.query(User).filter(User.email == request.email).first()
-    
+
     # For password reset, user must exist and be active
-    if request.purpose == "password_reset":
-        if not user or not user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
-            )
-    
+    if request.purpose == "password_reset" and (not user or not user.is_active):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+
     # For verification (registration), create temporary user if doesn't exist
     if request.purpose == "verification" and not user:
         from app.models.user import UserRole
@@ -71,10 +72,10 @@ async def send_otp(
         db.commit()
         db.refresh(temp_user)
         user = temp_user
-    
+
     # Create and store OTP
     otp_data = OTPService.create_otp(db, user.id, request.purpose)
-    
+
     # Send email
     username = user.username if user.is_active else request.email.split('@')[0]
     email_sent = EmailService.send_otp_email(
@@ -82,13 +83,13 @@ async def send_otp(
         otp_code=otp_data["code"],
         username=username
     )
-    
+
     if not email_sent:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to send OTP email"
         )
-    
+
     return {
         "message": "OTP sent successfully",
         "email": request.email,
@@ -104,25 +105,25 @@ async def send_otp_to_current_user(
 ):
     """
     Send OTP to current authenticated user's email
-    
+
     - **purpose**: Purpose of OTP (verification, password_reset, etc.)
     """
     # Create OTP
     otp_data = OTPService.create_otp(db, current_user.id, request.purpose)
-    
+
     # Send email
     email_sent = EmailService.send_otp_email(
         to_email=current_user.email,
         otp_code=otp_data["code"],
         username=current_user.username
     )
-    
+
     if not email_sent:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to send OTP email"
         )
-    
+
     return {
         "message": "OTP sent successfully to your email",
         "email": current_user.email,
@@ -137,34 +138,34 @@ async def verify_otp(
 ):
     """
     Verify OTP code
-    
+
     - **email**: User's email address
     - **otp_code**: OTP code to verify
     - **purpose**: Purpose of OTP (verification, password_reset, etc.)
     """
     # Find user by email
     user = db.query(User).filter(User.email == request.email).first()
-    
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
-    
+
     # Verify OTP
     is_valid = OTPService.verify_otp(db, user.id, request.otp_code, request.purpose)
-    
+
     if not is_valid:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid or expired OTP"
         )
-    
+
     # If purpose is verification, mark user as verified
     if request.purpose == "verification":
         user.is_verified = True
         db.commit()
-    
+
     return {
         "message": "OTP verified successfully",
         "verified": True
@@ -178,7 +179,7 @@ async def resend_otp(
 ):
     """
     Resend OTP to user email (same as send, but for clarity)
-    
+
     - **email**: User's email address
     - **purpose**: Purpose of OTP (verification, password_reset, etc.)
     """

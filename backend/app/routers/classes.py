@@ -1,43 +1,45 @@
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 import logging
 
-logger = logging.getLogger(__name__)
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 
-from sqlalchemy.orm import Session
-from sqlalchemy import func
-from typing import List, Optional
+logger = logging.getLogger(__name__)
 import csv
 import io
+
+from fastapi.responses import StreamingResponse
+from sqlalchemy import func
+from sqlalchemy.orm import Session
+
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
-from app.models.user import User, UserRole
+from app.models.attendance import AttendanceRecord
 from app.models.classroom import Classroom
 from app.models.enrollment import Enrollment
-from app.models.attendance import AttendanceRecord
-from app.schemas.student import (
-    ClassroomListResponse,
-    ClassroomResponse,
-    EnrollmentCreate,
-    EnrollmentResponse,
-    AddStudentsRequest,
-    ClassStudentOut,
-    AttendanceUpsertRequest,
-    AttendanceRecordOut,
-    MaterialResponse,
-    ExerciseWithSubmissionResponse,
-)
-from app.schemas.student import LessonResponse, LessonCreate, LessonUpdate
-from app.schemas.excel_import import AddStudentsToClassRequest, AddStudentsToClassResponse
-from app.models.material import Material
 from app.models.exercise import Exercise
 from app.models.lesson import Lesson
+from app.models.material import Material
 from app.models.submission import Submission
-from app.services.excel_import_service import ClassStudentService, ExcelImportService, TeacherImportToClassResponse
+from app.models.user import User, UserRole
+from app.schemas.excel_import import AddStudentsToClassRequest, AddStudentsToClassResponse
+from app.schemas.student import (
+    AddStudentsRequest,
+    AttendanceRecordOut,
+    AttendanceUpsertRequest,
+    ClassroomListResponse,
+    ClassroomResponse,
+    ClassStudentOut,
+    EnrollmentResponse,
+    ExerciseWithSubmissionResponse,
+    LessonCreate,
+    LessonResponse,
+    LessonUpdate,
+    MaterialResponse,
+)
+from app.services.excel_import_service import ClassStudentService, ExcelImportService
 
 router = APIRouter()
 
-@router.get("/", response_model=List[ClassroomListResponse])
+@router.get("/", response_model=list[ClassroomListResponse])
 async def get_classes(
     search: str = None,
     grade: int = None,
@@ -52,14 +54,14 @@ async def get_classes(
     """
     # Lấy danh sách lớp trước, đếm sĩ số bằng truy vấn riêng để tránh lỗi GROUP BY trên Postgres
     query = db.query(Classroom)
-    
+
     # Filter by search term
     if search:
         query = query.filter(
             (Classroom.name.ilike(f"%{search}%")) |
             (Classroom.description.ilike(f"%{search}%"))
         )
-    
+
     # Filter by grade/skill
     if grade is not None:
         try:
@@ -71,7 +73,7 @@ async def get_classes(
         query = query.filter(Classroom.skill == skill)
 
     # Filter active classes only
-    query = query.filter(Classroom.is_active == True)
+    query = query.filter(Classroom.is_active)
     query = query.offset(skip).limit(limit)
     classes_rows = query.all()
 
@@ -82,7 +84,7 @@ async def get_classes(
         counts = (
             db.query(Enrollment.class_id, func.count(Enrollment.id))
             .filter(
-                Enrollment.class_id.in_(class_ids), 
+                Enrollment.class_id.in_(class_ids),
                 Enrollment.status == "active",
                 Enrollment.role == "student"
             )
@@ -121,7 +123,7 @@ async def get_classes(
 
     return classes
 
-@router.get("/my-classes", response_model=List[ClassroomListResponse])
+@router.get("/my-classes", response_model=list[ClassroomListResponse])
 async def get_my_classes(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -134,19 +136,19 @@ async def get_my_classes(
         Enrollment.user_id == current_user.id,
         Enrollment.status == "active"
     ).all()
-    
+
     class_ids = [e.class_id for e in enrollments]
-    
+
     if not class_ids:
         return []
-    
+
     classes_rows = db.query(Classroom).filter(Classroom.id.in_(class_ids)).all()
 
     # Count students for these classes
     counts = (
         db.query(Enrollment.class_id, func.count(Enrollment.id))
         .filter(
-            Enrollment.class_id.in_(class_ids), 
+            Enrollment.class_id.in_(class_ids),
             Enrollment.status == "active",
             Enrollment.role == "student"
         )
@@ -185,7 +187,7 @@ async def get_my_classes(
 
     return classes
 
-@router.get("/teaching", response_model=List[ClassroomListResponse])
+@router.get("/teaching", response_model=list[ClassroomListResponse])
 async def get_classes_teaching(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -203,7 +205,7 @@ async def get_classes_teaching(
             .filter(Classroom.teacher_id == int(current_user.id))
             .all()
         )
-        out: List[ClassroomListResponse] = []
+        out: list[ClassroomListResponse] = []
         teacher_name = current_user.full_name or current_user.username
 
         # Count students for these classes
@@ -213,7 +215,7 @@ async def get_classes_teaching(
             counts = (
                 db.query(Enrollment.class_id, func.count(Enrollment.id))
                 .filter(
-                    Enrollment.class_id.in_(class_ids), 
+                    Enrollment.class_id.in_(class_ids),
                     Enrollment.status == "active",
                     Enrollment.role == "student"
                 )
@@ -252,20 +254,20 @@ async def get_class(
     Lấy thông tin chi tiết của một lớp học
     """
     classroom = db.query(Classroom).filter(Classroom.id == class_id).first()
-    
+
     if not classroom:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Không tìm thấy lớp học"
         )
-    
+
     # Count students
     student_count = db.query(func.count(Enrollment.id)).filter(
         Enrollment.class_id == class_id,
         Enrollment.status == "active",
         Enrollment.role == "student"
     ).scalar()
-    
+
     return {
         **classroom.__dict__,
         "student_count": student_count
@@ -287,32 +289,31 @@ async def join_class(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Không tìm thấy lớp học"
         )
-    
+
     if not classroom.is_active:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Lớp học này đã bị đóng"
         )
-    
+
     # Check if already enrolled
     existing_enrollment = db.query(Enrollment).filter(
         Enrollment.class_id == class_id,
         Enrollment.user_id == current_user.id
     ).first()
-    
+
     if existing_enrollment:
         if existing_enrollment.status == "active":
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Bạn đã tham gia lớp học này rồi"
             )
-        else:
-            # Reactivate enrollment
-            existing_enrollment.status = "active"
-            db.commit()
-            db.refresh(existing_enrollment)
-            return existing_enrollment
-    
+        # Reactivate enrollment
+        existing_enrollment.status = "active"
+        db.commit()
+        db.refresh(existing_enrollment)
+        return existing_enrollment
+
     # Check if class is full
     if classroom.max_students:
         student_count = db.query(func.count(Enrollment.id)).filter(
@@ -320,13 +321,13 @@ async def join_class(
             Enrollment.status == "active",
             Enrollment.role == "student"
         ).scalar()
-        
+
         if student_count >= classroom.max_students:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Lớp học đã đầy"
             )
-    
+
     # Create enrollment
     enrollment = Enrollment(
         class_id=class_id,
@@ -334,11 +335,11 @@ async def join_class(
         role="student",
         status="active"
     )
-    
+
     db.add(enrollment)
     db.commit()
     db.refresh(enrollment)
-    
+
     return enrollment
 
 @router.post("/{class_id}/leave")
@@ -355,24 +356,24 @@ async def leave_class(
         Enrollment.user_id == current_user.id,
         Enrollment.status == "active"
     ).first()
-    
+
     if not enrollment:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Bạn chưa tham gia lớp học này"
         )
-    
+
     # Set status to inactive instead of deleting
     enrollment.status = "inactive"
     db.commit()
-    
+
     return {"message": "Đã rời khỏi lớp học thành công"}
 
 
 # ============= Teacher/Admin: Classes they teach and manage students =============
 
 def _ensure_can_manage_class(db: Session, current_user: User, class_id: int) -> Classroom:
-    classroom: Optional[Classroom] = db.query(Classroom).filter(Classroom.id == class_id).first()
+    classroom: Classroom | None = db.query(Classroom).filter(Classroom.id == class_id).first()
     if not classroom:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy lớp học")
     if current_user.role in (UserRole.ADMIN, UserRole.SUPERADMIN):
@@ -387,7 +388,7 @@ def _ensure_can_manage_class(db: Session, current_user: User, class_id: int) -> 
 
 def _ensure_can_view_class(db: Session, current_user: User, class_id: int) -> Classroom:
     """Allow teacher/admin of class or enrolled active student to view."""
-    classroom: Optional[Classroom] = db.query(Classroom).filter(Classroom.id == class_id).first()
+    classroom: Classroom | None = db.query(Classroom).filter(Classroom.id == class_id).first()
     if not classroom:
         raise HTTPException(status_code=404, detail="Không tìm thấy lớp học")
     # Teachers/Admins
@@ -406,7 +407,7 @@ def _ensure_can_view_class(db: Session, current_user: User, class_id: int) -> Cl
     raise HTTPException(status_code=403, detail="Bạn chưa tham gia lớp này")
 
 
-@router.get("/{class_id}/students", response_model=List[ClassStudentOut])
+@router.get("/{class_id}/students", response_model=list[ClassStudentOut])
 async def list_class_students(
     class_id: int,
     current_user: User = Depends(get_current_user),
@@ -422,7 +423,7 @@ async def list_class_students(
         .filter(Enrollment.status == "active")
         .all()
     )
-    out: List[ClassStudentOut] = []
+    out: list[ClassStudentOut] = []
     for enr, u in rows:
         out.append({
             "id": u.id,
@@ -435,7 +436,7 @@ async def list_class_students(
     return out
 
 
-@router.post("/{class_id}/students", response_model=List[ClassStudentOut])
+@router.post("/{class_id}/students", response_model=list[ClassStudentOut])
 async def add_students_to_class(
     class_id: int,
     req: AddStudentsRequest,
@@ -445,13 +446,13 @@ async def add_students_to_class(
     """Thêm học sinh vào lớp (teacher của lớp hoặc admin)"""
     classroom = _ensure_can_manage_class(db, current_user, class_id)
 
-    created: List[ClassStudentOut] = []
+    created: list[ClassStudentOut] = []
     for identifier in req.identifiers:
         identifier = identifier.strip()
         if not identifier:
             continue
         # Find user by id/username/email
-        user: Optional[User] = None
+        user: User | None = None
         if req.idType == "id":
             try:
                 uid = int(identifier)
@@ -532,7 +533,7 @@ async def remove_student_from_class(
 
 # ============= Attendance =============
 
-@router.get("/{class_id}/attendance", response_model=List[AttendanceRecordOut])
+@router.get("/{class_id}/attendance", response_model=list[AttendanceRecordOut])
 async def get_attendance_by_date(
     class_id: int,
     date: str,  # YYYY-MM-DD
@@ -546,7 +547,7 @@ async def get_attendance_by_date(
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid date format, expected YYYY-MM-DD")
     rows = db.query(AttendanceRecord).filter(AttendanceRecord.class_id == class_id, AttendanceRecord.date == qdate).all()
-    out: List[AttendanceRecordOut] = []
+    out: list[AttendanceRecordOut] = []
     for r in rows:
         out.append({"userId": r.user_id, "status": r.status, "note": r.note})
     return out
@@ -583,7 +584,7 @@ async def upsert_attendance(
 
 # ============= Class content for enrolled students =============
 
-@router.get("/{class_id}/materials", response_model=List[MaterialResponse])
+@router.get("/{class_id}/materials", response_model=list[MaterialResponse])
 async def list_class_materials(
     class_id: int,
     current_user: User = Depends(get_current_user),
@@ -591,11 +592,10 @@ async def list_class_materials(
 ):
     """Danh sách học liệu của lớp (học sinh đã tham gia, giáo viên lớp, hoặc admin)"""
     _ensure_can_view_class(db, current_user, class_id)
-    rows = db.query(Material).filter(Material.class_id == class_id).all()
-    return rows
+    return db.query(Material).filter(Material.class_id == class_id).all()
 
 
-@router.get("/{class_id}/exercises", response_model=List[ExerciseWithSubmissionResponse])
+@router.get("/{class_id}/exercises", response_model=list[ExerciseWithSubmissionResponse])
 async def list_class_exercises(
     class_id: int,
     current_user: User = Depends(get_current_user),
@@ -690,7 +690,7 @@ async def assign_ungrouped_to_lesson(
     return {"message": "Đã gán các mục chưa phân loại vào bài", "lesson_id": lesson_id}
 
 
-@router.get("/{class_id}/lessons", response_model=List[LessonResponse])
+@router.get("/{class_id}/lessons", response_model=list[LessonResponse])
 async def list_class_lessons(
     class_id: int,
     current_user: User = Depends(get_current_user),
@@ -698,13 +698,12 @@ async def list_class_lessons(
 ):
     """Danh sách bài học theo lớp (học sinh đã tham gia, giáo viên, hoặc admin)"""
     _ensure_can_view_class(db, current_user, class_id)
-    rows = (
+    return (
         db.query(Lesson)
         .filter(Lesson.class_id == class_id)
         .order_by(Lesson.order_index.asc().nulls_last(), Lesson.id.asc())
         .all()
     )
-    return rows
 
 
 @router.post("/{class_id}/lessons", response_model=LessonResponse, status_code=201)
@@ -781,15 +780,15 @@ async def download_students_import_template():
     # Create CSV content
     output = io.StringIO()
     writer = csv.writer(output)
-    
+
     # Write header
     writer.writerow(['email', 'name', 'phone'])
-    
+
     # Write sample data
     writer.writerow(['student1@example.com', 'Nguyễn Văn A', '0123456789'])
     writer.writerow(['student2@example.com', 'Trần Thị B', '0987654321'])
     writer.writerow(['student3@example.com', 'Lê Văn C', '0369852147'])
-    
+
     # Create response
     output.seek(0)
     return StreamingResponse(
@@ -810,12 +809,12 @@ async def import_students_from_csv(
 ):
     """
     Import students to class from CSV file
-    
+
     CSV Format:
     email,name,phone
     student1@example.com,Nguyễn Văn A,0123456789
     student2@example.com,Trần Thị B,0987654321
-    
+
     Returns:
     - imported: Number of students successfully added
     - failed: Number of students that failed
@@ -824,16 +823,16 @@ async def import_students_from_csv(
     """
     # Ensure user can manage this class
     _ensure_can_manage_class(db, current_user, class_id)
-    
+
     # Check class exists
     classroom = db.query(Classroom).filter(Classroom.id == class_id).first()
     if not classroom:
         raise HTTPException(status_code=404, detail="Lớp học không tồn tại")
-    
+
     # Check file type
     if not file.filename.lower().endswith(('.csv', '.txt')):
         raise HTTPException(status_code=400, detail="Chỉ chấp nhận file CSV (.csv)")
-    
+
     # Read and parse CSV
     try:
         contents = await file.read()
@@ -845,41 +844,41 @@ async def import_students_from_csv(
                 decoded = contents.decode('utf-8')
             except UnicodeDecodeError:
                 decoded = contents.decode('latin1')
-        
+
         csv_reader = csv.DictReader(io.StringIO(decoded))
-        
+
         # Validate headers
         if not csv_reader.fieldnames or 'email' not in csv_reader.fieldnames:
             raise HTTPException(
-                status_code=400, 
+                status_code=400,
                 detail="File CSV phải có cột 'email'. Định dạng: email,name,phone"
             )
-        
+
         imported = 0
         failed = 0
         errors = []
         added_students = []
-        
+
         for row_num, row in enumerate(csv_reader, start=2):  # Start from 2 (header is row 1)
             try:
                 email = row.get('email', '').strip()
                 name = row.get('name', '').strip()
                 phone = row.get('phone', '').strip()
-                
+
                 if not email:
                     errors.append(f"Dòng {row_num}: Email không được để trống")
                     failed += 1
                     continue
-                
+
                 # Validate email format
                 if '@' not in email or '.' not in email:
                     errors.append(f"Dòng {row_num}: Email không hợp lệ: {email}")
                     failed += 1
                     continue
-                
+
                 # Find or create user
                 user = db.query(User).filter(User.email == email).first()
-                
+
                 if not user:
                     # Create new student account
                     user = User(
@@ -899,22 +898,21 @@ async def import_students_from_csv(
                         user.full_name = name
                     if phone:
                         user.phone = phone
-                
+
                 # Check if already enrolled
                 existing = db.query(Enrollment).filter(
                     Enrollment.class_id == class_id,
                     Enrollment.user_id == user.id
                 ).first()
-                
+
                 if existing:
                     if existing.status == 'active':
                         errors.append(f"Dòng {row_num}: Học sinh {email} đã có trong lớp")
                         failed += 1
                         continue
-                    else:
-                        # Reactivate enrollment
-                        existing.status = 'active'
-                        existing.role = 'student'
+                    # Reactivate enrollment
+                    existing.status = 'active'
+                    existing.role = 'student'
                 else:
                     # Create new enrollment
                     enrollment = Enrollment(
@@ -924,7 +922,7 @@ async def import_students_from_csv(
                         role='student'
                     )
                     db.add(enrollment)
-                
+
                 imported += 1
                 added_students.append({
                     "id": user.id,
@@ -932,15 +930,15 @@ async def import_students_from_csv(
                     "name": user.full_name,
                     "phone": user.phone
                 })
-                
+
             except Exception as e:
                 errors.append(f"Dòng {row_num}: Lỗi - {str(e)}")
                 failed += 1
                 continue
-        
+
         # Commit all changes
         db.commit()
-        
+
         return {
             "imported": imported,
             "failed": failed,
@@ -949,7 +947,7 @@ async def import_students_from_csv(
             "students": added_students,
             "message": f"Đã import {imported}/{imported + failed} học sinh thành công"
         }
-        
+
     except csv.Error as e:
         raise HTTPException(status_code=400, detail=f"Lỗi đọc file CSV: {str(e)}")
     except Exception as e:
@@ -967,7 +965,7 @@ async def add_students_to_class_by_email(
 ):
     """
     Thêm học sinh vào lớp bằng danh sách email
-    
+
     Chỉ teacher của lớp hoặc admin mới có thể thực hiện
     """
     return ClassStudentService.add_students_to_class(db, class_id, request, current_user)
@@ -976,7 +974,7 @@ async def add_students_to_class_by_email(
 @router.get("/{class_id}/students/available-emails")
 async def get_available_student_emails(
     class_id: int,
-    search: Optional[str] = None,
+    search: str | None = None,
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
@@ -984,42 +982,42 @@ async def get_available_student_emails(
 ):
     """
     Lấy danh sách email của các học sinh chưa tham gia lớp
-    
+
     Dùng để hiển thị suggestions khi teacher thêm học sinh
     """
     # Kiểm tra quyền
     classroom = db.query(Classroom).filter(Classroom.id == class_id).first()
     if not classroom:
         raise HTTPException(status_code=404, detail="Không tìm thấy lớp học")
-    
-    if (current_user.role not in [UserRole.ADMIN, UserRole.SUPERADMIN] and 
+
+    if (current_user.role not in [UserRole.ADMIN, UserRole.SUPERADMIN] and
         classroom.teacher_id != current_user.id):
         raise HTTPException(
-            status_code=403, 
+            status_code=403,
             detail="Chỉ giáo viên của lớp hoặc admin mới có thể xem danh sách này"
         )
-    
+
     # Lấy danh sách học sinh chưa tham gia lớp
     enrolled_user_ids = db.query(Enrollment.user_id).filter(
         Enrollment.class_id == class_id,
         Enrollment.status == "active"
     ).subquery()
-    
+
     query = db.query(User).filter(
         User.role == UserRole.USER,
-        User.is_active == True,
+        User.is_active,
         ~User.id.in_(enrolled_user_ids)
     )
-    
+
     if search:
         query = query.filter(
             (User.email.ilike(f"%{search}%")) |
             (User.full_name.ilike(f"%{search}%")) |
             (User.username.ilike(f"%{search}%"))
         )
-    
+
     students = query.offset(skip).limit(limit).all()
-    
+
     return {
         "available_students": [
             {
@@ -1044,14 +1042,14 @@ async def import_excel_to_class(
 ):
     """
     Teacher import học sinh từ Excel trực tiếp vào lớp
-    
+
     - Tự động tạo tài khoản nếu học sinh chưa tồn tại
     - Thêm vào lớp ngay lập tức
     - Chỉ teacher của lớp hoặc admin mới có thể thực hiện
-    
+
     File Excel phải có các cột:
     - STT: Số thứ tự
-    - Mã học sinh: Mã học sinh (username)  
+    - Mã học sinh: Mã học sinh (username)
     - Họ và tên: Họ và tên học sinh
     - Ngày sinh: Ngày sinh (tùy chọn)
     """
@@ -1060,21 +1058,21 @@ async def import_excel_to_class(
         logger.info(f"🔍 DEBUG: Default password: {default_password}")
         logger.info(f"🔍 DEBUG: Class ID: {class_id}")
         logger.info(f"🔍 DEBUG: User: {current_user.username}")
-        
+
         # Validate file type - accept .xls, .xlsx, .csv
         if not file.filename.lower().endswith(('.xlsx', '.xls', '.csv')):
             raise HTTPException(
                 status_code=400,
                 detail=f"File phải có định dạng Excel (.xlsx, .xls) hoặc CSV (.csv). File nhận được: {file.filename}"
             )
-        
+
         logger.info(f"✅ File type OK: {file.filename}")
-        
+
         # Parse Excel file
-        logger.info(f"📄 Parsing Excel file...")
+        logger.info("📄 Parsing Excel file...")
         students = ExcelImportService.parse_excel_file(file)
         logger.info(f"✅ Parsed {len(students)} students")
-        
+
         # Import students to class
         logger.info(f"➕ Importing students to class {class_id}...")
         result = ExcelImportService.import_students_to_class(
@@ -1085,7 +1083,7 @@ async def import_excel_to_class(
             default_password=default_password
         )
         logger.info(f"✅ Import complete: {result.success_count} success, {result.failed_count} failed")
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -1096,7 +1094,7 @@ async def import_excel_to_class(
             status_code=500,
             detail=f"Lỗi khi import Excel: {str(e)}"
         )
-    
+
     return {
         "success_count": result.success_count,
         "failed_count": result.failed_count,
@@ -1128,24 +1126,24 @@ async def preview_excel_import_to_class(
     classroom = db.query(Classroom).filter(Classroom.id == class_id).first()
     if not classroom:
         raise HTTPException(status_code=404, detail="Không tìm thấy lớp học")
-    
-    if (current_user.role not in [UserRole.ADMIN, UserRole.SUPERADMIN] and 
+
+    if (current_user.role not in [UserRole.ADMIN, UserRole.SUPERADMIN] and
         classroom.teacher_id != current_user.id):
         raise HTTPException(
-            status_code=403, 
+            status_code=403,
             detail="Chỉ giáo viên của lớp hoặc admin mới có thể preview"
         )
-    
+
     # Validate file type
     if not file.filename.endswith(('.xlsx', '.xls')):
         raise HTTPException(
             status_code=400,
             detail="File phải có định dạng Excel (.xlsx hoặc .xls)"
         )
-    
+
     # Parse Excel file
     students = ExcelImportService.parse_excel_file(file)
-    
+
     # Phân tích trạng thái của từng học sinh
     analysis = {
         "total_students": len(students),
@@ -1154,15 +1152,15 @@ async def preview_excel_import_to_class(
         "already_in_class": [],
         "preview": students[:10]  # 10 dòng đầu
     }
-    
+
     for student in students:
         # Kiểm tra tài khoản đã tồn tại
         email = f"{student.ma_hoc_sinh}@gmail.com"
         existing_user = db.query(User).filter(
-            (User.username == student.ma_hoc_sinh) | 
+            (User.username == student.ma_hoc_sinh) |
             (User.email == email)
         ).first()
-        
+
         if existing_user:
             # Kiểm tra đã tham gia lớp chưa
             enrollment = db.query(Enrollment).filter(
@@ -1170,7 +1168,7 @@ async def preview_excel_import_to_class(
                 Enrollment.user_id == existing_user.id,
                 Enrollment.status == "active"
             ).first()
-            
+
             if enrollment:
                 analysis["already_in_class"].append({
                     "ma_hoc_sinh": student.ma_hoc_sinh,
@@ -1189,7 +1187,7 @@ async def preview_excel_import_to_class(
                 "ho_va_ten": student.ho_va_ten,
                 "email": email
             })
-    
+
     return analysis
 
 

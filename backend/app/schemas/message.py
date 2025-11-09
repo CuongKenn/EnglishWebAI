@@ -1,11 +1,11 @@
-from pydantic import BaseModel
 from datetime import datetime
-from typing import Optional
+
+from pydantic import BaseModel
 
 
 class MessageBase(BaseModel):
     receiver_id: int
-    subject: Optional[str] = None
+    subject: str | None = None
     content: str
 
 
@@ -14,7 +14,7 @@ class MessageCreate(MessageBase):
 
 
 class MessageUpdate(BaseModel):
-    is_read: Optional[bool] = None
+    is_read: bool | None = None
 
 
 class SenderInfo(BaseModel):
@@ -22,7 +22,7 @@ class SenderInfo(BaseModel):
     full_name: str
     email: str
     role: str
-    avatar: Optional[str] = None
+    avatar: str | None = None
 
     class Config:
         from_attributes = True
@@ -33,7 +33,7 @@ class ReceiverInfo(BaseModel):
     full_name: str
     email: str
     role: str
-    avatar: Optional[str] = None
+    avatar: str | None = None
 
     class Config:
         from_attributes = True
@@ -43,7 +43,7 @@ class MessageResponse(BaseModel):
     id: int
     sender_id: int
     receiver_id: int
-    subject: Optional[str]
+    subject: str | None
     content: str
     is_read: bool
     created_at: datetime
@@ -60,7 +60,7 @@ class ConversationPreview(BaseModel):
     user_name: str
     user_email: str
     user_role: str
-    user_avatar: Optional[str]
+    user_avatar: str | None
     last_message: str
     last_message_time: datetime
     unread_count: int

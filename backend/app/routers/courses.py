@@ -1,31 +1,33 @@
-from fastapi import APIRouter, Depends, HTTPException, status
 import logging
 from datetime import datetime
 
+from fastapi import APIRouter, Depends, HTTPException
+
 logger = logging.getLogger(__name__)
-from sqlalchemy.orm import Session
-from sqlalchemy import func, case
 import json
-from typing import List, Optional
+
+from sqlalchemy import func
+from sqlalchemy.orm import Session
+
 from app.core.database import get_db
-from app.core.dependencies import get_current_user, get_current_active_user
+from app.core.dependencies import get_current_active_user
+from app.models.course import Course, CourseExercise, CourseQuestion, CourseSubmission, CourseUnit
 from app.models.user import User, UserRole
-from app.models.course import Course, CourseExercise, CourseSubmission, CourseUnit, CourseQuestion
 from app.schemas.course import (
     CourseCreate,
-    CourseUpdate,
-    CourseResponse,
-    CourseListItem,
     CourseExerciseCreate,
     CourseExerciseResponse,
+    CourseListItem,
+    CourseResponse,
     CourseSubmissionCreate,
     CourseSubmissionResponse,
+    CourseUpdate,
 )
 
 router = APIRouter()
 
 
-def _grade_label(grade: Optional[int]) -> Optional[str]:
+def _grade_label(grade: int | None) -> str | None:
     if grade is None:
         return None
     return f"Lớp {grade}"
@@ -43,11 +45,11 @@ def _level_from_grade(grade: int) -> str:
     return "Advanced"
 
 
-@router.get("/", response_model=List[CourseListItem])
+@router.get("/", response_model=list[CourseListItem])
 async def list_courses(
-    grade: Optional[int] = None,
-    skill: Optional[str] = None,
-    search: Optional[str] = None,
+    grade: int | None = None,
+    skill: str | None = None,
+    search: str | None = None,
     skip: int = 0,
     limit: int = 100,
     current_user: User = Depends(get_current_active_user),
@@ -66,7 +68,7 @@ async def list_courses(
         Course.level,
         Course.created_by,
         User.full_name,
-    ).outerjoin(User, User.id == Course.created_by).filter(Course.is_active == True)
+    ).outerjoin(User, User.id == Course.created_by).filter(Course.is_active)
     if grade is not None:
         q = q.filter(Course.grade == int(grade))
     if skill:
@@ -104,7 +106,7 @@ async def list_courses(
     # Get distinct units where student has submissions via CourseQuestion -> CourseSubmission
     # Note: CourseSubmission table needs a question_id field for this to work properly
     # For now, we'll use a simpler approach based on course exercises
-    
+
     # Check if student has any submissions for exercises in each course
     student_activity = (
         db.query(
@@ -121,7 +123,7 @@ async def list_courses(
         .all()
     )
     # Map completed exercises to "completed units" as a rough estimate
-    completed_counts = {row.course_id: min(row.completed_exercises, units_counts.get(row.course_id, 0)) 
+    completed_counts = {row.course_id: min(row.completed_exercises, units_counts.get(row.course_id, 0))
                        for row in student_activity}
 
     # Calculate cups earned based on submission scores
@@ -141,8 +143,8 @@ async def list_courses(
     )
     cups_map = {row.course_id: int(row.cups_earned or 0) for row in student_cups}
 
-    out: List[CourseListItem] = []
-    out: List[CourseListItem] = []
+    out: list[CourseListItem] = []
+    out: list[CourseListItem] = []
     for r in rows:
         cid, title, grade_v, skill_v, is_active, level_v, created_by, creator_name = r
         total_units = int(units_counts.get(cid, 0))
@@ -270,15 +272,15 @@ async def delete_course(
     course = db.query(Course).filter(Course.id == course_id).first()
     if not course:
         raise HTTPException(status_code=404, detail="Không tìm thấy khóa học")
-    
+
     # Kiểm tra quyền: chỉ admin/superadmin hoặc người tạo
     if current_user.role not in (UserRole.ADMIN, UserRole.SUPERADMIN) and course.created_by != current_user.id:
         raise HTTPException(status_code=403, detail="Không có quyền xóa khóa học này")
-    
+
     # Hard delete
     db.delete(course)
     db.commit()
-    return None
+    return
 
 
 @router.post("/{course_id}/exercises", response_model=CourseExerciseResponse, status_code=201)
@@ -310,7 +312,7 @@ async def create_course_exercise(
     return ex
 
 
-@router.get("/{course_id}/exercises", response_model=List[CourseExerciseResponse])
+@router.get("/{course_id}/exercises", response_model=list[CourseExerciseResponse])
 async def list_course_exercises(
     course_id: int,
     db: Session = Depends(get_db),
@@ -471,7 +473,7 @@ async def submit_unit_answers(
     return sub
 
 
-@router.get("/{course_id}/units", response_model=List[dict])
+@router.get("/{course_id}/units", response_model=list[dict])
 async def list_course_units(
     course_id: int,
     db: Session = Depends(get_db),
@@ -488,7 +490,7 @@ async def list_course_units(
         exists_id = db.query(Course.id).filter(Course.id == course_id).scalar()
         if not exists_id:
             raise HTTPException(status_code=404, detail="Không tìm thấy khóa học")
-        from app.models.course import CourseUnit, CourseQuestion
+        from app.models.course import CourseQuestion, CourseUnit
         units = (
             db.query(CourseUnit)
             .filter(CourseUnit.course_id == course_id)
@@ -536,7 +538,7 @@ async def create_course_unit(
     try:
         # Ensure table/columns exist (defensive for legacy DBs)
         try:
-            from app.utils.db_migrations import ensure_course_units_tables, ensure_course_units_columns
+            from app.utils.db_migrations import ensure_course_units_columns, ensure_course_units_tables
             ensure_course_units_tables(); ensure_course_units_columns()
         except Exception:
             pass
@@ -592,13 +594,13 @@ async def create_course_unit(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/units/{unit_id}/questions", response_model=List[dict])
+@router.get("/units/{unit_id}/questions", response_model=list[dict])
 async def list_unit_questions(
     unit_id: int,
     db: Session = Depends(get_db),
 ):
     try:
-        from app.models.course import CourseUnit, CourseQuestion
+        from app.models.course import CourseQuestion, CourseUnit
         unit = db.query(CourseUnit).filter(CourseUnit.id == unit_id).first()
         if not unit:
             raise HTTPException(status_code=404, detail="Không tìm thấy bài (unit)")
@@ -649,11 +651,11 @@ async def create_unit_question(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ):
-    from app.models.course import CourseUnit, CourseQuestion, Course
+    from app.models.course import Course, CourseUnit
     unit = db.query(CourseUnit).filter(CourseUnit.id == unit_id).first()
     if not unit:
         raise HTTPException(status_code=404, detail="Không tìm thấy bài (unit)")
-    course = db.query(Course).filter(Course.id == unit.course_id).first()
+    db.query(Course).filter(Course.id == unit.course_id).first()
     # Mở quyền: mọi giáo viên đều có thể thêm câu hỏi cho bài của khóa công khai
     if current_user.role not in (UserRole.TEACHER, UserRole.ADMIN, UserRole.SUPERADMIN):
         raise HTTPException(status_code=403, detail="Chỉ giáo viên hoặc admin mới được thêm câu hỏi")
@@ -694,7 +696,7 @@ async def delete_course_unit(
 
     Lưu ý: Ràng buộc FK đã cấu hình CASCADE nên câu hỏi trong unit sẽ bị xóa theo.
     """
-    from app.models.course import CourseUnit, Course, CourseQuestion
+    from app.models.course import CourseUnit
     unit = db.query(CourseUnit).filter(CourseUnit.id == unit_id).first()
     if not unit:
         raise HTTPException(status_code=404, detail="Không tìm thấy bài (unit)")
@@ -706,7 +708,7 @@ async def delete_course_unit(
     try:
         db.delete(unit)
         db.commit()
-        return None
+        return
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
@@ -720,7 +722,7 @@ async def delete_unit_question(
     db: Session = Depends(get_db),
 ):
     """Xóa một câu hỏi trong bài (unit). Chỉ giáo viên hoặc admin được phép."""
-    from app.models.course import CourseUnit, CourseQuestion
+    from app.models.course import CourseUnit
     unit = db.query(CourseUnit).filter(CourseUnit.id == unit_id).first()
     if not unit:
         raise HTTPException(status_code=404, detail="Không tìm thấy bài (unit)")
@@ -739,7 +741,7 @@ async def delete_unit_question(
     try:
         db.delete(q)
         db.commit()
-        return None
+        return
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))

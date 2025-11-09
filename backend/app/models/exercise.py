@@ -1,6 +1,7 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON, Boolean, Float, Index
-from sqlalchemy.sql import func
+from sqlalchemy import JSON, Boolean, Column, DateTime, Float, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
+
 from app.core.database import Base
 
 
@@ -27,7 +28,7 @@ class Exercise(Base):
     classroom = relationship("Classroom", back_populates="exercises")
     lesson = relationship("Lesson", back_populates="exercises")
     submissions = relationship("Submission", back_populates="exercise", cascade="all, delete-orphan")
-    
+
     # Composite indexes for common queries
     __table_args__ = (
         Index('idx_exercise_class_skill', 'class_id', 'skill_type'),

@@ -1,6 +1,7 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Float, JSON, Index, Boolean
-from sqlalchemy.sql import func
+from sqlalchemy import JSON, Boolean, Column, DateTime, Float, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
+
 from app.core.database import Base
 
 
@@ -24,7 +25,7 @@ class Submission(Base):
     graded_at = Column(DateTime(timezone=True), nullable=True, index=True)  # INDEXED for filtering graded submissions
     ai_graded_at = Column(DateTime(timezone=True), nullable=True)
     duration = Column(Integer, nullable=True)  # Time limit in minutes
-    
+
     # Queue-based grading system fields
     grading_status = Column(String, default="pending", nullable=False, index=True)  # pending | grading | ai_graded | completed | failed
     teacher_reviewed = Column(Boolean, default=False, nullable=False, index=True)  # Whether teacher has reviewed AI grading
@@ -34,7 +35,7 @@ class Submission(Base):
     teacher_modified_score = Column(Float, nullable=True)  # Score modified by teacher (if different from AI)
 
     exercise = relationship("Exercise", back_populates="submissions")
-    
+
     # Composite indexes for common queries
     __table_args__ = (
         Index('idx_submission_student_exercise', 'student_id', 'exercise_id'),

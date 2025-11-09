@@ -3,29 +3,33 @@ AI Reading Practice Router
 Handles AI-powered reading comprehension practice
 """
 
-from fastapi import APIRouter, Depends, HTTPException
 import logging
 
+from fastapi import APIRouter, Depends, HTTPException
+
 logger = logging.getLogger(__name__)
+
+import contextlib
+
 from sqlalchemy.orm import Session
-from typing import Dict, List
+
+from app.core.database import get_db
+from app.core.dependencies import get_current_user
+from app.models.user import User
 from app.schemas.ai_reading import (
-    GenerateReadingRequest,
-    GenerateReadingResponse,
     CheckAnswersRequest,
     CheckAnswersResponse,
-    Question
+    GenerateReadingRequest,
+    GenerateReadingResponse,
+    Question,
 )
-from app.services.openai_service import openai_service
-from app.core.dependencies import get_current_user
-from app.core.database import get_db
 from app.services.ai_analytics_service import AIAnalyticsService
-from app.models.user import User
+from app.services.openai_service import openai_service
 
 router = APIRouter()
 
 # Store generated passages temporarily (in production, use Redis or database)
-passage_cache: Dict[int, Dict] = {}
+passage_cache: dict[int, dict] = {}
 
 
 @router.post("/generate", response_model=GenerateReadingResponse)
@@ -36,7 +40,7 @@ async def generate_reading_passage(
 ):
     """
     Generate a reading passage with comprehension questions based on level and type
-    
+
     - **level**: beginner, intermediate, or advanced
     - **reading_type**: story, article, news, essay, or letter
     - **topic**: (optional) specific topic for the passage
@@ -48,10 +52,10 @@ async def generate_reading_passage(
             level=request.level,
             topic=request.topic
         )
-        
+
         # Store passage for answer checking (use user_id as key)
         passage_cache[current_user.id] = result
-        
+
         # Convert to response model
         response = GenerateReadingResponse(
             title=result.get('title', ''),
@@ -71,15 +75,13 @@ async def generate_reading_passage(
             word_count=result.get('word_count', 0),
             estimated_time=result.get('estimated_time', 5)
         )
-        
+
         # Log usage (non-blocking)
-        try:
+        with contextlib.suppress(Exception):
             AIAnalyticsService.log_usage(db, user_id=current_user.id, feature="reading", metadata={"action": "generate", "reading_type": request.reading_type, "level": request.level})
-        except Exception:
-            pass
 
         return response
-        
+
     except Exception as e:
         logger.info(f"Error generating reading passage: {str(e)}")
         import traceback
@@ -98,34 +100,34 @@ async def check_reading_answers(
 ):
     """
     Check user's answers to reading comprehension questions
-    
+
     - **answers**: List of answer indices (0-3 for A-D)
     """
     try:
         # Get the cached passage for this user
         cached_passage = passage_cache.get(current_user.id)
-        
+
         if not cached_passage:
             raise HTTPException(
                 status_code=404,
                 detail="No reading passage found. Please generate a passage first."
             )
-        
+
         questions = cached_passage.get('questions', [])
-        
+
         if len(request.answers) != len(questions):
             raise HTTPException(
                 status_code=400,
                 detail=f"Expected {len(questions)} answers, but got {len(request.answers)}"
             )
-        
+
         # Check answers using OpenAI service
         result = await openai_service.check_reading_answers(
             passage_title=cached_passage.get('title', ''),
             questions=questions,
             user_answers=request.answers
         )
-        
+
         # Convert to response model
         response = CheckAnswersResponse(
             score=result.get('score', 0),
@@ -135,15 +137,13 @@ async def check_reading_answers(
             level_recommendation=result.get('level_recommendation'),
             feedback=result.get('feedback', '')
         )
-        
+
         # Log usage (non-blocking)
-        try:
+        with contextlib.suppress(Exception):
             AIAnalyticsService.log_usage(db, user_id=current_user.id, feature="reading", metadata={"action": "submit"})
-        except Exception:
-            pass
 
         return response
-        
+
     except HTTPException:
         raise
     except Exception as e:

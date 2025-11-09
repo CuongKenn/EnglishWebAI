@@ -1,18 +1,24 @@
+
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
-from sqlalchemy import or_, and_, func
-from typing import List
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
-from app.models.user import User
 from app.models.message import Message
-from app.schemas.message import MessageCreate, MessageUpdate, MessageResponse, ConversationPreview, SenderInfo, ReceiverInfo
+from app.models.user import User
+from app.schemas.message import (
+    ConversationPreview,
+    MessageCreate,
+    MessageResponse,
+    ReceiverInfo,
+    SenderInfo,
+)
 
 router = APIRouter()
 
 
-@router.get("/conversations", response_model=List[ConversationPreview])
+@router.get("/conversations", response_model=list[ConversationPreview])
 def get_conversations(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -20,25 +26,24 @@ def get_conversations(
     """Get list of conversations with other users"""
     # Get all users the current user has exchanged messages with
     # Subquery to get the latest message for each conversation
-    from sqlalchemy import case
-    
+
     conversations = []
-    
+
     # Get all unique users who have sent or received messages from current user
     sent_to = db.query(Message.receiver_id).filter(Message.sender_id == current_user.id).distinct()
     received_from = db.query(Message.sender_id).filter(Message.receiver_id == current_user.id).distinct()
-    
+
     user_ids = set()
     for row in sent_to:
         user_ids.add(row.receiver_id)
     for row in received_from:
         user_ids.add(row.sender_id)
-    
+
     for user_id in user_ids:
         other_user = db.query(User).filter(User.id == user_id).first()
         if not other_user:
             continue
-        
+
         # Get last message in conversation
         last_message = db.query(Message).filter(
             or_(
@@ -46,14 +51,14 @@ def get_conversations(
                 and_(Message.sender_id == user_id, Message.receiver_id == current_user.id)
             )
         ).order_by(Message.created_at.desc()).first()
-        
+
         # Count unread messages from this user
         unread_count = db.query(Message).filter(
             Message.sender_id == user_id,
             Message.receiver_id == current_user.id,
-            Message.is_read == False
+            not Message.is_read
         ).count()
-        
+
         if last_message:
             conversations.append(ConversationPreview(
                 user_id=other_user.id,
@@ -65,14 +70,14 @@ def get_conversations(
                 last_message_time=last_message.created_at,
                 unread_count=unread_count
             ))
-    
+
     # Sort by last message time
     conversations.sort(key=lambda x: x.last_message_time, reverse=True)
-    
+
     return conversations
 
 
-@router.get("/conversation/{user_id}", response_model=List[MessageResponse])
+@router.get("/conversation/{user_id}", response_model=list[MessageResponse])
 def get_conversation_with_user(
     user_id: int,
     skip: int = Query(0, ge=0),
@@ -87,7 +92,7 @@ def get_conversation_with_user(
             and_(Message.sender_id == user_id, Message.receiver_id == current_user.id)
         )
     ).order_by(Message.created_at.asc()).offset(skip).limit(limit).all()
-    
+
     # Format response with sender/receiver info
     result = []
     for msg in messages:
@@ -114,7 +119,7 @@ def get_conversation_with_user(
                 avatar=msg.receiver.avatar_url
             )
         ))
-    
+
     return result
 
 
@@ -129,7 +134,7 @@ def send_message(
     receiver = db.query(User).filter(User.id == message.receiver_id).first()
     if not receiver:
         raise HTTPException(status_code=404, detail="Receiver not found")
-    
+
     # Create message
     db_message = Message(
         sender_id=current_user.id,
@@ -140,7 +145,7 @@ def send_message(
     db.add(db_message)
     db.commit()
     db.refresh(db_message)
-    
+
     return MessageResponse(
         id=db_message.id,
         sender_id=db_message.sender_id,
@@ -177,14 +182,14 @@ def mark_message_as_read(
         Message.id == message_id,
         Message.receiver_id == current_user.id
     ).first()
-    
+
     if not message:
         raise HTTPException(status_code=404, detail="Message not found")
-    
+
     message.is_read = True
     db.commit()
     db.refresh(message)
-    
+
     return MessageResponse(
         id=message.id,
         sender_id=message.sender_id,
@@ -220,7 +225,7 @@ def mark_conversation_as_read(
     db.query(Message).filter(
         Message.sender_id == user_id,
         Message.receiver_id == current_user.id,
-        Message.is_read == False
+        not Message.is_read
     ).update({"is_read": True})
     db.commit()
     return {"message": "All messages marked as read"}
@@ -234,7 +239,7 @@ def get_unread_count(
     """Get count of unread messages"""
     count = db.query(Message).filter(
         Message.receiver_id == current_user.id,
-        Message.is_read == False
+        not Message.is_read
     ).count()
     return {"count": count}
 
@@ -253,10 +258,10 @@ def delete_message(
             Message.receiver_id == current_user.id
         )
     ).first()
-    
+
     if not message:
         raise HTTPException(status_code=404, detail="Message not found")
-    
+
     db.delete(message)
     db.commit()
     return {"message": "Message deleted"}

@@ -2,13 +2,16 @@
 AI Grading Service
 Auto-grade student submissions using AI (ChatGPT + Azure Speech)
 """
-from openai import OpenAI
-from app.core.config import settings
-import os
+import builtins
+import contextlib
 import json
 import logging
-from typing import Dict, List, Optional
+import os
+
 import azure.cognitiveservices.speech as speechsdk
+from openai import OpenAI
+
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -24,11 +27,11 @@ class AIGradingService:
         # Azure Speech for pronunciation assessment (optional)
         self.speech_key = os.getenv("AZURE_SPEECH_KEY")
         self.speech_region = os.getenv("AZURE_SPEECH_REGION", "eastasia")
-    
-    async def grade_multiple_choice(self, question: Dict, student_answer: str) -> Dict:
+
+    async def grade_multiple_choice(self, question: dict, student_answer: str) -> dict:
         """Grade multiple choice question"""
         correct = question.get("correct_answer", "")
-        
+
         # Handle None/empty values
         if student_answer is None or student_answer == "":
             return {
@@ -37,33 +40,33 @@ class AIGradingService:
                 "max_points": question.get("points", 0.25),
                 "feedback": f"Chưa trả lời. Đáp án đúng là: {correct}"
             }
-        
+
         # Normalize answers for comparison (trim whitespace, collapse spaces, uppercase)
         def normalize(text):
             if text is None:
                 return ""
             return " ".join(str(text).strip().upper().split())
-        
+
         student_normalized = normalize(student_answer)
         correct_normalized = normalize(correct)
-        
+
         is_correct = student_normalized == correct_normalized
         points_earned = question.get("points", 0.25) if is_correct else 0
-        
+
         logger.debug(f"[GRADE_MC] Q{question.get('id')}: Student='{student_normalized}' vs Correct='{correct_normalized}' => {is_correct}")
-        
+
         return {
             "is_correct": is_correct,
             "points_earned": points_earned,
             "max_points": question.get("points", 0.25),
             "feedback": "Chính xác!" if is_correct else f"Sai. Đáp án đúng là: {correct}"
         }
-    
-    async def grade_fill_blank(self, question: Dict, student_answer: str) -> Dict:
+
+    async def grade_fill_blank(self, question: dict, student_answer: str) -> dict:
         """Grade fill in the blank using code-based string matching (no AI)."""
-        from difflib import SequenceMatcher
         import string
-        
+        from difflib import SequenceMatcher
+
         correct_answer = question.get("correct_answer", "")
 
         def _normalize(text: str) -> str:
@@ -71,24 +74,24 @@ class AIGradingService:
             if text is None:
                 return ""
             return " ".join(str(text).strip().lower().split())
-        
+
         def _normalize_advanced(text: str) -> str:
             """Advanced normalize: remove articles, punctuation, trim, lowercase"""
             if text is None:
                 return ""
-            
+
             # Remove punctuation
             text = text.translate(str.maketrans('', '', string.punctuation))
-            
+
             # Lowercase and split into words
             words = text.lower().split()
-            
+
             # Remove common English articles
             articles = {'a', 'an', 'the'}
             words = [w for w in words if w not in articles]
-            
+
             return " ".join(words)
-        
+
         def is_fuzzy_match(s1: str, s2: str, threshold: float = 0.9) -> bool:
             """Check if two strings are similar enough (allows 1-2 typos)"""
             if not s1 or not s2:
@@ -111,7 +114,7 @@ class AIGradingService:
         # Check exact match first (with basic normalize)
         is_correct = (student_norm == correct_norm)
         feedback_type = "exact"  # Track match type for feedback
-        
+
         # If not exact match, check if correct_answer contains multiple acceptable answers separated by | or /
         if not is_correct and ('|' in correct_answer or '/' in correct_answer):
             # Split by | or / to get multiple acceptable answers
@@ -121,19 +124,19 @@ class AIGradingService:
                 if sep in correct_answer:
                     acceptable_answers = [ans.strip() for ans in correct_answer.split(sep)]
                     break
-            
+
             # Check if student answer matches any acceptable answer
             for acceptable in acceptable_answers:
                 if _normalize(acceptable) == student_norm:
                     is_correct = True
                     feedback_type = "exact"
                     break
-        
+
         # If still not correct, try advanced normalize (strip articles & punctuation)
         if not is_correct:
             student_advanced = _normalize_advanced(student_answer)
             correct_advanced = _normalize_advanced(correct_answer)
-            
+
             if student_advanced == correct_advanced:
                 is_correct = True
                 feedback_type = "advanced"
@@ -145,13 +148,13 @@ class AIGradingService:
                     if sep in correct_answer:
                         acceptable_answers = [ans.strip() for ans in correct_answer.split(sep)]
                         break
-                
+
                 for acceptable in acceptable_answers:
                     if _normalize_advanced(acceptable) == student_advanced:
                         is_correct = True
                         feedback_type = "advanced"
                         break
-        
+
         # If still not correct, try fuzzy matching (allows typos)
         if not is_correct:
             # Try fuzzy match with main correct answer
@@ -166,7 +169,7 @@ class AIGradingService:
                     if sep in correct_answer:
                         acceptable_answers = [ans.strip() for ans in correct_answer.split(sep)]
                         break
-                
+
                 for acceptable in acceptable_answers:
                     if is_fuzzy_match(student_norm, _normalize(acceptable), threshold=0.9):
                         is_correct = True
@@ -175,7 +178,7 @@ class AIGradingService:
 
         max_points = question.get("points", 0.25)
         points_earned = max_points if is_correct else 0
-        
+
         # Generate feedback based on match type
         if is_correct:
             if feedback_type == "fuzzy":
@@ -193,21 +196,21 @@ class AIGradingService:
             "max_points": max_points,
             "feedback": feedback
         }
-    
-    async def grade_true_false(self, question: Dict, student_answer: str) -> Dict:
+
+    async def grade_true_false(self, question: dict, student_answer: str) -> dict:
         """Grade true/false question"""
         correct_raw = question.get("correct_answer", "")
-        
+
         # Debug: log raw values
-        logger.debug(f"[GRADE_TF] ===== START =====")
+        logger.debug("[GRADE_TF] ===== START =====")
         logger.debug(f"[GRADE_TF] Question ID: {question.get('id')}")
         logger.debug(f"[GRADE_TF] Correct answer RAW: '{correct_raw}' (type: {type(correct_raw)})")
         logger.debug(f"[GRADE_TF] Student answer RAW: '{student_answer}' (type: {type(student_answer)})")
-        
+
         # Convert to string and normalize
         correct = str(correct_raw).strip().lower()
         logger.debug(f"[GRADE_TF] Correct answer normalized: '{correct}'")
-        
+
         # Handle None/empty values
         if student_answer is None or student_answer == "":
             return {
@@ -216,14 +219,14 @@ class AIGradingService:
                 "max_points": question.get("points", 0.25),
                 "feedback": f"Chưa trả lời. Đáp án đúng: {'Đúng' if correct in ['true', '1', 'yes', 'đúng'] else 'Sai'}"
             }
-        
+
         student = str(student_answer).strip().lower()
         logger.debug(f"[GRADE_TF] Student answer normalized: '{student}'")
-        
+
         # Normalize true values
         true_values = ['true', '1', 'yes', 'đúng', 't', 'y']
         false_values = ['false', '0', 'no', 'sai', 'f', 'n']
-        
+
         # Map student answer to true/false
         student_normalized = None
         if student in true_values:
@@ -239,105 +242,103 @@ class AIGradingService:
                 "max_points": question.get("points", 0.25),
                 "feedback": f"Đáp án không hợp lệ. Đáp án đúng: {'Đúng' if correct in true_values else 'Sai'}"
             }
-        
+
         # Map correct answer to true/false
         correct_normalized = 'true' if correct in true_values else 'false'
-        
+
         is_correct = student_normalized == correct_normalized
         points_earned = question.get("points", 0.25) if is_correct else 0
-        
+
         logger.debug(f"[GRADE_TF] Student normalized: '{student_normalized}' vs Correct normalized: '{correct_normalized}'")
         logger.debug(f"[GRADE_TF] Result: {is_correct} - Points: {points_earned}/{question.get('points', 0.25)}")
-        logger.debug(f"[GRADE_TF] ===== END =====")
-        
+        logger.debug("[GRADE_TF] ===== END =====")
+
         return {
             "is_correct": is_correct,
             "points_earned": points_earned,
             "max_points": question.get("points", 0.25),
             "feedback": "Chính xác!" if is_correct else f"Sai. Đáp án đúng: {'Đúng' if correct_normalized == 'true' else 'Sai'}"
         }
-    
-    async def grade_matching(self, question: Dict, student_answer: Dict) -> Dict:
+
+    async def grade_matching(self, question: dict, student_answer: dict) -> dict:
         """Grade matching question - supports both index-based and content-based keys"""
         correct_pairs = question.get("correct_answer", {})
         pairs = question.get("pairs", [])  # Get pairs array for index-based matching
-        
+
         # Normalize function for case-insensitive matching
         def normalize(text):
             """Normalize text: lowercase, trim, collapse multiple spaces"""
             if text is None:
                 return ""
             return " ".join(str(text).strip().lower().split())
-        
-        logger.debug(f"[GRADE_MATCHING] ===== START =====")
+
+        logger.debug("[GRADE_MATCHING] ===== START =====")
         logger.debug(f"[GRADE_MATCHING] Question ID: {question.get('id')}")
         logger.debug(f"[GRADE_MATCHING] Correct pairs: {correct_pairs} (type: {type(correct_pairs)})")
         logger.debug(f"[GRADE_MATCHING] Pairs array: {pairs}")
         logger.debug(f"[GRADE_MATCHING] Student answer: {student_answer} (type: {type(student_answer)})")
-        
+
         # Handle None/empty values
         if not student_answer or not isinstance(student_answer, dict):
-            logger.debug(f"[GRADE_MATCHING] ERROR: Invalid student answer - not dict or empty")
+            logger.debug("[GRADE_MATCHING] ERROR: Invalid student answer - not dict or empty")
             return {
                 "is_correct": False,
                 "points_earned": 0,
                 "max_points": question.get("points", 0.25),
                 "feedback": "Chưa trả lời hoặc định dạng không đúng. Ghép đúng 0 cặp."
             }
-        
+
         correct_count = 0
         total_pairs = 0
-        
+
         # Determine matching format: index-based (0,1,2...) or content-based (left values)
         # Check if correct_answer uses numeric string keys or if pairs array exists
-        is_index_based = False
         if pairs and len(pairs) > 0:
             # If pairs array exists, use index-based matching
-            is_index_based = True
             total_pairs = len(pairs)
             logger.debug(f"[GRADE_MATCHING] Using INDEX-BASED matching with {total_pairs} pairs")
-            
+
             for idx, pair in enumerate(pairs):
                 if not isinstance(pair, dict) or 'left' not in pair or 'right' not in pair:
                     logger.debug(f"[GRADE_MATCHING] WARNING: Invalid pair format at index {idx}: {pair}")
                     continue
-                
+
                 correct_right = pair['right']
-                
+
                 # Try multiple key formats for student answer
                 student_right = None
                 for key_format in [idx, str(idx), int(idx) if isinstance(idx, str) and idx.isdigit() else None]:
                     if key_format is not None and key_format in student_answer:
                         student_right = student_answer[key_format]
                         break
-                
+
                 # Normalize and compare (case-insensitive, trim spaces)
                 student_right_norm = normalize(student_right) if student_right else ""
                 correct_right_norm = normalize(correct_right)
                 is_match = student_right_norm == correct_right_norm
-                
+
                 logger.debug(f"[GRADE_MATCHING] Pair {idx} '{pair['left']}' → student: '{student_right_norm}' vs correct: '{correct_right_norm}' => {is_match}")
-                
+
                 if is_match:
                     correct_count += 1
-        
+
         else:
             # Fallback to content-based matching (old format)
             total_pairs = len(correct_pairs)
             logger.debug(f"[GRADE_MATCHING] Using CONTENT-BASED matching with {total_pairs} pairs")
-            
+
             if total_pairs == 0:
-                logger.debug(f"[GRADE_MATCHING] ERROR: No correct pairs defined in question")
+                logger.debug("[GRADE_MATCHING] ERROR: No correct pairs defined in question")
                 return {
                     "is_correct": False,
                     "points_earned": 0,
                     "max_points": question.get("points", 0.25),
                     "feedback": "Câu hỏi không có đáp án đúng"
                 }
-            
+
             logger.debug(f"[GRADE_MATCHING] Correct answer keys: {list(correct_pairs.keys())}")
             logger.debug(f"[GRADE_MATCHING] Student answer keys: {list(student_answer.keys())}")
-            
+
             for left, right in correct_pairs.items():
                 student_right = student_answer.get(left)
                 # Also try string/int conversion of key
@@ -345,7 +346,7 @@ class AIGradingService:
                     student_right = student_answer.get(str(left))
                 elif student_right is None and isinstance(left, str) and left.isdigit():
                     student_right = student_answer.get(int(left))
-                
+
                 # Normalize both for comparison (case-insensitive, trim spaces)
                 student_right_norm = normalize(student_right) if student_right else ""
                 right_norm = normalize(right) if right else ""
@@ -353,12 +354,12 @@ class AIGradingService:
                 logger.debug(f"[GRADE_MATCHING] Checking '{left}': student='{student_right_norm}' vs correct='{right_norm}' => {is_match}")
                 if is_match:
                     correct_count += 1
-        
+
         # Validate for duplicate answers (same right value used multiple times)
         right_values = [v for v in student_answer.values() if v is not None and str(v).strip() != ""]
         normalized_right_values = [normalize(v) for v in right_values]
         unique_normalized = set(normalized_right_values)
-        
+
         duplicate_warning = ""
         if len(normalized_right_values) != len(unique_normalized):
             duplicate_count = len(normalized_right_values) - len(unique_normalized)
@@ -366,26 +367,26 @@ class AIGradingService:
             logger.debug(f"[GRADE_MATCHING] WARNING: Duplicate answers detected - {duplicate_count} duplicates")
             logger.debug(f"[GRADE_MATCHING] All answers: {normalized_right_values}")
             logger.debug(f"[GRADE_MATCHING] Unique answers: {unique_normalized}")
-        
+
         score_percentage = (correct_count / total_pairs * 100) if total_pairs > 0 else 0
         max_points = question.get("points", 0.25)
         points_earned = max_points * (correct_count / total_pairs) if total_pairs > 0 else 0
-        
+
         logger.debug(f"[GRADE_MATCHING] Result: {correct_count}/{total_pairs} correct, {points_earned}/{max_points} points")
-        logger.debug(f"[GRADE_MATCHING] ===== END =====")
-        
+        logger.debug("[GRADE_MATCHING] ===== END =====")
+
         return {
             "is_correct": correct_count == total_pairs,
             "points_earned": round(points_earned, 2),
             "max_points": max_points,
             "feedback": f"Ghép đúng {correct_count}/{total_pairs} cặp ({score_percentage:.0f}%){duplicate_warning}"
         }
-    
-    async def grade_writing(self, question: Dict, student_text: str, prompt: str) -> Dict:
+
+    async def grade_writing(self, question: dict, student_text: str, prompt: str) -> dict:
         """Grade writing essay using AI"""
         rubric = question.get("rubric", {})
         max_points = question.get("points", 2.5)
-        
+
         # Check if OpenAI client is available
         if not self.client:
             return {
@@ -396,10 +397,10 @@ class AIGradingService:
                 "needs_review": True,
                 "error": "OpenAI client not initialized"
             }
-        
+
         try:
             rubric_str = "\n".join([f"- {key}: {value}" for key, value in rubric.items()])
-            
+
             prompt_text = f"""You are an English teacher grading a student's essay.
 
 Essay prompt: {prompt}
@@ -439,12 +440,12 @@ Respond with JSON:
                 max_tokens=800,
                 response_format={"type": "json_object"}  # Force JSON response
             )
-            
+
             content = response.choices[0].message.content
-            
+
             # Check if content is None or empty
             if not content or content.strip() == "":
-                logger.debug(f"[GRADE_WRITING] Empty response from OpenAI")
+                logger.debug("[GRADE_WRITING] Empty response from OpenAI")
                 return {
                     "points_earned": 0,
                     "max_points": max_points,
@@ -453,9 +454,9 @@ Respond with JSON:
                     "needs_review": True,
                     "error": "Empty API response"
                 }
-            
+
             content = content.strip()
-            
+
             # Remove markdown code blocks if present
             if content.startswith("```json"):
                 content = content[7:]
@@ -464,10 +465,10 @@ Respond with JSON:
             if content.endswith("```"):
                 content = content[:-3]
             content = content.strip()
-            
+
             # Validate JSON before parsing
             if not content:
-                logger.debug(f"[GRADE_WRITING] Content is empty after cleanup")
+                logger.debug("[GRADE_WRITING] Content is empty after cleanup")
                 return {
                     "points_earned": 0,
                     "max_points": max_points,
@@ -476,9 +477,9 @@ Respond with JSON:
                     "needs_review": True,
                     "error": "Invalid JSON format"
                 }
-            
+
             result = json.loads(content)
-            
+
             return {
                 "points_earned": result.get("score", 0),
                 "max_points": max_points,
@@ -488,7 +489,7 @@ Respond with JSON:
                 "overall_comment": result.get("overall_comment", ""),
                 "needs_review": True  # Always needs teacher review
             }
-            
+
         except json.JSONDecodeError as je:
             logger.info(f"Error grading writing - JSON decode error: {je}")
             logger.info(f"Raw content that failed to parse: {content if 'content' in locals() else 'N/A'}")
@@ -512,8 +513,8 @@ Respond with JSON:
                 "needs_review": True,
                 "error": str(e)
             }
-    
-    async def grade_speaking_pronunciation(self, audio_file_path: str, reference_text: str) -> Dict:
+
+    async def grade_speaking_pronunciation(self, audio_file_path: str, reference_text: str) -> dict:
         """Grade speaking pronunciation using Azure Speech Assessment"""
         if not self.speech_key:
             return {
@@ -524,16 +525,16 @@ Respond with JSON:
                 "error": "Azure Speech key not configured",
                 "success": False
             }
-        
+
         try:
-            import subprocess
             import os
-            
+            import subprocess
+
             # Convert audio to WAV if needed (Azure Speech SDK requires WAV format)
             wav_path = audio_file_path
             if not audio_file_path.lower().endswith('.wav'):
                 wav_path = audio_file_path.rsplit('.', 1)[0] + '_converted.wav'
-                
+
                 # Use ffmpeg to convert to 16kHz mono WAV
                 try:
                     subprocess.run([
@@ -555,13 +556,13 @@ Respond with JSON:
                         "error": f"Audio conversion failed: {conv_err}",
                         "success": False
                     }
-            
+
             # Configure speech recognition
             speech_config = speechsdk.SpeechConfig(
                 subscription=self.speech_key,
                 region=self.speech_region
             )
-            
+
             # Configure pronunciation assessment
             pronunciation_config = speechsdk.PronunciationAssessmentConfig(
                 reference_text=reference_text,
@@ -569,33 +570,31 @@ Respond with JSON:
                 granularity=speechsdk.PronunciationAssessmentGranularity.Phoneme,
                 enable_miscue=True
             )
-            
+
             # Audio input from file
             audio_config = speechsdk.audio.AudioConfig(filename=wav_path)
-            
+
             # Create recognizer
             speech_recognizer = speechsdk.SpeechRecognizer(
                 speech_config=speech_config,
                 audio_config=audio_config,
                 language="en-US"
             )
-            
+
             # Apply pronunciation assessment config
             pronunciation_config.apply_to(speech_recognizer)
-            
+
             # Recognize
             result = speech_recognizer.recognize_once_async().get()
-            
+
             # Clean up converted file
             if wav_path != audio_file_path and os.path.exists(wav_path):
-                try:
+                with contextlib.suppress(builtins.BaseException):
                     os.remove(wav_path)
-                except:
-                    pass
-            
+
             if result.reason == speechsdk.ResultReason.RecognizedSpeech:
                 pronunciation_result = speechsdk.PronunciationAssessmentResult(result)
-                
+
                 return {
                     "pronunciation_score": pronunciation_result.pronunciation_score,
                     "accuracy_score": pronunciation_result.accuracy_score,
@@ -604,16 +603,15 @@ Respond with JSON:
                     "recognized_text": result.text,
                     "success": True
                 }
-            else:
-                return {
-                    "pronunciation_score": 0,
-                    "accuracy_score": 0,
-                    "fluency_score": 0,
-                    "completeness_score": 0,
-                    "error": f"Recognition failed: {result.reason}",
-                    "success": False
-                }
-                
+            return {
+                "pronunciation_score": 0,
+                "accuracy_score": 0,
+                "fluency_score": 0,
+                "completeness_score": 0,
+                "error": f"Recognition failed: {result.reason}",
+                "success": False
+            }
+
         except Exception as e:
             logger.info(f"Error in pronunciation assessment: {e}")
             import traceback
@@ -626,11 +624,11 @@ Respond with JSON:
                 "error": str(e),
                 "success": False
             }
-    
-    async def grade_speaking_content(self, audio_transcript: str, question: str, rubric: Dict) -> Dict:
+
+    async def grade_speaking_content(self, audio_transcript: str, question: str, rubric: dict) -> dict:
         """Grade speaking content using ChatGPT with detailed feedback"""
         max_points = rubric.get("points", 0.83)
-        
+
         # Check if OpenAI client is available
         if not self.client:
             return {
@@ -645,10 +643,10 @@ Respond with JSON:
                 "overall_comment": "Không thể chấm tự động. Cần giáo viên chấm thủ công.",
                 "error": "OpenAI client not initialized"
             }
-        
+
         try:
             rubric_str = "\n".join([f"- {key}: {value}" for key, value in rubric.items() if key != "points"])
-            
+
             prompt = f"""Bạn là một giáo viên tiếng Anh đang chấm bài nói của học sinh. Hãy đánh giá và đưa ra nhận xét chi tiết.
 
 Câu hỏi/Đề bài: {question}
@@ -663,7 +661,7 @@ Hãy đánh giá dựa trên:
 3. Từ vựng: Sự phong phú và chính xác
 4. Độ mạch lạc: Tổ chức ý và sự liên kết
 
-QUAN TRỌNG: 
+QUAN TRỌNG:
 - Sử dụng xưng hô "cô" (giáo viên) và "em" (học sinh)
 - Đưa ra nhận xét cụ thể, chi tiết
 - Chỉ ra điểm tốt và điểm cần cải thiện
@@ -692,12 +690,12 @@ Trả về JSON với format:
                 max_tokens=1200,
                 response_format={"type": "json_object"}  # Force JSON response
             )
-            
+
             content = response.choices[0].message.content
-            
+
             # Check if content is None or empty
             if not content or content.strip() == "":
-                logger.debug(f"[GRADE_SPEAKING] Empty response from OpenAI")
+                logger.debug("[GRADE_SPEAKING] Empty response from OpenAI")
                 return {
                     "content_score": 0,
                     "content_feedback": "Lỗi: API không trả về kết quả",
@@ -710,9 +708,9 @@ Trả về JSON với format:
                     "overall_comment": "Không thể chấm điểm. Vui lòng thử lại.",
                     "error": "Empty API response"
                 }
-            
+
             content = content.strip()
-            
+
             # Remove markdown code blocks if present
             if content.startswith("```json"):
                 content = content[7:]
@@ -721,10 +719,10 @@ Trả về JSON với format:
             if content.endswith("```"):
                 content = content[:-3]
             content = content.strip()
-            
+
             # Validate JSON before parsing
             if not content:
-                logger.debug(f"[GRADE_SPEAKING] Content is empty after cleanup")
+                logger.debug("[GRADE_SPEAKING] Content is empty after cleanup")
                 return {
                     "content_score": 0,
                     "content_feedback": "Lỗi: Không thể phân tích kết quả",
@@ -737,12 +735,12 @@ Trả về JSON với format:
                     "overall_comment": "Không thể chấm điểm. Vui lòng thử lại.",
                     "error": "Invalid JSON format"
                 }
-            
+
             # Debug: print raw content
             logger.debug(f"[GRADE_SPEAKING] Raw API response (first 200 chars): {content[:200]}")
-            
+
             result = json.loads(content)
-            
+
             return {
                 "content_score": result.get("score", 0),
                 "content_feedback": result.get("content_feedback", ""),
@@ -754,7 +752,7 @@ Trả về JSON với format:
                 "suggestions": result.get("suggestions", []),
                 "overall_comment": result.get("overall_comment", "")
             }
-            
+
         except json.JSONDecodeError as je:
             logger.info(f"Error grading speaking content - JSON decode error: {je}")
             logger.info(f"Raw content that failed to parse: {content if 'content' in locals() else 'N/A'}")
@@ -786,13 +784,13 @@ Trả về JSON với format:
                 "overall_comment": "Không thể chấm điểm. Cần giáo viên chấm thủ công.",
                 "error": str(e)
             }
-    
+
     async def grade_comprehensive_submission(
-        self, 
-        exercise_content: Optional[Dict], 
-        student_answers: Optional[Dict],
-        audio_file_path: Optional[str] = None
-    ) -> Dict:
+        self,
+        exercise_content: dict | None,
+        student_answers: dict | None,
+        audio_file_path: str | None = None
+    ) -> dict:
         """
         Grade entire comprehensive test submission
         Returns detailed grading for all sections
@@ -808,10 +806,10 @@ Trả về JSON với format:
             "total_score": 0,
             "max_score": 10
         }
-        
+
         logger.debug(f"[GRADE_COMPREHENSIVE] Exercise content keys: {list(exercise_content.keys())}")
         logger.debug(f"[GRADE_COMPREHENSIVE] Student answers keys: {list(student_answers.keys())}")
-        
+
         # Grade Listening questions
         # Check both locations: content.listening.questions AND content.questions with skill="listening"
         listening_questions = []
@@ -821,17 +819,17 @@ Trả về JSON với format:
         else:
             listening_questions = [q for q in exercise_content.get("questions", []) if q.get("skill") == "listening"]
             logger.debug(f"[GRADE_COMPREHENSIVE] Found {len(listening_questions)} listening questions in content.questions")
-        
+
         for q in listening_questions:
             # Try multiple key formats: "listening_X", "X", X (int)
             q_id = q["id"]
             student_ans = (
-                student_answers.get(f"listening_{q_id}", "") or 
-                student_answers.get(str(q_id), "") or 
+                student_answers.get(f"listening_{q_id}", "") or
+                student_answers.get(str(q_id), "") or
                 student_answers.get(q_id, "")
             )
             q_type = q.get("type", "multiple_choice")
-            
+
             if q_type == "multiple_choice":
                 grade_result = await self.grade_multiple_choice(q, student_ans)
             elif q_type == "fill_blank":
@@ -840,7 +838,7 @@ Trả về JSON với format:
                 grade_result = await self.grade_true_false(q, student_ans)
             else:
                 grade_result = {"points_earned": 0, "max_points": q.get("points", 0.5), "feedback": "Unknown question type"}
-            
+
             results["listening"]["questions"].append({
                 "question_id": q["id"],
                 "question": q.get("question", ""),
@@ -849,9 +847,9 @@ Trả về JSON với format:
                 **grade_result
             })
             results["listening"]["total_points"] += grade_result.get("points_earned", 0)
-        
+
         logger.debug(f"[GRADE_COMPREHENSIVE] Listening graded: {results['listening']['total_points']}/2.5")
-        
+
         # Grade Reading questions
         # Check both locations: content.reading.questions AND content.questions with skill="reading"
         reading_questions = []
@@ -861,17 +859,17 @@ Trả về JSON với format:
         else:
             reading_questions = [q for q in exercise_content.get("questions", []) if q.get("skill") == "reading"]
             logger.debug(f"[GRADE_COMPREHENSIVE] Found {len(reading_questions)} reading questions in content.questions")
-        
+
         for q in reading_questions:
             # Try multiple key formats: "reading_X", "X", X (int)
             q_id = q["id"]
             student_ans = (
-                student_answers.get(f"reading_{q_id}", "") or 
-                student_answers.get(str(q_id), "") or 
+                student_answers.get(f"reading_{q_id}", "") or
+                student_answers.get(str(q_id), "") or
                 student_answers.get(q_id, "")
             )
             q_type = q.get("type", "multiple_choice")
-            
+
             if q_type == "multiple_choice":
                 grade_result = await self.grade_multiple_choice(q, student_ans)
             elif q_type == "fill_blank":
@@ -894,7 +892,7 @@ Trả về JSON với format:
                 grade_result = await self.grade_matching(q, student_ans)
             else:
                 grade_result = {"points_earned": 0, "max_points": q.get("points", 0.5), "feedback": "Unknown question type"}
-            
+
             results["reading"]["questions"].append({
                 "question_id": q["id"],
                 "question": q.get("question", ""),
@@ -903,9 +901,9 @@ Trả về JSON với format:
                 **grade_result
             })
             results["reading"]["total_points"] += grade_result.get("points_earned", 0)
-        
+
         logger.debug(f"[GRADE_COMPREHENSIVE] Reading graded: {results['reading']['total_points']}/2.5")
-        
+
         # Grade Writing
         writing_text = student_answers.get("writing_main", "")
         if writing_text:
@@ -917,7 +915,7 @@ Trả về JSON với format:
                 writing_prompt
             )
             results["writing"] = writing_result
-        
+
         # Resolve audio path to local filesystem
         resolved_audio_path = None
         if audio_file_path:
@@ -953,17 +951,17 @@ Trả về JSON với format:
         # Grade Speaking
         if resolved_audio_path:
             speaking_prompt = exercise_content.get("speaking", {}).get("prompt", "")
-            
+
             # Step 1: Azure pronunciation assessment
             pronunciation_result = await self.grade_speaking_pronunciation(
                 resolved_audio_path,
                 speaking_prompt
             )
-            
+
             # Step 2: ChatGPT content grading
             recognized_text = pronunciation_result.get("recognized_text", "")
             speaking_rubric = exercise_content.get("speaking", {}).get("rubric", {})
-            
+
             if recognized_text:
                 content_result = await self.grade_speaking_content(
                     recognized_text,
@@ -975,14 +973,14 @@ Trả về JSON với format:
                     "content_score": 0,
                     "overall_comment": "Không thể nhận diện giọng nói"
                 }
-            
+
             # IMPROVED SCORING ALGORITHM - More balanced and accurate
             # Components (each 0-100 scale from Azure):
             pronunciation_score = pronunciation_result.get("pronunciation_score", 0)
             fluency_score = pronunciation_result.get("fluency_score", 0)
             completeness_score = pronunciation_result.get("completeness_score", 0)
             accuracy_score = pronunciation_result.get("accuracy_score", 0)
-            
+
             # Calculate pronunciation component (40% of total = 1.0/2.5 points)
             # Weighted average of Azure metrics (focus on pronunciation & fluency)
             pronunciation_component = (
@@ -990,25 +988,25 @@ Trả về JSON với format:
                 fluency_score * 0.35 +       # Natural flow
                 accuracy_score * 0.15        # Recognition accuracy
             ) / 100 * 1.0
-            
+
             # Calculate content component (45% of total = 1.125/2.5 points)
             # Based on ChatGPT content grading (scale down from max 2.5)
             content_component = content_result.get("content_score", 0) * 0.45
-            
+
             # Calculate completeness component (15% of total = 0.375/2.5 points)
             # How much student actually said vs what was expected
             completeness_component = completeness_score / 100 * 0.375
-            
+
             # Total speaking score
             total_speaking_score = (
                 pronunciation_component +
                 content_component +
                 completeness_component
             )
-            
+
             # Generate detailed feedback text
             feedback_text_parts = []
-            
+
             # Pronunciation feedback
             if pronunciation_score >= 80:
                 feedback_text_parts.append(f"✅ Phát âm rất tốt ({pronunciation_score:.0f}/100)")
@@ -1016,7 +1014,7 @@ Trả về JSON với format:
                 feedback_text_parts.append(f"⚠️ Phát âm cần cải thiện ({pronunciation_score:.0f}/100)")
             else:
                 feedback_text_parts.append(f"❌ Phát âm cần luyện tập nhiều hơn ({pronunciation_score:.0f}/100)")
-            
+
             # Fluency feedback
             if fluency_score >= 80:
                 feedback_text_parts.append(f"✅ Nói trôi chảy ({fluency_score:.0f}/100)")
@@ -1024,7 +1022,7 @@ Trả về JSON với format:
                 feedback_text_parts.append(f"⚠️ Cần nói tự nhiên hơn ({fluency_score:.0f}/100)")
             else:
                 feedback_text_parts.append(f"❌ Cần luyện độ trôi chảy ({fluency_score:.0f}/100)")
-            
+
             # Completeness feedback
             if completeness_score >= 80:
                 feedback_text_parts.append(f"✅ Hoàn thành đầy đủ ({completeness_score:.0f}/100)")
@@ -1032,9 +1030,9 @@ Trả về JSON với format:
                 feedback_text_parts.append(f"⚠️ Thiếu một số phần ({completeness_score:.0f}/100)")
             else:
                 feedback_text_parts.append(f"❌ Nội dung chưa đầy đủ ({completeness_score:.0f}/100)")
-            
+
             pronunciation_feedback = " | ".join(feedback_text_parts)
-            
+
             results["speaking"] = {
                 "points_earned": round(min(total_speaking_score, 2.5), 2),
                 "max_points": 2.5,
@@ -1061,7 +1059,7 @@ Trả về JSON với format:
                 },
                 "needs_review": True
             }
-        
+
         # Calculate total
         results["total_score"] = round(
             results["listening"]["total_points"] +
@@ -1070,5 +1068,5 @@ Trả về JSON với format:
             results["speaking"].get("points_earned", 0),
             2
         )
-        
+
         return results

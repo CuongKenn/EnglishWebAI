@@ -1,21 +1,21 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from sqlalchemy import func, cast, Date
-from typing import List, Dict, Any
 from datetime import datetime, timedelta
+from typing import Any
+
+from fastapi import APIRouter, Depends
+from sqlalchemy import Date, cast, func
+from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
-from app.models.user import User
+from app.models.course import CourseExercise, CourseSubmission
 from app.models.exercise import Exercise
 from app.models.submission import Submission
-from app.models.course import Course, CourseExercise, CourseSubmission
-
+from app.models.user import User
 
 router = APIRouter(prefix="/api/v1/student/profile", tags=["Student Profile"])
 
 
-def _avg_score(values: List[float]) -> float:
+def _avg_score(values: list[float]) -> float:
     vals = [v for v in values if v is not None]
     return round(sum(vals) / len(vals), 2) if vals else 0.0
 
@@ -24,9 +24,9 @@ def _avg_score(values: List[float]) -> float:
 def get_overview(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     # Exercises submissions
-    subs: List[Submission] = (
+    subs: list[Submission] = (
         db.query(Submission)
         .filter(Submission.student_id == current_user.id)
         .order_by(Submission.submitted_at.desc())
@@ -34,7 +34,7 @@ def get_overview(
     )
 
     # Course submissions (lessons inside courses)
-    course_subs: List[CourseSubmission] = (
+    course_subs: list[CourseSubmission] = (
         db.query(CourseSubmission)
         .filter(CourseSubmission.student_id == current_user.id)
         .order_by(CourseSubmission.submitted_at.desc())
@@ -134,8 +134,8 @@ def get_overview(
 def get_skills(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> List[Dict[str, Any]]:
-    subs: List[Submission] = (
+) -> list[dict[str, Any]]:
+    subs: list[Submission] = (
         db.query(Submission)
         .filter(Submission.student_id == current_user.id)
         .order_by(Submission.submitted_at.desc())
@@ -151,7 +151,7 @@ def get_skills(
         for ex in db.query(Exercise).filter(Exercise.id.in_(ex_ids)).all():
             ex_map[ex.id] = ex
 
-    buckets: Dict[str, Dict[str, Any]] = {}
+    buckets: dict[str, dict[str, Any]] = {}
     for s in subs:
         ex = ex_map.get(s.exercise_id)
         if not ex:
@@ -193,7 +193,7 @@ def get_skills(
 def get_recent_activity(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     subs = (
         db.query(Submission)
         .filter(Submission.student_id == current_user.id)

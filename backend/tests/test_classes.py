@@ -1,9 +1,11 @@
 import pytest
+
+from app.core.security import get_password_hash
 from app.models.classroom import Classroom
 from app.models.enrollment import Enrollment
 from app.models.user import User, UserRole
-from app.core.security import get_password_hash
 from tests.conftest import client
+
 
 @pytest.fixture
 def test_classroom(db_session, test_teacher):
@@ -70,7 +72,7 @@ def test_join_class_already_joined(db_session, test_classroom, test_student, stu
         f"/api/v1/classes/{test_classroom.id}/join",
         headers={"Authorization": f"Bearer {student_token}"}
     )
-    
+
     # Try to join again
     response = client.post(
         f"/api/v1/classes/{test_classroom.id}/join",
@@ -99,7 +101,7 @@ def test_get_my_classes(db_session, test_classroom, test_student, student_token)
         f"/api/v1/classes/{test_classroom.id}/join",
         headers={"Authorization": f"Bearer {student_token}"}
     )
-    
+
     # Get my classes
     response = client.get(
         "/api/v1/classes/my-classes",
@@ -118,7 +120,7 @@ def test_leave_class_success(db_session, test_classroom, test_student, student_t
         f"/api/v1/classes/{test_classroom.id}/join",
         headers={"Authorization": f"Bearer {student_token}"}
     )
-    
+
     # Leave class
     response = client.post(
         f"/api/v1/classes/{test_classroom.id}/leave",
@@ -150,7 +152,7 @@ def test_join_full_class(db_session, test_teacher, test_student, student_token):
     db_session.add(classroom)
     db_session.commit()
     db_session.refresh(classroom)
-    
+
     # Create another student and join the class
     other_student = User(
         username="otherstudent",
@@ -162,7 +164,7 @@ def test_join_full_class(db_session, test_teacher, test_student, student_token):
     )
     db_session.add(other_student)
     db_session.commit()
-    
+
     enrollment = Enrollment(
         class_id=classroom.id,
         user_id=other_student.id,
@@ -170,7 +172,7 @@ def test_join_full_class(db_session, test_teacher, test_student, student_token):
     )
     db_session.add(enrollment)
     db_session.commit()
-    
+
     # Try to join full class
     response = client.post(
         f"/api/v1/classes/{classroom.id}/join",
@@ -191,7 +193,7 @@ def test_join_inactive_class(db_session, test_teacher, test_student, student_tok
     db_session.add(classroom)
     db_session.commit()
     db_session.refresh(classroom)
-    
+
     response = client.post(
         f"/api/v1/classes/{classroom.id}/join",
         headers={"Authorization": f"Bearer {student_token}"}
@@ -213,7 +215,7 @@ def test_get_class_students(db_session, test_classroom, test_student, test_teach
     )
     db_session.add(enrollment)
     db_session.commit()
-    
+
     response = client.get(
         f"/api/v1/classes/{test_classroom.id}/students",
         headers={"Authorization": f"Bearer {teacher_token}"}
@@ -234,7 +236,7 @@ def test_remove_student_from_class(db_session, test_classroom, test_student, tes
     )
     db_session.add(enrollment)
     db_session.commit()
-    
+
     response = client.delete(
         f"/api/v1/classes/{test_classroom.id}/students/{test_student.id}",
         headers={"Authorization": f"Bearer {teacher_token}"}
@@ -244,7 +246,6 @@ def test_remove_student_from_class(db_session, test_classroom, test_student, tes
 
 def test_create_lesson_for_class(db_session, test_classroom, test_teacher, teacher_token):
     """Test creating a lesson for a class"""
-    from app.models.lesson import Lesson
     lesson_data = {
         "title": "Test Lesson",
         "content": "Lesson content",

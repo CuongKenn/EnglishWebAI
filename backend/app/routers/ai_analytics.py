@@ -7,7 +7,6 @@ from app.models.user import User
 from app.schemas.ai_analytics import AIAnalyticsResponse
 from app.services.ai_analytics_service import AIAnalyticsService
 
-
 router = APIRouter(prefix="/api/v1/admin/ai", tags=["AI Analytics (Admin)"])
 
 
@@ -17,6 +16,5 @@ def get_ai_analytics(
     db: Session = Depends(get_db),
     _: User = Depends(get_current_admin_user),
 ):
-    data = AIAnalyticsService.get_analytics(db, range_value=range)
-    return data
+    return AIAnalyticsService.get_analytics(db, range_value=range)
 

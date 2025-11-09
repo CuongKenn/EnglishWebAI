@@ -1,5 +1,10 @@
+import logging
+
 from sqlalchemy import inspect, text
+
 from app.core.database import engine
+
+logger = logging.getLogger(__name__)
 
 
 def _has_column(table_name: str, column_name: str) -> bool:
@@ -174,7 +179,7 @@ def ensure_course_submissions_columns() -> None:
 
 def ensure_course_units_tables() -> None:
     """Create course_units and course_questions if missing."""
-    from app.models.course import CourseUnit, CourseQuestion
+    from app.models.course import CourseQuestion, CourseUnit
     CourseUnit.__table__.create(bind=engine, checkfirst=True)
     CourseQuestion.__table__.create(bind=engine, checkfirst=True)
 

@@ -3,9 +3,8 @@ Role Utility Functions
 Handles role mapping and validation
 """
 
-from typing import Union, List
-from app.models.user import UserRole
 
+from app.models.user import UserRole
 
 # Role mapping: student <-> user
 STUDENT_ROLE_ALIASES = ["student", "user"]
@@ -28,17 +27,17 @@ DISPLAY_ROLE_MAPPING = {
 }
 
 
-def normalize_role(role: Union[str, UserRole]) -> UserRole:
+def normalize_role(role: str | UserRole) -> UserRole:
     """
     Normalize role string to UserRole enum
     Accepts: 'student', 'user' -> returns UserRole.USER
-    
+
     Args:
         role: Role as string or UserRole enum
-        
+
     Returns:
         UserRole enum
-        
+
     Examples:
         normalize_role("student") -> UserRole.USER
         normalize_role("user") -> UserRole.USER
@@ -46,12 +45,12 @@ def normalize_role(role: Union[str, UserRole]) -> UserRole:
     """
     if isinstance(role, UserRole):
         return role
-    
+
     role_lower = role.lower() if isinstance(role, str) else role
-    
+
     if role_lower in ROLE_MAPPING:
         return ROLE_MAPPING[role_lower]
-    
+
     # Try to match UserRole enum directly
     try:
         return UserRole(role_lower)
@@ -59,13 +58,13 @@ def normalize_role(role: Union[str, UserRole]) -> UserRole:
         raise ValueError(f"Invalid role: {role}. Valid roles: {list(ROLE_MAPPING.keys())}")
 
 
-def is_student_role(role: Union[str, UserRole]) -> bool:
+def is_student_role(role: str | UserRole) -> bool:
     """
     Check if role is student (USER)
-    
+
     Args:
         role: Role as string or UserRole enum
-        
+
     Returns:
         True if role is student/user
     """
@@ -73,32 +72,32 @@ def is_student_role(role: Union[str, UserRole]) -> bool:
     return normalized == UserRole.USER
 
 
-def is_teacher_role(role: Union[str, UserRole]) -> bool:
+def is_teacher_role(role: str | UserRole) -> bool:
     """Check if role is teacher"""
     normalized = normalize_role(role)
     return normalized == UserRole.TEACHER
 
 
-def is_parent_role(role: Union[str, UserRole]) -> bool:
+def is_parent_role(role: str | UserRole) -> bool:
     """Check if role is parent"""
     normalized = normalize_role(role)
     return normalized == UserRole.PARENT
 
 
-def is_admin_role(role: Union[str, UserRole]) -> bool:
+def is_admin_role(role: str | UserRole) -> bool:
     """Check if role is admin or superadmin"""
     normalized = normalize_role(role)
     return normalized in (UserRole.ADMIN, UserRole.SUPERADMIN)
 
 
-def get_display_role(role: Union[str, UserRole]) -> str:
+def get_display_role(role: str | UserRole) -> str:
     """
     Get display name for role
     USER -> "student"
-    
+
     Args:
         role: Role as string or UserRole enum
-        
+
     Returns:
         Display name as string
     """
@@ -106,33 +105,33 @@ def get_display_role(role: Union[str, UserRole]) -> str:
     return DISPLAY_ROLE_MAPPING.get(normalized, normalized.value)
 
 
-def validate_roles(roles: List[str]) -> List[UserRole]:
+def validate_roles(roles: list[str]) -> list[UserRole]:
     """
     Validate and normalize list of roles
-    
+
     Args:
         roles: List of role strings
-        
+
     Returns:
         List of UserRole enums
-        
+
     Raises:
         ValueError: If any role is invalid
     """
     return [normalize_role(role) for role in roles]
 
 
-def role_matches(user_role: Union[str, UserRole], allowed_roles: List[Union[str, UserRole]]) -> bool:
+def role_matches(user_role: str | UserRole, allowed_roles: list[str | UserRole]) -> bool:
     """
     Check if user role matches any of the allowed roles
-    
+
     Args:
         user_role: User's role
         allowed_roles: List of allowed roles
-        
+
     Returns:
         True if user role is in allowed roles
-        
+
     Examples:
         role_matches("student", ["student", "teacher"]) -> True
         role_matches(UserRole.USER, ["student"]) -> True

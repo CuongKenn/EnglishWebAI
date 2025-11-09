@@ -3,23 +3,24 @@ Worksheets Router
 API endpoints for worksheet management and AI generation
 """
 
+import logging
+import traceback
+from io import BytesIO
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
-from typing import List
-from io import BytesIO
-import logging
-import traceback
+
 from app.core.database import get_db
 from app.core.dependencies import get_current_active_user
 from app.models.user import User
 from app.models.worksheet import Worksheet
 from app.schemas.worksheet import (
+    WorksheetAIGenerate,
     WorksheetCreate,
-    WorksheetUpdate,
-    WorksheetResponse,
     WorksheetListResponse,
-    WorksheetAIGenerate
+    WorksheetResponse,
+    WorksheetUpdate,
 )
 from app.services.openai_service import openai_service
 
@@ -28,8 +29,8 @@ logger = logging.getLogger(__name__)
 
 try:
     from docx import Document
-    from docx.shared import Pt, RGBColor, Inches
     from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
+    from docx.shared import Inches, Pt, RGBColor
     HAS_DOCX = True
     logger.info("python-docx imported successfully")
 except ImportError as e:
@@ -39,7 +40,7 @@ except ImportError as e:
 router = APIRouter(prefix="/api/v1/worksheets", tags=["worksheets"])
 
 
-@router.get("/", response_model=List[WorksheetListResponse])
+@router.get("/", response_model=list[WorksheetListResponse])
 async def get_worksheets(
     skip: int = 0,
     limit: int = 100,
@@ -54,17 +55,16 @@ async def get_worksheets(
     Teachers can only see their own worksheets
     """
     query = db.query(Worksheet).filter(Worksheet.teacher_id == current_user.id)
-    
+
     if grade:
         query = query.filter(Worksheet.grade == grade)
     if worksheet_type:
         query = query.filter(Worksheet.worksheet_type == worksheet_type)
     if skill_focus:
         query = query.filter(Worksheet.skill_focus == skill_focus)
-    
-    worksheets = query.order_by(Worksheet.created_at.desc()).offset(skip).limit(limit).all()
-    
-    return worksheets
+
+    return query.order_by(Worksheet.created_at.desc()).offset(skip).limit(limit).all()
+
 
 
 @router.get("/{worksheet_id}", response_model=WorksheetResponse)
@@ -80,13 +80,13 @@ async def get_worksheet(
         Worksheet.id == worksheet_id,
         Worksheet.teacher_id == current_user.id
     ).first()
-    
+
     if not worksheet:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Worksheet not found"
         )
-    
+
     return worksheet
 
 
@@ -103,11 +103,11 @@ async def create_worksheet(
         teacher_id=current_user.id,
         **worksheet_data.dict()
     )
-    
+
     db.add(worksheet)
     db.commit()
     db.refresh(worksheet)
-    
+
     return worksheet
 
 
@@ -136,7 +136,7 @@ async def generate_worksheet_with_ai(
             language_functions=generate_data.language_functions,
             additional_notes=generate_data.additional_notes
         )
-        
+
         # Create worksheet from AI result
         worksheet = Worksheet(
             teacher_id=current_user.id,
@@ -155,13 +155,13 @@ async def generate_worksheet_with_ai(
             ai_generated=1,
             ai_prompt=f"Grade: {generate_data.grade}, Unit: {generate_data.unit}, Type: {generate_data.worksheet_type}"
         )
-        
+
         db.add(worksheet)
         db.commit()
         db.refresh(worksheet)
-        
+
         return worksheet
-        
+
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -183,21 +183,21 @@ async def update_worksheet(
         Worksheet.id == worksheet_id,
         Worksheet.teacher_id == current_user.id
     ).first()
-    
+
     if not worksheet:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Worksheet not found"
         )
-    
+
     # Update fields
     update_data = worksheet_update.dict(exclude_unset=True)
     for field, value in update_data.items():
         setattr(worksheet, field, value)
-    
+
     db.commit()
     db.refresh(worksheet)
-    
+
     return worksheet
 
 
@@ -214,17 +214,17 @@ async def delete_worksheet(
         Worksheet.id == worksheet_id,
         Worksheet.teacher_id == current_user.id
     ).first()
-    
+
     if not worksheet:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Worksheet not found"
         )
-    
+
     db.delete(worksheet)
     db.commit()
-    
-    return None
+
+    return
 
 
 @router.get("/{worksheet_id}/export/word")
@@ -235,36 +235,36 @@ async def export_worksheet_word(
 ):
     """Export worksheet as Word document"""
     logger.info(f"Export Word request for worksheet_id={worksheet_id}, user={current_user.id}")
-    
+
     if not HAS_DOCX:
         logger.error("python-docx not available")
         raise HTTPException(
             status_code=status.HTTP_501_NOT_IMPLEMENTED,
             detail="Word export not available. Install python-docx package."
         )
-    
+
     worksheet = db.query(Worksheet).filter(
         Worksheet.id == worksheet_id,
         Worksheet.teacher_id == current_user.id
     ).first()
-    
+
     if not worksheet:
         logger.warning(f"Worksheet {worksheet_id} not found for user {current_user.id}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Worksheet not found"
         )
-    
+
     try:
         logger.info(f"Creating Word document for worksheet: {worksheet.title}")
-        
+
         # Create Word document
         doc = Document()
-        
+
         # Title
         title = doc.add_heading(worksheet.title or "Phiếu học tập", level=0)
         title.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-        
+
         # Basic Info
         doc.add_heading('Thông tin cơ bản', level=1)
         doc.add_paragraph(f'Môn học: {worksheet.subject or "English"}')
@@ -281,18 +281,18 @@ async def export_worksheet_word(
         if worksheet.total_points:
             doc.add_paragraph(f'Tổng điểm: {worksheet.total_points}')
         doc.add_paragraph('')
-        
+
         # Content
         if worksheet.content:
             doc.add_heading('Nội dung', level=1)
             content = worksheet.content
-            
+
             # Add passage if exists
             if isinstance(content, dict) and 'passage' in content:
                 doc.add_heading('Đoạn văn', level=2)
                 doc.add_paragraph(content['passage'])
                 doc.add_paragraph('')
-            
+
             if isinstance(content, dict):
                 if 'questions' in content:
                     doc.add_heading('Câu hỏi', level=2)
@@ -301,17 +301,17 @@ async def export_worksheet_word(
                             # Question number and text
                             question_num = q.get('question_number', i)
                             question_text = q.get('question_text') or q.get('question', '')
-                            
+
                             if question_text:
                                 doc.add_paragraph(f'Câu {question_num}: {question_text}', style='Heading 3')
                             else:
                                 doc.add_paragraph(f'Câu {question_num}', style='Heading 3')
-                            
+
                             # Options
                             if 'options' in q and isinstance(q['options'], list):
                                 for opt in q['options']:
                                     doc.add_paragraph(f'  {opt}')
-                            
+
                             doc.add_paragraph('')
                 elif 'text' in content:
                     # For text-based content
@@ -319,13 +319,13 @@ async def export_worksheet_word(
             elif isinstance(content, str):
                 doc.add_paragraph(content)
             doc.add_paragraph('')
-        
+
         # Teacher Notes
         if worksheet.teacher_notes:
             doc.add_heading('Ghi chú cho giáo viên', level=1)
             doc.add_paragraph(worksheet.teacher_notes)
             doc.add_paragraph('')
-        
+
         # Answer Key
         if worksheet.answer_key:
             doc.add_heading('Đáp án', level=1)
@@ -342,36 +342,36 @@ async def export_worksheet_word(
                 if isinstance(q, dict):
                     question_num = q.get('question_number', '')
                     correct_answer = q.get('correct_answer', '')
-                    
+
                     # If correct_answer is a number, convert to letter (0=A, 1=B, 2=C, 3=D)
                     if isinstance(correct_answer, int):
                         answer_letter = chr(65 + correct_answer)  # 65 is ASCII for 'A'
                         doc.add_paragraph(f'Câu {question_num}: {answer_letter}')
                     else:
                         doc.add_paragraph(f'Câu {question_num}: {correct_answer}')
-                    
+
                     # Add explanation if exists
                     if 'explanation' in q:
                         doc.add_paragraph(f'  Giải thích: {q["explanation"]}')
             doc.add_paragraph('')
-        
+
         # Save to BytesIO
         logger.info("Saving document to BytesIO")
         file_stream = BytesIO()
         doc.save(file_stream)
         file_stream.seek(0)
-        
+
         # Return as downloadable file
         # Use URL encoding for non-ASCII characters in filename
         from urllib.parse import quote
         filename = f"{worksheet.title or 'worksheet'}.docx"
         filename = filename.replace('"', '').replace('/', '-').replace('\\', '-')  # Sanitize filename
         filename_encoded = quote(filename)
-        
+
         headers = {
             'Content-Disposition': f'attachment; filename="worksheet.docx"; filename*=UTF-8\'\'{filename_encoded}'
         }
-        
+
         logger.info(f"Returning Word document: {filename}")
         return StreamingResponse(
             file_stream,

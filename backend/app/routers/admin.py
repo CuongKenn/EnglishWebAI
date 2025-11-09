@@ -1,36 +1,42 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
+
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy.orm import Session
-from typing import List, Optional
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_admin_user, get_current_user
 from app.models.user import User
 from app.schemas.admin import (
-    AdminUserOut, AdminUserCreate, AdminUserUpdate,
-    AdminClassOut, AdminClassCreate, AdminClassUpdate,
-    AdminTeacherOut, AdminOverviewStats
+    AdminClassCreate,
+    AdminClassOut,
+    AdminClassUpdate,
+    AdminOverviewStats,
+    AdminTeacherOut,
+    AdminUserCreate,
+    AdminUserOut,
+    AdminUserUpdate,
 )
+from app.schemas.excel_import import StudentsImportRequest, StudentsImportResponse
 from app.schemas.system_config import (
-    SystemConfigOut, SystemConfigCreate, SystemConfigUpdate,
-    SystemSettingsOut, SystemSettingsUpdate, SystemConfigBulkUpdate
-)
-from app.schemas.excel_import import (
-    StudentsImportRequest, StudentsImportResponse
+    SystemConfigBulkUpdate,
+    SystemConfigCreate,
+    SystemConfigOut,
+    SystemConfigUpdate,
+    SystemSettingsOut,
+    SystemSettingsUpdate,
 )
 from app.services.admin_service import AdminService
-from app.services.system_config_service import SystemConfigService
 from app.services.excel_import_service import ExcelImportService
-
+from app.services.system_config_service import SystemConfigService
 
 router = APIRouter()
 
 
 # -------- Users --------
-@router.get("/users", response_model=List[AdminUserOut])
+@router.get("/users", response_model=list[AdminUserOut])
 def admin_list_users(
-    search: Optional[str] = Query(None),
-    role: Optional[str] = Query(None),
-    status: Optional[str] = Query(None),
+    search: str | None = Query(None),
+    role: str | None = Query(None),
+    status: str | None = Query(None),
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
@@ -85,7 +91,7 @@ def admin_import_users_csv(
         raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")
 
 
-@router.get("/teachers", response_model=List[AdminTeacherOut])
+@router.get("/teachers", response_model=list[AdminTeacherOut])
 def admin_list_teachers(
     db: Session = Depends(get_db),
     _: User = Depends(get_current_admin_user),
@@ -94,9 +100,9 @@ def admin_list_teachers(
 
 
 # -------- Classes --------
-@router.get("/classes", response_model=List[AdminClassOut])
+@router.get("/classes", response_model=list[AdminClassOut])
 def admin_list_classes(
-    search: Optional[str] = Query(None),
+    search: str | None = Query(None),
     db: Session = Depends(get_db),
     _: User = Depends(get_current_admin_user),
 ):
@@ -151,7 +157,7 @@ def admin_overview_stats(
 
 
 # -------- System Configuration --------
-@router.get("/system-config", response_model=List[SystemConfigOut])
+@router.get("/system-config", response_model=list[SystemConfigOut])
 def get_all_system_configs(
     public_only: bool = Query(False),
     db: Session = Depends(get_db),
@@ -214,7 +220,7 @@ def delete_system_config(
     return {"message": f"Configuration '{key}' deleted successfully"}
 
 
-@router.post("/system-config/bulk-update", response_model=List[SystemConfigOut])
+@router.post("/system-config/bulk-update", response_model=list[SystemConfigOut])
 def bulk_update_system_configs(
     bulk_data: SystemConfigBulkUpdate,
     db: Session = Depends(get_db),
@@ -264,13 +270,13 @@ async def import_students_from_excel(
 ):
     """
     Import học sinh từ file Excel
-    
+
     File Excel phải có các cột:
     - STT: Số thứ tự
     - Mã học sinh: Mã học sinh (sẽ dùng làm username)
     - Họ và tên: Họ và tên học sinh
     - Ngày sinh: Ngày sinh (tùy chọn)
-    
+
     Email sẽ được tạo tự động: {mã học sinh}@gmail.com
     """
     # Validate file type
@@ -279,16 +285,16 @@ async def import_students_from_excel(
             status_code=400,
             detail="File phải có định dạng Excel (.xlsx hoặc .xls)"
         )
-    
+
     # Parse Excel file
     students = ExcelImportService.parse_excel_file(file)
-    
+
     # Create import request
     import_request = StudentsImportRequest(
         students=students,
         default_password=default_password
     )
-    
+
     # Import students
     return ExcelImportService.import_students(db, import_request)
 
@@ -307,10 +313,10 @@ async def preview_excel_import(
             status_code=400,
             detail="File phải có định dạng Excel (.xlsx hoặc .xls)"
         )
-    
+
     # Parse Excel file
     students = ExcelImportService.parse_excel_file(file)
-    
+
     return {
         "total_students": len(students),
         "preview": students[:10],  # Chỉ hiển thị 10 dòng đầu
@@ -320,7 +326,7 @@ async def preview_excel_import(
 
 
 # -------- Teacher Dashboard --------
-@router.get("/teachers/classes", response_model=List[AdminClassOut])
+@router.get("/teachers/classes", response_model=list[AdminClassOut])
 def get_teacher_classes(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -329,18 +335,18 @@ def get_teacher_classes(
     Lấy danh sách lớp học mà teacher này dạy (hoặc tất cả nếu là admin)
     """
     from app.models.classroom import Classroom
-    
+
     # Kiểm tra user phải là teacher hoặc admin
     if current_user.role not in ["TEACHER", "ADMIN"]:
         raise HTTPException(status_code=403, detail="Not authorized")
-    
+
     # Nếu là admin thì lấy tất cả classes
     if current_user.role == "ADMIN":
         classes = db.query(Classroom).all()
     else:
         # Nếu là teacher thì chỉ lấy classes mình dạy
         classes = db.query(Classroom).filter(Classroom.teacher_id == current_user.id).all()
-    
+
     return [
         AdminClassOut(
             id=cls.id,
@@ -365,14 +371,15 @@ async def debug_excel_content(
     Debug endpoint để xem raw content của Excel file
     """
     try:
-        import pandas as pd
         import io
-        
+
+        import pandas as pd
+
         contents = file.file.read()
-        
+
         # Đọc raw Excel
         df_raw = pd.read_excel(io.BytesIO(contents), header=None)
-        
+
         return {
             "filename": file.filename,
             "file_size": len(contents),

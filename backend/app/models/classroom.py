@@ -1,6 +1,7 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean
-from sqlalchemy.sql import func
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
+
 from app.core.database import Base
 
 
@@ -30,7 +31,6 @@ class Classroom(Base):
     discussions = relationship("DiscussionThread", back_populates="classroom", cascade="all, delete-orphan")
     exam_assessments = relationship("ExamAssessment", back_populates="classroom", cascade="all, delete-orphan")
     weekly_assessments = relationship("WeeklyAssessment", back_populates="classroom", cascade="all, delete-orphan")
-    enhanced_weekly_assessments = relationship("EnhancedWeeklyAssessment", back_populates="classroom", cascade="all, delete-orphan")
     enhanced_weekly_assessments = relationship("EnhancedWeeklyAssessment", back_populates="classroom", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:

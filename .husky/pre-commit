@@ -3,10 +3,21 @@
 echo "[husky] Running pre-commit checks..."
 
 # Run ESLint on frontend
+echo "[husky] Checking frontend (ESLint)..."
 cd frontend && npm run lint
 
 if [ $? -ne 0 ]; then
-  echo "[husky] ❌ ESLint check failed. Please fix the errors before committing."
+  echo "[husky] ❌ Frontend ESLint check failed. Please fix the errors before committing."
+  exit 1
+fi
+
+# Run Ruff on backend
+echo "[husky] Checking backend (Ruff)..."
+cd ../backend && ruff check .
+
+if [ $? -ne 0 ]; then
+  echo "[husky] ❌ Backend Ruff check failed. Please fix the errors before committing."
+  echo "[husky] 💡 Run 'cd backend && ruff check --fix .' to auto-fix issues"
   exit 1
 fi
 

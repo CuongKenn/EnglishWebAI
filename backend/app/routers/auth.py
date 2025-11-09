@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+
 from app.core.database import get_db
-from app.schemas.auth import LoginRequest, RegisterRequest, LoginResponse
-from app.services.auth_service import AuthService
 from app.core.role_utils import get_display_role
+from app.schemas.auth import LoginRequest, LoginResponse, RegisterRequest
+from app.services.auth_service import AuthService
 
 router = APIRouter()
 
@@ -16,10 +17,10 @@ async def login(
     try:
         result = AuthService.login(db, login_data)
         user = result["user"]
-        
+
         # Get display role (user -> student)
         display_role = get_display_role(user.role)
-        
+
         return {
             "role": display_role,  # Return 'student' instead of 'user' for frontend
             "access_token": result["access_token"],
@@ -54,7 +55,7 @@ async def register(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Passwords do not match"
         )
-    
+
     try:
         result = AuthService.register(db, register_data)
         return {

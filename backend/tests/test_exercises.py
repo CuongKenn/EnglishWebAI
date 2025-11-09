@@ -1,9 +1,11 @@
 import pytest
-from app.models.exercise import Exercise
-from app.models.submission import Submission
+
 from app.models.classroom import Classroom
 from app.models.enrollment import Enrollment
+from app.models.exercise import Exercise
+from app.models.submission import Submission
 from tests.conftest import client
+
 
 @pytest.fixture
 def test_classroom(db_session, test_teacher):
@@ -136,7 +138,7 @@ def test_get_exercise_result(db_session, test_exercise, enrolled_student, studen
     )
     db_session.add(submission)
     db_session.commit()
-    
+
     # Get result
     response = client.get(
         f"/api/v1/exercises/{test_exercise.id}/my-submission",

@@ -1,33 +1,34 @@
-import redis
-from typing import Optional, Any
-import json
+import builtins
+import contextlib
+import logging
 import pickle
 from functools import wraps
-import logging
+from typing import Any
+
+import redis
+
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
 # Redis client (singleton)
-_redis_client: Optional[redis.Redis] = None
+_redis_client: redis.Redis | None = None
 
 
 def reset_redis_client():
     """Force reset Redis client connection"""
     global _redis_client
     if _redis_client:
-        try:
+        with contextlib.suppress(builtins.BaseException):
             _redis_client.close()
-        except:
-            pass
     _redis_client = None
     logger.info("🔄 Redis client reset")
 
 
-def get_redis_client() -> Optional[redis.Redis]:
+def get_redis_client() -> redis.Redis | None:
     """Get Redis client singleton with health check"""
     global _redis_client
-    
+
     if _redis_client is None:
         try:
             redis_url = getattr(settings, 'REDIS_URL', None)
@@ -57,14 +58,14 @@ def get_redis_client() -> Optional[redis.Redis]:
             logger.warning(f"Redis connection lost: {e}. Reconnecting...")
             _redis_client = None
             return get_redis_client()  # Recursive retry
-    
+
     return _redis_client
 
 
 def cache_result(key_prefix: str, ttl: int = 300):
     """
     Decorator to cache function results in Redis
-    
+
     Args:
         key_prefix: Prefix for cache key
         ttl: Time to live in seconds (default: 5 minutes)
@@ -73,25 +74,25 @@ def cache_result(key_prefix: str, ttl: int = 300):
         @wraps(func)
         def wrapper(*args, **kwargs):
             redis_client = get_redis_client()
-            
+
             # If Redis not available, just call function
             if redis_client is None:
                 return func(*args, **kwargs)
-            
+
             # Build cache key from function args
             cache_key = f"{key_prefix}:{_build_cache_key(*args, **kwargs)}"
-            
+
             try:
                 # Try to get from cache
                 cached = redis_client.get(cache_key)
                 if cached:
                     logger.debug(f"Cache hit: {cache_key}")
                     return pickle.loads(cached)
-                
+
                 # Cache miss, call function
                 logger.debug(f"Cache miss: {cache_key}")
                 result = func(*args, **kwargs)
-                
+
                 # Store in cache
                 try:
                     redis_client.setex(
@@ -109,16 +110,16 @@ def cache_result(key_prefix: str, ttl: int = 300):
                         reset_redis_client()
                     else:
                         logger.warning(f"Failed to cache result: {set_err}")
-                
+
                 return result
-                
+
             except Exception as e:
                 logger.warning(f"Cache error: {e}. Falling back to direct call.")
                 if "READONLY" in str(e).upper() or "read only" in str(e).lower():
                     logger.error(f"🔴 READ-ONLY detected in decorator: {e}")
                     reset_redis_client()
                 return func(*args, **kwargs)
-        
+
         return wrapper
     return decorator
 
@@ -126,15 +127,15 @@ def cache_result(key_prefix: str, ttl: int = 300):
 def invalidate_cache(pattern: str):
     """
     Delete cache keys matching pattern
-    
+
     Args:
         pattern: Pattern to match (e.g., "teacher_stats:*")
     """
     redis_client = get_redis_client()
-    
+
     if redis_client is None:
         return
-    
+
     try:
         keys = redis_client.keys(pattern)
         if keys:
@@ -147,7 +148,7 @@ def invalidate_cache(pattern: str):
 def _build_cache_key(*args, **kwargs) -> str:
     """Build cache key from function arguments"""
     key_parts = []
-    
+
     # Add args (skip first arg if it's 'self' or db session)
     for arg in args:
         if hasattr(arg, '__class__'):
@@ -155,13 +156,13 @@ def _build_cache_key(*args, **kwargs) -> str:
             if class_name in ['Session', 'AsyncSession']:
                 continue
         key_parts.append(str(arg))
-    
+
     # Add kwargs
     for k, v in sorted(kwargs.items()):
         if k in ['db', 'session']:
             continue
         key_parts.append(f"{k}={v}")
-    
+
     return ":".join(key_parts)
 
 
@@ -185,7 +186,7 @@ def cache_teacher_stats(teacher_id: int, period: str, data: Any, ttl: int = 300)
                 reset_redis_client()
 
 
-def get_cached_teacher_stats(teacher_id: int, period: str) -> Optional[Any]:
+def get_cached_teacher_stats(teacher_id: int, period: str) -> Any | None:
     """Get cached teacher statistics"""
     redis_client = get_redis_client()
     if redis_client:
@@ -233,7 +234,7 @@ def cache_student_analytics(student_id: int, data: Any, ttl: int = 180):
         logger.warning(f"⚠️ Redis client not available for student_analytics:{student_id}")
 
 
-def get_cached_student_analytics(student_id: int) -> Optional[Any]:
+def get_cached_student_analytics(student_id: int) -> Any | None:
     """Get cached student analytics"""
     redis_client = get_redis_client()
     if redis_client:
@@ -244,8 +245,7 @@ def get_cached_student_analytics(student_id: int) -> Optional[Any]:
                 result = pickle.loads(cached)
                 logger.info(f"🎯 Cache HIT: {key} ({len(cached)} bytes)")
                 return result
-            else:
-                logger.info(f"❌ Cache MISS: {key}")
+            logger.info(f"❌ Cache MISS: {key}")
         except Exception as e:
             logger.error(f"❌ Failed to get cached student analytics {student_id}: {e}", exc_info=True)
     else:

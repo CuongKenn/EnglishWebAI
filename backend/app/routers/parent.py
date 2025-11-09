@@ -1,28 +1,27 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
 import logging
 
-logger = logging.getLogger(__name__)
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
+logger = logging.getLogger(__name__)
+from datetime import datetime, timedelta
+
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel, EmailStr
+from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session
-from sqlalchemy import func, and_, or_
-from typing import List
+
 from app.core.database import get_db
 from app.core.dependencies import get_current_active_user
-from app.models.user import User, UserRole
-from app.models.parent_student import ParentStudent
-from app.models.enrollment import Enrollment
-from app.models.classroom import Classroom
 from app.models.attendance import AttendanceRecord
-from app.models.submission import Submission
+from app.models.classroom import Classroom
+from app.models.enrollment import Enrollment
 from app.models.exercise import Exercise
-from app.models.notification import Notification
 from app.models.message import Message
-from app.services.parent_service import ParentService
+from app.models.notification import Notification
+from app.models.parent_student import ParentStudent
+from app.models.submission import Submission
+from app.models.user import User, UserRole
 from app.services.parent_progress_export_service import ParentProgressExportService
-from pydantic import BaseModel, EmailStr
-from datetime import datetime, timedelta
-from typing import Optional
 
 router = APIRouter()
 
@@ -32,13 +31,13 @@ class ChildInfo(BaseModel):
     name: str
     email: str
     username: str
-    avatar_url: Optional[str] = None
-    grade: Optional[str] = None
+    avatar_url: str | None = None
+    grade: str | None = None
     total_classes: int
     completed_lessons: int
     total_lessons: int
     average_score: float
-    
+
     class Config:
         from_attributes = True
 
@@ -46,28 +45,28 @@ class ActivityItem(BaseModel):
     type: str
     title: str
     subject: str
-    class_name: Optional[str] = None
-    score: Optional[float] = None
-    max_score: Optional[float] = None
+    class_name: str | None = None
+    score: float | None = None
+    max_score: float | None = None
     time: str
     status: str
-    feedback: Optional[str] = None
-    skill_type: Optional[str] = None
+    feedback: str | None = None
+    skill_type: str | None = None
 
 class TaskItem(BaseModel):
     type: str
     title: str
     subject: str
-    class_name: Optional[str] = None
+    class_name: str | None = None
     dueDate: str
     priority: str
-    skill_type: Optional[str] = None
+    skill_type: str | None = None
 
 class SubjectProgress(BaseModel):
     subject: str
     progress: int
     color: str
-    average_score: Optional[float] = None
+    average_score: float | None = None
     total_exercises: int
     completed_exercises: int
 
@@ -80,19 +79,19 @@ class AttendanceStats(BaseModel):
 class GradeDetail(BaseModel):
     exercise_id: int
     exercise_title: str
-    skill_type: Optional[str] = None
-    score: Optional[float] = None
-    max_score: Optional[float] = None
-    feedback: Optional[str] = None
-    submitted_at: Optional[str] = None
-    graded_at: Optional[str] = None
+    skill_type: str | None = None
+    score: float | None = None
+    max_score: float | None = None
+    feedback: str | None = None
+    submitted_at: str | None = None
+    graded_at: str | None = None
 
 class ChildProgress(BaseModel):
-    recent_activities: List[ActivityItem]
-    upcoming_tasks: List[TaskItem]
-    subject_progress: List[SubjectProgress]
+    recent_activities: list[ActivityItem]
+    upcoming_tasks: list[TaskItem]
+    subject_progress: list[SubjectProgress]
     attendance: AttendanceStats
-    detailed_grades: List[GradeDetail]
+    detailed_grades: list[GradeDetail]
     overall_average: float
     total_submissions: int
 
@@ -110,10 +109,10 @@ class DashboardSummary(BaseModel):
 class PendingExercise(BaseModel):
     exercise_id: int
     title: str
-    class_name: Optional[str] = None
-    skill_type: Optional[str] = None
-    due_date: Optional[str] = None
-    days_until_due: Optional[int] = None
+    class_name: str | None = None
+    skill_type: str | None = None
+    due_date: str | None = None
+    days_until_due: int | None = None
     priority: str
 
 @router.get("/dashboard/summary", response_model=DashboardSummary)
@@ -128,30 +127,30 @@ async def get_dashboard_summary(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Only parents can access this endpoint"
             )
-        
+
         # Get all children
         links = db.query(ParentStudent).filter(
             ParentStudent.parent_id == current_user.id,
-            ParentStudent.is_verified == True
+            ParentStudent.is_verified
         ).all()
-        
+
         child_ids = [link.student_id for link in links]
         total_children = len(child_ids)
-        
+
         # Handle empty children case
         if not child_ids:
             # Count notifications
             notifications_count = db.query(func.count(Notification.id)).filter(
                 Notification.user_id == current_user.id,
-                Notification.is_read == False
+                not Notification.is_read
             ).scalar() or 0
-            
+
             # Count messages
             messages_count = db.query(func.count(Message.id)).filter(
                 Message.receiver_id == current_user.id,
-                Message.is_read == False
+                not Message.is_read
             ).scalar() or 0
-            
+
             return DashboardSummary(
                 total_children=0,
                 total_classes=0,
@@ -163,12 +162,12 @@ async def get_dashboard_summary(
                 pending_exercises=0,
                 avg_progress=0
             )
-        
+
         # Count total classes
         total_classes = db.query(func.count(func.distinct(Enrollment.class_id))).filter(
             Enrollment.user_id.in_(child_ids)
         ).scalar() or 0
-        
+
         # Calculate average score
         avg_score_result = db.query(
             func.avg(Submission.score)
@@ -177,25 +176,25 @@ async def get_dashboard_summary(
             Submission.score.isnot(None)
         ).scalar()
         avg_score = round(float(avg_score_result), 1) if avg_score_result else 0.0
-        
+
         # Count notifications
         notifications_count = db.query(func.count(Notification.id)).filter(
             Notification.user_id == current_user.id,
-            Notification.is_read == False
+            not Notification.is_read
         ).scalar() or 0
-        
+
         # Count messages
         messages_count = db.query(func.count(Message.id)).filter(
             Message.receiver_id == current_user.id,
-            Message.is_read == False
+            not Message.is_read
         ).scalar() or 0
-        
+
         # Get enrolled class IDs
         enrolled_class_ids = db.query(func.distinct(Enrollment.class_id)).filter(
             Enrollment.user_id.in_(child_ids)
         ).all()
         class_ids = [row[0] for row in enrolled_class_ids] if enrolled_class_ids else []
-        
+
         # Count exercises
         if class_ids:
             all_exercises = db.query(Exercise).filter(
@@ -204,14 +203,14 @@ async def get_dashboard_summary(
             total_exercises = len(all_exercises)
         else:
             total_exercises = 0
-        
+
         # Count completed exercises (submissions with score)
         completed_exercise_ids = db.query(func.distinct(Submission.exercise_id)).filter(
             Submission.student_id.in_(child_ids),
             Submission.score.isnot(None)
         ).all()
         completed_exercises = len(completed_exercise_ids)
-        
+
         # Count pending exercises (exercises with due_date in future that haven't been submitted)
         now = datetime.now()
         pending_exercises = 0
@@ -223,26 +222,23 @@ async def get_dashboard_summary(
                     Exercise.due_at > now
                 )
             )
-            
+
             # Get submitted exercise IDs
             submitted_exercise_ids_result = db.query(func.distinct(Submission.exercise_id)).filter(
                 Submission.student_id.in_(child_ids)
             ).all()
             submitted_exercise_ids_list = [row[0] for row in submitted_exercise_ids_result]
-            
+
             if submitted_exercise_ids_list:
                 pending_exercises_query = pending_exercises_query.filter(
                     ~Exercise.id.in_(submitted_exercise_ids_list)
                 )
-            
+
             pending_exercises = pending_exercises_query.count()
-        
+
         # Calculate average progress
-        if total_exercises > 0:
-            avg_progress = int((completed_exercises / total_exercises) * 100)
-        else:
-            avg_progress = 0
-        
+        avg_progress = int(completed_exercises / total_exercises * 100) if total_exercises > 0 else 0
+
         return DashboardSummary(
             total_children=total_children,
             total_classes=total_classes,
@@ -265,7 +261,7 @@ async def get_dashboard_summary(
             detail=f"Failed to load dashboard summary: {str(e)}"
         )
 
-@router.get("/pending-exercises", response_model=List[PendingExercise])
+@router.get("/pending-exercises", response_model=list[PendingExercise])
 async def get_pending_exercises(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
@@ -277,26 +273,26 @@ async def get_pending_exercises(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Only parents can access this endpoint"
             )
-        
+
         # Get all children
         links = db.query(ParentStudent).filter(
             ParentStudent.parent_id == current_user.id,
-            ParentStudent.is_verified == True
+            ParentStudent.is_verified
         ).all()
-        
+
         child_ids = [link.student_id for link in links]
         if not child_ids:
             return []
-        
+
         # Get enrolled class IDs
         enrolled_class_ids = db.query(func.distinct(Enrollment.class_id)).filter(
             Enrollment.user_id.in_(child_ids)
         ).all()
         class_ids = [row[0] for row in enrolled_class_ids] if enrolled_class_ids else []
-        
+
         if not class_ids:
             return []
-        
+
         # Get all exercises in enrolled classes
         now = datetime.now()
         exercises = db.query(Exercise).filter(
@@ -306,19 +302,19 @@ async def get_pending_exercises(
                 Exercise.due_at > now
             )
         ).all()
-        
+
         # Get submitted exercise IDs
         submitted_exercise_ids_result = db.query(func.distinct(Submission.exercise_id)).filter(
             Submission.student_id.in_(child_ids)
         ).all()
-        submitted_exercise_ids = set(row[0] for row in submitted_exercise_ids_result)
-        
+        submitted_exercise_ids = {row[0] for row in submitted_exercise_ids_result}
+
         # Filter pending exercises
         pending_exercises = []
         for exercise in exercises:
             if exercise.id not in submitted_exercise_ids:
                 classroom = db.query(Classroom).filter(Classroom.id == exercise.class_id).first()
-                
+
                 # Calculate days until due
                 days_until_due = None
                 priority = "normal"
@@ -330,7 +326,7 @@ async def get_pending_exercises(
                         priority = "warning"
                     else:
                         priority = "normal"
-                
+
                 pending_exercises.append(PendingExercise(
                     exercise_id=exercise.id,
                     title=exercise.title,
@@ -340,13 +336,13 @@ async def get_pending_exercises(
                     days_until_due=days_until_due,
                     priority=priority
                 ))
-        
+
         # Sort by priority and due date
         pending_exercises.sort(key=lambda x: (
             0 if x.priority == "urgent" else 1 if x.priority == "warning" else 2,
             x.days_until_due if x.days_until_due is not None else 999
         ))
-        
+
         return pending_exercises
     except HTTPException:
         raise
@@ -359,7 +355,7 @@ async def get_pending_exercises(
             detail=f"Failed to load pending exercises: {str(e)}"
         )
 
-@router.get("/children", response_model=List[ChildInfo])
+@router.get("/children", response_model=list[ChildInfo])
 async def get_parent_children(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
@@ -370,28 +366,28 @@ async def get_parent_children(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only parents can access this endpoint"
         )
-    
+
     # Get all parent-student links
     links = db.query(ParentStudent).filter(
         ParentStudent.parent_id == current_user.id,
-        ParentStudent.is_verified == True
+        ParentStudent.is_verified
     ).all()
-    
+
     children_info = []
     for link in links:
         student = db.query(User).filter(User.id == link.student_id).first()
         if not student:
             continue
-        
+
         # Count total classes enrolled
         total_classes = db.query(func.count(Enrollment.id)).filter(
             Enrollment.user_id == student.id
         ).scalar() or 0
-        
+
         # TODO: Calculate completed lessons and total lessons
         completed_lessons = 0
         total_lessons = 0
-        
+
         # Calculate average score from submissions
         avg_score_result = db.query(
             func.avg(Submission.score)
@@ -399,9 +395,9 @@ async def get_parent_children(
             Submission.student_id == student.id,
             Submission.score.isnot(None)
         ).scalar()
-        
+
         average_score = round(float(avg_score_result), 1) if avg_score_result else 0.0
-        
+
         children_info.append(ChildInfo(
             id=student.id,
             name=student.full_name or student.username,
@@ -414,15 +410,15 @@ async def get_parent_children(
             total_lessons=total_lessons,
             average_score=average_score
         ))
-    
+
     return children_info
 
 @router.get("/children/{child_id}/progress", response_model=ChildProgress)
 async def get_child_progress(
     child_id: int,
-    subject: Optional[str] = None,
-    time_range: Optional[str] = None,
-    evaluation_type: Optional[str] = None,
+    subject: str | None = None,
+    time_range: str | None = None,
+    evaluation_type: str | None = None,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
@@ -432,22 +428,22 @@ async def get_child_progress(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only parents can access this endpoint"
         )
-    
+
     # Verify the child is linked to this parent
     link = db.query(ParentStudent).filter(
         ParentStudent.parent_id == current_user.id,
         ParentStudent.student_id == child_id,
-        ParentStudent.is_verified == True
+        ParentStudent.is_verified
     ).first()
-    
+
     if not link:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Child not found or not linked to this parent"
         )
-    
+
     # Calculate time range filter
-    from datetime import datetime, timedelta
+    from datetime import datetime
     time_filter = None
     if time_range == 'week':
         time_filter = datetime.now() - timedelta(days=7)
@@ -457,36 +453,32 @@ async def get_child_progress(
         time_filter = datetime.now() - timedelta(days=90)
     elif time_range == 'year':
         time_filter = datetime.now() - timedelta(days=365)
-    
+
     # Get all submissions for this student
     submissions_query = db.query(Submission).filter(
         Submission.student_id == child_id
     )
-    
+
     if time_filter:
         submissions_query = submissions_query.filter(Submission.submitted_at >= time_filter)
-    
+
     all_submissions = submissions_query.all()
-    
+
     # Get detailed grades
     detailed_grades = []
     for sub in all_submissions:
         exercise = db.query(Exercise).filter(Exercise.id == sub.exercise_id).first()
         if not exercise:
             continue
-            
+
         # Apply subject filter
         if subject and subject != 'all' and exercise.skill_type != subject:
             continue
-        
+
         # Apply evaluation type filter
-        if evaluation_type == 'grades' and not sub.score:
+        if evaluation_type == 'grades' and not sub.score or evaluation_type == 'comments' and not sub.feedback or evaluation_type == 'both' and (not sub.score or not sub.feedback):
             continue
-        elif evaluation_type == 'comments' and not sub.feedback:
-            continue
-        elif evaluation_type == 'both' and (not sub.score or not sub.feedback):
-            continue
-        
+
         detailed_grades.append(GradeDetail(
             exercise_id=exercise.id,
             exercise_title=exercise.title,
@@ -497,19 +489,19 @@ async def get_child_progress(
             submitted_at=sub.submitted_at.strftime("%Y-%m-%d %H:%M") if sub.submitted_at else None,
             graded_at=sub.graded_at.strftime("%Y-%m-%d %H:%M") if sub.graded_at else None
         ))
-    
+
     # Sort detailed grades by submitted_at
     detailed_grades.sort(key=lambda x: x.submitted_at if x.submitted_at else "", reverse=True)
-    
+
     # Get recent activities (last 10 submissions)
     recent_submissions = sorted(all_submissions, key=lambda x: x.submitted_at if x.submitted_at else datetime.min, reverse=True)[:10]
-    
+
     recent_activities = []
     for sub in recent_submissions:
         exercise = db.query(Exercise).filter(Exercise.id == sub.exercise_id).first()
         if exercise:
             classroom = db.query(Classroom).filter(Classroom.id == exercise.class_id).first() if exercise.class_id else None
-            
+
             recent_activities.append(ActivityItem(
                 type="exercise",
                 title=exercise.title,
@@ -522,27 +514,27 @@ async def get_child_progress(
                 feedback=sub.feedback,
                 skill_type=exercise.skill_type
             ))
-    
+
     # Get student's enrolled classes
     enrollments = db.query(Enrollment).filter(
         Enrollment.user_id == child_id
     ).all()
-    
+
     enrolled_class_ids = [e.class_id for e in enrollments]
-    
+
     # Get upcoming tasks (exercises not yet submitted)
     upcoming_exercises = db.query(Exercise).filter(
         Exercise.class_id.in_(enrolled_class_ids) if enrolled_class_ids else False,
         Exercise.due_at > datetime.now()
     ).order_by(Exercise.due_at.asc()).limit(10).all()
-    
+
     submitted_exercise_ids = [s.exercise_id for s in all_submissions]
-    
+
     upcoming_tasks = []
     for exercise in upcoming_exercises:
         if exercise.id not in submitted_exercise_ids:
             classroom = db.query(Classroom).filter(Classroom.id == exercise.class_id).first()
-            
+
             # Calculate priority based on due date
             if exercise.due_at:
                 days_until_due = (exercise.due_at - datetime.now()).days
@@ -554,7 +546,7 @@ async def get_child_progress(
                     priority = "low"
             else:
                 priority = "low"
-            
+
             upcoming_tasks.append(TaskItem(
                 type="exercise",
                 title=exercise.title,
@@ -564,7 +556,7 @@ async def get_child_progress(
                 priority=priority,
                 skill_type=exercise.skill_type
             ))
-    
+
     # Calculate subject progress by skill type
     skill_colors = {
         "listening": "#FF6B6B",
@@ -572,7 +564,7 @@ async def get_child_progress(
         "reading": "#95E1D3",
         "writing": "#FFA07A"
     }
-    
+
     subject_progress = []
     for skill in ["listening", "speaking", "reading", "writing"]:
         skill_submissions = [s for s in all_submissions if s.exercise_id in [
@@ -581,21 +573,18 @@ async def get_child_progress(
                 Exercise.skill_type == skill
             ).all()
         ]]
-        
+
         graded_skill_submissions = [s for s in skill_submissions if s.score is not None]
-        
+
         total_exercises = len(skill_submissions)
         completed_exercises = len(graded_skill_submissions)
-        
-        if total_exercises > 0:
-            progress_percent = int((completed_exercises / total_exercises) * 100)
-        else:
-            progress_percent = 0
-        
+
+        progress_percent = int(completed_exercises / total_exercises * 100) if total_exercises > 0 else 0
+
         avg_score = None
         if graded_skill_submissions:
             avg_score = round(sum(s.score for s in graded_skill_submissions) / len(graded_skill_submissions), 1)
-        
+
         subject_progress.append(SubjectProgress(
             subject=skill.capitalize(),
             progress=progress_percent,
@@ -604,34 +593,34 @@ async def get_child_progress(
             total_exercises=total_exercises,
             completed_exercises=completed_exercises
         ))
-    
+
     # Get attendance stats
     attendance_count = db.query(AttendanceRecord).filter(
         AttendanceRecord.user_id == child_id
     )
-    
+
     if time_filter:
         attendance_count = attendance_count.filter(AttendanceRecord.date >= time_filter.date())
-    
+
     attendance_records = attendance_count.all()
-    
+
     present = sum(1 for a in attendance_records if a.status == "present")
     absent = sum(1 for a in attendance_records if a.status == "absent")
     late = sum(1 for a in attendance_records if a.status == "late")
-    
+
     attendance = AttendanceStats(
         present=present,
         absent=absent,
         late=late,
         total=len(attendance_records)
     )
-    
+
     # Calculate overall average
     graded_submissions = [s for s in all_submissions if s.score is not None]
     overall_average = 0.0
     if graded_submissions:
         overall_average = round(sum(s.score for s in graded_submissions) / len(graded_submissions), 1)
-    
+
     return ChildProgress(
         recent_activities=recent_activities,
         upcoming_tasks=upcoming_tasks,
@@ -657,7 +646,7 @@ async def link_student(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only parents can link to students"
         )
-    
+
     # Find student by email
     student = db.query(User).filter(User.email == link_data.student_email).first()
     if not student:
@@ -665,32 +654,31 @@ async def link_student(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Student account not found"
         )
-    
+
     # Verify student has user/student role
     if student.role not in [UserRole.USER]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User must be a student"
         )
-    
+
     # Check if link already exists
     existing_link = db.query(ParentStudent).filter(
         ParentStudent.parent_id == current_user.id,
         ParentStudent.student_id == student.id
     ).first()
-    
+
     if existing_link:
         if existing_link.is_verified:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Student is already linked"
             )
-        else:
-            return {
-                "message": "Link request already sent, waiting for student confirmation",
-                "is_verified": False
-            }
-    
+        return {
+            "message": "Link request already sent, waiting for student confirmation",
+            "is_verified": False
+        }
+
     # Create new link (unverified)
     link = ParentStudent(
         parent_id=current_user.id,
@@ -700,7 +688,7 @@ async def link_student(
     db.add(link)
     db.commit()
     db.refresh(link)
-    
+
     return {
         "message": "Link request sent to student",
         "student_email": student.email,
@@ -713,14 +701,14 @@ class TeacherInfo(BaseModel):
     id: int
     full_name: str
     email: str
-    avatar_url: Optional[str] = None
-    classes: List[str]  # List of class names teaching this child
-    
+    avatar_url: str | None = None
+    classes: list[str]  # List of class names teaching this child
+
     class Config:
         from_attributes = True
 
 
-@router.get("/children/{child_id}/teachers", response_model=List[TeacherInfo])
+@router.get("/children/{child_id}/teachers", response_model=list[TeacherInfo])
 async def get_child_teachers(
     child_id: int,
     current_user: User = Depends(get_current_active_user),
@@ -735,33 +723,33 @@ async def get_child_teachers(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only parents can access this endpoint"
         )
-    
+
     # Verify this child belongs to the parent
     link = db.query(ParentStudent).filter(
         ParentStudent.parent_id == current_user.id,
         ParentStudent.student_id == child_id,
-        ParentStudent.is_verified == True
+        ParentStudent.is_verified
     ).first()
-    
+
     if not link:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="This child is not linked to your account"
         )
-    
+
     # Get all classes the child is enrolled in
     enrollments = db.query(Enrollment).filter(
         Enrollment.user_id == child_id,
         Enrollment.status == "active"
     ).all()
-    
+
     # Get unique teachers and their classes
     teachers_dict = {}
     for enrollment in enrollments:
         classroom = db.query(Classroom).filter(Classroom.id == enrollment.class_id).first()
         if not classroom or not classroom.teacher_id:
             continue
-        
+
         teacher_id = classroom.teacher_id
         if teacher_id not in teachers_dict:
             teacher = db.query(User).filter(User.id == teacher_id).first()
@@ -773,17 +761,16 @@ async def get_child_teachers(
                     "avatar_url": teacher.avatar_url,
                     "classes": []
                 }
-        
+
         if teacher_id in teachers_dict:
             teachers_dict[teacher_id]["classes"].append(classroom.name)
-    
+
     # Convert to list
-    teachers_list = [
-        TeacherInfo(**teacher_data) 
+    return [
+        TeacherInfo(**teacher_data)
         for teacher_data in teachers_dict.values()
     ]
-    
-    return teachers_list
+
 
 
 # Export Schemas
@@ -792,19 +779,19 @@ class MonthlyReportSubject(BaseModel):
     average_score: float
     completed_exercises: int
     total_exercises: int
-    teacher_comment: Optional[str] = None
+    teacher_comment: str | None = None
 
 class MonthlyReport(BaseModel):
     overall_average: float
     total_completed: int
     total_exercises: int
     attendance_rate: float
-    subjects: List[MonthlyReportSubject]
-    general_comment: Optional[str] = None
+    subjects: list[MonthlyReportSubject]
+    general_comment: str | None = None
 
 class MonthlyReportRequest(BaseModel):
     month: int
-    year: Optional[int] = None
+    year: int | None = None
     time_range: str = "month"
 
 class ExportOptions(BaseModel):
@@ -831,13 +818,13 @@ async def get_monthly_report(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Only parents can access this endpoint"
             )
-        
+
         # Get all children
         links = db.query(ParentStudent).filter(
             ParentStudent.parent_id == current_user.id,
-            ParentStudent.is_verified == True
+            ParentStudent.is_verified
         ).all()
-        
+
         child_ids = [link.student_id for link in links]
         if not child_ids:
             return MonthlyReport(
@@ -848,17 +835,14 @@ async def get_monthly_report(
                 subjects=[],
                 general_comment=None
             )
-        
+
         # Calculate time filter
         if year is None:
             year = datetime.now().year
-        
+
         if time_range == 'month':
             start_date = datetime(year, month, 1)
-            if month == 12:
-                end_date = datetime(year + 1, 1, 1)
-            else:
-                end_date = datetime(year, month + 1, 1)
+            end_date = datetime(year + 1, 1, 1) if month == 12 else datetime(year, month + 1, 1)
         elif time_range == 'quarter':
             quarter_start_month = ((month - 1) // 3) * 3 + 1
             start_date = datetime(year, quarter_start_month, 1)
@@ -869,7 +853,7 @@ async def get_monthly_report(
         else:  # year
             start_date = datetime(year, 1, 1)
             end_date = datetime(year + 1, 1, 1)
-        
+
         # Get submissions in time range
         submissions_query = db.query(Submission).filter(
             Submission.student_id.in_(child_ids),
@@ -877,13 +861,13 @@ async def get_monthly_report(
             Submission.submitted_at < end_date
         )
         all_submissions = submissions_query.all()
-        
+
         # Get all exercises for enrolled classes
         enrolled_class_ids = db.query(func.distinct(Enrollment.class_id)).filter(
             Enrollment.user_id.in_(child_ids)
         ).all()
         class_ids = [row[0] for row in enrolled_class_ids] if enrolled_class_ids else []
-        
+
         exercises_in_range = []
         if class_ids:
             exercises_in_range = db.query(Exercise).filter(
@@ -896,43 +880,43 @@ async def get_monthly_report(
             total_exercises = len(exercises_in_range)
         else:
             total_exercises = 0
-        
+
         # Get completed exercises (with score)
         graded_submissions = [s for s in all_submissions if s.score is not None]
         total_completed = len(graded_submissions)
-        
+
         # Calculate overall average
         overall_average = 0.0
         if graded_submissions:
             overall_average = round(sum(s.score for s in graded_submissions) / len(graded_submissions), 1)
-        
+
         # Get attendance in time range
         attendance_records = db.query(AttendanceRecord).filter(
             AttendanceRecord.user_id.in_(child_ids),
             AttendanceRecord.date >= start_date.date(),
             AttendanceRecord.date < end_date.date()
         ).all()
-        
+
         total_attendance = len(attendance_records)
         present_count = sum(1 for a in attendance_records if a.status == "present")
         attendance_rate = round((present_count / total_attendance * 100), 1) if total_attendance > 0 else 0.0
-        
+
         # Calculate by subject (skill)
         subjects_data = []
         for skill in ["listening", "speaking", "reading", "writing"]:
             skill_exercises = [e for e in (exercises_in_range if class_ids else []) if e.skill_type == skill]
             skill_submissions = [s for s in graded_submissions if s.exercise_id in [e.id for e in skill_exercises]]
-            
+
             avg_score = 0.0
             if skill_submissions:
                 avg_score = round(sum(s.score for s in skill_submissions) / len(skill_submissions), 1)
-            
+
             # Get teacher feedback (from most recent submission)
             teacher_comment = None
             if skill_submissions:
                 latest_submission = max(skill_submissions, key=lambda s: s.graded_at if s.graded_at else s.submitted_at)
                 teacher_comment = latest_submission.feedback
-            
+
             subjects_data.append(MonthlyReportSubject(
                 subject=skill.capitalize(),
                 average_score=avg_score,
@@ -940,7 +924,7 @@ async def get_monthly_report(
                 total_exercises=len(skill_exercises),
                 teacher_comment=teacher_comment
             ))
-        
+
         # Generate general comment based on performance
         general_comment = None
         if overall_average >= 8.5:
@@ -951,7 +935,7 @@ async def get_monthly_report(
             general_comment = "Em cần nỗ lực hơn. Hãy chăm chỉ làm bài tập và tham gia lớp học đầy đủ."
         else:
             general_comment = "Em cần cải thiện kết quả học tập. Cần sự hỗ trợ thêm từ gia đình và thầy cô."
-        
+
         return MonthlyReport(
             overall_average=overall_average,
             total_completed=total_completed,
@@ -976,9 +960,9 @@ async def get_monthly_report(
 async def export_progress_pdf(
     child_id: int,
     options: ExportOptions,
-    subject: Optional[str] = None,
-    time_range: Optional[str] = None,
-    evaluation_type: Optional[str] = None,
+    subject: str | None = None,
+    time_range: str | None = None,
+    evaluation_type: str | None = None,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
@@ -988,20 +972,20 @@ async def export_progress_pdf(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only parents can access this endpoint"
         )
-    
+
     # Verify the child is linked to this parent
     link = db.query(ParentStudent).filter(
         ParentStudent.parent_id == current_user.id,
         ParentStudent.student_id == child_id,
-        ParentStudent.is_verified == True
+        ParentStudent.is_verified
     ).first()
-    
+
     if not link:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Child not found or not linked to this parent"
         )
-    
+
     # Get student info
     student = db.query(User).filter(User.id == child_id).first()
     if not student:
@@ -1009,9 +993,9 @@ async def export_progress_pdf(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Student not found"
         )
-    
+
     # Get progress data using existing endpoint logic
-    from datetime import datetime, timedelta
+    from datetime import datetime
     time_filter = None
     if time_range == 'week':
         time_filter = datetime.now() - timedelta(days=7)
@@ -1021,30 +1005,26 @@ async def export_progress_pdf(
         time_filter = datetime.now() - timedelta(days=90)
     elif time_range == 'year':
         time_filter = datetime.now() - timedelta(days=365)
-    
+
     submissions_query = db.query(Submission).filter(Submission.student_id == child_id)
     if time_filter:
         submissions_query = submissions_query.filter(Submission.submitted_at >= time_filter)
-    
+
     all_submissions = submissions_query.all()
-    
+
     # Build detailed grades
     detailed_grades = []
     for sub in all_submissions:
         exercise = db.query(Exercise).filter(Exercise.id == sub.exercise_id).first()
         if not exercise:
             continue
-        
+
         if subject and subject != 'all' and exercise.skill_type != subject:
             continue
-        
-        if evaluation_type == 'grades' and not sub.score:
+
+        if evaluation_type == 'grades' and not sub.score or evaluation_type == 'comments' and not sub.feedback or evaluation_type == 'both' and (not sub.score or not sub.feedback):
             continue
-        elif evaluation_type == 'comments' and not sub.feedback:
-            continue
-        elif evaluation_type == 'both' and (not sub.score or not sub.feedback):
-            continue
-        
+
         detailed_grades.append({
             'exercise_id': exercise.id,
             'exercise_title': exercise.title,
@@ -1055,9 +1035,9 @@ async def export_progress_pdf(
             'submitted_at': sub.submitted_at.strftime("%Y-%m-%d %H:%M") if sub.submitted_at else None,
             'graded_at': sub.graded_at.strftime("%Y-%m-%d %H:%M") if sub.graded_at else None
         })
-    
+
     detailed_grades.sort(key=lambda x: x['submitted_at'] if x['submitted_at'] else "", reverse=True)
-    
+
     # Calculate subject progress
     skill_colors = {
         "listening": "#FF6B6B",
@@ -1065,7 +1045,7 @@ async def export_progress_pdf(
         "reading": "#95E1D3",
         "writing": "#FFA07A"
     }
-    
+
     subject_progress = []
     for skill in ["listening", "speaking", "reading", "writing"]:
         skill_submissions = [s for s in all_submissions if s.exercise_id in [
@@ -1074,14 +1054,14 @@ async def export_progress_pdf(
                 Exercise.skill_type == skill
             ).all()
         ]]
-        
+
         graded_skill_submissions = [s for s in skill_submissions if s.score is not None]
         total_exercises = len(skill_submissions)
         completed_exercises = len(graded_skill_submissions)
-        
+
         progress_percent = int((completed_exercises / total_exercises) * 100) if total_exercises > 0 else 0
         avg_score = round(sum(s.score for s in graded_skill_submissions) / len(graded_skill_submissions), 1) if graded_skill_submissions else None
-        
+
         subject_progress.append({
             'subject': skill.capitalize(),
             'progress': progress_percent,
@@ -1090,12 +1070,12 @@ async def export_progress_pdf(
             'total_exercises': total_exercises,
             'completed_exercises': completed_exercises
         })
-    
+
     # Get attendance
     attendance_query = db.query(AttendanceRecord).filter(AttendanceRecord.user_id == child_id)
     if time_filter:
         attendance_query = attendance_query.filter(AttendanceRecord.date >= time_filter.date())
-    
+
     attendance_records = attendance_query.all()
     attendance = {
         'present': sum(1 for a in attendance_records if a.status == "present"),
@@ -1103,18 +1083,18 @@ async def export_progress_pdf(
         'late': sum(1 for a in attendance_records if a.status == "late"),
         'total': len(attendance_records)
     }
-    
+
     # Calculate overall average
     graded_submissions = [s for s in all_submissions if s.score is not None]
     overall_average = round(sum(s.score for s in graded_submissions) / len(graded_submissions), 1) if graded_submissions else 0.0
-    
+
     # Prepare data for export
     student_info = {
         'name': student.full_name or student.username,
         'email': student.email,
         'grade': 'N/A'  # Can be enhanced if grade info is available
     }
-    
+
     progress_data = {
         'detailed_grades': detailed_grades,
         'subject_progress': subject_progress,
@@ -1122,17 +1102,17 @@ async def export_progress_pdf(
         'overall_average': overall_average,
         'total_submissions': len(all_submissions)
     }
-    
+
     # Generate PDF
     pdf_buffer = ParentProgressExportService.export_to_pdf(
         student_info=student_info,
         progress_data=progress_data,
         export_options=options.dict()
     )
-    
+
     # Generate filename
     filename = f"bao_cao_tien_do_{student.username}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-    
+
     return StreamingResponse(
         pdf_buffer,
         media_type="application/pdf",
@@ -1144,9 +1124,9 @@ async def export_progress_pdf(
 async def export_progress_excel(
     child_id: int,
     options: ExportOptions,
-    subject: Optional[str] = None,
-    time_range: Optional[str] = None,
-    evaluation_type: Optional[str] = None,
+    subject: str | None = None,
+    time_range: str | None = None,
+    evaluation_type: str | None = None,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
@@ -1156,20 +1136,20 @@ async def export_progress_excel(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only parents can access this endpoint"
         )
-    
+
     # Verify the child is linked to this parent
     link = db.query(ParentStudent).filter(
         ParentStudent.parent_id == current_user.id,
         ParentStudent.student_id == child_id,
-        ParentStudent.is_verified == True
+        ParentStudent.is_verified
     ).first()
-    
+
     if not link:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Child not found or not linked to this parent"
         )
-    
+
     # Get student info
     student = db.query(User).filter(User.id == child_id).first()
     if not student:
@@ -1177,9 +1157,9 @@ async def export_progress_excel(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Student not found"
         )
-    
+
     # Get progress data using existing endpoint logic (same as PDF)
-    from datetime import datetime, timedelta
+    from datetime import datetime
     time_filter = None
     if time_range == 'week':
         time_filter = datetime.now() - timedelta(days=7)
@@ -1189,30 +1169,26 @@ async def export_progress_excel(
         time_filter = datetime.now() - timedelta(days=90)
     elif time_range == 'year':
         time_filter = datetime.now() - timedelta(days=365)
-    
+
     submissions_query = db.query(Submission).filter(Submission.student_id == child_id)
     if time_filter:
         submissions_query = submissions_query.filter(Submission.submitted_at >= time_filter)
-    
+
     all_submissions = submissions_query.all()
-    
+
     # Build detailed grades
     detailed_grades = []
     for sub in all_submissions:
         exercise = db.query(Exercise).filter(Exercise.id == sub.exercise_id).first()
         if not exercise:
             continue
-        
+
         if subject and subject != 'all' and exercise.skill_type != subject:
             continue
-        
-        if evaluation_type == 'grades' and not sub.score:
+
+        if evaluation_type == 'grades' and not sub.score or evaluation_type == 'comments' and not sub.feedback or evaluation_type == 'both' and (not sub.score or not sub.feedback):
             continue
-        elif evaluation_type == 'comments' and not sub.feedback:
-            continue
-        elif evaluation_type == 'both' and (not sub.score or not sub.feedback):
-            continue
-        
+
         detailed_grades.append({
             'exercise_id': exercise.id,
             'exercise_title': exercise.title,
@@ -1223,9 +1199,9 @@ async def export_progress_excel(
             'submitted_at': sub.submitted_at.strftime("%Y-%m-%d %H:%M") if sub.submitted_at else None,
             'graded_at': sub.graded_at.strftime("%Y-%m-%d %H:%M") if sub.graded_at else None
         })
-    
+
     detailed_grades.sort(key=lambda x: x['submitted_at'] if x['submitted_at'] else "", reverse=True)
-    
+
     # Calculate subject progress
     skill_colors = {
         "listening": "#FF6B6B",
@@ -1233,7 +1209,7 @@ async def export_progress_excel(
         "reading": "#95E1D3",
         "writing": "#FFA07A"
     }
-    
+
     subject_progress = []
     for skill in ["listening", "speaking", "reading", "writing"]:
         skill_submissions = [s for s in all_submissions if s.exercise_id in [
@@ -1242,14 +1218,14 @@ async def export_progress_excel(
                 Exercise.skill_type == skill
             ).all()
         ]]
-        
+
         graded_skill_submissions = [s for s in skill_submissions if s.score is not None]
         total_exercises = len(skill_submissions)
         completed_exercises = len(graded_skill_submissions)
-        
+
         progress_percent = int((completed_exercises / total_exercises) * 100) if total_exercises > 0 else 0
         avg_score = round(sum(s.score for s in graded_skill_submissions) / len(graded_skill_submissions), 1) if graded_skill_submissions else None
-        
+
         subject_progress.append({
             'subject': skill.capitalize(),
             'progress': progress_percent,
@@ -1258,12 +1234,12 @@ async def export_progress_excel(
             'total_exercises': total_exercises,
             'completed_exercises': completed_exercises
         })
-    
+
     # Get attendance
     attendance_query = db.query(AttendanceRecord).filter(AttendanceRecord.user_id == child_id)
     if time_filter:
         attendance_query = attendance_query.filter(AttendanceRecord.date >= time_filter.date())
-    
+
     attendance_records = attendance_query.all()
     attendance = {
         'present': sum(1 for a in attendance_records if a.status == "present"),
@@ -1271,18 +1247,18 @@ async def export_progress_excel(
         'late': sum(1 for a in attendance_records if a.status == "late"),
         'total': len(attendance_records)
     }
-    
+
     # Calculate overall average
     graded_submissions = [s for s in all_submissions if s.score is not None]
     overall_average = round(sum(s.score for s in graded_submissions) / len(graded_submissions), 1) if graded_submissions else 0.0
-    
+
     # Prepare data for export
     student_info = {
         'name': student.full_name or student.username,
         'email': student.email,
         'grade': 'N/A'
     }
-    
+
     progress_data = {
         'detailed_grades': detailed_grades,
         'subject_progress': subject_progress,
@@ -1290,17 +1266,17 @@ async def export_progress_excel(
         'overall_average': overall_average,
         'total_submissions': len(all_submissions)
     }
-    
+
     # Generate Excel
     excel_buffer = ParentProgressExportService.export_to_excel(
         student_info=student_info,
         progress_data=progress_data,
         export_options=options.dict()
     )
-    
+
     # Generate filename
     filename = f"bao_cao_tien_do_{student.username}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
-    
+
     return StreamingResponse(
         excel_buffer,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -1311,7 +1287,7 @@ async def export_progress_excel(
 @router.post("/monthly-report/export/pdf")
 async def export_monthly_report_pdf(
     request: MonthlyReportRequest,
-    options: Optional[ExportOptions] = None,
+    options: ExportOptions | None = None,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
@@ -1321,24 +1297,24 @@ async def export_monthly_report_pdf(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only parents can access this endpoint"
         )
-    
+
     # Get report data
     year = request.year if request.year else datetime.now().year
     report = await get_monthly_report(month=request.month, year=year, time_range=request.time_range, current_user=current_user, db=db)
-    
+
     # Prepare data for export
     student_info = {
         'name': f'Báo cáo {request.time_range}',
         'email': current_user.email,
         'grade': f'Tháng {request.month}/{year}' if request.time_range == 'month' else f'Năm {year}'
     }
-    
+
     progress_data = {
         'detailed_grades': [],  # Monthly report doesn't need detailed grades
         'subject_progress': [
             {
                 'subject': subj.subject,
-                'progress': int((subj.completed_exercises / subj.total_exercises * 100)) if subj.total_exercises > 0 else 0,
+                'progress': int(subj.completed_exercises / subj.total_exercises * 100) if subj.total_exercises > 0 else 0,
                 'color': {
                     'listening': '#FF6B6B',
                     'speaking': '#4ECDC4',
@@ -1360,7 +1336,7 @@ async def export_monthly_report_pdf(
         'overall_average': report.overall_average,
         'total_submissions': report.total_completed
     }
-    
+
     export_options_dict = options.dict() if options else {
         'studentInfo': True,
         'grades': True,
@@ -1369,17 +1345,17 @@ async def export_monthly_report_pdf(
         'attendance': True,
         'overallEvaluation': True
     }
-    
+
     # Generate PDF
     pdf_buffer = ParentProgressExportService.export_to_pdf(
         student_info=student_info,
         progress_data=progress_data,
         export_options=export_options_dict
     )
-    
+
     # Generate filename
     filename = f"bao_cao_{request.time_range}_{request.month}_{year}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-    
+
     return StreamingResponse(
         pdf_buffer,
         media_type="application/pdf",
@@ -1390,7 +1366,7 @@ async def export_monthly_report_pdf(
 @router.post("/monthly-report/export/excel")
 async def export_monthly_report_excel(
     request: MonthlyReportRequest,
-    options: Optional[ExportOptions] = None,
+    options: ExportOptions | None = None,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
@@ -1400,24 +1376,24 @@ async def export_monthly_report_excel(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only parents can access this endpoint"
         )
-    
+
     # Get report data
     year = request.year if request.year else datetime.now().year
     report = await get_monthly_report(month=request.month, year=year, time_range=request.time_range, current_user=current_user, db=db)
-    
+
     # Prepare data for export
     student_info = {
         'name': f'Báo cáo {request.time_range}',
         'email': current_user.email,
         'grade': f'Tháng {request.month}/{year}' if request.time_range == 'month' else f'Năm {year}'
     }
-    
+
     progress_data = {
         'detailed_grades': [],
         'subject_progress': [
             {
                 'subject': subj.subject,
-                'progress': int((subj.completed_exercises / subj.total_exercises * 100)) if subj.total_exercises > 0 else 0,
+                'progress': int(subj.completed_exercises / subj.total_exercises * 100) if subj.total_exercises > 0 else 0,
                 'color': {
                     'listening': '#FF6B6B',
                     'speaking': '#4ECDC4',
@@ -1439,7 +1415,7 @@ async def export_monthly_report_excel(
         'overall_average': report.overall_average,
         'total_submissions': report.total_completed
     }
-    
+
     export_options_dict = options.dict() if options else {
         'studentInfo': True,
         'grades': True,
@@ -1448,17 +1424,17 @@ async def export_monthly_report_excel(
         'attendance': True,
         'overallEvaluation': True
     }
-    
+
     # Generate Excel
     excel_buffer = ParentProgressExportService.export_to_excel(
         student_info=student_info,
         progress_data=progress_data,
         export_options=export_options_dict
     )
-    
+
     # Generate filename
     filename = f"bao_cao_{request.time_range}_{request.month}_{year}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
-    
+
     return StreamingResponse(
         excel_buffer,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
