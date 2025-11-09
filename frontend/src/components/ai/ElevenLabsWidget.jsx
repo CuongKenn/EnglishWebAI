@@ -40,127 +40,163 @@ export function ElevenLabsWidget() {
   }, []);
 
   return (
-    <div className="h-full flex flex-col gap-6 p-6">
+    <div className="h-full flex flex-col gap-6 p-6 bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-            <Radio className="w-8 h-8 text-blue-600" />
-            AI Voice Conversation
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Real-time voice conversation with ElevenLabs AI agent
-          </p>
-        </div>
+      <div className="text-center">
+        <h1 className="text-4xl font-bold text-gray-900 dark:text-white flex items-center justify-center gap-3 mb-2">
+          <Radio className="w-10 h-10 text-blue-600" />
+          AI Voice Conversation
+        </h1>
+        <p className="text-lg text-gray-700 dark:text-gray-300">
+          Thực hành giao tiếp tiếng Anh với AI thông minh
+        </p>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Left Panel - Widget */}
-        <div className="lg:col-span-2">
-          <Card className="p-6 h-full flex flex-col items-center justify-center">
-            <div ref={widgetContainerRef} className="w-full flex justify-center">
-              {/* ElevenLabs Widget */}
-              <elevenlabs-convai 
-                agent-id="agent_3201k9mm6pj9ervtmrm012wm0t08"
-              />
-            </div>
-
-            {/* Widget Info */}
-            <div className="mt-8 text-center">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Click the microphone button above to start conversation
-              </p>
-            </div>
-          </Card>
-        </div>
-
-        {/* Right Panel - Instructions & Tips */}
-        <div className="flex flex-col gap-6">
+      {/* Main Content - Centered Layout */}
+      <div className="flex-1 flex items-center justify-center">
+        <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8">
           
-          {/* Instructions */}
-          <Card className="p-6 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
-            <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-3">
-              How to Use
-            </h3>
-            <ol className="space-y-2 text-sm text-blue-800 dark:text-blue-200">
-              <li className="flex items-start gap-2">
-                <span className="font-bold min-w-[20px]">1.</span>
-                <span>Click the microphone button to start</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="font-bold min-w-[20px]">2.</span>
-                <span>Allow microphone access when prompted</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="font-bold min-w-[20px]">3.</span>
-                <span>Speak naturally - the AI will respond with voice</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="font-bold min-w-[20px]">4.</span>
-                <span>Have a conversation to practice English!</span>
-              </li>
-            </ol>
-          </Card>
+          {/* Left Panel - Instructions */}
+          <div className="lg:col-span-4 flex flex-col gap-6">
+            
+            {/* Instructions */}
+            <Card className="p-6 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 border-2 border-blue-300 dark:border-blue-700 shadow-lg">
+              <h3 className="text-xl font-bold text-blue-900 dark:text-blue-100 mb-4 flex items-center gap-2">
+                <span className="text-2xl">📖</span>
+                Hướng dẫn sử dụng
+              </h3>
+              <ol className="space-y-3 text-base text-blue-900 dark:text-blue-100">
+                <li className="flex items-start gap-3">
+                  <span className="font-bold text-xl min-w-[28px] text-blue-600">1.</span>
+                  <span className="leading-relaxed">Nhấn vào nút Start a call góc phải bên dưới để bắt đầu</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="font-bold text-xl min-w-[28px] text-blue-600">2.</span>
+                  <span className="leading-relaxed">Cho phép truy cập microphone khi được hỏi</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="font-bold text-xl min-w-[28px] text-blue-600">3.</span>
+                  <span className="leading-relaxed">Nói chuyện tự nhiên - AI sẽ trả lời bằng giọng nói</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="font-bold text-xl min-w-[28px] text-blue-600">4.</span>
+                  <span className="leading-relaxed">Thực hành hội thoại để cải thiện tiếng Anh!</span>
+                </li>
+              </ol>
+            </Card>
 
-          {/* Tips */}
-          <Card className="p-6 bg-gray-50 dark:bg-gray-800/50">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-              💡 Tips for Best Results
-            </h3>
-            <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-              <li className="flex items-start gap-2">
-                <span className="text-blue-600">•</span>
-                <span>Use a headset to avoid echo</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-blue-600">•</span>
-                <span>Speak clearly at normal pace</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-blue-600">•</span>
-                <span>Find a quiet environment</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-blue-600">•</span>
-                <span>Wait for AI response before speaking again</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-blue-600">•</span>
-                <span>Practice daily for better results</span>
-              </li>
-            </ul>
-          </Card>
+            {/* Tips */}
+            <Card className="p-6 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 border-2 border-purple-300 dark:border-purple-700 shadow-lg">
+              <h3 className="text-xl font-bold text-purple-900 dark:text-purple-100 mb-4 flex items-center gap-2">
+                <span className="text-2xl">💡</span>
+                Mẹo hay
+              </h3>
+              <ul className="space-y-3 text-base text-purple-900 dark:text-purple-100">
+                <li className="flex items-start gap-3">
+                  <span className="text-purple-600 text-xl">•</span>
+                  <span className="leading-relaxed">Dùng tai nghe để tránh tiếng vọng</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-purple-600 text-xl">•</span>
+                  <span className="leading-relaxed">Nói rõ ràng với tốc độ bình thường</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-purple-600 text-xl">•</span>
+                  <span className="leading-relaxed">Tìm môi trường yên tĩnh</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-purple-600 text-xl">•</span>
+                  <span className="leading-relaxed">Đợi AI trả lời xong rồi mới nói tiếp</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-purple-600 text-xl">•</span>
+                  <span className="leading-relaxed">Luyện tập hàng ngày để tiến bộ nhanh</span>
+                </li>
+              </ul>
+            </Card>
+          </div>
 
-          {/* Features */}
-          <Card className="p-6 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
-            <h3 className="text-lg font-semibold text-green-900 dark:text-green-100 mb-3">
-              ✨ Features
-            </h3>
-            <ul className="space-y-2 text-sm text-green-800 dark:text-green-200">
-              <li className="flex items-start gap-2">
-                <span className="text-green-600">✓</span>
-                <span>Natural voice conversation</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-green-600">✓</span>
-                <span>Real-time responses</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-green-600">✓</span>
-                <span>Context-aware AI</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-green-600">✓</span>
-                <span>English pronunciation practice</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-green-600">✓</span>
-                <span>24/7 availability</span>
-              </li>
-            </ul>
-          </Card>
+          {/* Center Panel - Widget */}
+          <div className="lg:col-span-4 flex items-center justify-center">
+            <Card className="p-8 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 shadow-2xl rounded-2xl">
+              <div ref={widgetContainerRef} className="flex flex-col items-center justify-center gap-6">
+                {/* ElevenLabs Widget */}
+                <elevenlabs-convai 
+                  agent-id="agent_3201k9mm6pj9ervtmrm012wm0t08"
+                />
+                
+                {/* Widget Info */}
+                <div className="text-center">
+                  <p className="text-base font-medium text-gray-700 dark:text-gray-300">
+                    👆 Nhấn vào microphone để bắt đầu
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                    AI sẵn sàng trò chuyện với bạn
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          {/* Right Panel - Features */}
+          <div className="lg:col-span-4 flex flex-col gap-6">
+            
+            {/* Features */}
+            <Card className="p-6 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 border-2 border-green-300 dark:border-green-700 shadow-lg">
+              <h3 className="text-xl font-bold text-green-900 dark:text-green-100 mb-4 flex items-center gap-2">
+                <span className="text-2xl">✨</span>
+                Tính năng
+              </h3>
+              <ul className="space-y-3 text-base text-green-900 dark:text-green-100">
+                <li className="flex items-start gap-3">
+                  <span className="text-green-600 font-bold text-xl">✓</span>
+                  <span className="leading-relaxed">Hội thoại giọng nói tự nhiên</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-green-600 font-bold text-xl">✓</span>
+                  <span className="leading-relaxed">Phản hồi thời gian thực</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-green-600 font-bold text-xl">✓</span>
+                  <span className="leading-relaxed">AI hiểu ngữ cảnh</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-green-600 font-bold text-xl">✓</span>
+                  <span className="leading-relaxed">Luyện phát âm tiếng Anh</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-green-600 font-bold text-xl">✓</span>
+                  <span className="leading-relaxed">Sẵn sàng 24/7</span>
+                </li>
+              </ul>
+            </Card>
+
+            {/* Stats */}
+            <Card className="p-6 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-800/30 border-2 border-orange-300 dark:border-orange-700 shadow-lg">
+              <h3 className="text-xl font-bold text-orange-900 dark:text-orange-100 mb-4 flex items-center gap-2">
+                <span className="text-2xl">🎯</span>
+                Lợi ích
+              </h3>
+              <ul className="space-y-3 text-base text-orange-900 dark:text-orange-100">
+                <li className="flex items-start gap-3">
+                  <span className="text-orange-600 font-bold text-xl">→</span>
+                  <span className="leading-relaxed">Cải thiện kỹ năng nghe - nói</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-orange-600 font-bold text-xl">→</span>
+                  <span className="leading-relaxed">Tự tin giao tiếp tiếng Anh</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-orange-600 font-bold text-xl">→</span>
+                  <span className="leading-relaxed">Học mọi lúc, mọi nơi</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-orange-600 font-bold text-xl">→</span>
+                  <span className="leading-relaxed">Không lo sợ sai khi thực hành</span>
+                </li>
+              </ul>
+            </Card>
+          </div>
         </div>
       </div>
     </div>
