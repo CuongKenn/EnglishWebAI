@@ -6,6 +6,7 @@ import logging
 import os
 import random
 from datetime import datetime
+from typing import Any
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from fastapi.responses import StreamingResponse
@@ -39,7 +40,7 @@ def _media_dir() -> str:
     return path
 
 
-def _safe_json_loads(s: str | None) -> any | None:
+def _safe_json_loads(s: str | None) -> Any | None:
     """Safely parse JSON string with error handling"""
     if not s:
         return None
