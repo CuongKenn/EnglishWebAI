@@ -1,4 +1,4 @@
-import { Bot, Languages, MessageCircle, Headphones, PenTool, BookOpen, Layers } from "lucide-react";
+import { Bot, Languages, MessageCircle, Headphones, PenTool, BookOpen, Layers, Radio } from "lucide-react";
 import { 
   GlobeAltIcon, 
   ChatBubbleLeftRightIcon, 
@@ -6,7 +6,8 @@ import {
   PencilSquareIcon, 
   BookOpenIcon, 
   RectangleStackIcon,
-  LightBulbIcon 
+  LightBulbIcon,
+  RadioIcon
 } from "@heroicons/react/24/outline";
 
 export function AISidebar({ activeTab, onTabChange }) {
@@ -24,6 +25,13 @@ export function AISidebar({ activeTab, onTabChange }) {
       label: "Conversation AI",
       gradient: "from-purple-500 to-pink-500",
       heroIcon: ChatBubbleLeftRightIcon,
+    },
+    {
+      id: "voice-conversation",
+      icon: Radio,
+      label: "Voice Conversation",
+      gradient: "from-violet-500 to-purple-500",
+      heroIcon: RadioIcon,
     },
     {
       id: "listening",
