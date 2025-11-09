@@ -523,7 +523,7 @@ async def auto_grade_submission(
         db.commit()
         db.refresh(submission)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Lỗi chấm tự động: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Lỗi chấm tự động: {str(e)}") from e
 
     # Build response similar to listing
     result = {
@@ -727,7 +727,7 @@ async def get_my_submissions(
         logger.debug(f"[GET /my-submissions] ERROR: {e}")
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/{exercise_id}", response_model=ExerciseDetailResponse)
@@ -1665,7 +1665,7 @@ async def generate_exercise_with_ai(
         raise HTTPException(
             status_code=504,
             detail="OpenAI timeout - Đề thi có thể quá dài. Vui lòng thử giảm số câu hỏi hoặc thử lại."
-        )
+        ) from e
     except json.JSONDecodeError as e:
         logger.info(f"[AI Generate API] ❌ JSON Parse Error: {str(e)}")
         import traceback
@@ -1673,7 +1673,7 @@ async def generate_exercise_with_ai(
         raise HTTPException(
             status_code=500,
             detail="Lỗi parse JSON từ AI - Vui lòng thử lại."
-        )
+        ) from e
     except Exception as e:
         error_msg = str(e)
         logger.info(f"[AI Generate API] ❌ Error: {error_msg}")
@@ -1685,19 +1685,19 @@ async def generate_exercise_with_ai(
             raise HTTPException(
                 status_code=429,
                 detail="⚠️ Tài khoản OpenAI đã hết credit hoặc vượt giới hạn. Vui lòng liên hệ admin để nạp thêm credit tại https://platform.openai.com/account/billing"
-            )
+            ) from e
         if "401" in error_msg or "authentication" in error_msg.lower():
             raise HTTPException(
                 status_code=401,
                 detail="OpenAI API key không hợp lệ. Vui lòng kiểm tra lại cấu hình."
-            )
+            ) from e
         if "rate_limit" in error_msg.lower():
             raise HTTPException(
                 status_code=429,
                 detail="Vượt giới hạn số request/phút của OpenAI. Vui lòng thử lại sau 1 phút."
-            )
+            ) from e
         raise HTTPException(
             status_code=500,
             detail=f"Lỗi OpenAI: {error_msg}"
-        )
+        ) from e
 
