@@ -4,12 +4,15 @@ Service to read and extract content from Word documents (.docx and .doc)
 Extracts both text and images for exam generation
 """
 import io
+import logging
 import os
 import uuid
 from pathlib import Path
 
 from docx import Document
 from PIL import Image
+
+logger = logging.getLogger(__name__)
 
 
 class DocxService:

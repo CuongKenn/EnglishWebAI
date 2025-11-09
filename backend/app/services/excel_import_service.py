@@ -1,11 +1,8 @@
+import io
+import json
 import logging
 
 import pandas as pd
-
-logger = logging.getLogger(__name__)
-import io
-import json
-
 from fastapi import HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
@@ -22,6 +19,8 @@ from app.schemas.excel_import import (
     StudentsImportResponse,
     TeacherImportToClassResponse,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class ExcelImportService:

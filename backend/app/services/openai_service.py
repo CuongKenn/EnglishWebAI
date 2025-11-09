@@ -10,9 +10,9 @@ import os
 
 import openai
 
-logger = logging.getLogger(__name__)
-
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class OpenAIService:
