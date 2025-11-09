@@ -360,95 +360,12 @@ function suggestType(skill) {
   }
 }
 
-function suggestTypesForSkill(skill) {
-  switch (skill) {
-    case 'reading': return ['mcq', 'fill-blank', 'short'];
-    case 'listening': return ['mcq-audio', 'dictation'];
-    case 'speaking': return ['prompt'];
-    case 'writing': return ['essay'];
-    default: return ['assignment'];
-  }
-}
-
 function defaultContent(skill) {
   if (skill === 'reading') return { question: '', options: ['', '', '', ''], correct: 0 };
   if (skill === 'listening') return { audioUrl: '', question: '', options: ['', '', '', ''], correct: 0 };
   if (skill === 'speaking') return { prompt: '' };
   if (skill === 'writing') return { prompt: '' };
   return {};
-}
-
-function renderContentEditor(skill, form, setForm) {
-  if (skill === 'reading') {
-    const c = form.content || defaultContent(skill);
-    return (
-      <div className="card" style={{ gap: 8 }}>
-        <label className="form-field"><span>Câu hỏi</span>
-          <input value={c.question} onChange={(e) => setForm({ ...form, content: { ...c, question: e.target.value } })} />
-        </label>
-        <div className="row">
-          {c.options.map((opt, idx) => (
-            <label key={idx} className="form-field">
-              <span>Đáp án {idx + 1}</span>
-              <input value={opt} onChange={(e) => {
-                const arr = [...c.options]; arr[idx] = e.target.value; setForm({ ...form, content: { ...c, options: arr } });
-              }} />
-            </label>
-          ))}
-        </div>
-        <label className="form-field"><span>Đáp án đúng</span>
-          <select value={c.correct} onChange={(e) => setForm({ ...form, content: { ...c, correct: Number(e.target.value) } })}>
-            {[0,1,2,3].map(i => <option key={i} value={i}>{i+1}</option>)}
-          </select>
-        </label>
-      </div>
-    );
-  }
-  if (skill === 'listening') {
-    const c = form.content || defaultContent(skill);
-    return (
-      <div className="card" style={{ gap: 8 }}>
-        <label className="form-field"><span>Audio URL</span>
-          <input value={c.audioUrl} onChange={(e) => setForm({ ...form, content: { ...c, audioUrl: e.target.value } })} />
-        </label>
-        <label className="form-field"><span>Câu hỏi</span>
-          <input value={c.question} onChange={(e) => setForm({ ...form, content: { ...c, question: e.target.value } })} />
-        </label>
-        <div className="row">
-          {c.options.map((opt, idx) => (
-            <label key={idx} className="form-field">
-              <span>Đáp án {idx + 1}</span>
-              <input value={opt} onChange={(e) => {
-                const arr = [...c.options]; arr[idx] = e.target.value; setForm({ ...form, content: { ...c, options: arr } });
-              }} />
-            </label>
-          ))}
-        </div>
-        <label className="form-field"><span>Đáp án đúng</span>
-          <select value={c.correct} onChange={(e) => setForm({ ...form, content: { ...c, correct: Number(e.target.value) } })}>
-            {[0,1,2,3].map(i => <option key={i} value={i}>{i+1}</option>)}
-          </select>
-        </label>
-      </div>
-    );
-  }
-  if (skill === 'speaking') {
-    const c = form.content || defaultContent(skill);
-    return (
-      <label className="form-field"><span>Gợi ý nói</span>
-        <textarea rows={3} value={c.prompt} onChange={(e) => setForm({ ...form, content: { ...c, prompt: e.target.value } })} />
-      </label>
-    );
-  }
-  if (skill === 'writing') {
-    const c = form.content || defaultContent(skill);
-    return (
-      <label className="form-field"><span>Đề bài viết</span>
-        <textarea rows={3} value={c.prompt} onChange={(e) => setForm({ ...form, content: { ...c, prompt: e.target.value } })} />
-      </label>
-    );
-  }
-  return null;
 }
 
 function renderQuestionEditor(skill, qForm, setQForm) {
