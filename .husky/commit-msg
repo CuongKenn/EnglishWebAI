@@ -1,4 +1,2 @@
-#!/usr/bin/env sh
-
 # Run commitlint using the frontend-installed CLI and config
 node ./frontend/node_modules/@commitlint/cli/lib/cli.js --edit "$1" --config ./frontend/commitlint.config.cjs
