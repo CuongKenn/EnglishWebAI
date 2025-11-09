@@ -133,7 +133,7 @@ class DocxService:
                         "structure": [{"type": "paragraph", "content": p, "style": "Normal"} for p in paragraphs]
                     }
                 except Exception as doc_error:
-                    raise Exception(f"Không thể đọc file .doc: {str(doc_error)}. Vui lòng chuyển đổi sang .docx để có đầy đủ tính năng (bao gồm hình ảnh).")
+                    raise Exception(f"Không thể đọc file .doc: {str(doc_error)}. Vui lòng chuyển đổi sang .docx để có đầy đủ tính năng (bao gồm hình ảnh).") from doc_error
 
             # It's a .docx file - full processing with images
             doc = Document(io.BytesIO(file_content))
@@ -208,7 +208,7 @@ class DocxService:
             }
 
         except Exception as e:
-            raise Exception(f"Failed to extract content from DOCX: {str(e)}")
+            raise Exception(f"Failed to extract content from DOCX: {str(e)}") from e
 
     def _extract_images(self, doc: Document) -> list[dict]:
         """

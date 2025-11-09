@@ -260,10 +260,10 @@ class AdminService:
         except IntegrityError:
             db.rollback()
             # Likely duplicate code or FK constraint
-            raise ValueError("Database integrity error while creating class")
+            raise ValueError("Database integrity error while creating class") from None
         except SQLAlchemyError:
             db.rollback()
-            raise ValueError("Database error while creating class")
+            raise ValueError("Database error while creating class") from None
         db.refresh(c)
         return AdminService.get_class(db, c.id)
 

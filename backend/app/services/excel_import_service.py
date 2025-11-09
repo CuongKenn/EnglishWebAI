@@ -355,7 +355,7 @@ CHỈ trả về JSON với array "students", không giải thích gì thêm."""
             raise HTTPException(
                 status_code=500,
                 detail=f"Lỗi khi lưu vào database: {str(e)}"
-            )
+            ) from e
 
         return StudentsImportResponse(
             success_count=len(created_students),
@@ -491,7 +491,7 @@ CHỈ trả về JSON với array "students", không giải thích gì thêm."""
             raise HTTPException(
                 status_code=500,
                 detail=f"Lỗi khi lưu vào database: {str(e)}"
-            )
+            ) from e
 
         # Tạo response object
         response = TeacherImportToClassResponse(
@@ -595,7 +595,7 @@ class ClassStudentService:
             raise HTTPException(
                 status_code=500,
                 detail=f"Lỗi khi lưu vào database: {str(e)}"
-            )
+            ) from e
 
         return AddStudentsToClassResponse(
             success_count=len(added_students),

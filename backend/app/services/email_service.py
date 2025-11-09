@@ -122,7 +122,7 @@ class EmailService:
             return server
         except Exception as e:
             logger.error(f"SMTP connection failed: {str(e)}")
-            raise Exception(f"Failed to connect to SMTP server: {str(e)}")
+            raise Exception(f"Failed to connect to SMTP server: {str(e)}") from e
 
     @staticmethod
     def send_email(
