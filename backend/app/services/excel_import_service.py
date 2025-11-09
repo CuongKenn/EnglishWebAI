@@ -119,7 +119,7 @@ CHỈ trả về JSON với array "students", không giải thích gì thêm."""
             raise HTTPException(
                 status_code=400,
                 detail=f"AI parsing thất bại: {str(e)}. Vui lòng kiểm tra format file Excel."
-            )
+            ) from e
 
     @staticmethod
     def parse_excel_file(file: UploadFile) -> list[StudentExcelRow]:
@@ -288,7 +288,7 @@ CHỈ trả về JSON với array "students", không giải thích gì thêm."""
                 raise HTTPException(
                     status_code=400,
                     detail=f"Không thể đọc file Excel: {str(e)}. AI cũng thất bại: {str(ai_error)}"
-                )
+                ) from ai_error
 
     @staticmethod
     def import_students(db: Session, request: StudentsImportRequest) -> StudentsImportResponse:
