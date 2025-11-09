@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import './TeacherMaterials.css';
 import { classesAPI, materialsAPI } from '../../../services/api';
 import Toast from '../../../components/Toast/Toast';
@@ -57,7 +57,7 @@ const TeacherMaterials = () => {
       const data = await classesAPI.getClassLessons(clsId);
       setLessons(Array.isArray(data) ? data : []);
       if (data && data.length) setSelectedLessonId(String(data[0].id));
-    } catch (e) {
+    } catch {
       setLessons([]);
     }
   };

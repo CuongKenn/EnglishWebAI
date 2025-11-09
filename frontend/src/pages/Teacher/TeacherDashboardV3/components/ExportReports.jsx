@@ -222,7 +222,7 @@ export default function ExportReports() {
       <div className="export-type-section">
         <h2>Chọn loại báo cáo</h2>
         <div className="export-type-grid">
-          {EXPORT_TYPE_CARDS.map(({ key, title, description, label, Icon, variant }) => {
+          {EXPORT_TYPE_CARDS.map(({ key, title, description, label, variant }) => {
             const isActive = exportType === key;
             return (
               <button

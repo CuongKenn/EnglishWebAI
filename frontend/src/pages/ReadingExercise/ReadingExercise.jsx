@@ -429,7 +429,7 @@ const ReadingExercise = () => {
                 </div>
 
                 <div className="questions-content">
-                  {paragraph.questions.map((question, questionIndex) => (
+                  {paragraph.questions.map((question) => (
                     <div key={question.id} className="question-item">
                       {question.type === 'matching' ? (
                         <div className="matching-exercise">

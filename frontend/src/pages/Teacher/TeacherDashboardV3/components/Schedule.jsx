@@ -326,7 +326,7 @@ const Schedule = () => {
                   ))}
                   {/* Events */}
                   <div className="absolute inset-0 pointer-events-none">
-                    {dayEvents.map((event, idx) => {
+                    {dayEvents.map((event) => {
                       const [startHour] = event.startTime.split(':').map(Number);
                       const [endHour] = event.endTime.split(':').map(Number);
                       const top = ((startHour - 7) * 80) + 4;
