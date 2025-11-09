@@ -23,7 +23,7 @@ router = APIRouter()
 async def get_current_user(
     current_user: UserModel = Depends(get_current_active_user)
 ):
-    """Get current user profile"""
+    """Get current user profilee"""
     return current_user
 
 @router.put("/me", response_model=User)

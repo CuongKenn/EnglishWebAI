@@ -1,3 +1,4 @@
+#!/usr/bin/env sh
 echo "[husky] Running pre-commit checks..."
 
 # Run ESLint on frontend
