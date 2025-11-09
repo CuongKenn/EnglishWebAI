@@ -14,7 +14,6 @@ const normalized = (() => {
     // Nếu người dùng set VITE_API_BASE_URL=http://localhost:8000/api/v1
     // thì tách phần base host để axios baseURL chuẩn
     const withoutTrailing = VITE_API_BASE.replace(/\/$/, '');
-    const m = withoutTrailing.match(/^(.*):\/\/[^/]+(?::\d+)?(?:\/api\/v1)?$/);
     // Nếu có /api/v1 ở cuối, cắt đi
     return withoutTrailing.replace(/\/api\/v1$/, '');
   } catch {
@@ -1322,7 +1321,7 @@ export const aiUsageAPI = {
         metadata,
       });
       return response.data;
-    } catch (error) {
+    } catch {
       // Do not throw to avoid breaking UX; surface optional debugging
       // console.warn('AI usage log failed', error);
       return null;
@@ -1528,7 +1527,7 @@ export const worksheetsAPI = {
           const text = await error.response.data.text();
           const errorData = JSON.parse(text);
           throw { response: { data: errorData } };
-        } catch (parseError) {
+        } catch {
           // If can't parse, throw original error
           throw error;
         }
@@ -1552,7 +1551,7 @@ export const worksheetsAPI = {
           const text = await error.response.data.text();
           const errorData = JSON.parse(text);
           throw { response: { data: errorData } };
-        } catch (parseError) {
+        } catch {
           // If can't parse, throw original error
           throw error;
         }

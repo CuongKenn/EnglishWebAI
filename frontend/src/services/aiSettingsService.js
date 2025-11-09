@@ -103,7 +103,7 @@ class AISettingsService {
   }
 
   // Log usage (mock - trong thực tế sẽ call API)
-  logUsage(feature, userId) {
+  logUsage(feature) {
     const stats = this.getUsageStats();
     stats.totalRequests++;
     stats.requestsByFeature[feature] = (stats.requestsByFeature[feature] || 0) + 1;

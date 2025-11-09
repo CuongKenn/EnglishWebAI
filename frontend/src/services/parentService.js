@@ -87,9 +87,9 @@ export const parentAPI = {
       if (error.response?.data instanceof Blob) {
         try {
           const text = await error.response.data.text();
-          const errorData = JSON.parse(text);
+          JSON.parse(text);
           // Error already logged by interceptor
-        } catch (parseError) {
+        } catch {
           // Parsing failed, error already logged
         }
       }
