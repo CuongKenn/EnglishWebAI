@@ -8,7 +8,8 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "prepare": "husky"
+    "prepare": "husky",
+    "postinstall": "cd .. && git config core.hooksPath .husky || true"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
