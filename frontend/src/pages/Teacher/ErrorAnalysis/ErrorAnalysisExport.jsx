@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { FileBarChart, Download, Filter, AlertCircle, CheckCircle, TrendingDown, FileText, Users, Calendar, Award, Target, BookOpen, PenLine, Headphones, Mic } from 'lucide-react';
 import { Card } from '../../../components/ui/card';
 import { apiV1 } from '../../../services/api';
-import { useToast } from '../../../components/ui/Toast';
+import useToast from '../../../hooks/useToast';
 import './ErrorAnalysisExport.css';
 
 export default function ErrorAnalysisExport() {

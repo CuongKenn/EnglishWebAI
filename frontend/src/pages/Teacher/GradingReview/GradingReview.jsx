@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiV1 } from '../../../services/api';
 import { CheckCircle, XCircle, Clock, AlertCircle, Eye, Edit2 } from 'lucide-react';
-import { useToast } from '../../../components/ui/Toast';
+import useToast from '../../../hooks/useToast';
 import './GradingReview.css';
 
 const GradingReview = () => {
