@@ -64,7 +64,7 @@ def admin_update_user(
     try:
         return AdminService.update_user(db, user_id, payload)
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e)) from e
 
 
 @router.delete("/users/{user_id}")
@@ -86,9 +86,9 @@ def admin_import_users_csv(
     try:
         return AdminService.import_users_csv(db, file)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}") from e
 
 
 @router.get("/teachers", response_model=list[AdminTeacherOut])
@@ -118,10 +118,10 @@ def admin_create_class(
     try:
         return AdminService.create_class(db, payload)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
         # Surface server error details to the client for debugging
-        raise HTTPException(status_code=500, detail=f"Create class failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Create class failed: {str(e)}") from e
 
 
 @router.put("/classes/{class_id}", response_model=AdminClassOut)
@@ -134,7 +134,7 @@ def admin_update_class(
     try:
         return AdminService.update_class(db, class_id, payload)
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e)) from e
 
 
 @router.delete("/classes/{class_id}")

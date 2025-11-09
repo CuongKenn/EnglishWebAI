@@ -243,7 +243,7 @@ async def get_classes_teaching(
     except Exception as e:
         # Log để debug lỗi 500 thay vì trả text/plain chung chung
         logger.info("[ERROR] /classes/teaching:", repr(e))
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 @router.get("/{class_id}", response_model=ClassroomResponse)
 async def get_class(
@@ -544,8 +544,8 @@ async def get_attendance_by_date(
     from datetime import date as _d
     try:
         qdate = _d.fromisoformat(date)
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid date format, expected YYYY-MM-DD")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail="Invalid date format, expected YYYY-MM-DD") from e
     rows = db.query(AttendanceRecord).filter(AttendanceRecord.class_id == class_id, AttendanceRecord.date == qdate).all()
     out: list[AttendanceRecordOut] = []
     for r in rows:
@@ -564,8 +564,8 @@ async def upsert_attendance(
     from datetime import date as _d
     try:
         qdate = _d.fromisoformat(payload.date)
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid date format, expected YYYY-MM-DD")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail="Invalid date format, expected YYYY-MM-DD") from e
     for item in payload.records:
         rec = (
             db.query(AttendanceRecord)
@@ -949,10 +949,10 @@ async def import_students_from_csv(
         }
 
     except csv.Error as e:
-        raise HTTPException(status_code=400, detail=f"Lỗi đọc file CSV: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Lỗi đọc file CSV: {str(e)}") from e
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Lỗi import: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Lỗi import: {str(e)}") from e
 
 
 # -------- New Excel Import Features --------
@@ -1093,7 +1093,7 @@ async def import_excel_to_class(
         raise HTTPException(
             status_code=500,
             detail=f"Lỗi khi import Excel: {str(e)}"
-        )
+        ) from e
 
     return {
         "success_count": result.success_count,

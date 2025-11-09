@@ -58,7 +58,7 @@ async def get_flashcards(
             raise HTTPException(
                 status_code=503,
                 detail="AI service is not available. Please contact administrator to configure OPENAI_API_KEY."
-            )
+            ) from e
 
         # Level specifications
         level_specs = {
@@ -163,13 +163,13 @@ Technical Requirements:
             raise HTTPException(
                 status_code=503,
                 detail="AI service is not configured. Please add OPENAI_API_KEY to .env file."
-            )
+            ) from ve
         except Exception as ge:
             logger.error(f"[AI-FLASHCARD] OpenAI API error: {ge}")
             raise HTTPException(
                 status_code=503,
                 detail=f"Failed to generate flashcards with AI: {str(ge)}"
-            )
+            ) from ge
 
         # Clean response
         response_text = response_text.strip()
@@ -190,7 +190,7 @@ Technical Requirements:
             raise HTTPException(
                 status_code=500,
                 detail="AI response format invalid. Please try again."
-            )
+            ) from e
 
         # Validate result is array
         if not isinstance(result, list):
@@ -242,7 +242,7 @@ Technical Requirements:
         raise HTTPException(
             status_code=500,
             detail=f"Failed to generate flashcards: {str(e)}"
-        )
+        ) from e
 
 
 @router.post("/flashcards/progress")
@@ -276,5 +276,5 @@ async def save_flashcard_progress(
         raise HTTPException(
             status_code=500,
             detail="Failed to save progress"
-        )
+        ) from e
 

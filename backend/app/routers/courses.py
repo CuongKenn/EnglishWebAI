@@ -214,7 +214,7 @@ async def create_course(
         # Log error for debugging and return JSON detail instead of plain 500
         logger.info("[ERROR] create_course:", repr(e))
         db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/{course_id}", response_model=CourseResponse)
@@ -525,7 +525,7 @@ async def list_course_units(
         raise
     except Exception as e:
         logger.info("[ERROR] list_course_units:", repr(e))
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/{course_id}/units", response_model=dict, status_code=201)
@@ -592,7 +592,7 @@ async def create_course_unit(
     except Exception as e:
         logger.info("[ERROR] create_course_unit:", repr(e))
         db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/units/{unit_id}/questions", response_model=list[dict])
@@ -642,7 +642,7 @@ async def list_unit_questions(
         raise
     except Exception as e:
         logger.info("[ERROR] list_unit_questions:", repr(e))
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/units/{unit_id}/questions", response_model=dict, status_code=201)
@@ -712,7 +712,7 @@ async def delete_course_unit(
         return
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.delete("/units/{unit_id}/questions/{question_id}", status_code=204)
@@ -745,7 +745,7 @@ async def delete_unit_question(
         return
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 
