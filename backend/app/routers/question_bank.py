@@ -132,7 +132,7 @@ def list_questions(
 
     except Exception as e:
         logger.error(f"Error listing questions: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to list questions: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to list questions: {str(e)}") from e
 
 
 @router.post("/", response_model=QuestionBankItemOut, status_code=201)
@@ -190,7 +190,7 @@ def create_question(
     except Exception as e:
         db.rollback()
         logger.error(f"Error creating question: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to create question: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to create question: {str(e)}") from e
 
 
 @router.put("/{item_id}", response_model=QuestionBankItemOut)
@@ -243,7 +243,7 @@ def update_question(
     except Exception as e:
         db.rollback()
         logger.error(f"Error updating question {item_id}: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to update question: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to update question: {str(e)}") from e
 
 
 @router.delete("/{item_id}")
@@ -278,7 +278,7 @@ def delete_question(
     except Exception as e:
         db.rollback()
         logger.error(f"Error deleting question {item_id}: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to delete question: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete question: {str(e)}") from e
 
 
 @router.post("/{item_id}/duplicate", response_model=QuestionBankItemOut, status_code=201)
@@ -337,7 +337,7 @@ def duplicate_question(
     except Exception as e:
         db.rollback()
         logger.error(f"Error duplicating question {item_id}: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to duplicate question: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to duplicate question: {str(e)}") from e
 
 
 @router.post("/bulk-delete")
@@ -376,7 +376,7 @@ def bulk_delete_questions(
     except Exception as e:
         db.rollback()
         logger.error(f"Error in bulk delete: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to delete questions: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete questions: {str(e)}") from e
 
 
 @router.post("/upload/audio")
@@ -426,7 +426,7 @@ async def upload_audio(file: UploadFile = File(...), current_user: User = Depend
             os.makedirs(save_dir, exist_ok=True)
         except Exception as e:
             logger.info(f"[UPLOAD AUDIO] Failed to create directory: {e}")
-            raise HTTPException(status_code=500, detail=f"Failed to create upload directory: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Failed to create upload directory: {str(e)}") from e
 
         # Sanitize filename
         try:
@@ -443,7 +443,7 @@ async def upload_audio(file: UploadFile = File(...), current_user: User = Depend
             logger.info("[UPLOAD AUDIO] File saved successfully")
         except Exception as e:
             logger.info(f"[UPLOAD AUDIO] Failed to save file: {e}")
-            raise HTTPException(status_code=500, detail=f"Failed to save audio file: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Failed to save audio file: {str(e)}") from e
 
         sanitized_filename = filename.rstrip("'\"")
         url = f"/media/question_bank/audio/{sanitized_filename}"
@@ -455,7 +455,7 @@ async def upload_audio(file: UploadFile = File(...), current_user: User = Depend
         logger.info(f"[UPLOAD AUDIO] Error: {e}")
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Failed to upload audio file: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to upload audio file: {str(e)}") from e
 
 
 @router.post("/parse-docx")
@@ -500,7 +500,7 @@ async def parse_docx(file: UploadFile = File(...), current_user: User = Depends(
         logger.info(f"[PARSE DOCX] Error: {e}")
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Failed to parse document: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to parse document: {str(e)}") from e
 
 
 @router.post("/upload/passage")
@@ -551,7 +551,7 @@ async def upload_passage(file: UploadFile = File(...), current_user: User = Depe
         logger.info(f"[UPLOAD PASSAGE] Error: {e}")
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Failed to upload passage file: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to upload passage file: {str(e)}") from e
 
 
 @router.post("/import", response_model=ImportResult)
@@ -1495,7 +1495,7 @@ async def export_docx(payload: ExportDocxRequest):
         raise HTTPException(
             status_code=500,
             detail="Server configuration error: python-docx not installed. Please contact administrator."
-        )
+        ) from e
 
     try:
         doc = Document()
@@ -1659,7 +1659,7 @@ async def export_docx(payload: ExportDocxRequest):
         logger.error(f"[EXPORT-DOCX] Traceback: {traceback.format_exc()}")
         # Return detailed error message
         error_detail = f"Export failed: {type(e).__name__}: {str(e)}"
-        raise HTTPException(status_code=500, detail=error_detail)
+        raise HTTPException(status_code=500, detail=error_detail) from e
 
 
 @router.post("/create-exercise")
@@ -1779,7 +1779,7 @@ async def save_testset(
         return {"id": test.id}
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Failed to save test set: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to save test set: {e}") from e
 
 
 @router.get("/testsets")
@@ -1818,7 +1818,7 @@ async def get_testsets(
 
         return {"testsets": results, "total": len(results)}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to fetch test sets: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch test sets: {e}") from e
 
 
 @router.get("/testsets/{test_id}")
@@ -1860,7 +1860,7 @@ async def get_testset_detail(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to fetch test set: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch test set: {e}") from e
 
 
 @router.delete("/testsets/{test_id}")
@@ -1890,5 +1890,5 @@ async def delete_testset(
         raise
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Failed to delete test set: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete test set: {e}") from e
 
