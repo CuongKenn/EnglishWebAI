@@ -56,14 +56,12 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   const [showQuestionBankModal, setShowQuestionBankModal] = useState(false);
   
   // Import states
-  const [wordFile, setWordFile] = useState(null);
   const [passageFile, setPassageFile] = useState(null);
   const audioInputRef = useRef(null);
   const passageFileInputRef = useRef(null);
   
   // AI Generation states
   const [aiSource, setAiSource] = useState('curriculum'); // 'curriculum', 'files', 'question_bank'
-  const [aiFiles, setAiFiles] = useState([]);
   // aiPrompt, qbNumQuestions, qbDifficulty - declared but not used in current implementation
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [aiFormData, setAiFormData] = useState({ semester: '1' });
