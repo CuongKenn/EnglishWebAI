@@ -44,7 +44,13 @@ ignore = [
     "ARG001", # Unused function argument (common in FastAPI endpoints)
     "ARG002", # Unused method argument
     "N805",   # First argument should be named `self` (pydantic validators)
+    "N815",   # mixedCase variable in class scope (common in pydantic models for API compatibility)
+    "DTZ001", # Datetime without timezone (allow for simplicity in internal use)
+    "DTZ003", # Datetime.utcnow() without timezone (allow for simplicity)
     "DTZ005", # Datetime timezone (optional for internal use)
+    "DTZ901", # Datetime min/max without timezone
+    "E402",   # Module level import not at top (needed for conditional imports, logging setup)
+    "PTH",    # Use pathlib (os.path is acceptable for this codebase)
     "T201",   # Print found (allow print statements)
 ]
 
@@ -55,8 +61,14 @@ unfixable = []
 [tool.ruff.lint.per-file-ignores]
 # Ignore import errors in __init__.py files
 "__init__.py" = ["F401", "F403"]
-# Ignore unused imports in alembic env.py
-"alembic/env.py" = ["F401"]
+# Ignore unused imports in alembic env.py and wildcard imports
+"alembic/env.py" = ["F401", "F403"]
+# Ignore wildcard imports in main.py (needed for SQLAlchemy model registration)
+"main.py" = ["F403"]
+# Ignore invalid module name for class.py (Python keyword, but file must match model name)
+"app/models/class.py" = ["N999"]
+# Ignore file handle context manager where cleanup is in finally block
+"app/routers/ai_conversation.py" = ["SIM115"]
 # Test files can use assertions
 "tests/**/*.py" = ["S101"]
 

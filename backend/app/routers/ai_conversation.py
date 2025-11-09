@@ -6,15 +6,13 @@ Handles AI-powered conversation endpoints
 import builtins
 import contextlib
 import logging
-
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
-
-logger = logging.getLogger(__name__)
-import contextlib
 import os
 import tempfile
 
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.orm import Session
+
+logger = logging.getLogger(__name__)
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user

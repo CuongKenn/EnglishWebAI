@@ -1,7 +1,6 @@
 import csv
 import io
 import logging
-from typing import Dict
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from fastapi.responses import StreamingResponse
@@ -611,7 +610,7 @@ async def list_class_exercises(
         .all()
     )
 
-    submissions_map: Dict[int, Submission] = {}
+    submissions_map: dict[int, Submission] = {}
     if exercises and current_user.role == UserRole.USER:
         exercise_ids = [ex.id for ex in exercises]
         submissions = (
