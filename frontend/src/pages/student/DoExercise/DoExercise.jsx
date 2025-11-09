@@ -618,7 +618,7 @@ export default function DoExercise() {
         if (!hadData || !audioBlob || audioBlob.size === 0) {
 
           setRecordingError('Không nhận được dữ liệu âm thanh. Hãy đảm bảo đã cho phép micro và thử lại, hoặc tải file âm thanh ở dưới.');
-          try { recorder.stream?.getTracks().forEach(t => t.stop()); } catch {}
+          try { recorder.stream?.getTracks().forEach(t => t.stop()); } catch { /* Ignore track cleanup errors */ }
           return;
         }
         const audioUrl = URL.createObjectURL(audioBlob);
@@ -626,7 +626,7 @@ export default function DoExercise() {
         const audioPayload = { url: audioUrl, blob: audioBlob, mimeType };
 
         // Ensure stream is fully released after stopping
-        try { recorder.stream?.getTracks().forEach(t => t.stop()); } catch {}
+        try { recorder.stream?.getTracks().forEach(t => t.stop()); } catch { /* Ignore track cleanup errors */ }
 
         if (qid) {
           setSpeakingAnswers(prev => ({ ...prev, [qid]: audioPayload }));
@@ -672,7 +672,7 @@ export default function DoExercise() {
     try {
       if (recorder.state === 'recording') {
         // Flush remaining data chunk before stopping to avoid empty blob on some browsers
-        try { recorder.requestData?.(); } catch {}
+        try { recorder.requestData?.(); } catch { /* Ignore requestData errors */ }
         recorder.stop();
       }
     } catch {
