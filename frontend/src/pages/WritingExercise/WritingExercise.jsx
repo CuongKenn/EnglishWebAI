@@ -48,9 +48,7 @@ const WritingExercise = () => {
 
   // Real data from server
   const [writingData, setWritingData] = useState(null);
-  const [courseData, setCourseData] = useState(null);
   const [unitData, setUnitData] = useState(null);
-  const [questions, setQuestions] = useState([]);
 
   const safeParseJSON = (value, fallback) => {
     if (typeof value !== 'string') {
@@ -133,7 +131,6 @@ const WritingExercise = () => {
         let course = null;
         if (courseResult.status === 'fulfilled' && courseResult.value) {
           course = courseResult.value;
-          setCourseData(courseResult.value);
         } else if (courseResult.status === 'rejected') {
           console.warn('Không thể tải thông tin khóa học:', courseResult.reason);
         }
@@ -155,7 +152,6 @@ const WritingExercise = () => {
         } else {
           console.warn('Không thể tải câu hỏi viết:', questionsResult.reason);
         }
-        setQuestions(Array.isArray(qs) ? qs : []);
 
         if (!qs || qs.length === 0) {
           throw new Error('Bài viết này chưa có nội dung để luyện.');

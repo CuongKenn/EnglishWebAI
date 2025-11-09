@@ -64,34 +64,6 @@ const MyClassesTeacher = () => {
     }
   };
 
-  const handleCreateLesson = async (lessonData) => {
-    try {
-      await apiV1.post(`/classes/${selectedClass.id}/lessons`, lessonData);
-      fetchClassDetails(selectedClass.id);
-    } catch (error) {
-      console.error('Error creating lesson:', error);
-    }
-  };
-
-  const handleUploadMaterial = async (file, materialData) => {
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('title', materialData.title);
-      formData.append('type', materialData.type);
-      formData.append('description', materialData.description);
-      
-      await apiV1.post(`/classes/${selectedClass.id}/materials`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      
-      setIsUploadOpen(false);
-      fetchClassDetails(selectedClass.id);
-    } catch (error) {
-      console.error('Error uploading material:', error);
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">

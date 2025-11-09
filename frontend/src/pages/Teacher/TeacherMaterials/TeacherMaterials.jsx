@@ -21,8 +21,6 @@ const TeacherMaterials = () => {
   const [form, setForm] = useState({ title: '', type: 'file', url: '', description: '' });
   const [file, setFile] = useState(null);
 
-  const selectedClass = useMemo(() => classes.find(c => String(c.id) === String(selectedClassId)) || null, [classes, selectedClassId]);
-
   const loadClasses = async () => {
     try {
       setLoading(true);
