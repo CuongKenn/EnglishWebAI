@@ -473,7 +473,7 @@ async def upload_exam_from_word(
         raise HTTPException(
             status_code=500,
             detail=f"Lỗi phân tích nội dung từ AI: {str(e)}"
-        )
+        ) from e
     except Exception as e:
         logger.info(f"[upload_exam] Error: {e}")
         import traceback
@@ -481,7 +481,7 @@ async def upload_exam_from_word(
         raise HTTPException(
             status_code=500,
             detail=f"Lỗi khi xử lý file: {str(e)}"
-        )
+        ) from e
 
 
 @router.get("/classes/{class_id}", response_model=list[ExamAssessmentListItem])
@@ -801,7 +801,7 @@ async def auto_grade_exam_submission(
         logger.info(f"[AUTO-GRADE-EXAM] Error: {e}")
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Lỗi chấm tự động: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Lỗi chấm tự động: {str(e)}") from e
 
 
 @router.post("/submissions/{submission_id}/grade", response_model=ExamSubmissionResponse)

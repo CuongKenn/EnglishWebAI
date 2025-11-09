@@ -441,7 +441,7 @@ Chỉ trả về JSON, không có text khác."""
                         logger.info(f"[AI Generate] Error details saved to {error_file}")
                     except Exception:
                         pass
-                    raise json_err
+                    raise json_err from None
 
             # Transform comprehensive test structure
             # GPT returns: {"questions": [{"section": "listening", ...}, {"section": "reading", ...}]}

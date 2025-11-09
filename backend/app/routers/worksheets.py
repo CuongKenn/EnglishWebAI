@@ -165,7 +165,7 @@ async def generate_worksheet_with_ai(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate worksheet: {str(e)}"
-        )
+        ) from e
 
 
 @router.put("/{worksheet_id}", response_model=WorksheetResponse)
@@ -383,7 +383,7 @@ async def export_worksheet_word(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate Word document: {str(e)}"
-        )
+        ) from e
 
 
 @router.get("/{worksheet_id}/export/pdf")

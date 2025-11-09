@@ -93,7 +93,7 @@ async def upload_media_file(
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error uploading file: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error uploading file: {str(e)}") from e
 
 @router.get("/files/{file_type}/{filename}")
 async def get_media_file(file_type: str, filename: str):
@@ -152,4 +152,4 @@ async def delete_media_file(
             "message": "File deleted successfully"
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error deleting file: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error deleting file: {str(e)}") from e

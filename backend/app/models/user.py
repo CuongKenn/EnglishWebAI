@@ -49,11 +49,11 @@ class UserRole(str, enum.Enum):
         # Try direct mapping
         try:
             return cls(role_str_lower)
-        except ValueError:
+        except ValueError as e:
             raise ValueError(
                 f"Invalid role: {role_str}. "
                 f"Valid roles: student, user, parent, teacher, admin, superadmin"
-            )
+            ) from e
 
 class User(Base):
     __tablename__ = "users"

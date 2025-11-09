@@ -204,7 +204,7 @@ async def create_writing_prompt(
         return prompt
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/units/{unit_id}/writing", response_model=WritingPromptResponse)

@@ -194,7 +194,7 @@ async def generate_assessment_with_ai(
         raise HTTPException(
             status_code=500,
             detail=f"Lỗi tạo nội dung bằng AI: {str(e)}"
-        )
+        ) from e
 
     # Create assessment
     assessment = EnhancedWeeklyAssessment(

@@ -54,8 +54,8 @@ def normalize_role(role: str | UserRole) -> UserRole:
     # Try to match UserRole enum directly
     try:
         return UserRole(role_lower)
-    except ValueError:
-        raise ValueError(f"Invalid role: {role}. Valid roles: {list(ROLE_MAPPING.keys())}")
+    except ValueError as e:
+        raise ValueError(f"Invalid role: {role}. Valid roles: {list(ROLE_MAPPING.keys())}") from e
 
 
 def is_student_role(role: str | UserRole) -> bool:

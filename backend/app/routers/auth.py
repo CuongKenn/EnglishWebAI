@@ -41,7 +41,7 @@ async def login(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
-        )
+        ) from e
 
 @router.post("/register/", status_code=status.HTTP_201_CREATED)
 async def register(
@@ -73,7 +73,7 @@ async def register(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
-        )
+        ) from e
 
 @router.post("/logout/")
 async def logout():

@@ -296,7 +296,7 @@ async def get_teacher_statistics(
                 "message": str(e),
                 "type": type(e).__name__
             }
-        )
+        ) from e
 
 
 def _empty_stats_response() -> TeacherStatsSummary:

@@ -150,7 +150,7 @@ async def generate_lesson_plan_with_ai(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate lesson plan: {str(e)}"
-        )
+        ) from e
 
 
 @router.put("/{lesson_plan_id}", response_model=LessonPlanResponse)

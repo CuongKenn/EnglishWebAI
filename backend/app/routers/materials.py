@@ -700,7 +700,7 @@ async def upload_material_file(
             # Prefer streaming to handle large files and avoid await issues
             shutil.copyfileobj(file.file, out)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Upload failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Upload failed: {e}") from e
 
     # If this is a text file, read back as UTF-8 (best effort) for auto material
     text_content = None

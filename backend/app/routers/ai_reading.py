@@ -89,7 +89,7 @@ async def generate_reading_passage(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to generate reading passage: {str(e)}"
-        )
+        ) from e
 
 
 @router.post("/check-answers", response_model=CheckAnswersResponse)
@@ -151,7 +151,7 @@ async def check_reading_answers(
         raise HTTPException(
             status_code=500,
             detail="Failed to check answers. Please try again."
-        )
+        ) from e
 
 
 @router.delete("/clear-cache")

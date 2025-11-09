@@ -197,7 +197,7 @@ async def generate_weekly_assessment(
         raise HTTPException(
             status_code=500,
             detail=f"Không thể tạo phiếu đánh giá: {str(e)}"
-        )
+        ) from e
 
 
 @router.delete("/{assessment_id}", status_code=status.HTTP_204_NO_CONTENT)

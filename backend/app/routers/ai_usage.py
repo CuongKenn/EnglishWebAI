@@ -25,5 +25,5 @@ def log_ai_usage(
         )
         return {"id": event.id, "message": "logged"}
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 

@@ -70,7 +70,7 @@ async def chat_with_ai(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to get AI response: {str(e)}"
-        )
+        ) from e
 
 
 @router.post("/conversation/suggestions", response_model=ConversationSuggestionsResponse)
@@ -97,7 +97,7 @@ async def get_conversation_suggestions(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to get suggestions: {str(e)}"
-        )
+        ) from e
 
 
 @router.post("/speaking-practice/assess")
@@ -258,7 +258,7 @@ Chỉ trả về JSON, không có text khác."""
         raise HTTPException(
             status_code=500,
             detail=f"Failed to assess speaking: {str(e)}"
-        )
+        ) from e
     finally:
         # Cleanup temp file
         if temp_file and os.path.exists(temp_file.name):

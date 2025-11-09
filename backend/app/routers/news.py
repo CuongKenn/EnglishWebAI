@@ -578,7 +578,7 @@ Do not include any markdown, code blocks, or extra formatting. Just the pure JSO
             raise HTTPException(
                 status_code=500,
                 detail="AI response không hợp lệ. Vui lòng thử lại."
-            )
+            ) from e
 
         # Validate required fields
         if "title" not in result or "content" not in result:
@@ -627,4 +627,4 @@ Do not include any markdown, code blocks, or extra formatting. Just the pure JSO
         raise HTTPException(
             status_code=500,
             detail=f"Lỗi khi sinh bài viết: {str(e)}"
-        )
+        ) from e

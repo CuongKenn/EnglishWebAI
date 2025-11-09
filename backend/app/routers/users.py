@@ -91,7 +91,7 @@ async def upload_avatar(
         with open(file_path, "wb") as f:
             f.write(content)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Không thể lưu file: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Không thể lưu file: {str(e)}") from e
 
     # Update user avatar_url in database
     # Store relative path in database for portability

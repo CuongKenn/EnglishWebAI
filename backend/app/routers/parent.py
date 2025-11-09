@@ -259,7 +259,7 @@ async def get_dashboard_summary(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to load dashboard summary: {str(e)}"
-        )
+        ) from e
 
 @router.get("/pending-exercises", response_model=list[PendingExercise])
 async def get_pending_exercises(
@@ -353,7 +353,7 @@ async def get_pending_exercises(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to load pending exercises: {str(e)}"
-        )
+        ) from e
 
 @router.get("/children", response_model=list[ChildInfo])
 async def get_parent_children(
@@ -953,7 +953,7 @@ async def get_monthly_report(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to load monthly report: {str(e)}"
-        )
+        ) from e
 
 
 @router.post("/children/{child_id}/export/pdf")
