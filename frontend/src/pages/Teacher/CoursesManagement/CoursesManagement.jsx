@@ -789,7 +789,7 @@ const UnitQuestionsModal = ({ unit, course, onClose, onRefresh }) => {
   });
   const [uploadedAudio, setUploadedAudio] = useState(null);
   const [uploadedDocument, setUploadedDocument] = useState(null);
-  const [audioUploading, setAudioUploading] = useState(false);
+  const [_audioUploading, setAudioUploading] = useState(false);
   const [documentInputMode, setDocumentInputMode] = useState('text'); // 'text' or 'file'
   const [passageText, setPassageText] = useState('');
 

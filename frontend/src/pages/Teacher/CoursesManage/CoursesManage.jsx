@@ -360,14 +360,6 @@ function suggestType(skill) {
   }
 }
 
-function defaultContent(skill) {
-  if (skill === 'reading') return { question: '', options: ['', '', '', ''], correct: 0 };
-  if (skill === 'listening') return { audioUrl: '', question: '', options: ['', '', '', ''], correct: 0 };
-  if (skill === 'speaking') return { prompt: '' };
-  if (skill === 'writing') return { prompt: '' };
-  return {};
-}
-
 function renderQuestionEditor(skill, qForm, setQForm) {
   if (skill === 'reading') {
     const c = qForm;
