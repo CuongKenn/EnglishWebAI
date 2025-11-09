@@ -1534,12 +1534,12 @@ export default function SubmissionGradingPage() {
                 )}
 
                 {/* Exam Speaking Results (from auto_grade_results) */}
-                {auto && Object.entries(auto).some(([_, result]) => result.type === 'speaking') && (
+                {auto && Object.entries(auto).some(([, result]) => result.type === 'speaking') && (
                   <div className="gp-card">
                     <div className="gp-card-header">
                       <div className="gp-card-title"><Mic className="inline-block w-5 h-5 mr-2" /> Kết quả Speaking (Exam)</div>
                     </div>
-                    {Object.entries(auto).filter(([_, result]) => result.type === 'speaking').map(([qId, result]) => (
+                    {Object.entries(auto).filter(([, result]) => result.type === 'speaking').map(([qId, result]) => (
                       <div key={qId} className="gp-exam-speaking-section">
                         <div className="gp-q-head" style={{ marginBottom: '15px' }}>
                           <div className="gp-q-id">Câu {qId}</div>
@@ -1843,12 +1843,12 @@ export default function SubmissionGradingPage() {
                 )}
 
                 {/* Exam Writing Results (from auto_grade_results) */}
-                {auto && Object.entries(auto).some(([_, result]) => result.type === 'short_answer' || result.type === 'essay') && (
+                {auto && Object.entries(auto).some(([, result]) => result.type === 'short_answer' || result.type === 'essay') && (
                   <div className="gp-card">
                     <div className="gp-card-header">
                       <div className="gp-card-title"><PenTool className="inline-block w-5 h-5 mr-2" /> Kết quả Writing (Exam)</div>
                     </div>
-                    {Object.entries(auto).filter(([_, result]) => result.type === 'short_answer' || result.type === 'essay').map(([qId, result]) => (
+                    {Object.entries(auto).filter(([, result]) => result.type === 'short_answer' || result.type === 'essay').map(([qId, result]) => (
                       <div key={qId} className="gp-exam-writing-section">
                         <div className="gp-q-head" style={{ marginBottom: '15px' }}>
                           <div className="gp-q-id">Câu {qId}</div>

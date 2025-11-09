@@ -82,7 +82,7 @@ const ClassManagement = () => {
         records,
       });
       showSuccess('Đã lưu điểm danh thành công');
-    } catch (error) {
+    } catch {
       showError('Lưu điểm danh thất bại');
     }
   };

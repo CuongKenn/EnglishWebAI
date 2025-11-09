@@ -99,7 +99,7 @@ const GradingFeedback = () => {
       setShowGradeModal(false);
       setSelectedSubmission(null);
       loadSubmissions();
-    } catch (error) {
+    } catch {
       alert('Có lỗi xảy ra khi chấm điểm');
     }
   };

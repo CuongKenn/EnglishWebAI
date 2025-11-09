@@ -98,7 +98,7 @@ const AssignmentsTests = () => {
     }
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = () => {
     if (!confirm('Bạn có chắc muốn xóa bài tập này?')) return;
     alert('Xóa bài tập thành công');
     loadAssignments();

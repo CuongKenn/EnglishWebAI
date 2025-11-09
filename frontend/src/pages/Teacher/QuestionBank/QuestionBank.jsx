@@ -81,12 +81,12 @@ const QuestionBank = () => {
       setShowModal(false);
       resetForm();
       loadQuestions();
-    } catch (error) {
+    } catch {
       alert('Có lỗi xảy ra');
     }
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = () => {
     if (!confirm('Bạn có chắc muốn xóa câu hỏi này?')) return;
     alert('Xóa câu hỏi thành công');
     loadQuestions();
