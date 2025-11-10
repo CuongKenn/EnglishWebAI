@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import {
   ArrowTrendingUpIcon, ClockIcon, TrophyIcon, CheckCircleIcon, 
   CalendarIcon, ChartBarIcon, SparklesIcon, PlayIcon, 
-  ChevronRightIcon, BookOpenIcon, BoltIcon, AcademicCapIcon, LightBulbIcon
+  ChevronRightIcon, BookOpenIcon, BoltIcon, AcademicCapIcon
 } from '@heroicons/react/24/outline';
 import { CircleIcon } from '@heroicons/react/24/solid';
 // Lucide-react icons for features not in Heroicons
@@ -461,56 +461,6 @@ const Lessons = () => {
           </div>
         </section>
       </main>
-
-      {/* Sidebar Phải: Hồ sơ học tập */}
-      <aside className="dashboard-sidebar-right">
-        <div className="learning-profile-card">
-          <div className="profile-header">
-            <h3>Hồ sơ học tập</h3>
-            <Link to="/learning-profile" className="view-all-link">Xem tất cả</Link>
-          </div>
-
-          <div className="grade-info">
-            <h4>Lớp của bạn</h4>
-            <div className="grade-levels">
-              <div className="level-item">
-                <div className="level-label">Hiện tại</div>
-                <div className="level-value current">{userInfo.currentLevel}</div>
-              </div>
-              <div className="level-item">
-                <div className="level-label">Dự đoán</div>
-                <div className="level-value predicted">{userInfo.predictedLevel}</div>
-              </div>
-              <div className="level-item">
-                <div className="level-label">Mục tiêu</div>
-                <div className="level-value target">{userInfo.targetLevel}</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="learning-summary">
-            <h4>Tổng kết học tập</h4>
-            <div className="stats-list">
-              {learningStats.map((stat, index) => (
-                <div key={index} className="stat-item">
-                  <div className="stat-icon" style={{ backgroundColor: `${stat.color}20`, color: stat.color }}>
-                    <stat.icon size={18} />
-                  </div>
-                  <div className="stat-info">
-                    <span className="stat-label">{stat.label}</span>
-                    <span className="stat-value" style={{ color: stat.color }}>{stat.value}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="motivation-box">
-            <div className="motivation-icon"><LightBulbIcon className="w-5 h-5" /></div>
-            <p>Không có giáo dục nào tốt hơn việc học hỏi từ trải nghiệm</p>
-          </div>
-        </div>
-      </aside>
     </div>
   </ConsistentSidebarLayout>
   );
