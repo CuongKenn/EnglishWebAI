@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+
 import {
   ArrowTrendingUpIcon, ClockIcon, TrophyIcon, CheckCircleIcon, 
   CalendarIcon, ChartBarIcon, SparklesIcon, PlayIcon, 
@@ -10,61 +11,251 @@ import { CircleIcon } from '@heroicons/react/24/solid';
 import { TrendingUp, Target, Award, CheckCircle, Clock, Circle, BookOpen } from 'lucide-react';
 import ConsistentSidebarLayout from '../../components/Layout/ConsistentSidebarLayout';
 import './Lessons.css';
+import { studentProfileAPI, classesAPI } from '../../services/api';
+
+const MENU_MAP = {
+  '/lessons': 'overview',
+  '/study-plan': 'study-plan',
+  '/my-courses': 'my-courses',
+  '/learning-profile': 'profile'
+};
 
 const Lessons = () => {
-  // navigate not currently used
+  const navigate = useNavigate();
+  const location = useLocation();
   const [activeMenuItem, setActiveMenuItem] = useState('overview');
   const [isContentPushed, setIsContentPushed] = useState(false);
-  
-  // Dữ liệu mô phỏng
-  const userInfo = {
-    name: 'Nguyễn Văn Hoài',
-    grade: 'Lớp 8',
-    currentLevel: 2.5,
-    predictedLevel: 3.0,
-    targetLevel: 5.0
-  };
 
-  const todayGoal = {
-    message: 'Chà, hôm nay không có buổi học nào.',
-    subMessage: 'Nghỉ ngơi và đừng quên xem lại tiến độ học nhé!',
-    hasLesson: false
-  };
+  const [overviewData, setOverviewData] = useState(null);
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [myClasses, setMyClasses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const studyProgress = {
-    currentScore: 3.5,
-    targetScore: 5.0,
-    cupsEarned: 68,
-    totalCups: 180,
-    unitsCompleted: 28,
-    totalUnits: 60,
-    progress: 46, // phần trăm
-    streakDays: 7,
-    totalLessons: 24,
-    completedLessons: 11
-  };
+  useEffect(() => {
+    const pathname = location.pathname;
+    const matchedKey = Object.keys(MENU_MAP).find((key) => pathname === key || pathname.startsWith(`${key}/`));
+    if (matchedKey) {
+      setActiveMenuItem(MENU_MAP[matchedKey]);
+    } else {
+      setActiveMenuItem('overview');
+    }
+  }, [location.pathname]);
 
-  const learningStats = [
-    { label: 'Tổng thời lượng', value: '15 phút', icon: Clock, color: '#3b82f6' },
-    { label: 'Tổng số cúp đạt', value: '68', icon: Award, color: '#f59e0b' },
-    { label: 'Tổng số bài test', value: '12', icon: Target, color: '#ef4444' },
-    { label: 'Tổng số bài học', value: '24', icon: BookOpen, color: '#10b981' }
-  ];
+  useEffect(() => {
+    let isMounted = true;
 
-  const recentLessons = [
-    { id: 1, title: 'Unit 15: Present Perfect', status: 'completed', score: 85 },
-    { id: 2, title: 'Unit 16: Past Continuous', status: 'in-progress', score: null },
-    { id: 3, title: 'Unit 17: Future Tenses', status: 'locked', score: null }
-  ];
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const [overviewRes, recentRes, classesRes] = await Promise.all([
+          studentProfileAPI.getOverview().catch(() => null),
+          studentProfileAPI.getRecent().catch(() => []),
+          classesAPI.getMyClasses().catch(() => [])
+        ]);
+
+        if (!isMounted) return;
+
+        setOverviewData(overviewRes);
+        setRecentActivity(Array.isArray(recentRes) ? recentRes : []);
+        setMyClasses(Array.isArray(classesRes) ? classesRes : []);
+      } catch (e) {
+        if (!isMounted) return;
+        setError(e?.detail || e?.message || 'Không thể tải dữ liệu học tập');
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const studyProgress = useMemo(() => {
+    if (!overviewData) {
+      return {
+        currentScore: 0,
+        targetScore: 5,
+        cupsEarned: 0,
+        totalCups: 0,
+        unitsCompleted: 0,
+        progress: 0,
+        streakDays: 0,
+        totalLessons: 0,
+        testsCompleted: 0,
+        activitiesCompleted: 0
+      };
+    }
+
+    const unitsCompleted = overviewData.totalLessons || 0;
+    const testsCompleted = overviewData.totalTests || 0;
+    const completionRateRaw = typeof overviewData.completionRate === 'number' ? overviewData.completionRate : null;
+    const progressPercent = completionRateRaw !== null
+      ? Math.max(0, Math.min(100, Math.round(completionRateRaw)))
+      : (unitsCompleted + testsCompleted) > 0
+        ? Math.min(100, Math.round((unitsCompleted / (unitsCompleted + testsCompleted)) * 100))
+        : 0;
+
+    return {
+      currentScore: Number((progressPercent / 20 || 0).toFixed(1)),
+      targetScore: 5.0,
+      cupsEarned: overviewData.totalCups || 0,
+      totalCups: overviewData.totalCups || 0,
+      unitsCompleted,
+      testsCompleted,
+      activitiesCompleted: unitsCompleted + testsCompleted,
+      progress: progressPercent,
+      streakDays: overviewData.streak || 0,
+      totalLessons: overviewData.totalLessons || 0
+    };
+  }, [overviewData]);
+
+  const learningStats = useMemo(() => {
+    if (!overviewData) {
+      return [
+        { label: 'Tổng thời lượng', value: '-', icon: Clock, color: '#3b82f6' },
+        { label: 'Tổng số cúp đạt', value: '0', icon: Award, color: '#f59e0b' },
+        { label: 'Tổng số bài test', value: '0', icon: Target, color: '#ef4444' },
+        { label: 'Tổng số bài học', value: '0', icon: BookOpen, color: '#10b981' }
+      ];
+    }
+
+    const totalTimeMinutes = overviewData.totalTime ? Math.round((overviewData.totalTime || 0) / 60) : null;
+
+    return [
+      {
+        label: 'Tổng thời lượng',
+        value: totalTimeMinutes ? `${totalTimeMinutes} phút` : '-',
+        icon: Clock,
+        color: '#3b82f6'
+      },
+      { label: 'Tổng số cúp đạt', value: String(overviewData.totalCups || 0), icon: Award, color: '#f59e0b' },
+      { label: 'Tổng số bài test', value: String(overviewData.totalTests || 0), icon: Target, color: '#ef4444' },
+      { label: 'Tổng số bài học', value: String(overviewData.totalLessons || 0), icon: BookOpen, color: '#10b981' }
+    ];
+  }, [overviewData]);
+
+  const recentLessons = useMemo(() => {
+    if (!recentActivity.length) {
+      return [];
+    }
+
+    return recentActivity.map((item, index) => {
+      let status = 'locked';
+      if (item.score !== null && item.score !== undefined) {
+        status = item.score >= 70 ? 'completed' : 'in-progress';
+      } else if (item.type === 'lesson') {
+        status = 'in-progress';
+      }
+
+      return {
+        id: item.id || index,
+        title: item.title || 'Bài học',
+        status,
+        score: item.score
+      };
+    });
+  }, [recentActivity]);
+
+  const todayGoal = useMemo(() => {
+    const today = new Date();
+    const formattedToday = today.toLocaleDateString('vi-VN');
+    const activityToday = recentActivity.find((item) => item.date === formattedToday);
+
+    if (activityToday) {
+      return {
+        message: 'Tuyệt vời! Bạn đã hoàn thành nội dung hôm nay.',
+        subMessage: `Tiếp tục duy trì chuỗi ${studyProgress.streakDays} ngày học liên tiếp nhé!`,
+        hasLesson: true
+      };
+    }
+
+    if (myClasses.length > 0) {
+      return {
+        message: 'Bạn có thể tiếp tục học trong các lớp đã tham gia.',
+        subMessage: 'Mở “Khóa học của tôi” để xem lộ trình chi tiết.',
+        hasLesson: false
+      };
+    }
+
+    return {
+      message: 'Chà, hôm nay chưa có hoạt động nào được ghi nhận.',
+      subMessage: 'Hãy bắt đầu buổi học mới hoặc xem lại bài cũ để tiến bộ nhé!',
+      hasLesson: false
+    };
+  }, [recentActivity, myClasses.length, studyProgress.streakDays]);
 
   const handleMenuItemClick = (itemId) => {
     setActiveMenuItem(itemId);
     setIsContentPushed(true);
-    
-    // Reset animation after completion
+
     setTimeout(() => {
       setIsContentPushed(false);
     }, 300);
+  };
+
+  const handleContinueLearning = () => {
+    if (recentLessons.length || myClasses.length) {
+      navigate('/my-classes');
+      return;
+    }
+    navigate('/study-plan');
+  };
+
+  const handleViewDetails = () => {
+    navigate('/learning-profile');
+  };
+
+  if (loading) {
+    return (
+      <ConsistentSidebarLayout
+        activeMenuItem={activeMenuItem}
+        onMenuItemClick={handleMenuItemClick}
+        courseTitle="Học bài"
+      >
+        <div className="lessons-content-wrapper">
+          <main className="dashboard-main">
+            <div className="study-progress-section" style={{ textAlign: 'center' }}>
+              <h2 className="section-title">Đang tải dữ liệu học tập...</h2>
+            </div>
+          </main>
+        </div>
+      </ConsistentSidebarLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <ConsistentSidebarLayout
+        activeMenuItem={activeMenuItem}
+        onMenuItemClick={handleMenuItemClick}
+        courseTitle="Học bài"
+      >
+        <div className="lessons-content-wrapper">
+          <main className="dashboard-main">
+            <div className="study-progress-section" style={{ textAlign: 'center' }}>
+              <h2 className="section-title" style={{ color: '#ef4444' }}>{error}</h2>
+              <p>Vui lòng thử tải lại trang sau ít phút.</p>
+            </div>
+          </main>
+        </div>
+      </ConsistentSidebarLayout>
+    );
+  }
+
+  const userInfo = {
+    name: overviewData?.fullName || overviewData?.username || 'Học sinh',
+    grade: myClasses[0]?.grade || 'Học sinh',
+    currentLevel: studyProgress.currentScore,
+    predictedLevel: Math.min(5, Number((studyProgress.currentScore + 0.5).toFixed(1))),
+    targetLevel: 5.0
   };
 
   return (
@@ -181,7 +372,7 @@ const Lessons = () => {
                 
                 <div className="progress-labels">
                   <span className="label-start">0%</span>
-                  <span className="label-current">{studyProgress.unitsCompleted}/{studyProgress.totalUnits} Units</span>
+                  <span className="label-current">Hoàn thành {studyProgress.progress}% lộ trình</span>
                   <span className="label-end">100%</span>
                 </div>
               </div>
@@ -212,20 +403,21 @@ const Lessons = () => {
                 <div className="motivation-content">
                   <p className="motivation-title">Bạn đang làm rất tốt!</p>
                   <p className="motivation-text">
-                    Đã hoàn thành {studyProgress.unitsCompleted} units. 
-                    Còn {studyProgress.totalUnits - studyProgress.unitsCompleted} units nữa là đạt mục tiêu!
+                    Đã hoàn thành {studyProgress.unitsCompleted} bài học
+                    {studyProgress.testsCompleted ? ` và ${studyProgress.testsCompleted} bài kiểm tra.` : '.'}
+                    {studyProgress.progress ? ` Bạn đã đạt ${studyProgress.progress}% mục tiêu.` : ''}
                   </p>
                 </div>
               </div>
 
               {/* Action Buttons */}
               <div className="progress-actions">
-                <button className="continue-learning-btn-modern">
+                <button className="continue-learning-btn-modern" onClick={handleContinueLearning}>
                   <PlayIcon className="w-5 h-5" />
                   <span>Tiếp tục học</span>
                   <ChevronRightIcon className="w-5 h-5" />
                 </button>
-                <button className="view-details-btn">
+                <button className="view-details-btn" onClick={handleViewDetails}>
                   <ChartBarIcon className="w-5 h-5" />
                   <span>Xem chi tiết</span>
                 </button>
@@ -234,31 +426,38 @@ const Lessons = () => {
           </div>
         </section>
 
-
-
-
-
         {/* Bài học gần đây */}
         <section className="recent-lessons-section">
           <h2 className="section-title">Bài học gần đây</h2>
           <div className="lessons-list">
-            {recentLessons.map(lesson => (
-              <div key={lesson.id} className={`lesson-item ${lesson.status}`}>
-                <div className="lesson-icon">
-                  {lesson.status === 'completed' ? (
-                    <CheckCircle size={24} className="icon-completed" />
-                  ) : lesson.status === 'in-progress' ? (
-                    <Circle size={24} className="icon-inprogress" />
-                  ) : (
-                    <Circle size={24} className="icon-locked" />
-                  )}
-                </div>
+            {recentLessons.length === 0 ? (
+              <div className="lesson-item empty">
                 <div className="lesson-info">
-                  <h4>{lesson.title}</h4>
-                  {lesson.score && <span className="lesson-score">Điểm: {lesson.score}/100</span>}
+                  <h4>Chưa có hoạt động nào gần đây</h4>
+                  <span className="lesson-score">Bắt đầu học để xem tiến độ tại đây</span>
                 </div>
               </div>
-            ))}
+            ) : (
+              recentLessons.map((lesson) => (
+                <div key={lesson.id} className={`lesson-item ${lesson.status}`}>
+                  <div className="lesson-icon">
+                    {lesson.status === 'completed' ? (
+                      <CheckCircle size={24} className="icon-completed" />
+                    ) : lesson.status === 'in-progress' ? (
+                      <Circle size={24} className="icon-inprogress" />
+                    ) : (
+                      <Circle size={24} className="icon-locked" />
+                    )}
+                  </div>
+                  <div className="lesson-info">
+                    <h4>{lesson.title}</h4>
+                    {lesson.score !== undefined && lesson.score !== null && (
+                      <span className="lesson-score">Điểm: {lesson.score}/100</span>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </section>
       </main>
