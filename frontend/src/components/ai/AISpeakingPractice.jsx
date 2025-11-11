@@ -8,6 +8,47 @@ import { useFaceAPI, detectEmotions } from "../../hooks/useFaceAPI";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 /**
+ * Emotion to encouraging message mapping
+ */
+const EMOTION_MESSAGES = {
+  happy: {
+    label: "Tuyệt vời! 😊",
+    message: "Bạn đang rất tự tin và vui vẻ!",
+    color: "bg-green-500/80"
+  },
+  neutral: {
+    label: "Bình tĩnh 😌",
+    message: "Hãy thư giãn và tự tin hơn nhé!",
+    color: "bg-blue-500/80"
+  },
+  sad: {
+    label: "Đừng lo! 💪",
+    message: "Hãy mỉm cười và tự tin lên bạn nhé!",
+    color: "bg-yellow-500/80"
+  },
+  angry: {
+    label: "Thư giãn 🌈",
+    message: "Hít thở sâu và bình tĩnh lại nhé!",
+    color: "bg-orange-500/80"
+  },
+  fearful: {
+    label: "Cố lên! 🌟",
+    message: "Đừng lo lắng, bạn làm rất tốt rồi!",
+    color: "bg-purple-500/80"
+  },
+  disgusted: {
+    label: "Thoải mái 🎯",
+    message: "Hãy tập trung vào nội dung nhé!",
+    color: "bg-red-500/80"
+  },
+  surprised: {
+    label: "Bất ngờ! ✨",
+    message: "Bạn đang làm tốt lắm, tiếp tục nhé!",
+    color: "bg-pink-500/80"
+  }
+};
+
+/**
  * AI Speaking Practice Component
  * Allows users to practice speaking with AI-generated topics
  * Includes real-time emotion detection via webcam
@@ -561,16 +602,26 @@ export function AISpeakingPractice() {
               )}
               <canvas ref={canvasRef} style={{ display: "none" }} />
               
-              {/* Emotion Overlay */}
-              {currentEmotion && isCameraOn && (
-                <div className="absolute top-4 right-4 bg-black/70 text-white px-4 py-2 rounded-lg flex items-center gap-2">
-                  <span className="text-2xl">{currentEmotion.icon}</span>
-                  <div className="text-xs">
-                    <div className="font-semibold">{currentEmotion.emotion}</div>
-                    <div className="text-gray-300">{Math.round(currentEmotion.confidence * 100)}%</div>
+              {/* Emotion Overlay - Compact Badge */}
+              {currentEmotion && isCameraOn && (() => {
+                const emotionKey = currentEmotion.emotion.toLowerCase();
+                const emotionInfo = EMOTION_MESSAGES[emotionKey] || EMOTION_MESSAGES.neutral;
+                
+                return (
+                  <div className="absolute bottom-4 left-4 right-4">
+                    <div className={`${emotionInfo.color} backdrop-blur-md text-white px-3 py-2 rounded-full shadow-lg inline-flex items-center gap-2 max-w-fit`}>
+                      <span className="text-xl">{currentEmotion.icon}</span>
+                      <div className="flex flex-col">
+                        <div className="font-bold text-sm leading-tight">{emotionInfo.label}</div>
+                        <div className="text-xs opacity-90 leading-tight">{emotionInfo.message}</div>
+                      </div>
+                      <div className="text-xs opacity-75 ml-2 bg-white/20 px-2 py-0.5 rounded-full">
+                        {Math.round(currentEmotion.confidence * 100)}%
+                      </div>
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
             </div>
 
             {/* Camera Controls */}

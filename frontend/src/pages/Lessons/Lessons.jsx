@@ -117,30 +117,31 @@ const Lessons = () => {
     };
   }, [overviewData]);
 
-  const learningStats = useMemo(() => {
-    if (!overviewData) {
-      return [
-        { label: 'Tổng thời lượng', value: '-', icon: Clock, color: '#3b82f6' },
-        { label: 'Tổng số cúp đạt', value: '0', icon: Award, color: '#f59e0b' },
-        { label: 'Tổng số bài test', value: '0', icon: Target, color: '#ef4444' },
-        { label: 'Tổng số bài học', value: '0', icon: BookOpen, color: '#10b981' }
-      ];
-    }
+  // Unused - kept for future use
+  // const learningStats = useMemo(() => {
+  //   if (!overviewData) {
+  //     return [
+  //       { label: 'Tổng thời lượng', value: '-', icon: Clock, color: '#3b82f6' },
+  //       { label: 'Tổng số cúp đạt', value: '0', icon: Award, color: '#f59e0b' },
+  //       { label: 'Tổng số bài test', value: '0', icon: Target, color: '#ef4444' },
+  //       { label: 'Tổng số bài học', value: '0', icon: BookOpen, color: '#10b981' }
+  //     ];
+  //   }
 
-    const totalTimeMinutes = overviewData.totalTime ? Math.round((overviewData.totalTime || 0) / 60) : null;
+  //   const totalTimeMinutes = overviewData.totalTime ? Math.round((overviewData.totalTime || 0) / 60) : null;
 
-    return [
-      {
-        label: 'Tổng thời lượng',
-        value: totalTimeMinutes ? `${totalTimeMinutes} phút` : '-',
-        icon: Clock,
-        color: '#3b82f6'
-      },
-      { label: 'Tổng số cúp đạt', value: String(overviewData.totalCups || 0), icon: Award, color: '#f59e0b' },
-      { label: 'Tổng số bài test', value: String(overviewData.totalTests || 0), icon: Target, color: '#ef4444' },
-      { label: 'Tổng số bài học', value: String(overviewData.totalLessons || 0), icon: BookOpen, color: '#10b981' }
-    ];
-  }, [overviewData]);
+  //   return [
+  //     {
+  //       label: 'Tổng thời lượng',
+  //       value: totalTimeMinutes ? `${totalTimeMinutes} phút` : '-',
+  //       icon: Clock,
+  //       color: '#3b82f6'
+  //     },
+  //     { label: 'Tổng số cúp đạt', value: String(overviewData.totalCups || 0), icon: Award, color: '#f59e0b' },
+  //     { label: 'Tổng số bài test', value: String(overviewData.totalTests || 0), icon: Target, color: '#ef4444' },
+  //     { label: 'Tổng số bài học', value: String(overviewData.totalLessons || 0), icon: BookOpen, color: '#10b981' }
+  //   ];
+  // }, [overviewData]);
 
   const recentLessons = useMemo(() => {
     if (!recentActivity.length) {
@@ -250,13 +251,14 @@ const Lessons = () => {
     );
   }
 
-  const userInfo = {
-    name: overviewData?.fullName || overviewData?.username || 'Học sinh',
-    grade: myClasses[0]?.grade || 'Học sinh',
-    currentLevel: studyProgress.currentScore,
-    predictedLevel: Math.min(5, Number((studyProgress.currentScore + 0.5).toFixed(1))),
-    targetLevel: 5.0
-  };
+  // Unused - kept for future use
+  // const userInfo = {
+  //   name: overviewData?.fullName || overviewData?.username || 'Học sinh',
+  //   grade: myClasses[0]?.grade || 'Học sinh',
+  //   currentLevel: studyProgress.currentScore,
+  //   predictedLevel: Math.min(5, Number((studyProgress.currentScore + 0.5).toFixed(1))),
+  //   targetLevel: 5.0
+  // };
 
   return (
     <ConsistentSidebarLayout 
