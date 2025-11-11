@@ -25,7 +25,7 @@ for directory in [AUDIO_DIR, IMAGE_DIR, DOCUMENT_DIR]:
     directory.mkdir(parents=True, exist_ok=True)
 
 # Allowed file extensions
-AUDIO_EXTENSIONS = {".mp3", ".wav", ".ogg", ".m4a", ".aac", ".flac"}
+AUDIO_EXTENSIONS = {".mp3", ".wav", ".ogg", ".m4a", ".aac", ".flac", ".webm"}
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"}
 DOCUMENT_EXTENSIONS = {".pdf", ".doc", ".docx", ".txt", ".ppt", ".pptx"}
 

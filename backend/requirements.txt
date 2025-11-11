@@ -58,3 +58,7 @@ azure-cognitiveservices-speech==1.40.0
 # Translation libraries
 deep-translator==1.11.4
 langdetect==1.0.9
+
+# Emotion Detection
+opencv-python-headless==4.10.0.84
+fer==22.5.1

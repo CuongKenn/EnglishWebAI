@@ -1,4 +1,4 @@
-import { Bot, Languages, MessageCircle, Headphones, PenTool, BookOpen, Layers, Radio } from "lucide-react";
+import { Bot, Languages, MessageCircle, Headphones, PenTool, BookOpen, Layers, Radio, Mic } from "lucide-react";
 import { 
   GlobeAltIcon, 
   ChatBubbleLeftRightIcon, 
@@ -7,7 +7,8 @@ import {
   BookOpenIcon, 
   RectangleStackIcon,
   LightBulbIcon,
-  RadioIcon
+  RadioIcon,
+  MicrophoneIcon
 } from "@heroicons/react/24/outline";
 
 export function AISidebar({ activeTab, onTabChange }) {
@@ -32,6 +33,13 @@ export function AISidebar({ activeTab, onTabChange }) {
       label: "Voice Conversation",
       gradient: "from-violet-500 to-purple-500",
       heroIcon: RadioIcon,
+    },
+    {
+      id: "speaking",
+      icon: Mic,
+      label: "Luyện Speaking AI",
+      gradient: "from-rose-500 to-pink-500",
+      heroIcon: MicrophoneIcon,
     },
     {
       id: "listening",

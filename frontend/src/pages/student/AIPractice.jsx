@@ -3,6 +3,7 @@ import { AISidebar } from "../../components/ai/AISidebar";
 import { TranslateAI } from "../../components/ai/TranslateAI";
 import { ConversationAI } from "../../components/ai/ConversationAI";
 import { ElevenLabsWidget } from "../../components/ai/ElevenLabsWidget";
+import { AISpeakingPractice } from "../../components/ai/AISpeakingPractice";
 import { ListeningAI } from "../../components/ai/ListeningAI";
 import { WritingAI } from "../../components/ai/WritingAI";
 import { ReadingAI } from "../../components/ai/ReadingAI";
@@ -20,6 +21,8 @@ export default function AIPractice() {
         return <ConversationAI />;
       case "voice-conversation":
         return <ElevenLabsWidget />;
+      case "speaking":
+        return <AISpeakingPractice />;
       case "listening":
         return <ListeningAI />;
       case "writing":
