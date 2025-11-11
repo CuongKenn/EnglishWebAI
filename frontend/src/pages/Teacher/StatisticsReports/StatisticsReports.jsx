@@ -13,6 +13,15 @@ import {
   DocumentTextIcon,
 } from '@heroicons/react/24/outline';
 
+const SCORE_RANGE_COLORS = {
+  '0-4': '#ef4444',
+  '4-6': '#f59e0b',
+  '6-8': '#10b981',
+  '8-10': '#3b82f6',
+};
+
+const getScoreRangeColor = (range) => SCORE_RANGE_COLORS[range] || '#6366f1';
+
 const DEFAULT_STATS = {
   total_students: 0,
   avg_score: 0,
@@ -274,17 +283,22 @@ const StatisticsReports = () => {
                 {statistics.score_distribution.length === 0 ? (
                   <div className="empty-state">Chưa có điểm để thống kê</div>
                 ) : (
-                  <div className="distribution-chart">
+                  <div className="column-chart">
                     {statistics.score_distribution.map((item) => (
-                      <div
-                        key={item.range}
-                        className="dist-bar"
-                        style={{ height: `${Math.max(item.percentage, 5)}%` }}
-                      >
-                        <span>{item.range}</span>
-                        <span>
-                          {item.count} HS ({item.percentage.toFixed(1)}%)
-                        </span>
+                      <div key={item.range} className="column">
+                        <div className="column-bar-wrapper">
+                          <div
+                            className="column-bar score"
+                            style={{
+                              height: `${Math.max(item.percentage, 8)}%`,
+                              background: `linear-gradient(180deg, ${getScoreRangeColor(item.range)}CC 0%, ${getScoreRangeColor(item.range)} 100%)`
+                            }}
+                          >
+                            <span>{item.count}</span>
+                          </div>
+                        </div>
+                        <div className="column-label">Điểm {item.range}</div>
+                        <div className="column-sub">{item.percentage.toFixed(0)}%</div>
                       </div>
                     ))}
                   </div>
@@ -332,19 +346,19 @@ const StatisticsReports = () => {
                 {statistics.monthly_progress.length === 0 ? (
                   <div className="empty-state">Chưa có dữ liệu theo tháng</div>
                 ) : (
-                  <div className="attendance-bars">
+                  <div className="column-chart">
                     {statistics.monthly_progress.map((month) => (
-                      <div key={month.month} className="attendance-bar">
-                        <div className="bar-label">Tháng {month.month.replace('T', '')}</div>
-                        <div className="bar-track">
+                      <div key={month.month} className="column">
+                        <div className="column-bar-wrapper">
                           <div
-                            className="bar-fill blue"
-                            style={{ width: `${Math.min(month.avg_score, 100)}%` }}
+                            className="column-bar progress"
+                            style={{ height: `${Math.max(month.avg_score, 8)}%` }}
                           >
-                            {month.avg_score.toFixed(1)}%
+                            <span>{month.avg_score.toFixed(1)}</span>
+                            <small>{month.submissions} bài</small>
                           </div>
                         </div>
-                        <div className="bar-meta">{month.submissions} bài</div>
+                        <div className="column-label">Tháng {month.month.replace('T', '')}</div>
                       </div>
                     ))}
                   </div>
@@ -430,7 +444,7 @@ const StatisticsReports = () => {
                 <div className="timeline-dot blue"></div>
                 <div className="timeline-content">
                   <div className="timeline-title">Học sinh xuất sắc</div>
-                  <div className="timeline-desc">{statistics.excellent_count} học sinh đạt >= 80%</div>
+                  <div className="timeline-desc">{statistics.excellent_count} học sinh đạt {'≥ 80%'}</div>
                 </div>
               </div>
               <div className="timeline-item">
