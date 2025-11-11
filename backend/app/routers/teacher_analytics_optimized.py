@@ -410,27 +410,43 @@ def _calculate_class_performance(
 
 
 def _calculate_score_distribution(graded_submissions: list[Submission]) -> list[ScoreDistribution]:
-    """Calculate score distribution"""
+    """Calculate score distribution by student average"""
     ranges = {'0-4': 0, '4-6': 0, '6-8': 0, '8-10': 0}
 
+    if not graded_submissions:
+        return [
+            ScoreDistribution(range=r, count=0, percentage=0.0)
+            for r in ranges
+        ]
+
+    student_scores: dict[int, list[float]] = {}
+
     for sub in graded_submissions:
+        if sub.student_id is None or not sub.exercise or not sub.exercise.max_score:
+            continue
         score_10 = (sub.score / sub.exercise.max_score) * 10
-        if score_10 < 4:
+        student_scores.setdefault(sub.student_id, []).append(score_10)
+
+    for scores in student_scores.values():
+        if not scores:
+            continue
+        avg_score_10 = sum(scores) / len(scores)
+        if avg_score_10 < 4:
             ranges['0-4'] += 1
-        elif score_10 < 6:
+        elif avg_score_10 < 6:
             ranges['4-6'] += 1
-        elif score_10 < 8:
+        elif avg_score_10 < 8:
             ranges['6-8'] += 1
         else:
             ranges['8-10'] += 1
 
-    total = len(graded_submissions) if graded_submissions else 1
+    total_students = len(student_scores) if student_scores else 1
 
     return [
         ScoreDistribution(
             range=r,
             count=count,
-            percentage=round((count / total) * 100, 1)
+            percentage=round((count / total_students) * 100, 1)
         )
         for r, count in ranges.items()
     ]
