@@ -2,7 +2,7 @@ import { useState } from "react";
 import { AISidebar } from "../../components/ai/AISidebar";
 import { TranslateAI } from "../../components/ai/TranslateAI";
 import { ConversationAI } from "../../components/ai/ConversationAI";
-import { ElevenLabsWidget } from "../../components/ai/ElevenLabsWidget";
+import { ElevenLabsConversation } from "../../components/ai/ElevenLabsConversation";
 import { AISpeakingPractice } from "../../components/ai/AISpeakingPractice";
 import { ListeningAI } from "../../components/ai/ListeningAI";
 import { WritingAI } from "../../components/ai/WritingAI";
@@ -20,7 +20,7 @@ export default function AIPractice() {
       case "conversation":
         return <ConversationAI />;
       case "voice-conversation":
-        return <ElevenLabsWidget />;
+        return <ElevenLabsConversation />;
       case "speaking":
         return <AISpeakingPractice />;
       case "listening":

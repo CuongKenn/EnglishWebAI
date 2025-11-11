@@ -100,13 +100,13 @@ class AzureSpeechService:
 
             # Create speech recognizer (NO pronunciation assessment for spontaneous speech)
             self.speech_config.speech_recognition_language = language
-            
+
             # Set longer timeout for initial silence (15 seconds instead of default 5)
             self.speech_config.set_property(
                 speechsdk.PropertyId.Speech_SegmentationSilenceTimeoutMs,
                 "15000"
             )
-            
+
             recognizer = speechsdk.SpeechRecognizer(
                 speech_config=self.speech_config,
                 audio_config=audio_config

@@ -7,7 +7,6 @@ import json
 import logging
 from typing import Any
 
-from app.core.config import settings
 from app.services.openai_service import OpenAIService
 
 logger = logging.getLogger(__name__)
@@ -113,7 +112,7 @@ Respond with ONLY the JSON object, no additional text."""
                     if lines and lines[-1].strip() == "```":
                         lines = lines[:-1]
                     response_text = "\n".join(lines)
-                
+
                 result = json.loads(response_text)
             except json.JSONDecodeError as e:
                 # If response is not JSON, extract manually
@@ -242,7 +241,7 @@ Evaluate this speaking performance."""
             # Parse JSON response with markdown stripping
             try:
                 response_text = response.strip()
-                
+
                 # Strip markdown code blocks if present
                 if response_text.startswith("```"):
                     lines = response_text.split("\n")
@@ -251,10 +250,10 @@ Evaluate this speaking performance."""
                     if lines and lines[-1].strip() == "```":
                         lines = lines[:-1]
                     response_text = "\n".join(lines)
-                
+
                 result = json.loads(response_text)
                 logger.info(f"Successfully parsed grading JSON. Score: {result.get('overall_score', 'N/A')}")
-                
+
             except json.JSONDecodeError as e:
                 logger.warning(f"OpenAI grading response was not valid JSON: {str(e)}")
                 logger.warning(f"Response preview: {response[:500]}")

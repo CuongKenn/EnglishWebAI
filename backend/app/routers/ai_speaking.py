@@ -57,13 +57,12 @@ async def generate_speaking_topic(
     vocabulary suggestions, and tips based on level and category
     """
     try:
-        result = await speaking_service.generate_speaking_topic(
+        return await speaking_service.generate_speaking_topic(
             level=request.level,
             category=request.category,
             duration=request.duration,
             custom_prompt=request.custom_prompt,
         )
-        return result
 
     except Exception as e:
         logger.error(f"Error generating speaking topic: {e}")
