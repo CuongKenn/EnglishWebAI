@@ -249,27 +249,32 @@ const Statistics = () => {
         {/* Score Distribution */}
         <Card className="p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Phân bố điểm</h3>
-          <div className="space-y-4">
-            {statistics.score_distribution.map((item) => (
-              <div key={item.range}>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-900 font-medium">Điểm {item.range}</span>
-                  <span className="text-sm text-gray-600">{item.count} học sinh ({item.percentage.toFixed(0)}%)</span>
-                </div>
-                <div className="h-8 bg-gray-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full flex items-center justify-end pr-2"
-                    style={{ 
-                      width: `${item.percentage}%`,
-                      backgroundColor: getScoreRangeColor(item.range)
-                    }}
-                  >
-                    <span className="text-xs text-white font-medium">{item.count}</span>
+          {statistics.score_distribution.length === 0 ? (
+            <div className="text-gray-500 text-sm">Chưa có dữ liệu để thống kê</div>
+          ) : (
+            <div className="h-56 flex items-end gap-4">
+              {statistics.score_distribution.map((item) => {
+                const heightPercent = Math.max(item.percentage, 8);
+                return (
+                  <div key={item.range} className="flex-1 flex flex-col items-center justify-end">
+                    <div className="w-full h-48 bg-gray-100 rounded-t-2xl flex items-end justify-center overflow-hidden shadow-inner">
+                      <div
+                        className="w-full max-w-[72px] rounded-t-2xl flex items-center justify-center text-white font-semibold text-sm transition-all"
+                        style={{
+                          height: `${heightPercent}%`,
+                          background: `linear-gradient(180deg, ${getScoreRangeColor(item.range)}CC 0%, ${getScoreRangeColor(item.range)} 100%)`
+                        }}
+                      >
+                        {item.count}
+                      </div>
+                    </div>
+                    <div className="mt-3 text-sm font-medium text-gray-900">Điểm {item.range}</div>
+                    <div className="text-xs text-gray-500">{item.percentage.toFixed(0)}%</div>
                   </div>
-                </div>
-              </div>
-            ))}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </Card>
 
         {/* Skills Analysis */}
@@ -301,24 +306,29 @@ const Statistics = () => {
         {/* Monthly Progress */}
         <Card className="p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Tiến độ theo tháng</h3>
-          <div className="space-y-4">
-            {statistics.monthly_progress.map((month) => (
-              <div key={month.month}>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-900 font-medium">Tháng {month.month}</span>
-                  <span className="text-sm text-gray-600">{month.avg_score.toFixed(1)} ({month.submissions} bài)</span>
-                </div>
-                <div className="h-8 bg-gray-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-blue-500 rounded-full flex items-center justify-end pr-2"
-                    style={{ width: `${month.avg_score}%` }}
-                  >
-                    <span className="text-xs text-white font-medium">{month.avg_score.toFixed(1)}</span>
+          {statistics.monthly_progress.length === 0 ? (
+            <div className="text-gray-500 text-sm">Chưa có dữ liệu theo tháng</div>
+          ) : (
+            <div className="h-56 flex items-end gap-4">
+              {statistics.monthly_progress.map((month) => {
+                const heightPercent = Math.max(month.avg_score, 8);
+                return (
+                  <div key={month.month} className="flex-1 flex flex-col items-center justify-end">
+                    <div className="w-full h-48 bg-gray-100 rounded-t-2xl flex items-end justify-center overflow-hidden shadow-inner">
+                      <div
+                        className="w-full max-w-[72px] rounded-t-2xl bg-blue-500 flex flex-col items-center justify-end text-white font-semibold text-sm gap-1 py-2 transition-all"
+                        style={{ height: `${heightPercent}%` }}
+                      >
+                        <span>{month.avg_score.toFixed(1)}</span>
+                        <span className="text-[11px] font-normal opacity-80">{month.submissions} bài</span>
+                      </div>
+                    </div>
+                    <div className="mt-3 text-sm font-medium text-gray-900">Tháng {month.month}</div>
                   </div>
-                </div>
-              </div>
-            ))}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </Card>
       </div>
 
