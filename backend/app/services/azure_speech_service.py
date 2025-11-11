@@ -47,6 +47,134 @@ class AzureSpeechService:
             self.openai_model = None
             logger.info("WARNING: OPENAI_API_KEY not found. Will use template feedback.")
 
+    def transcribe_audio(self, audio_file_path: str, language: str = "en-US") -> dict:
+        """
+        Transcribe audio without reference text (for spontaneous speech)
+
+        Args:
+            audio_file_path: Path to audio file (wav, mp3, webm, etc.)
+            language: Language code (en-US, vi-VN, etc.)
+
+        Returns:
+            dict: Transcription results
+        """
+        logger.info(f"[transcribe_audio] START - audio: {audio_file_path}, language: {language}")
+
+        if not self.speech_config:
+            logger.error("[transcribe_audio] ERROR: No Azure key configured")
+            return {
+                "success": False,
+                "error": "Azure Speech API key not configured",
+                "transcription": ""
+            }
+
+        wav_path = None
+        try:
+            # Convert audio to 16kHz mono PCM WAV for Azure Speech SDK
+            src_path = Path(audio_file_path)
+            fd, wav_path = tempfile.mkstemp(suffix='.wav')
+            os.close(fd)
+
+            try:
+                # ffmpeg conversion
+                cmd = [
+                    'ffmpeg', '-y',
+                    '-i', str(src_path),
+                    '-ac', '1',           # mono
+                    '-ar', '16000',       # 16kHz
+                    '-f', 'wav',
+                    '-acodec', 'pcm_s16le',
+                    wav_path
+                ]
+                subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                logger.info(f"[transcribe_audio] Audio converted to WAV: {wav_path}")
+            except Exception as conv_err:
+                logger.warning(f"[transcribe_audio] ffmpeg conversion failed: {conv_err}")
+                # Try using original file
+                if os.path.exists(wav_path):
+                    os.unlink(wav_path)
+                wav_path = str(src_path)
+
+            # Configure audio input from file
+            audio_config = speechsdk.audio.AudioConfig(filename=wav_path)
+
+            # Create speech recognizer (NO pronunciation assessment for spontaneous speech)
+            self.speech_config.speech_recognition_language = language
+            
+            # Set longer timeout for initial silence (15 seconds instead of default 5)
+            self.speech_config.set_property(
+                speechsdk.PropertyId.Speech_SegmentationSilenceTimeoutMs,
+                "15000"
+            )
+            
+            recognizer = speechsdk.SpeechRecognizer(
+                speech_config=self.speech_config,
+                audio_config=audio_config
+            )
+
+            logger.info("[transcribe_audio] Calling Azure Speech SDK recognize_once()...")
+
+            # Perform recognition
+            result = recognizer.recognize_once()
+
+            logger.info(f"[transcribe_audio] Recognition result reason: {result.reason}")
+
+            if result.reason == speechsdk.ResultReason.RecognizedSpeech:
+                logger.info(f"[transcribe_audio] Recognized text: {result.text}")
+                return {
+                    "success": True,
+                    "transcription": result.text,
+                    "pronunciation_assessment": None  # No assessment for spontaneous speech
+                }
+
+            if result.reason == speechsdk.ResultReason.NoMatch:
+                logger.warning(f"[transcribe_audio] No speech recognized. Details: {result.no_match_details}")
+                return {
+                    "success": False,
+                    "error": "No speech could be recognized. Please speak clearly into the microphone.",
+                    "transcription": ""
+                }
+
+            if result.reason == speechsdk.ResultReason.Canceled:
+                cancellation = result.cancellation_details
+                logger.error(f"[transcribe_audio] Recognition canceled: {cancellation.reason}")
+                if cancellation.reason == speechsdk.CancellationReason.Error:
+                    logger.error(f"[transcribe_audio] Error details: {cancellation.error_details}")
+                    return {
+                        "success": False,
+                        "error": f"Recognition error: {cancellation.error_details}",
+                        "transcription": ""
+                    }
+                return {
+                    "success": False,
+                    "error": f"Recognition canceled: {cancellation.reason}",
+                    "transcription": ""
+                }
+
+            logger.error(f"[transcribe_audio] Recognition failed with reason: {result.reason}")
+            return {
+                "success": False,
+                "error": f"Recognition failed: {result.reason}",
+                "transcription": ""
+            }
+
+        except Exception as e:
+            logger.error(f"[transcribe_audio] Exception: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return {
+                "success": False,
+                "error": str(e),
+                "transcription": ""
+            }
+        finally:
+            # Cleanup temp file
+            try:
+                if wav_path and wav_path != str(audio_file_path) and os.path.exists(wav_path):
+                    os.unlink(wav_path)
+            except Exception:
+                pass
+
     def assess_pronunciation(self, audio_file_path: str, reference_text: str, language: str = "en-US") -> dict:
         """
         Assess pronunciation using Azure Speech SDK

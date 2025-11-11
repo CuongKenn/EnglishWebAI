@@ -7,9 +7,8 @@ Note: Emotion detection now runs locally in frontend using face-api.js
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
 
-from app.core.dependencies import get_current_user, get_db
+from app.core.dependencies import get_current_user
 from app.models.user import User
 from app.schemas.ai_speaking import (
     GenerateSpeakingTopicRequest,
@@ -139,15 +138,15 @@ async def transcribe_audio(
     try:
         # Convert relative path to absolute path
         from pathlib import Path
-        
+
         logger.info(f"Transcribe request - audio_path: {audio_path}, language: {language}")
-        
+
         # Remove /media/ prefix properly (not using lstrip which removes chars, not prefix)
         if audio_path.startswith("/media/"):
             audio_path = audio_path[7:]  # Remove "/media/"
         elif audio_path.startswith("media/"):
             audio_path = audio_path[6:]  # Remove "media/"
-        
+
         full_path = Path("./media") / audio_path
         logger.info(f"Resolved full path: {full_path}, exists: {full_path.exists()}")
 
@@ -158,10 +157,9 @@ async def transcribe_audio(
                 detail=f"Audio file not found: {audio_path}",
             )
 
-        # Transcribe using Azure Speech
-        result = azure_speech_service.assess_pronunciation(
+        # Transcribe using Azure Speech (spontaneous speech - no reference text)
+        result = azure_speech_service.transcribe_audio(
             audio_file_path=str(full_path),
-            reference_text="",  # Empty for spontaneous speech
             language=language,
         )
 
