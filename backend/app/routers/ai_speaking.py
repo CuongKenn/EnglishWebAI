@@ -71,7 +71,7 @@ async def generate_speaking_topic(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to generate speaking topic: {str(e)}",
-        )
+        ) from e
 
 
 @router.post("/grade", response_model=SpeakingGradingResponse)
@@ -114,7 +114,7 @@ async def grade_speaking(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to grade speaking: {str(e)}",
-        )
+        ) from e
 
 
 # ============ Azure Speech Transcription Endpoint ============
@@ -185,7 +185,7 @@ async def transcribe_audio(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to transcribe audio: {str(e)}",
-        )
+        ) from e
 
 
 
@@ -203,15 +203,14 @@ async def emotion_session_summary(
     """Summarize locally detected emotions for inclusion in grading."""
 
     try:
-        summary = speaking_service.summarize_emotion_session(
+        return speaking_service.summarize_emotion_session(
             [log.model_dump() for log in emotion_logs],
         )
-        return summary
 
     except Exception as exc:
         logger.error(f"Error summarizing emotion session: {exc}")
         raise HTTPException(
             status_code=500,
             detail=f"Failed to summarize emotion session: {exc}",
-        )
+        ) from exc
 

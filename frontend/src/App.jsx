@@ -36,6 +36,7 @@ import SpeakingExerciseShowcase from './pages/SpeakingExercise/SpeakingExerciseS
 import ReadingExercise from './pages/ReadingExercise/ReadingExercise';
 import WritingExercise from './pages/WritingExercise/WritingExercise';
 import ListeningExercise from './pages/ListeningExercise/ListeningExercise';
+import ImageRecognition from './pages/ImageRecognition/ImageRecognition';
 import CourseLessons from './pages/CourseLessons/CourseLessons';
 
 
@@ -288,11 +289,14 @@ function App() {
         }
       />
 
-
-
-
-
-
+      <Route
+        path="/image-recognition"
+        element={
+          <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+            <ImageRecognition />
+          </Layout>
+        }
+      />
 
       <Route
         path="/speaking-demo"

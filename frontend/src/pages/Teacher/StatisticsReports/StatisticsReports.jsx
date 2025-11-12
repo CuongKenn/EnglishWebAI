@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import './StatisticsReports.css';
-import { apiV1 } from '../../../services/api';
+import { apiV1 as apiClient } from '../../../services/api';
 import {
   UserGroupIcon,
   StarIcon,

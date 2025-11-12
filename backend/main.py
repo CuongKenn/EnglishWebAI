@@ -16,6 +16,7 @@ from app.routers import (
     ai_analytics,
     ai_conversation,
     ai_flashcard,
+    ai_image_recognition,
     ai_listening,
     ai_reading,
     ai_speaking,
@@ -117,6 +118,7 @@ app.include_router(ai_reading.router, prefix=f"{settings.API_PREFIX}/ai/reading"
 app.include_router(ai_listening.router, prefix=f"{settings.API_PREFIX}/ai/listening", tags=["AI Listening"])
 app.include_router(ai_flashcard.router, prefix=f"{settings.API_PREFIX}/ai", tags=["AI Flashcard"])
 app.include_router(ai_speaking.router, tags=["AI Speaking"])
+app.include_router(ai_image_recognition.router, tags=["AI Image Recognition"])
 app.include_router(ai_usage.router, tags=["AI Usage"])
 app.include_router(ai_analytics.router, tags=["AI Analytics (Admin)"])
 app.include_router(student_profile.router)

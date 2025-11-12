@@ -1,4 +1,4 @@
-import { Bot, Languages, MessageCircle, Headphones, PenTool, BookOpen, Layers, Radio, Mic } from "lucide-react";
+import { Bot, Languages, MessageCircle, Headphones, PenTool, BookOpen, Layers, Radio, Mic, Camera } from "lucide-react";
 import { 
   GlobeAltIcon, 
   ChatBubbleLeftRightIcon, 
@@ -8,7 +8,8 @@ import {
   RectangleStackIcon,
   LightBulbIcon,
   RadioIcon,
-  MicrophoneIcon
+  MicrophoneIcon,
+  CameraIcon
 } from "@heroicons/react/24/outline";
 
 export function AISidebar({ activeTab, onTabChange }) {
@@ -68,6 +69,13 @@ export function AISidebar({ activeTab, onTabChange }) {
       label: "Flashcard AI",
       gradient: "from-pink-500 to-rose-500",
       heroIcon: RectangleStackIcon,
+    },
+    {
+      id: "image-recognition",
+      icon: Camera,
+      label: "Nhận diện hình ảnh",
+      gradient: "from-teal-500 to-green-500",
+      heroIcon: CameraIcon,
     },
   ];
 

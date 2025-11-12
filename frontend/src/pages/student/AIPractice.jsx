@@ -8,6 +8,7 @@ import { ListeningAI } from "../../components/ai/ListeningAI";
 import { WritingAI } from "../../components/ai/WritingAI";
 import { ReadingAI } from "../../components/ai/ReadingAI";
 import { FlashcardAI } from "../../components/ai/FlashcardAI";
+import ImageRecognition from "../ImageRecognition/ImageRecognition";
 import "./AIPractice.css";
 
 export default function AIPractice() {
@@ -31,6 +32,8 @@ export default function AIPractice() {
         return <ReadingAI />;
       case "flashcard":
         return <FlashcardAI />;
+      case "image-recognition":
+        return <ImageRecognition />;
       default:
         return <TranslateAI />;
     }
