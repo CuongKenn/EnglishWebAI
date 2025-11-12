@@ -5,6 +5,7 @@ Generates speaking topics and provides detailed grading using Azure Speech + Ope
 
 import json
 import logging
+from collections import Counter
 from typing import Any
 
 from app.services.openai_service import OpenAIService
@@ -41,6 +42,37 @@ class AISpeakingService:
         "Culture & Traditions",
         "Hobbies & Interests",
     ]
+
+    EMOTION_FEEDBACK = {
+        "happy": {
+            "feedback": "Bạn trông rất tự tin và tích cực trong suốt bài nói!",
+            "icon": "😊",
+        },
+        "neutral": {
+            "feedback": "Bạn giữ được sự bình tĩnh. Hãy thử thể hiện cảm xúc rõ hơn để phần trình bày hấp dẫn hơn.",
+            "icon": "😌",
+        },
+        "sad": {
+            "feedback": "Có vẻ bạn hơi thiếu năng lượng. Hãy mỉm cười và thể hiện sự hứng thú với chủ đề nhé!",
+            "icon": "😔",
+        },
+        "angry": {
+            "feedback": "Đừng quên giữ giọng điệu nhẹ nhàng và thoải mái hơn khi nói.",
+            "icon": "😠",
+        },
+        "fearful": {
+            "feedback": "Đừng lo lắng! Hít thở sâu và tự tin thể hiện ý tưởng của mình nào.",
+            "icon": "😨",
+        },
+        "disgusted": {
+            "feedback": "Thử thả lỏng và tập trung vào nội dung bài nói để cảm xúc tích cực hơn.",
+            "icon": "😒",
+        },
+        "surprised": {
+            "feedback": "Nguồn năng lượng của bạn rất tốt! Hãy tiếp tục duy trì sự nhiệt tình này.",
+            "icon": "😲",
+        },
+    }
 
     async def generate_speaking_topic(
         self,
@@ -363,3 +395,69 @@ Evaluate this speaking performance."""
                 "mispronounced_words": [],
                 "feedback": "Unable to assess pronunciation.",
             }
+
+    def summarize_emotion_session(
+        self,
+        emotion_logs: list[dict[str, Any]] | None,
+    ) -> dict[str, Any]:
+        """Summarize emotion logs captured on frontend."""
+
+        default_summary = {
+            "dominant_emotion": "neutral",
+            "average_confidence": 0.0,
+            "emotion_distribution": {},
+            "total_frames": len(emotion_logs or []),
+            "valid_detections": 0,
+            "feedback": self.EMOTION_FEEDBACK["neutral"]["feedback"],
+            "icon": self.EMOTION_FEEDBACK["neutral"]["icon"],
+        }
+
+        if not emotion_logs:
+            return default_summary
+
+        valid_logs = [
+            log for log in emotion_logs if log.get("face_detected", True)
+        ]
+
+        if not valid_logs:
+            return default_summary
+
+        total_frames = len(emotion_logs)
+        valid_detections = len(valid_logs)
+
+        emotion_counts = Counter(
+            (log.get("emotion") or "neutral").lower() for log in valid_logs
+        )
+        # Remove unknown keys
+        emotion_counts = Counter(
+            {
+                emotion if emotion in self.EMOTION_FEEDBACK else "neutral": count
+                for emotion, count in emotion_counts.items()
+            }
+        )
+
+        if not emotion_counts:
+            return default_summary
+
+        dominant_emotion, _ = emotion_counts.most_common(1)[0]
+
+        average_confidence = sum(
+            float(log.get("confidence", 0)) for log in valid_logs
+        ) / max(valid_detections, 1)
+
+        distribution = {
+            emotion: round(count / valid_detections, 4)
+            for emotion, count in emotion_counts.items()
+        }
+
+        feedback_meta = self.EMOTION_FEEDBACK.get(dominant_emotion, self.EMOTION_FEEDBACK["neutral"])
+
+        return {
+            "dominant_emotion": dominant_emotion,
+            "average_confidence": round(average_confidence, 4),
+            "emotion_distribution": distribution,
+            "total_frames": total_frames,
+            "valid_detections": valid_detections,
+            "feedback": feedback_meta["feedback"],
+            "icon": feedback_meta["icon"],
+        }

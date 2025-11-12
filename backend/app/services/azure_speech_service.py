@@ -8,6 +8,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+from typing import Any
 
 import azure.cognitiveservices.speech as speechsdk
 import openai
@@ -43,8 +44,12 @@ class AzureSpeechService:
         if self.openai_api_key:
             openai.api_key = self.openai_api_key
             self.openai_model = settings.OPENAI_MODEL if hasattr(settings, 'OPENAI_MODEL') else os.getenv('OPENAI_MODEL', 'gpt-5-nano')
+            self.openai_transcription_model = os.getenv(
+                "OPENAI_TRANSCRIPTION_MODEL", "gpt-4o-mini-transcribe"
+            )
         else:
             self.openai_model = None
+            self.openai_transcription_model = None
             logger.info("WARNING: OPENAI_API_KEY not found. Will use template feedback.")
 
     def transcribe_audio(self, audio_file_path: str, language: str = "en-US") -> dict:
@@ -62,11 +67,7 @@ class AzureSpeechService:
 
         if not self.speech_config:
             logger.error("[transcribe_audio] ERROR: No Azure key configured")
-            return {
-                "success": False,
-                "error": "Azure Speech API key not configured",
-                "transcription": ""
-            }
+            return self._transcribe_with_openai(audio_file_path, language)
 
         wav_path = None
         try:
@@ -129,44 +130,46 @@ class AzureSpeechService:
 
             if result.reason == speechsdk.ResultReason.NoMatch:
                 logger.warning(f"[transcribe_audio] No speech recognized. Details: {result.no_match_details}")
-                return {
-                    "success": False,
-                    "error": "No speech could be recognized. Please speak clearly into the microphone.",
-                    "transcription": ""
-                }
+                fallback = self._transcribe_with_openai(audio_file_path, language)
+                if fallback["success"]:
+                    return fallback
+                fallback.setdefault("status_code", 422)
+                return fallback
 
             if result.reason == speechsdk.ResultReason.Canceled:
                 cancellation = result.cancellation_details
                 logger.error(f"[transcribe_audio] Recognition canceled: {cancellation.reason}")
                 if cancellation.reason == speechsdk.CancellationReason.Error:
                     logger.error(f"[transcribe_audio] Error details: {cancellation.error_details}")
-                    return {
-                        "success": False,
-                        "error": f"Recognition error: {cancellation.error_details}",
-                        "transcription": ""
-                    }
-                return {
-                    "success": False,
-                    "error": f"Recognition canceled: {cancellation.reason}",
-                    "transcription": ""
-                }
+                    fallback = self._transcribe_with_openai(audio_file_path, language)
+                    if fallback["success"]:
+                        return fallback
+                    fallback.setdefault("status_code", 502)
+                    return fallback
+                fallback = self._transcribe_with_openai(audio_file_path, language)
+                if fallback["success"]:
+                    return fallback
+                fallback.setdefault("status_code", 500)
+                return fallback
 
             logger.error(f"[transcribe_audio] Recognition failed with reason: {result.reason}")
-            return {
-                "success": False,
-                "error": f"Recognition failed: {result.reason}",
-                "transcription": ""
-            }
+            fallback = self._transcribe_with_openai(audio_file_path, language)
+            if fallback["success"]:
+                return fallback
+            fallback.setdefault("status_code", 500)
+            fallback.setdefault("error", f"Recognition failed: {result.reason}")
+            return fallback
 
         except Exception as e:
             logger.error(f"[transcribe_audio] Exception: {str(e)}")
             import traceback
             traceback.print_exc()
-            return {
-                "success": False,
-                "error": str(e),
-                "transcription": ""
-            }
+            fallback = self._transcribe_with_openai(audio_file_path, language)
+            if fallback["success"]:
+                return fallback
+            fallback.setdefault("status_code", 500)
+            fallback.setdefault("error", str(e))
+            return fallback
         finally:
             # Cleanup temp file
             try:
@@ -174,6 +177,55 @@ class AzureSpeechService:
                     os.unlink(wav_path)
             except Exception:
                 pass
+
+    def _transcribe_with_openai(self, audio_file_path: str, language: str) -> dict[str, Any]:
+        """Fallback transcription using OpenAI Whisper/GPT audio models."""
+        if not self.openai_api_key:
+            logger.error("[transcribe_audio] No transcription service available (Azure & OpenAI unset)")
+            return {
+                "success": False,
+                "error": "Speech transcription is not configured. Please set AZURE_SPEECH_KEY or OPENAI_API_KEY.",
+                "transcription": "",
+                "status_code": 503,
+            }
+
+        model_name = self.openai_transcription_model or "gpt-4o-mini-transcribe"
+        logger.info(
+            f"[transcribe_audio] Using OpenAI fallback transcription with model: {model_name}"
+        )
+
+        try:
+            language_code = language.split("-")[0] if language else None
+            with open(audio_file_path, "rb") as audio_file:
+                response = openai.audio.transcriptions.create(
+                    model=model_name,
+                    file=audio_file,
+                    language=language_code,
+                )
+
+            text = getattr(response, "text", None)
+            if text is None and isinstance(response, dict):
+                text = response.get("text")
+
+            if text is None:
+                logger.warning("[transcribe_audio] OpenAI returned no text; defaulting to empty string")
+                text = ""
+
+            return {
+                "success": True,
+                "transcription": text,
+                "pronunciation_assessment": None,
+                "status_code": 200,
+            }
+
+        except Exception as openai_error:
+            logger.error(f"[transcribe_audio] OpenAI fallback failed: {openai_error}")
+            return {
+                "success": False,
+                "error": f"OpenAI transcription failed: {openai_error}",
+                "transcription": "",
+                "status_code": 502,
+            }
 
     def assess_pronunciation(self, audio_file_path: str, reference_text: str, language: str = "en-US") -> dict:
         """
