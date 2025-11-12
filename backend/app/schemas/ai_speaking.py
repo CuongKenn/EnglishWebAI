@@ -42,6 +42,20 @@ class EmotionSessionSummary(BaseModel):
     icon: str
 
 
+class EmotionLogEntry(BaseModel):
+    """Log entry for emotion detection"""
+
+    timestamp: float | None = Field(
+        None, description="Timestamp of emotion detection if available"
+    )
+    emotion: str = Field(..., description="Detected emotion")
+    confidence: float = Field(..., description="Confidence score (0-1)")
+    all_emotions: dict[str, float] = Field(
+        default_factory=dict, description="All emotion scores"
+    )
+    face_detected: bool = Field(True, description="Whether a face was detected")
+
+
 # ============ Speaking Practice Schemas ============
 
 

@@ -11,6 +11,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.core.dependencies import get_current_user
 from app.models.user import User
 from app.schemas.ai_speaking import (
+    EmotionLogEntry,
+    EmotionSessionSummary,
     GenerateSpeakingTopicRequest,
     GenerateSpeakingTopicResponse,
     SpeakingGradingRequest,
@@ -163,8 +165,9 @@ async def transcribe_audio(
         )
 
         if not result.get("success", False):
+            status_code = int(result.get("status_code", 500))
             raise HTTPException(
-                status_code=500,
+                status_code=status_code,
                 detail=result.get("error", "Transcription failed"),
             )
 
@@ -187,6 +190,28 @@ async def transcribe_audio(
 
 
 # ============ Emotion Detection Endpoints ============
-# DEPRECATED: Emotion detection now runs locally in frontend using face-api.js
-# These endpoints are no longer used but kept for backward compatibility
+
+
+@router.post(
+    "/emotion/session-summary",
+    response_model=EmotionSessionSummary,
+)
+async def emotion_session_summary(
+    emotion_logs: list[EmotionLogEntry],
+    current_user: User = Depends(get_current_user),
+):
+    """Summarize locally detected emotions for inclusion in grading."""
+
+    try:
+        summary = speaking_service.summarize_emotion_session(
+            [log.model_dump() for log in emotion_logs],
+        )
+        return summary
+
+    except Exception as exc:
+        logger.error(f"Error summarizing emotion session: {exc}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to summarize emotion session: {exc}",
+        )
 
