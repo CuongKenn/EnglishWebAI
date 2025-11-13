@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { MdPeople, MdSchool, MdPersonOutline, MdCheckCircle, MdClass, MdLibraryBooks, MdBarChart } from 'react-icons/md';
 import './OverviewStats.css';
 import apiClient from '../../../services/api';
 
@@ -38,14 +39,14 @@ const OverviewStats = () => {
       <div className="admin-content">
         {/* Header */}
         <div className="admin-header">
-          <h1>📊 Thống kê tổng quan</h1>
+          <h1><MdBarChart className="inline-block mr-2" /> Thống kê tổng quan</h1>
           <p>Xem báo cáo và phân tích hiệu suất hệ thống</p>
         </div>
 
         {/* Main Statistics Cards (Real Data) */}
         <div className="stats-grid">
           <div className="stat-card">
-            <div className="stat-icon-box blue">👥</div>
+            <div className="stat-icon-box blue"><MdPeople size={32} /></div>
             <div className="stat-info">
               <div className="stat-title">Tổng người dùng</div>
               <div className="stat-value">{stats.totalUsers}</div>
@@ -54,7 +55,7 @@ const OverviewStats = () => {
           </div>
 
           <div className="stat-card">
-            <div className="stat-icon-box green">👨‍🏫</div>
+            <div className="stat-icon-box green"><MdSchool size={32} /></div>
             <div className="stat-info">
               <div className="stat-title">Giáo viên</div>
               <div className="stat-value">{stats.totalTeachers}</div>
@@ -63,7 +64,7 @@ const OverviewStats = () => {
           </div>
 
           <div className="stat-card">
-            <div className="stat-icon-box orange">👨‍🎓</div>
+            <div className="stat-icon-box orange"><MdPersonOutline size={32} /></div>
             <div className="stat-info">
               <div className="stat-title">Học sinh</div>
               <div className="stat-value">{stats.totalStudents}</div>
@@ -72,7 +73,7 @@ const OverviewStats = () => {
           </div>
 
           <div className="stat-card">
-            <div className="stat-icon-box purple">✓</div>
+            <div className="stat-icon-box purple"><MdCheckCircle size={32} /></div>
             <div className="stat-info">
               <div className="stat-title">Người dùng hoạt động</div>
               <div className="stat-value">{stats.activeUsers}</div>
@@ -81,7 +82,7 @@ const OverviewStats = () => {
           </div>
 
           <div className="stat-card">
-            <div className="stat-icon-box blue">🏫</div>
+            <div className="stat-icon-box blue"><MdClass size={32} /></div>
             <div className="stat-info">
               <div className="stat-title">Tổng lớp học</div>
               <div className="stat-value">{stats.totalClasses}</div>
@@ -90,7 +91,7 @@ const OverviewStats = () => {
           </div>
 
           <div className="stat-card">
-            <div className="stat-icon-box green">📚</div>
+            <div className="stat-icon-box green"><MdLibraryBooks size={32} /></div>
             <div className="stat-info">
               <div className="stat-title">Lớp đang mở</div>
               <div className="stat-value">{stats.activeClasses}</div>
@@ -99,7 +100,7 @@ const OverviewStats = () => {
           </div>
 
           <div className="stat-card">
-            <div className="stat-icon-box orange">📊</div>
+            <div className="stat-icon-box orange"><MdBarChart size={32} /></div>
             <div className="stat-info">
               <div className="stat-title">TB học sinh / lớp</div>
               <div className="stat-value">{stats.averageStudents}</div>

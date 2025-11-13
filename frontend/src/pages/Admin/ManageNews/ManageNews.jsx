@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { MdNewspaper, MdCampaign, MdCardGiftcard, MdLightbulb, MdMenuBook, MdCelebration, MdAutoAwesome, MdRocket, MdLocalFireDepartment, MdStar, MdGpsFixed, MdEdit, MdDelete, MdVisibility, MdFavorite, MdAdd } from 'react-icons/md';
 import apiClient from '../../../services/api';
 import './ManageNews.css';
 
@@ -12,7 +13,7 @@ const ManageNews = () => {
     description: '',
     content: '',
     category: 'Thông báo',
-    icon: '📰',
+    icon: 'MdNewspaper',
     type: 'announcement',
     image: '',
     status: 'published'
@@ -20,15 +21,20 @@ const ManageNews = () => {
 
   const categories = ['Thông báo', 'Khuyến mãi', 'Học tập', 'Hướng dẫn', 'Sự kiện', 'Tính năng mới'];
   const types = [
-    { value: 'announcement', label: 'Thông báo', icon: '📢' },
-    { value: 'promotion', label: 'Khuyến mãi', icon: '🎁' },
-    { value: 'tips', label: 'Mẹo học tập', icon: '💡' },
-    { value: 'guide', label: 'Hướng dẫn', icon: '📖' },
-    { value: 'event', label: 'Sự kiện', icon: '🎉' },
-    { value: 'feature', label: 'Tính năng mới', icon: '✨' }
+    { value: 'announcement', label: 'Thông báo', icon: 'MdCampaign' },
+    { value: 'promotion', label: 'Khuyến mãi', icon: 'MdCardGiftcard' },
+    { value: 'tips', label: 'Mẹo học tập', icon: 'MdLightbulb' },
+    { value: 'guide', label: 'Hướng dẫn', icon: 'MdMenuBook' },
+    { value: 'event', label: 'Sự kiện', icon: 'MdCelebration' },
+    { value: 'feature', label: 'Tính năng mới', icon: 'MdAutoAwesome' }
   ];
 
-  const icons = ['📰', '📢', '🎁', '💡', '📖', '🎉', '✨', '🚀', '🔥', '⭐', '🎯', '📚'];
+  const iconMap = {
+    MdNewspaper, MdCampaign, MdCardGiftcard, MdLightbulb, MdMenuBook, 
+    MdCelebration, MdAutoAwesome, MdRocket, MdLocalFireDepartment, MdStar, 
+    MdGpsFixed, MdLibraryBooks: MdMenuBook
+  };
+  const icons = ['MdNewspaper', 'MdCampaign', 'MdCardGiftcard', 'MdLightbulb', 'MdMenuBook', 'MdCelebration', 'MdAutoAwesome', 'MdRocket', 'MdLocalFireDepartment', 'MdStar', 'MdGpsFixed', 'MdLibraryBooks'];
 
   useEffect(() => {
     loadNews();
@@ -55,7 +61,7 @@ const ManageNews = () => {
         description: news.description || '',
         content: news.content,
         category: news.category,
-        icon: news.icon || '📰',
+        icon: news.icon || 'MdNewspaper',
         type: news.type,
         image: news.image || '',
         status: news.status
@@ -67,7 +73,7 @@ const ManageNews = () => {
         description: '',
         content: '',
         category: 'Thông báo',
-        icon: '📰',
+        icon: 'MdNewspaper',
         type: 'announcement',
         image: '',
         status: 'published'
@@ -137,11 +143,11 @@ const ManageNews = () => {
     <div className="manage-news-page">
       <div className="page-header">
         <div>
-          <h1 className="page-title">📰 Quản lý Tin tức</h1>
+          <h1 className="page-title"><MdNewspaper className="inline-block mr-2" /> Quản lý Tin tức</h1>
           <p className="page-subtitle">Tạo và quản lý tin tức, thông báo cho hệ thống</p>
         </div>
         <button className="btn-primary" onClick={() => handleOpenModal()}>
-          <span>➕</span> Tạo tin tức mới
+          <MdAdd className="inline-block mr-2" /> Tạo tin tức mới
         </button>
       </div>
 
@@ -166,11 +172,13 @@ const ManageNews = () => {
               </tr>
             </thead>
             <tbody>
-              {newsList.map((news) => (
+              {newsList.map((news) => {
+                const IconComponent = iconMap[news.icon] || MdNewspaper;
+                return (
                 <tr key={news.id}>
                   <td>
                     <div className="news-title-cell">
-                      <span className="news-icon-cell">{news.icon}</span>
+                      <span className="news-icon-cell"><IconComponent size={20} /></span>
                       <div>
                         <div className="news-title-text">{news.title}</div>
                         <div className="news-desc-text">{news.description}</div>
@@ -181,8 +189,8 @@ const ManageNews = () => {
                     <span className="category-badge">{news.category}</span>
                   </td>
                   <td>{getStatusBadge(news.status)}</td>
-                  <td>👁️ {news.views || 0}</td>
-                  <td>❤️ {news.likes || 0}</td>
+                  <td><MdVisibility className="inline-block mr-1" /> {news.views || 0}</td>
+                  <td><MdFavorite className="inline-block mr-1" /> {news.likes || 0}</td>
                   <td>{news.author_name}</td>
                   <td>{new Date(news.created_at).toLocaleDateString('vi-VN')}</td>
                   <td>
@@ -192,25 +200,26 @@ const ManageNews = () => {
                         onClick={() => handleOpenModal(news)}
                         title="Chỉnh sửa"
                       >
-                        ✏️
+                        <MdEdit />
                       </button>
                       <button 
                         className="btn-delete" 
                         onClick={() => handleDelete(news.id)}
                         title="Xóa"
                       >
-                        🗑️
+                        <MdDelete />
                       </button>
                     </div>
                   </td>
                 </tr>
-              ))}
+              );
+              })}
             </tbody>
           </table>
 
           {newsList.length === 0 && (
             <div className="empty-state">
-              <div className="empty-icon">📰</div>
+              <div className="empty-icon"><MdNewspaper size={48} /></div>
               <h3>Chưa có tin tức nào</h3>
               <p>Tạo tin tức đầu tiên để bắt đầu</p>
             </div>
@@ -298,16 +307,18 @@ const ManageNews = () => {
                 <div className="form-group">
                   <label>Icon</label>
                   <div className="icon-selector">
-                    {icons.map((icon) => (
+                    {icons.map((iconName) => {
+                      const IconComponent = iconMap[iconName];
+                      return (
                       <button
-                        key={icon}
+                        key={iconName}
                         type="button"
-                        className={`icon-btn ${formData.icon === icon ? 'active' : ''}`}
-                        onClick={() => setFormData({ ...formData, icon })}
+                        className={`icon-btn ${formData.icon === iconName ? 'active' : ''}`}
+                        onClick={() => setFormData({ ...formData, icon: iconName })}
                       >
-                        {icon}
+                        <IconComponent size={20} />
                       </button>
-                    ))}
+                    )})}
                   </div>
                 </div>
               </div>

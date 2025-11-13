@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { MdSettings, MdClose, MdPublic, MdLock, MdLibraryBooks, MdGpsFixed, MdFolder, MdRefresh, MdSave } from 'react-icons/md';
 import './Settings.css';
 import { adminAPI } from '../../../services/api';
 
@@ -131,7 +132,7 @@ const Settings = () => {
     <div className="settings-container">
       <div className="settings-header">
         <div>
-          <h1 className="page-title">⚙️ Cấu hình hệ thống</h1>
+          <h1 className="page-title"><MdSettings className="inline-block mr-2" /> Cấu hình hệ thống</h1>
           <p className="page-subtitle">Quản lý các thiết lập tổng quan của hệ thống</p>
         </div>
         {saved && (
@@ -143,14 +144,14 @@ const Settings = () => {
 
       {error && (
         <div className="error-notification">
-          ❌ {error}
+          <MdClose className="inline-block mr-2" /> {error}
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="settings-form">
         {/* General Settings */}
         <div className="settings-section">
-          <h2 className="section-title">🌐 Cài đặt chung</h2>
+          <h2 className="section-title"><MdPublic className="inline-block mr-2" /> Cài đặt chung</h2>
           <div className="settings-grid">
             <div className="form-group">
               <label>Tên website</label>
@@ -177,7 +178,7 @@ const Settings = () => {
 
         {/* Access Settings */}
         <div className="settings-section">
-          <h2 className="section-title">🔐 Cài đặt truy cập</h2>
+          <h2 className="section-title"><MdLock className="inline-block mr-2" /> Cài đặt truy cập</h2>
           <div className="settings-grid">
             <div className="form-group checkbox-group">
               <label className="checkbox-label">
@@ -220,7 +221,7 @@ const Settings = () => {
 
         {/* Class Settings */}
         <div className="settings-section">
-          <h2 className="section-title">📚 Cài đặt lớp học</h2>
+          <h2 className="section-title"><MdLibraryBooks className="inline-block mr-2" /> Cài đặt lớp học</h2>
           <div className="settings-grid">
             <div className="form-group">
               <label>Số học sinh tối đa mỗi lớp</label>
@@ -251,7 +252,7 @@ const Settings = () => {
 
         {/* Feature Settings */}
         <div className="settings-section">
-          <h2 className="section-title">🎯 Tính năng</h2>
+          <h2 className="section-title"><MdGpsFixed className="inline-block mr-2" /> Tính năng</h2>
           <div className="settings-grid">
             <div className="form-group checkbox-group">
               <label className="checkbox-label">
@@ -283,7 +284,7 @@ const Settings = () => {
         {/* File Upload Settings */}
         {settings.enableFileUpload && (
           <div className="settings-section">
-            <h2 className="section-title">📁 Cài đặt tải file</h2>
+            <h2 className="section-title"><MdFolder className="inline-block mr-2" /> Cài đặt tải file</h2>
             <div className="settings-grid">
               <div className="form-group">
                 <label>Dung lượng tối đa (MB)</label>
@@ -315,10 +316,10 @@ const Settings = () => {
         {/* Action Buttons */}
         <div className="settings-actions">
           <button type="button" onClick={handleReset} className="btn-secondary" disabled={loading}>
-            🔄 Khôi phục mặc định
+            <MdRefresh className="inline-block mr-2" /> Khôi phục mặc định
           </button>
           <button type="submit" className="btn-primary" disabled={loading}>
-            {loading ? '⏳ Đang lưu...' : '💾 Lưu cài đặt'}
+            {loading ? '⏳ Đang lưu...' : <><MdSave className="inline-block mr-2" /> Lưu cài đặt</>}
           </button>
         </div>
       </form>

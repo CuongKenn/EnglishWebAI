@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { MdPeople, MdSchool, MdPersonOutline, MdCheckCircle, MdSearch, MdRefresh, MdAdd, MdTableChart } from 'react-icons/md';
 import './ManageAccounts.css';
 import { adminAPI } from '../../../services/api';
 import ExcelImportModal from '../../../components/ExcelImportModal';
@@ -190,14 +191,14 @@ const ManageAccounts = () => {
       <div className="admin-content">
         {/* Header */}
         <div className="admin-header">
-          <h1>👥 Quản lý tài khoản</h1>
+          <h1><MdPeople className="inline-block mr-2" /> Quản lý tài khoản</h1>
           <p>Quản lý tài khoản giáo viên và học sinh trong hệ thống</p>
         </div>
 
         {/* Statistics Cards */}
         <div className="stats-grid">
           <div className="stat-card">
-            <div className="stat-icon-box blue">👥</div>
+            <div className="stat-icon-box blue"><MdPeople size={32} /></div>
             <div className="stat-info">
               <div className="stat-title">Tổng số người dùng</div>
               <div className="stat-value">{stats.totalUsers}</div>
@@ -206,7 +207,7 @@ const ManageAccounts = () => {
           </div>
 
           <div className="stat-card">
-            <div className="stat-icon-box green">👨‍🏫</div>
+            <div className="stat-icon-box green"><MdSchool size={32} /></div>
             <div className="stat-info">
               <div className="stat-title">Giáo viên</div>
               <div className="stat-value">{stats.totalTeachers}</div>
@@ -215,7 +216,7 @@ const ManageAccounts = () => {
           </div>
 
           <div className="stat-card">
-            <div className="stat-icon-box orange">👨‍🎓</div>
+            <div className="stat-icon-box orange"><MdPersonOutline size={32} /></div>
             <div className="stat-info">
               <div className="stat-title">Học sinh</div>
               <div className="stat-value">{stats.totalStudents}</div>
@@ -224,7 +225,7 @@ const ManageAccounts = () => {
           </div>
 
           <div className="stat-card">
-            <div className="stat-icon-box purple">✓</div>
+            <div className="stat-icon-box purple"><MdCheckCircle size={32} /></div>
             <div className="stat-info">
               <div className="stat-title">Đang hoạt động</div>
               <div className="stat-value">{stats.activeUsers}</div>
@@ -239,7 +240,7 @@ const ManageAccounts = () => {
             <h2 className="content-title">Danh sách tài khoản</h2>
             <div className="header-actions">
               <div className="search-box">
-                <span className="search-icon">🔍</span>
+                <span className="search-icon"><MdSearch size={20} /></span>
                 <input
                   type="text"
                   placeholder="Tìm kiếm theo tên hoặc email..."
@@ -268,14 +269,14 @@ const ManageAccounts = () => {
                   title="Xóa bộ lọc"
                   style={{ marginRight: '10px' }}
                 >
-                  🔄 Reset
+                  <MdRefresh className="inline-block mr-2" /> Reset
                 </button>
               )}
               <button className="btn-primary" onClick={() => handleOpenModal('add')}>
-                ➕ Thêm tài khoản
+                <MdAdd className="inline-block mr-2" /> Thêm tài khoản
               </button>
               <button className="btn-primary" onClick={() => setShowExcelImport(true)}>
-                📊 Import Excel
+                <MdTableChart className="inline-block mr-2" /> Import Excel
               </button>
             </div>
           </div>
