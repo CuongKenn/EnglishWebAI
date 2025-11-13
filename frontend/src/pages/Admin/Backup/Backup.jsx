@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { MdSave, MdAdd, MdSettings, MdBarChart, MdFolder, MdInsertDriveFile, MdSmartToy, MdPerson, MdRefresh, MdDelete } from 'react-icons/md';
 import './Backup.css';
 
 const Backup = () => {
@@ -52,7 +53,7 @@ const Backup = () => {
     <div className="backup-container">
       <div className="backup-header">
         <div>
-          <h1 className="page-title">💾 Sao lưu dữ liệu</h1>
+          <h1 className="page-title"><MdSave className="inline-block mr-2" /> Sao lưu dữ liệu</h1>
           <p className="page-subtitle">Quản lý và khôi phục dữ liệu hệ thống</p>
         </div>
         <button 
@@ -60,13 +61,13 @@ const Backup = () => {
           onClick={handleCreateBackup}
           disabled={creating}
         >
-          {creating ? '⏳ Đang tạo...' : '➕ Tạo bản sao lưu'}
+          {creating ? '⏳ Đang tạo...' : <><MdAdd className="inline-block mr-2" /> Tạo bản sao lưu</>}
         </button>
       </div>
 
       {/* Backup Settings */}
       <div className="backup-settings-card">
-        <h2 className="card-title">⚙️ Cài đặt sao lưu tự động</h2>
+        <h2 className="card-title"><MdSettings className="inline-block mr-2" /> Cài đặt sao lưu tự động</h2>
         <div className="settings-grid">
           <div className="setting-item">
             <label className="setting-label">
@@ -100,7 +101,7 @@ const Backup = () => {
       {/* Storage Info */}
       <div className="storage-info-card">
         <div className="storage-header">
-          <h2 className="card-title">📊 Dung lượng lưu trữ</h2>
+          <h2 className="card-title"><MdBarChart className="inline-block mr-2" /> Dung lượng lưu trữ</h2>
           <span className="storage-usage">178.8 MB / 1 GB</span>
         </div>
         <div className="storage-bar">
@@ -114,10 +115,10 @@ const Backup = () => {
 
       {/* Backups List */}
       <div className="backups-list-card">
-        <h2 className="card-title">📁 Danh sách bản sao lưu ({backups.length})</h2>
+        <h2 className="card-title"><MdFolder className="inline-block mr-2" /> Danh sách bản sao lưu ({backups.length})</h2>
         {backups.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-icon">📦</div>
+            <div className="empty-icon"><MdSave size={48} /></div>
             <p>Chưa có bản sao lưu nào</p>
             <button className="btn-primary" onClick={handleCreateBackup}>
               Tạo bản sao lưu đầu tiên
@@ -140,13 +141,13 @@ const Backup = () => {
                   <tr key={backup.id}>
                     <td>
                       <div className="backup-name">
-                        <span className="file-icon">📄</span>
+                        <span className="file-icon"><MdInsertDriveFile /></span>
                         {backup.name}
                       </div>
                     </td>
                     <td>
                       <span className={`backup-type-badge ${backup.type}`}>
-                        {backup.type === 'auto' ? '🤖 Tự động' : '👤 Thủ công'}
+                        {backup.type === 'auto' ? <><MdSmartToy className="inline-block mr-1" /> Tự động</> : <><MdPerson className="inline-block mr-1" /> Thủ công</>}
                       </span>
                     </td>
                     <td>{backup.size}</td>
@@ -165,14 +166,14 @@ const Backup = () => {
                           onClick={() => handleRestore(backup)}
                           title="Khôi phục"
                         >
-                          🔄
+                          <MdRefresh />
                         </button>
                         <button 
                           className="action-btn delete"
                           onClick={() => handleDelete(backup)}
                           title="Xóa"
                         >
-                          🗑️
+                          <MdDelete />
                         </button>
                       </div>
                     </td>

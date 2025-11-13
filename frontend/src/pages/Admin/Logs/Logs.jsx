@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { MdLock, MdClass, MdWarning, MdClose, MdPerson, MdDescription, MdRefresh, MdDownload, MdSearch, MdFolder, MdBarChart, MdInbox } from 'react-icons/md';
 import './Logs.css';
 import apiClient from '../../../services/api';
 
@@ -19,7 +20,7 @@ const Logs = () => {
       action: 'Đăng nhập',
       user: 'admin@example.com',
       details: 'Đăng nhập thành công từ IP: 192.168.1.1',
-      icon: '🔐'
+      icon: 'MdLock'
     },
     {
       id: 2,
@@ -29,7 +30,7 @@ const Logs = () => {
       action: 'Tạo lớp học',
       user: 'teacher@example.com',
       details: 'Tạo lớp học mới: Lớp 10A1 - Tiếng Anh',
-      icon: '🏫'
+      icon: 'MdClass'
     },
     {
       id: 3,
@@ -39,7 +40,7 @@ const Logs = () => {
       action: 'Cảnh báo',
       user: 'System',
       details: 'CPU usage cao: 85%',
-      icon: '⚠️'
+      icon: 'MdWarning'
     },
     {
       id: 4,
@@ -49,7 +50,7 @@ const Logs = () => {
       action: 'Lỗi API',
       user: 'student@example.com',
       details: 'Failed to fetch data: Connection timeout',
-      icon: '❌'
+      icon: 'MdClose'
     },
     {
       id: 5,
@@ -59,7 +60,7 @@ const Logs = () => {
       action: 'Cập nhật profile',
       user: 'parent@example.com',
       details: 'Cập nhật thông tin cá nhân',
-      icon: '👤'
+      icon: 'MdPerson'
     }
   ];
 
@@ -123,15 +124,15 @@ const Logs = () => {
       {/* Header */}
       <div className="logs-header">
         <div>
-          <h1 className="logs-title">📋 Nhật ký hệ thống</h1>
+          <h1 className="logs-title"><MdDescription className="inline-block mr-2" /> Nhật ký hệ thống</h1>
           <p className="logs-subtitle">Theo dõi các hoạt động và sự kiện trong hệ thống</p>
         </div>
         <div className="header-actions">
           <button className="refresh-btn" onClick={loadLogs}>
-            🔄 Làm mới
+            <MdRefresh className="inline-block mr-2" /> Làm mới
           </button>
           <button className="export-btn">
-            📥 Xuất báo cáo
+            <MdDownload className="inline-block mr-2" /> Xuất báo cáo
           </button>
         </div>
       </div>
@@ -139,7 +140,7 @@ const Logs = () => {
       {/* Filters */}
       <div className="logs-filters">
         <div className="filter-group">
-          <label>🔍 Tìm kiếm:</label>
+          <label><MdSearch className="inline-block mr-2" /> Tìm kiếm:</label>
           <input
             type="text"
             placeholder="Tìm kiếm trong logs..."
@@ -150,7 +151,7 @@ const Logs = () => {
         </div>
         
         <div className="filter-group">
-          <label>📂 Loại:</label>
+          <label><MdFolder className="inline-block mr-2" /> Loại:</label>
           <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="filter-select">
             <option value="all">Tất cả</option>
             <option value="user">Người dùng</option>
@@ -161,7 +162,7 @@ const Logs = () => {
         </div>
 
         <div className="filter-group">
-          <label>📊 Mức độ:</label>
+          <label><MdBarChart className="inline-block mr-2" /> Mức độ:</label>
           <select value={filterLevel} onChange={(e) => setFilterLevel(e.target.value)} className="filter-select">
             <option value="all">Tất cả</option>
             <option value="info">Thông tin</option>
@@ -198,7 +199,7 @@ const Logs = () => {
           <div className="loading-state">⏳ Đang tải nhật ký...</div>
         ) : filteredLogs.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-icon">📭</div>
+            <div className="empty-icon"><MdInbox size={48} /></div>
             <p>Không có nhật ký nào</p>
           </div>
         ) : (
@@ -214,16 +215,20 @@ const Logs = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredLogs.map((log) => (
+              {filteredLogs.map((log) => {
+                const iconMap = { MdLock, MdClass, MdWarning, MdClose, MdPerson };
+                const IconComponent = iconMap[log.icon] || MdDescription;
+                return (
                 <tr key={log.id} className={`log-row log-${log.level}`}>
-                  <td className="log-icon">{log.icon}</td>
+                  <td className="log-icon"><IconComponent size={20} /></td>
                   <td className="log-timestamp">{formatTimestamp(log.timestamp)}</td>
                   <td>{getLevelBadge(log.level)}</td>
                   <td className="log-action">{log.action}</td>
                   <td className="log-user">{log.user}</td>
                   <td className="log-details">{log.details}</td>
                 </tr>
-              ))}
+              );
+              })}
             </tbody>
           </table>
         )}

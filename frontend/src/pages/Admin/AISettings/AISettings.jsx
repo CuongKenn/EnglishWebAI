@@ -194,7 +194,7 @@ const AISettings = () => {
                       rel="noopener noreferrer"
                       className="docs-link"
                     >
-                      📚 Docs
+                      <BookOpen size={16} className="inline-block mr-1" /> Docs
                     </a>
                   </div>
 
@@ -217,11 +217,11 @@ const AISettings = () => {
                   <div className="key-status">
                     {settings.apiKeys[provider.id] ? (
                       <span className="status-configured">
-                        ✓ Đã cấu hình
+                        <Check size={16} className="inline-block mr-1" /> Đã cấu hình
                       </span>
                     ) : (
                       <span className="status-not-configured">
-                        ⚠ Chưa cấu hình
+                        <AlertTriangle size={16} className="inline-block mr-1" /> Chưa cấu hình
                       </span>
                     )}
                   </div>

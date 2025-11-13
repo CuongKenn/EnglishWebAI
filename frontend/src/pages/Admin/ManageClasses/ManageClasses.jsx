@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { MdClass, MdCheckCircle, MdPersonOutline, MdBarChart, MdSearch, MdAdd, MdEdit, MdDelete, MdCalendarToday, MdLibraryBooks } from 'react-icons/md';
 import './ManageClasses.css';
 import apiClient from '../../../services/api';
 
@@ -148,14 +149,14 @@ const ManageClasses = () => {
       <div className="admin-content">
         {/* Header */}
         <div className="admin-header">
-          <h1>📚 Quản lý lớp học</h1>
+          <h1><MdLibraryBooks className="inline-block mr-2" /> Quản lý lớp học</h1>
           <p>Quản lý lớp học và phân công giảng dạy</p>
         </div>
 
         {/* Statistics Cards */}
         <div className="stats-grid">
           <div className="stat-card">
-            <div className="stat-icon-box blue">🏫</div>
+            <div className="stat-icon-box blue"><MdClass size={32} /></div>
             <div className="stat-info">
               <div className="stat-title">Tổng số lớp</div>
               <div className="stat-value">{stats.totalClasses}</div>
@@ -164,7 +165,7 @@ const ManageClasses = () => {
           </div>
 
           <div className="stat-card">
-            <div className="stat-icon-box green">✓</div>
+            <div className="stat-icon-box green"><MdCheckCircle size={32} /></div>
             <div className="stat-info">
               <div className="stat-title">Đang hoạt động</div>
               <div className="stat-value">{stats.activeClasses}</div>
@@ -173,7 +174,7 @@ const ManageClasses = () => {
           </div>
 
           <div className="stat-card">
-            <div className="stat-icon-box orange">👨‍🎓</div>
+            <div className="stat-icon-box orange"><MdPersonOutline size={32} /></div>
             <div className="stat-info">
               <div className="stat-title">Tổng học sinh</div>
               <div className="stat-value">{stats.totalStudents}</div>
@@ -182,7 +183,7 @@ const ManageClasses = () => {
           </div>
 
           <div className="stat-card">
-            <div className="stat-icon-box purple">📊</div>
+            <div className="stat-icon-box purple"><MdBarChart size={32} /></div>
             <div className="stat-info">
               <div className="stat-title">Trung bình/Lớp</div>
               <div className="stat-value">{stats.averageStudents}</div>
@@ -197,7 +198,7 @@ const ManageClasses = () => {
             <h2 className="content-title">Danh sách lớp học</h2>
             <div className="header-actions">
               <div className="search-box">
-                <span className="search-icon">🔍</span>
+                <span className="search-icon"><MdSearch size={20} /></span>
                 <input
                   type="text"
                   placeholder="Tìm kiếm lớp học, mã lớp, giáo viên..."
@@ -206,7 +207,7 @@ const ManageClasses = () => {
                 />
               </div>
               <button className="btn-primary" onClick={() => handleOpenModal('add')}>
-                ➕ Tạo lớp học
+                <MdAdd className="inline-block mr-2" /> Tạo lớp học
               </button>
             </div>
           </div>
@@ -227,14 +228,14 @@ const ManageClasses = () => {
                         onClick={() => handleOpenModal('edit', classData)}
                         title="Chỉnh sửa"
                       >
-                        ✏️
+                        <MdEdit />
                       </button>
                       <button 
                         className="icon-btn delete"
                         onClick={() => handleDelete(classData.id)}
                         title="Xóa"
                       >
-                        🗑️
+                        <MdDelete />
                       </button>
                     </div>
                   </div>
@@ -263,7 +264,7 @@ const ManageClasses = () => {
                   </div>
 
                   <div className="class-footer">
-                    <div className="schedule-info">📅 {classData.schedule}</div>
+                    <div className="schedule-info"><MdCalendarToday className="inline-block mr-1" /> {classData.schedule}</div>
                     <span className={`status-badge ${classData.status}`}>
                       {classData.status === 'active' ? 'Đang mở' : 'Đã đóng'}
                     </span>
@@ -273,7 +274,7 @@ const ManageClasses = () => {
             </div>
           ) : (
             <div className="empty-state">
-              <div className="empty-state-icon">📚</div>
+              <div className="empty-state-icon"><MdLibraryBooks size={48} /></div>
               <h3>Không tìm thấy lớp học nào</h3>
               <p>Thử tìm kiếm với từ khóa khác hoặc tạo lớp học mới</p>
             </div>
