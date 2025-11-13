@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Eye, EyeOff, Save, Key, Shield, AlertCircle, CheckCircle2, Bot, Globe, Mic2, Type, MessageCircle, Headphones, PenLine, BookOpen, CreditCard } from 'lucide-react';
+import { Eye, EyeOff, Save, Key, Shield, AlertCircle, CheckCircle2, Bot, Globe, Mic2, Type, MessageCircle, Headphones, PenLine, BookOpen, CreditCard, Check, AlertTriangle } from 'lucide-react';
 import aiSettingsService from '../../../services/aiSettingsService';
 import './AISettings.css';
 
