@@ -22,6 +22,7 @@ export default function ExerciseManagementV2() {
   const [exercises, setExercises] = useState([]);
   const [classes, setClasses] = useState([]);
   const [viewMode, setViewMode] = useState('cards'); // 'cards' | 'table'
+  const [classStudentCounts, setClassStudentCounts] = useState({}); // Track student counts by class ID
 
   useEffect(() => {
     console.log('[ExerciseManagement] useEffect triggered');
@@ -33,6 +34,13 @@ export default function ExerciseManagementV2() {
     try {
       const response = await apiV1.get('/classes/teaching');
       setClasses(response.data);
+      
+      // Create a map of class IDs to their student counts
+      const countsMap = {};
+      response.data.forEach(cls => {
+        countsMap[cls.id] = cls.student_count || 0;
+      });
+      setClassStudentCounts(countsMap);
     } catch (error) {
       console.error('Error fetching classes:', error);
     }
@@ -207,16 +215,34 @@ export default function ExerciseManagementV2() {
   };
 
   // Filter logic
+  // Get unique student count for the filtered classes
+  const getUniqueStudentCount = () => {
+    if (filteredExercises.length === 0) return 0;
+    
+    if (filterClass) {
+      // If filtered by class, return that class's student count
+      return classStudentCounts[parseInt(filterClass)] || 0;
+    } else {
+      // If not filtered by class, find all unique class IDs and sum their student counts
+      const uniqueClassIds = [...new Set(filteredExercises.map(ex => ex.classId))];
+      return uniqueClassIds.reduce((total, classId) => {
+        return total + (classStudentCounts[classId] || 0);
+      }, 0);
+    }
+  };
+
   const filteredExercises = exercises.filter(exercise => {
     const matchesSearch = !searchTerm || 
       exercise.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       exercise.class.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = !filterType || exercise.type === filterType;
-    const matchesClass = !filterClass || exercise.class === filterClass;
+    const matchesClass = !filterClass || exercise.classId === parseInt(filterClass);
     const matchesStatus = !filterStatus || exercise.status === filterStatus;
     
     return matchesSearch && matchesType && matchesClass && matchesStatus;
   });
+  
+  const uniqueStudentCount = getUniqueStudentCount();
 
   return (
     <div className="p-8">
@@ -289,7 +315,7 @@ export default function ExerciseManagementV2() {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-gray-600 text-sm mb-1">Học sinh</p>
-              <p className="text-3xl font-bold text-gray-900">{exercises.reduce((sum, ex) => sum + ex.totalStudents, 0)}</p>
+              <p className="text-3xl font-bold text-gray-900">{uniqueStudentCount}</p>
             </div>
             <div className="bg-green-500 p-3 rounded-lg">
               <Users className="w-6 h-6 text-white" />
