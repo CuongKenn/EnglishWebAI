@@ -222,8 +222,10 @@ export default function ExportReports() {
       <div className="export-type-section">
         <h2>Chọn loại báo cáo</h2>
         <div className="export-type-grid">
-          {EXPORT_TYPE_CARDS.map(({ key, title, description, label, variant }) => {
+          {/* eslint-disable-next-line no-unused-vars */}
+          {EXPORT_TYPE_CARDS.map(({ key, title, description, label, variant, Icon: IconComponent }) => {
             const isActive = exportType === key;
+            const CardIcon = IconComponent;
             return (
               <button
                 key={key}
@@ -233,7 +235,7 @@ export default function ExportReports() {
                 aria-pressed={isActive}
               >
                 <div className="export-type-icon">
-                  <Icon size={28} />
+                  <CardIcon size={28} />
                 </div>
                 <h3>{title}</h3>
                 <p>{description}</p>
