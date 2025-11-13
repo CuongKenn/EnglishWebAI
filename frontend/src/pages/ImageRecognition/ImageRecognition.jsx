@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { 
   MdCameraAlt, 
   MdUpload, 
@@ -31,54 +31,120 @@ const ImageRecognition = () => {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
+  const streamRef = useRef(null);
 
-  // Initialize camera
-  const startCamera = useCallback(async () => {
-    setIsCameraLoading(true);
-    try {
-      console.log('Starting camera...');
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          facingMode: 'environment',
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        },
-        audio: false,
-      });
+  // Initialize camera when mode is set to 'camera'
+  useEffect(() => {
+    const initCamera = async () => {
+      if (mode !== 'camera' || !videoRef.current) {
+        return;
+      }
 
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
+      setIsCameraLoading(true);
+      setError(null);
+
+      try {
+        console.log('Starting camera...');
+        console.log('videoRef.current:', videoRef.current);
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { 
+            facingMode: 'environment',
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          },
+          audio: false,
+        });
+
+        console.log('Got media stream:', stream);
         
-        // Wait for video metadata to load
-        videoRef.current.onloadedmetadata = () => {
-          console.log('Video metadata loaded');
-          videoRef.current.play()
-            .then(() => {
-              console.log('Video playing successfully');
-              setIsCameraActive(true);
-              setMode('camera');
-              setError(null);
-              setIsCameraLoading(false);
-            })
-            .catch((err) => {
-              console.error('Error playing video:', err);
-              setError('Không thể phát camera. Vui lòng thử lại.');
-              setIsCameraLoading(false);
-            });
-        };
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          streamRef.current = stream;
+          console.log('Video srcObject set');
+
+          // Wait for video metadata to load
+          videoRef.current.onloadedmetadata = () => {
+            console.log('Video metadata loaded');
+            if (videoRef.current) {
+              videoRef.current.play()
+                .then(() => {
+                  console.log('Video playing successfully');
+                  setIsCameraActive(true);
+                  setIsCameraLoading(false);
+                })
+                .catch((err) => {
+                  console.error('Error playing video:', err);
+                  setError('Không thể phát camera. Vui lòng thử lại.');
+                  setIsCameraLoading(false);
+                  setMode(null);
+                });
+            }
+          };
+        }
+      } catch (err) {
+        console.error('Error accessing camera:', err);
+        setIsCameraLoading(false);
+        setMode(null);
+        
+        if (err.name === 'NotAllowedError') {
+          setError('Bạn đã từ chối quyền truy cập camera. Vui lòng cho phép trong cài đặt trình duyệt.');
+        } else if (err.name === 'NotFoundError') {
+          setError('Không tìm thấy camera. Vui lòng kiểm tra thiết bị.');
+        } else {
+          setError(`Không thể truy cập camera: ${err.message}`);
+        }
       }
-    } catch (err) {
-      console.error('Error accessing camera:', err);
-      setIsCameraLoading(false);
-      if (err.name === 'NotAllowedError') {
-        setError('Bạn đã từ chối quyền truy cập camera. Vui lòng cho phép trong cài đặt trình duyệt.');
-      } else if (err.name === 'NotFoundError') {
-        setError('Không tìm thấy camera. Vui lòng kiểm tra thiết bị.');
-      } else {
-        setError('Không thể truy cập camera. Vui lòng kiểm tra quyền truy cập.');
+    };
+
+    initCamera();
+
+    // Cleanup function
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
       }
-    }
+    };
+  }, [mode]);
+
+  // Initialize camera button handler
+  // Initialize camera button handler
+  const startCamera = useCallback(() => {
+    setMode('camera');
   }, []);
+
+  // Process image with AI
+  const processImage = useCallback(async (imageFile) => {
+    setIsProcessing(true);
+    setError(null);
+    setResult(null);
+
+    try {
+      const recognition = await recognizeImage(imageFile, { level });
+      setResult(recognition);
+    } catch (err) {
+      console.error('Recognition error:', err);
+      
+      // Handle specific error cases
+      if (err.response?.status === 401) {
+        setError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+        setTimeout(() => {
+          localStorage.removeItem('access_token');
+          navigate('/login');
+        }, 2000);
+      } else if (err.response?.status === 500) {
+        setError('Lỗi server. Vui lòng thử lại sau.');
+      } else {
+        setError(
+          err.response?.data?.detail ||
+          'Không thể nhận diện hình ảnh. Vui lòng thử lại.'
+        );
+      }
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [level, navigate]);
 
   // Stop camera
   const stopCamera = useCallback(() => {
@@ -87,6 +153,7 @@ const ImageRecognition = () => {
       tracks.forEach(track => track.stop());
       videoRef.current.srcObject = null;
       setIsCameraActive(false);
+      setMode(null);
     }
   }, []);
 
@@ -126,38 +193,6 @@ const ImageRecognition = () => {
     setMode('upload');
     processImage(file);
   }, [processImage]);
-
-  // Process image with AI
-  const processImage = useCallback(async (imageFile) => {
-    setIsProcessing(true);
-    setError(null);
-    setResult(null);
-
-    try {
-      const recognition = await recognizeImage(imageFile, { level });
-      setResult(recognition);
-    } catch (err) {
-      console.error('Recognition error:', err);
-      
-      // Handle specific error cases
-      if (err.response?.status === 401) {
-        setError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
-        setTimeout(() => {
-          localStorage.removeItem('access_token');
-          navigate('/login');
-        }, 2000);
-      } else if (err.response?.status === 500) {
-        setError('Lỗi server. Vui lòng thử lại sau.');
-      } else {
-        setError(
-          err.response?.data?.detail ||
-          'Không thể nhận diện hình ảnh. Vui lòng thử lại.'
-        );
-      }
-    } finally {
-      setIsProcessing(false);
-    }
-  }, [level, navigate]);
 
   // Play pronunciation audio using Web Speech API
   const playPronunciation = (text, lang = 'en-US') => {
@@ -349,50 +384,58 @@ const ImageRecognition = () => {
         </div>
       )}
 
-      {/* Camera Loading */}
-      {isCameraLoading && (
-        <div className="mb-6 bg-white rounded-xl shadow-lg p-12 text-center">
-          <MdAutorenew className="w-16 h-16 text-blue-500 animate-spin mx-auto mb-4" />
-          <p className="text-lg font-semibold text-gray-700">Đang khởi động camera...</p>
-          <p className="text-sm text-gray-500 mt-2">Vui lòng cho phép truy cập camera khi trình duyệt hỏi</p>
-        </div>
-      )}
-
-      {/* Camera View */}
-      {mode === 'camera' && isCameraActive && !isCameraLoading && (
+      {/* Camera View - Show loading or video */}
+      {mode === 'camera' && !imagePreview && (
         <div className="mb-6 bg-white rounded-xl shadow-lg overflow-hidden">
           <div className="relative bg-black" style={{ minHeight: '400px' }}>
+            {/* Loading overlay */}
+            {isCameraLoading && (
+              <div className="absolute inset-0 flex items-center justify-center z-10 bg-black bg-opacity-70">
+                <div className="text-center">
+                  <MdAutorenew className="w-16 h-16 text-white animate-spin mx-auto mb-4" />
+                  <p className="text-lg font-semibold text-white">Đang khởi động camera...</p>
+                  <p className="text-sm text-gray-300 mt-2">Vui lòng cho phép truy cập camera khi trình duyệt hỏi</p>
+                </div>
+              </div>
+            )}
+            
+            {/* Video element - always rendered when in camera mode */}
             <video
               ref={videoRef}
-              className="w-full h-auto"
+              className="w-full"
               autoPlay
               playsInline
               muted
               style={{ 
                 display: 'block',
+                minHeight: '400px',
                 maxHeight: '70vh',
-                objectFit: 'contain'
+                width: '100%',
+                objectFit: 'cover'
               }}
             />
-            <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-4">
-              <button
-                onClick={capturePhoto}
-                className="bg-white text-gray-800 px-8 py-4 rounded-full font-bold text-lg hover:bg-gray-100 shadow-2xl flex items-center gap-2 transition-transform hover:scale-105"
-              >
-                <MdCameraAlt className="w-6 h-6" />
-                Chụp ảnh
-              </button>
-              <button
-                onClick={() => {
-                  stopCamera();
-                  setMode(null);
-                }}
-                className="bg-red-500 text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-red-600 shadow-2xl flex items-center gap-2 transition-transform hover:scale-105"
-              >
-                <MdClose className="w-6 h-6" />
-                Hủy
-              </button>
-            </div>
+            
+            {/* Camera controls - only show when active */}
+            {isCameraActive && (
+              <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-4">
+                <button
+                  onClick={capturePhoto}
+                  className="bg-white text-gray-800 px-8 py-4 rounded-full font-bold text-lg hover:bg-gray-100 shadow-2xl flex items-center gap-2 transition-transform hover:scale-105"
+                >
+                  <MdCameraAlt className="w-6 h-6" />
+                  Chụp ảnh
+                </button>
+                <button
+                  onClick={() => {
+                    stopCamera();
+                  }}
+                  className="bg-red-500 text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-red-600 shadow-2xl flex items-center gap-2 transition-transform hover:scale-105"
+                >
+                  <MdClose className="w-6 h-6" />
+                  Hủy
+                </button>
+              </div>
+            )}
           </div>
           <canvas ref={canvasRef} className="hidden" />
         </div>
