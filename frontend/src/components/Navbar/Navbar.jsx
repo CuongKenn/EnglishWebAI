@@ -76,9 +76,11 @@ const Navbar = ({ userRole = 'student', isLoggedIn: isLoggedInProp = false, onLo
       
       case 'admin':
       case 'superadmin':
-        // Admin: menu student + Dashboard cuối
+        // Admin: chỉ menu quản trị, không có Học bài, Lớp học, Thực hành AI, Làm bài tập
         return [
-          ...studentMenu,
+          { path: '/about', label: 'Giới thiệu', icon: 'fa-info-circle' },
+          { path: '/news', label: 'Tin tức', icon: 'fa-newspaper' },
+          { path: '/discussion', label: 'Hỏi đáp', icon: 'fa-comments' },
           { path: '/admin-dashboard', label: 'Dashboard', icon: 'fa-gauge-high', special: true }
         ];
       
