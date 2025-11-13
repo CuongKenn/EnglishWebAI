@@ -329,7 +329,7 @@ export default function DoExercise() {
   };
 
   const handleAnswerChange = (questionId, value) => {
-
+    console.log('[DoExercise] Answer change:', { questionId, value, currentAnswers: answers });
     setAnswers(prev => ({ ...prev, [questionId]: value }));
   };
   
@@ -1257,7 +1257,9 @@ export default function DoExercise() {
           <div className="questions-container">
             <h3>Câu hỏi</h3>
             {questions.map((q, idx) => {
-              const questionKey = q.id ?? `listening_${idx}`;
+              // Always use skill_type prefix for consistency
+              const questionKey = `${skill_type}_${idx}`;
+              console.log('[DoExercise] Rendering question:', { idx, questionKey, qId: q.id, skill_type, questionType: q.type });
               const options = Array.isArray(q.options) ? q.options : [];
 
               return (
@@ -1439,7 +1441,9 @@ export default function DoExercise() {
             <div className="questions-panel">
               <h3>Câu hỏi</h3>
               {questions.map((q, idx) => {
-                const questionKey = q.id ?? `reading_${idx}`;
+                // Always use skill_type prefix for consistency
+                const questionKey = `${skill_type}_${idx}`;
+                console.log('[DoExercise] Rendering reading question:', { idx, questionKey, qId: q.id, skill_type, questionType: q.type });
                 const options = Array.isArray(q.options) ? q.options : [];
 
                 return (
