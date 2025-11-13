@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { MdPeople, MdSchool, MdPersonOutline, MdCheckCircle, MdSearch, MdRefresh, MdAdd, MdTableChart } from 'react-icons/md';
+import { MdPeople, MdSchool, MdPersonOutline, MdCheckCircle, MdSearch, MdRefresh, MdAdd, MdTableChart, MdEdit, MdDelete, MdClose, MdInbox } from 'react-icons/md';
 import './ManageAccounts.css';
 import { adminAPI } from '../../../services/api';
 import ExcelImportModal from '../../../components/ExcelImportModal';
@@ -298,7 +298,7 @@ const ManageAccounts = () => {
               margin: '20px 0',
               color: '#dc2626'
             }}>
-              <strong>❌ Lỗi:</strong> {error}
+              <strong><MdClose className="inline-block mr-1" /> Lỗi:</strong> {error}
               <br />
               <button 
                 onClick={loadUsers}
@@ -312,7 +312,7 @@ const ManageAccounts = () => {
                   cursor: 'pointer'
                 }}
               >
-                🔄 Thử lại
+                <MdRefresh className="inline-block mr-1" /> Thử lại
               </button>
             </div>
           )}
@@ -363,14 +363,14 @@ const ManageAccounts = () => {
                         onClick={() => handleOpenModal('edit', user)}
                         title="Chỉnh sửa"
                       >
-                        ✏️
+                        <MdEdit />
                       </button>
                       <button 
                         className="icon-btn delete"
                         onClick={() => handleDelete(user.id)}
                         title="Xóa"
                       >
-                        🗑️
+                        <MdDelete />
                       </button>
                     </div>
                   </td>
@@ -382,7 +382,7 @@ const ManageAccounts = () => {
 
           {!loading && !error && filteredUsers.length === 0 && (
             <div style={{ textAlign: 'center', padding: '40px', color: '#9ca3af' }}>
-              <div style={{ fontSize: '48px', marginBottom: '16px' }}>📭</div>
+              <div style={{ fontSize: '48px', marginBottom: '16px' }}><MdInbox size={48} /></div>
               <div style={{ fontSize: '18px', fontWeight: '500', marginBottom: '8px' }}>
                 Không tìm thấy kết quả nào
               </div>
