@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MdSave, MdAdd, MdSettings, MdBarChart, MdFolder, MdInsertDriveFile, MdSmartToy, MdPerson, MdRefresh, MdDelete } from 'react-icons/md';
+import { MdSave, MdAdd, MdSettings, MdBarChart, MdFolder, MdInsertDriveFile, MdSmartToy, MdPerson, MdRefresh, MdDelete, MdHourglassEmpty, MdDownload } from 'react-icons/md';
 import './Backup.css';
 
 const Backup = () => {
@@ -61,7 +61,7 @@ const Backup = () => {
           onClick={handleCreateBackup}
           disabled={creating}
         >
-          {creating ? '⏳ Đang tạo...' : <><MdAdd className="inline-block mr-2" /> Tạo bản sao lưu</>}
+          {creating ? <><MdHourglassEmpty className="inline-block mr-2" /> Đang tạo...</> : <><MdAdd className="inline-block mr-2" /> Tạo bản sao lưu</>}
         </button>
       </div>
 
@@ -159,7 +159,7 @@ const Backup = () => {
                           onClick={() => handleDownload(backup)}
                           title="Tải xuống"
                         >
-                          ⬇️
+                          <MdDownload />
                         </button>
                         <button 
                           className="action-btn restore"
