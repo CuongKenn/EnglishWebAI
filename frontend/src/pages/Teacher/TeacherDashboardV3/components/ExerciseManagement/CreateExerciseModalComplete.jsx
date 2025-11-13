@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { 
   X, FileText, Clock, Award, Upload, FileAudio, File, 
   Plus, Trash2, Sparkles, Bot, Database, FileUp, Check,
-  Headphones, Mic, BookOpen, PenLine, Edit3
+  Headphones, Mic, BookOpen, PenLine, Edit3, BarChart3
 } from 'lucide-react';
 import './ExerciseManagement.css';
 import QuestionBankSelectorModal from './QuestionBankSelectorModal';
@@ -762,7 +762,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
                           checked={inputMethod === 'ai'}
                           onChange={() => setInputMethod('ai')}
                         />
-                        <span>🤖 AI Sinh đề</span>
+                        <span><Bot className="inline-block w-4 h-4 mr-1" /> AI Sinh đề</span>
                       </label>
                     </div>
                   </div>
@@ -816,7 +816,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   function renderMidtermFinalForm() {
     return (
       <div className="midterm-final-form">
-        <h4 className="section-title">� Câu hỏi kiểm tra</h4>
+        <h4 className="section-title"><FileText className="inline-block w-5 h-5 mr-2" /> Câu hỏi kiểm tra</h4>
         <p className="section-desc">Thêm các câu hỏi cho đề {testType === 'midterm' ? 'giữa kỳ' : 'cuối kỳ'}</p>
         
         {/* Input Method Selection */}
@@ -840,7 +840,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
                 checked={inputMethod === 'ai'}
                 onChange={() => setInputMethod('ai')}
               />
-              <span>🤖 AI Sinh đề</span>
+              <span><Bot className="inline-block w-4 h-4 mr-1" /> AI Sinh đề</span>
             </label>
           </div>
         </div>
@@ -1142,8 +1142,8 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
               onChange={(e) => setPassageText(e.target.value)}
             />
             <div className="text-stats">
-              <span>📊 {passageText.split(/\s+/).filter(w => w).length} từ</span>
-              <span>📄 {passageText.length} ký tự</span>
+              <span><BarChart3 className="inline-block w-4 h-4 mr-1" /> {passageText.split(/\s+/).filter(w => w).length} từ</span>
+              <span><FileText className="inline-block w-4 h-4 mr-1" /> {passageText.length} ký tự</span>
             </div>
           </div>
         )}
@@ -1347,7 +1347,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
                   <h4>Kéo thả file Word vào đây</h4>
                   <p>hoặc click để chọn file</p>
                   <span className="upload-hint-word">Hỗ trợ: .docx và .doc (Word 97-2003)</span>
-                  <span className="upload-hint-word" style={{ color: '#10b981', fontSize: '11px' }}>✅ Cả 2 định dạng đều được hỗ trợ</span>
+                  <span className="upload-hint-word" style={{ color: '#10b981', fontSize: '11px' }}><Check className="inline-block w-3 h-3 mr-1" /> Cả 2 định dạng đều được hỗ trợ</span>
                 </div>
               ) : (
                 <div className="word-file-preview">
@@ -1389,7 +1389,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
                 <li>AI sẽ tự động trích xuất hình ảnh và phân tích câu hỏi</li>
                 <li>Đề thi sẽ được tạo thành dạng tương tác cho học sinh làm trên web</li>
                 <li>Bạn có thể chỉnh sửa sau khi import</li>
-                <li><strong>⏱️ Lưu ý:</strong> Quá trình xử lý bằng AI mất 3-5 phút (file lớn có thể lâu hơn), vui lòng chờ đợi</li>
+                <li><strong><Clock className="inline-block w-4 h-4 mr-1" /> Lưu ý:</strong> Quá trình xử lý bằng AI mất 3-5 phút (file lớn có thể lâu hơn), vui lòng chờ đợi</li>
               </ul>
             </div>
           </div>
