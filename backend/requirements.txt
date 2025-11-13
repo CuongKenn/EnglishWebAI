@@ -61,3 +61,8 @@ langdetect==1.0.9
 
 # Note: Emotion detection now runs locally in frontend using face-api.js
 # No backend dependencies needed for emotion detection
+
+# Face Recognition for Exam Verification (CPU-only)
+torch==2.1.0
+torchvision==0.16.0
+opencv-python==4.8.1.78

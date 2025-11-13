@@ -31,6 +31,7 @@ from app.routers import (
     exam_assessments,
     exercises,
     exports,
+    face_verification,
     lesson_plans,
     lessons,
     materials,
@@ -137,6 +138,7 @@ app.include_router(exam_assessments.router, tags=["Exam Assessments"])
 app.include_router(translation.router, prefix=f"{settings.API_PREFIX}/translation", tags=["Translation"])
 app.include_router(error_analysis_export.router, tags=["Error Analysis Export"])
 app.include_router(media.router, prefix=f"{settings.API_PREFIX}/media", tags=["Media"])
+app.include_router(face_verification.router, prefix=f"{settings.API_PREFIX}/face", tags=["Face Verification"])
 
 # Serve media files if available (e.g., uploaded materials)
 with contextlib.suppress(Exception):

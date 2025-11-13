@@ -8,6 +8,7 @@ import './DoExercise.css';
 import { apiV1 } from '../../../services/api';
 import Toast from '../../../components/Toast/Toast';
 import useToast from '../../../hooks/useToast';
+import FaceVerificationGate from '../../../components/FaceVerification/FaceVerificationGate';
 
 const normalizeMatchingPairs = (question) => {
   if (!question || question.type !== 'matching') return [];
@@ -53,6 +54,8 @@ export default function DoExercise() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showStartScreen, setShowStartScreen] = useState(true);
   const [fullscreenWarningCount, setFullscreenWarningCount] = useState(0);
+  const [showFaceVerification, setShowFaceVerification] = useState(false);
+  const [faceVerified, setFaceVerified] = useState(false);
   const isFullscreenRef = useRef(false); // Use ref to avoid re-render loops
   const viewModeRef = useRef('exercise');
   const showStartScreenRef = useRef(true);
@@ -223,6 +226,16 @@ export default function DoExercise() {
   
   // Start exercise with fullscreen
   const handleStartExercise = async () => {
+    // Check if this is midterm or final exam - require face verification
+    console.log('handleStartExercise - exercise type:', exercise?.type, 'faceVerified:', faceVerified);
+    if (exercise && (exercise.type === 'midterm' || exercise.type === 'final')) {
+      if (!faceVerified) {
+        console.log('Showing face verification gate...');
+        setShowFaceVerification(true);
+        return;
+      }
+    }
+    
     const success = await enterFullscreen();
     if (success) {
       setShowStartScreen(false);
@@ -231,6 +244,29 @@ export default function DoExercise() {
         setTimeRemaining(exercise.duration * 60);
       }
     }
+  };
+  
+  const handleFaceVerificationSuccess = (result) => {
+    console.log('Face verification successful:', result);
+    setFaceVerified(true);
+    setShowFaceVerification(false);
+    showSuccess('Xác minh danh tính thành công! Bạn có thể bắt đầu làm bài.');
+    // Auto-start exam after short delay
+    setTimeout(() => {
+      handleStartExercise();
+    }, 1500);
+  };
+  
+  const handleFaceVerificationFailed = (error) => {
+    console.error('Face verification failed:', error);
+    setShowFaceVerification(false);
+    showError(error.reason === 'max_attempts_exceeded' 
+      ? 'Đã vượt quá số lần xác minh. Vui lòng liên hệ giáo viên.'
+      : 'Xác minh danh tính thất bại. Vui lòng thử lại hoặc liên hệ giáo viên.');
+    // Navigate back after failed verification
+    setTimeout(() => {
+      navigate('/exercise-hub');
+    }, 3000);
   };
   
   const exitFullscreen = () => {
@@ -2288,6 +2324,9 @@ export default function DoExercise() {
               <div>
                 <strong>Lưu ý quan trọng:</strong>
                 <ul>
+                  {(exercise.type === 'midterm' || exercise.type === 'final') && (
+                    <li>Yêu cầu <strong>xác minh khuôn mặt</strong> trước khi làm bài thi</li>
+                  )}
                   <li>Bài thi sẽ được mở ở chế độ <strong>toàn màn hình</strong></li>
                   <li>Không được thoát fullscreen trong quá trình làm bài</li>
                   <li>Nếu thoát fullscreen, hệ thống sẽ tự động bật lại</li>
@@ -2306,6 +2345,15 @@ export default function DoExercise() {
             </button>
           </div>
         </div>
+      )}
+      
+      {/* Face Verification Gate for Midterm/Final Exams */}
+      {showFaceVerification && (exercise.type === 'midterm' || exercise.type === 'final') && (
+        <FaceVerificationGate
+          onVerificationSuccess={handleFaceVerificationSuccess}
+          onVerificationFailed={handleFaceVerificationFailed}
+          exerciseId={exerciseId}
+        />
       )}
       
       {/* Fullscreen Warning Banner - Only show when doing exercise */}

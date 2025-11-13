@@ -35,6 +35,7 @@ from app.models.notification import Notification
 from app.models.otp import OTP
 from app.models.question_bank import QuestionBankItem
 from app.models.question_bank_test import QuestionBankTest
+from app.models.student_face_data import StudentFaceData
 from app.models.submission import Submission
 from app.models.system_config import SystemConfig
 from app.models.user import User
@@ -83,4 +84,5 @@ __all__ = [
     "EnhancedWeeklySubmission",
     "ExamAssessment",
     "ExamSubmission",
+    "StudentFaceData",
 ]

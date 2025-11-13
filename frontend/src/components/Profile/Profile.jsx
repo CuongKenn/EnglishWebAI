@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, Camera, Mail, Phone, MapPin, Calendar, Edit2, Save, X, AlertCircle, CheckCircle, Send, Link as LinkIcon, UserCheck } from 'lucide-react';
+import { User, Camera, Mail, Phone, MapPin, Calendar, Edit2, Save, X, AlertCircle, CheckCircle, Send, Link as LinkIcon, UserCheck, Shield } from 'lucide-react';
 import authService from '../../services/authService';
 import { linkParent, unlinkParent, getMyParents, verifyParentLink } from '../../services/userService';
 import './Profile.css';
 import Toast from '../Toast/Toast';
 import useToast from '../../hooks/useToast';
 import AvatarCropModal from './AvatarCropModal';
+import FaceEnrollment from '../FaceVerification/FaceEnrollment';
 
 const Profile = () => {
   const { toast, showSuccess, showError, showWarning, hideToast } = useToast();
@@ -405,11 +406,28 @@ const Profile = () => {
                 <Edit2 size={18} />
                 Cài đặt tài khoản
               </button>
+              {user?.role === 'student' && (
+                <button
+                  className={`profile-tab ${activeTab === 'face' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('face')}
+                >
+                  <Shield size={18} />
+                  Xác minh khuôn mặt
+                </button>
+              )}
             </div>
 
             {/* Tab Content */}
             <div className="profile-tab-content">
-              {activeTab === 'info' ? (
+              {activeTab === 'face' && user?.role === 'student' ? (
+                <div className="profile-face-tab">
+                  <FaceEnrollment 
+                    onEnrollmentComplete={() => {
+                      showSuccess('Đăng ký khuôn mặt thành công!');
+                    }}
+                  />
+                </div>
+              ) : activeTab === 'info' ? (
                 <div className="profile-info-tab">
                   <div className="info-grid">
                     <div className="info-item">
