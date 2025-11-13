@@ -9,6 +9,8 @@ import Toast from '../../../../../components/Toast/Toast';
 import useToast from '../../../../../hooks/useToast';
 
 export default function ExerciseManagementV2() {
+  console.log('[ExerciseManagement] Component mounted/rendered');
+  console.error('[ExerciseManagement] ERROR LOG TEST - Component loaded!');
   const { toast, showSuccess, showError, hideToast } = useToast();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
@@ -22,6 +24,7 @@ export default function ExerciseManagementV2() {
   const [viewMode, setViewMode] = useState('cards'); // 'cards' | 'table'
 
   useEffect(() => {
+    console.log('[ExerciseManagement] useEffect triggered');
     fetchClasses();
     fetchExercises();
   }, []);
@@ -36,13 +39,29 @@ export default function ExerciseManagementV2() {
   };
 
   const fetchExercises = async () => {
+    console.log('[ExerciseManagement] fetchExercises called');
     try {
       const classesResponse = await apiV1.get('/classes/teaching');
+      console.log('[ExerciseManagement] Classes response:', classesResponse.data);
       let allExercises = [];
+      
+      if (!classesResponse.data || classesResponse.data.length === 0) {
+        console.warn('[ExerciseManagement] No classes found for this teacher');
+        setExercises([]);
+        return;
+      }
       
       for (const cls of classesResponse.data) {
         try {
+          console.log(`[ExerciseManagement] Fetching exercises for class ${cls.id} (${cls.name})`);
           const response = await apiV1.get(`/exercises/by-class/${cls.id}`);
+          console.log(`[ExerciseManagement] Exercises for class ${cls.id}:`, response.data);
+          
+          if (!response.data || response.data.length === 0) {
+            console.warn(`[ExerciseManagement] No exercises found for class ${cls.id}`);
+            continue;
+          }
+          
           const exercisesWithClass = response.data.map(ex => ({
             id: ex.id,
             title: ex.title,
@@ -57,15 +76,19 @@ export default function ExerciseManagementV2() {
             status: 'active',
             content: ex.content || {}
           }));
+          console.log(`[ExerciseManagement] Mapped ${exercisesWithClass.length} exercises for class ${cls.id}`);
           allExercises = [...allExercises, ...exercisesWithClass];
         } catch (error) {
-          console.error(`Error fetching exercises for class ${cls.id}:`, error);
+          console.error(`[ExerciseManagement] Error fetching exercises for class ${cls.id}:`, error);
+          console.error('[ExerciseManagement] Error details:', error.response?.data || error.message);
         }
       }
       
+      console.log('[ExerciseManagement] Total exercises loaded:', allExercises.length, allExercises);
       setExercises(allExercises);
     } catch (error) {
-      console.error('Error fetching exercises:', error);
+      console.error('[ExerciseManagement] Error fetching exercises:', error);
+      console.error('[ExerciseManagement] Error details:', error.response?.data || error.message);
     }
   };
 

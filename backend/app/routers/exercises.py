@@ -1215,8 +1215,8 @@ async def list_exercises_by_class_teacher(
         db.query(Exercise)
         .filter(
             Exercise.class_id == class_id,
-            Exercise.is_active,
-            not Exercise.is_archived,
+            Exercise.is_active == True,
+            Exercise.is_archived == False,
         )
         .all()
     )
