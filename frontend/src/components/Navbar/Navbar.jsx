@@ -58,9 +58,11 @@ const Navbar = ({ userRole = 'student', isLoggedIn: isLoggedInProp = false, onLo
         return studentMenu;
       
       case 'teacher':
-        // Teacher: menu student + Dashboard cuối
+        // Teacher: chỉ menu quản trị, không có Học bài, Lớp học, Thực hành AI, Làm bài tập
         return [
-          ...studentMenu,
+          { path: '/about', label: 'Giới thiệu', icon: 'fa-info-circle' },
+          { path: '/news', label: 'Tin tức', icon: 'fa-newspaper' },
+          { path: '/discussion', label: 'Hỏi đáp', icon: 'fa-comments' },
           { path: '/teacher-dashboard', label: 'Dashboard', icon: 'fa-gauge-high', special: true }
         ];
       
