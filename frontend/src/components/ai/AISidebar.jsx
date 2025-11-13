@@ -73,7 +73,7 @@ export function AISidebar({ activeTab, onTabChange }) {
     {
       id: "image-recognition",
       icon: Camera,
-      label: "Nhận diện hình ảnh",
+      label: "Vocabulary Finder",
       gradient: "from-teal-500 to-green-500",
       heroIcon: CameraIcon,
     },
