@@ -9,6 +9,39 @@ import { apiV1 } from '../../../services/api';
 import Toast from '../../../components/Toast/Toast';
 import useToast from '../../../hooks/useToast';
 
+const normalizeMatchingPairs = (question) => {
+  if (!question || question.type !== 'matching') return [];
+
+  const sanitizedPair = (left, right) => ({
+    left: left !== null && left !== undefined ? String(left).trim() : '',
+    right: right !== null && right !== undefined ? String(right).trim() : ''
+  });
+
+  const fromArray = (pairs) =>
+    (pairs || [])
+      .filter((pair) => pair && (pair.left !== undefined || pair.right !== undefined))
+      .map((pair) => sanitizedPair(pair.left, pair.right))
+      .filter((pair) => pair.left || pair.right);
+
+  if (Array.isArray(question.pairs) && question.pairs.length > 0) {
+    return fromArray(question.pairs);
+  }
+
+  if (question.pairs && typeof question.pairs === 'object') {
+    const rebuilt = Object.entries(question.pairs).map(([left, right]) => sanitizedPair(left, right));
+    if (rebuilt.length > 0) return rebuilt;
+  }
+
+  if (question.correct_answer && typeof question.correct_answer === 'object' && !Array.isArray(question.correct_answer)) {
+    const rebuilt = Object.entries(question.correct_answer)
+      .map(([left, right]) => sanitizedPair(left, right))
+      .filter((pair) => pair.left || pair.right);
+    if (rebuilt.length > 0) return rebuilt;
+  }
+
+  return [];
+};
+
 export default function DoExercise() {
   const { toast, showSuccess, showError, showWarning, hideToast } = useToast();
   const { exerciseId } = useParams();
@@ -357,13 +390,21 @@ export default function DoExercise() {
   };
   
   // Helper to handle matching questions safely
-  const handleMatchingChange = (questionId, pairIndex, value) => {
+  const handleMatchingChange = (questionId, pairIndex, value, leftLabel = null) => {
     setAnswers(prev => {
       const currentMatching = typeof prev[questionId] === 'object' && prev[questionId] !== null 
         ? prev[questionId] 
         : {};
       
-      const newMatching = { ...currentMatching, [pairIndex]: value };
+      const newMatching = { ...currentMatching, [pairIndex]: value, [String(pairIndex)]: value };
+
+      if (leftLabel) {
+        const normalizedLeft = String(leftLabel).trim();
+        if (normalizedLeft) {
+          newMatching[normalizedLeft] = value;
+        }
+      }
+
       return { ...prev, [questionId]: newMatching };
     });
   };
@@ -935,13 +976,17 @@ export default function DoExercise() {
                       </div>
                     )}
                     
-                    {q.type === 'matching' && q.pairs && (
+                    {q.type === 'matching' && normalizeMatchingPairs(q).length > 0 && (
                       <div className="matching-container">
                         <p className="matching-instruction">Ghép các cặp sau cho đúng:</p>
-                        {q.pairs.map((pair, pairIdx) => {
+                        {normalizeMatchingPairs(q).map((pair, pairIdx) => {
                           const currentMatching = typeof answers[uniqueQuestionId] === 'object' && answers[uniqueQuestionId] !== null 
                             ? answers[uniqueQuestionId] 
                             : {};
+                          const normalizedValue =
+                            currentMatching[pairIdx] ??
+                            currentMatching[String(pairIdx)] ??
+                            (pair.left ? currentMatching[String(pair.left).trim()] : '');
                           
                           return (
                             <div key={pairIdx} className="matching-pair">
@@ -949,11 +994,11 @@ export default function DoExercise() {
                               <div className="match-arrow">→</div>
                               <select
                                 className="match-select"
-                                value={currentMatching[pairIdx] || ''}
-                                onChange={(e) => handleMatchingChange(uniqueQuestionId, pairIdx, e.target.value)}
+                                value={normalizedValue || ''}
+                                onChange={(e) => handleMatchingChange(uniqueQuestionId, pairIdx, e.target.value, pair.left)}
                               >
                                 <option value="">-- Chọn --</option>
-                                {q.pairs.map((p, i) => (
+                                {normalizeMatchingPairs(q).map((p, i) => (
                                   <option key={i} value={p.right}>{p.right}</option>
                                 ))}
                               </select>
@@ -1058,13 +1103,17 @@ export default function DoExercise() {
                       </div>
                     )}
                     
-                    {q.type === 'matching' && q.pairs && (
+                    {q.type === 'matching' && normalizeMatchingPairs(q).length > 0 && (
                       <div className="matching-container">
                         <p className="matching-instruction">Ghép các cặp sau cho đúng:</p>
-                        {q.pairs.map((pair, pairIdx) => {
+                        {normalizeMatchingPairs(q).map((pair, pairIdx) => {
                           const currentMatching = typeof answers[uniqueQuestionId] === 'object' && answers[uniqueQuestionId] !== null 
                             ? answers[uniqueQuestionId] 
                             : {};
+                          const normalizedValue =
+                            currentMatching[pairIdx] ??
+                            currentMatching[String(pairIdx)] ??
+                            (pair.left ? currentMatching[String(pair.left).trim()] : '');
                           
                           return (
                             <div key={pairIdx} className="matching-pair">
@@ -1072,11 +1121,11 @@ export default function DoExercise() {
                               <div className="match-arrow">→</div>
                               <select
                                 className="match-select"
-                                value={currentMatching[pairIdx] || ''}
-                                onChange={(e) => handleMatchingChange(uniqueQuestionId, pairIdx, e.target.value)}
+                                value={normalizedValue || ''}
+                                onChange={(e) => handleMatchingChange(uniqueQuestionId, pairIdx, e.target.value, pair.left)}
                               >
                                 <option value="">-- Chọn --</option>
-                                {q.pairs.map((p, i) => (
+                                {normalizeMatchingPairs(q).map((p, i) => (
                                   <option key={i} value={p.right}>{p.right}</option>
                                 ))}
                               </select>
