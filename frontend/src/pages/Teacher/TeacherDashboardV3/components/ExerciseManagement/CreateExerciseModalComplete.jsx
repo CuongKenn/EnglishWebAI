@@ -816,7 +816,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
   function renderMidtermFinalForm() {
     return (
       <div className="midterm-final-form">
-        <h4 className="section-title"><FileText className="inline-block w-5 h-5 mr-2" /> Câu hỏi kiểm tra</h4>
+        <h4 className="section-title"> Câu hỏi kiểm tra</h4>
         <p className="section-desc">Thêm các câu hỏi cho đề {testType === 'midterm' ? 'giữa kỳ' : 'cuối kỳ'}</p>
         
         {/* Input Method Selection */}
@@ -866,7 +866,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
 
             {activeSection === 'listening' && (
               <div className="comprehensive-section">
-                <h5 className="section-subtitle"><Headphones className="inline-block w-5 h-5 mr-2" /> Phần Nghe (Listening)</h5>
+                <h5 className="section-subtitle"> Phần Nghe (Listening)</h5>
                 {renderListeningForm('listening')}
                 {renderQuestions('listening')}
               </div>
@@ -874,7 +874,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
 
             {activeSection === 'reading' && (
               <div className="comprehensive-section">
-                <h5 className="section-subtitle"><BookOpen className="inline-block w-5 h-5 mr-2" /> Phần Đọc (Reading)</h5>
+                <h5 className="section-subtitle"> Phần Đọc (Reading)</h5>
                 {renderReadingForm('reading')}
                 {renderQuestions('reading')}
               </div>
@@ -882,7 +882,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
 
             {activeSection === 'writing' && (
               <div className="comprehensive-section">
-                <h5 className="section-subtitle"><PenLine className="inline-block w-5 h-5 mr-2" /> Phần Viết (Writing)</h5>
+                <h5 className="section-subtitle"> Phần Viết (Writing)</h5>
                 {renderWritingForm('writing')}
                 {renderQuestions('writing')}
               </div>
@@ -890,7 +890,7 @@ export default function CreateExerciseModalComplete({ onClose, onCreate }) {
 
             {activeSection === 'speaking' && (
               <div className="comprehensive-section">
-                <h5 className="section-subtitle"><Mic className="inline-block w-5 h-5 mr-2" /> Phần Nói (Speaking)</h5>
+                <h5 className="section-subtitle">Phần Nói (Speaking)</h5>
                 {renderSpeakingForm('speaking')}
                 {renderQuestions('speaking')}
               </div>
