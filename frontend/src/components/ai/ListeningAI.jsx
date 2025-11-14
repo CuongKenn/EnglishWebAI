@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "../ui/button";
 import { Card } from "../ui/card";
 import { Progress } from "../ui/progress";
-import { Headphones, Play, Pause, RotateCcw, Volume2, CheckCircle2, RefreshCw } from "lucide-react";
+import { Headphones, Play, Pause, RotateCcw, Volume2, CheckCircle2, RefreshCw, Target, Lightbulb, Users, Clock, FileText, BarChart3, Sprout, Leaf, TreeDeciduous } from "lucide-react";
 import { Slider } from "../ui/slider";
 import { Badge } from "../ui/badge";
 import { getListeningLesson, submitListeningAnswers } from "../../services/aiService";
@@ -322,7 +322,7 @@ export function ListeningAI() {
 
         {/* Options Form */}
         <Card className="p-6">
-          <h2 className="mb-6 text-xl font-bold text-gray-900">🎯 Thiết lập bài nghe của bạn</h2>
+          <h2 className="mb-6 text-xl font-bold text-gray-900 flex items-center gap-2"><Target className="w-6 h-6" /> Thiết lập bài nghe của bạn</h2>
           
           {/* Level Selection */}
           <div className="space-y-4">
@@ -338,7 +338,7 @@ export function ListeningAI() {
                   }`}
                 >
                   <div className="flex flex-col items-center gap-2 text-center">
-                    <span className="text-3xl">🌱</span>
+                    <Sprout className="w-8 h-8 text-green-600" />
                     <span className="font-semibold text-gray-900">Beginner</span>
                     <span className="text-xs text-gray-600">Người mới bắt đầu</span>
                   </div>
@@ -352,7 +352,7 @@ export function ListeningAI() {
                   }`}
                 >
                   <div className="flex flex-col items-center gap-2 text-center">
-                    <span className="text-3xl">🌿</span>
+                    <Leaf className="w-8 h-8 text-green-600" />
                     <span className="font-semibold text-gray-900">Intermediate</span>
                     <span className="text-xs text-gray-600">Trung cấp</span>
                   </div>
@@ -366,7 +366,7 @@ export function ListeningAI() {
                   }`}
                 >
                   <div className="flex flex-col items-center gap-2 text-center">
-                    <span className="text-3xl">🌳</span>
+                    <TreeDeciduous className="w-8 h-8 text-green-600" />
                     <span className="font-semibold text-gray-900">Advanced</span>
                     <span className="text-xs text-gray-600">Nâng cao</span>
                   </div>
@@ -379,7 +379,7 @@ export function ListeningAI() {
               <div className="flex items-start gap-3">
                 <Headphones className="h-5 w-5 text-blue-700 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-medium text-blue-900">💡 Gợi ý chọn cấp độ:</p>
+                  <p className="font-medium text-blue-900 flex items-center gap-2"><Lightbulb className="w-5 h-5 text-yellow-500" /> Gợi ý chọn cấp độ:</p>
                   <ul className="mt-2 space-y-1 text-sm text-blue-700">
                     <li><strong>Beginner:</strong> Câu đơn giản, tốc độ chậm, chủ đề hàng ngày</li>
                     <li><strong>Intermediate:</strong> Hội thoại phức tạp hơn, tốc độ trung bình</li>
@@ -433,7 +433,7 @@ export function ListeningAI() {
         <div className="flex items-center gap-3">
           <Headphones className="h-5 w-5 text-blue-700" />
           <div>
-            <p className="font-medium text-blue-900">🎭 Chế độ giọng đọc đa nhân vật</p>
+            <p className="font-medium text-blue-900 flex items-center gap-2"><Users className="w-5 h-5" /> Chế độ giọng đọc đa nhân vật</p>
             <p className="text-sm text-blue-700">
               Hệ thống tự động phát hiện hội thoại và sử dụng giọng nam/nữ khác nhau cho từng nhân vật.
               Nhấn nút play để trải nghiệm!
@@ -452,8 +452,8 @@ export function ListeningAI() {
                 <Badge className="bg-white/20 hover:bg-white/30">
                   {lesson.level}
                 </Badge>
-                <Badge className="bg-white/20 hover:bg-white/30">
-                  ⏱️ {lesson.duration}
+                <Badge className="bg-white/20 hover:bg-white/30 flex items-center gap-1">
+                  <Clock className="w-3 h-3" /> {lesson.duration}
                 </Badge>
               </div>
             </div>
@@ -531,7 +531,7 @@ export function ListeningAI() {
 
       {/* Questions */}
       <Card className="p-6">
-        <h3 className="mb-6 font-bold text-gray-900">📝 Câu hỏi luyện tập</h3>
+        <h3 className="mb-6 font-bold text-gray-900 flex items-center gap-2"><FileText className="w-6 h-6" /> Câu hỏi luyện tập</h3>
         <div className="space-y-6">
           {lesson.questions.map((q, qIndex) => (
             <div key={qIndex} className="rounded-xl border-2 border-gray-200 p-4">
@@ -610,7 +610,7 @@ export function ListeningAI() {
           <>
             {/* Results Summary */}
             <div className="mt-6 rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 p-6 border-2 border-green-200">
-              <h4 className="text-lg font-bold text-gray-900 mb-4 text-center">📊 Kết quả của bạn</h4>
+              <h4 className="text-lg font-bold text-gray-900 mb-4 text-center flex items-center justify-center gap-2"><BarChart3 className="w-6 h-6" /> Kết quả của bạn</h4>
               <div className="grid grid-cols-3 gap-4">
                 <div className="text-center">
                   <div className="text-3xl font-bold text-green-600">
