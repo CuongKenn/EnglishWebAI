@@ -9,6 +9,7 @@ import {
   MdError,
   MdAutorenew
 } from 'react-icons/md';
+import { Camera, Upload, Folder, Settings, Sprout, Leaf, TreeDeciduous, Lightbulb, Library, ImageIcon, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { recognizeImage } from '../../api/imageRecognition';
 
@@ -281,7 +282,7 @@ const ImageRecognition = () => {
         {/* Example */}
         <div className="mb-4 p-4 bg-green-50 border-l-4 border-green-400 rounded-r-lg">
           <p className="text-sm font-semibold text-green-800 mb-2 flex items-center gap-2">
-            💡 Example:
+            <Lightbulb className="w-4 h-4 text-yellow-500" /> Example:
             <button
               onClick={() => playPronunciation(vocab.example_sentence)}
               className="p-1 bg-green-500 text-white rounded-full hover:bg-green-600"
@@ -302,8 +303,8 @@ const ImageRecognition = () => {
         {/* Synonyms */}
         {vocab.synonyms && vocab.synonyms.length > 0 && (
           <div>
-            <p className="text-sm font-semibold text-gray-700 mb-2">
-              📚 Related Words:
+            <p className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+              <Library className="w-4 h-4" /> Related Words:
             </p>
             <div className="flex flex-wrap gap-2">
               {vocab.synonyms.map((syn, idx) => (
@@ -324,8 +325,8 @@ const ImageRecognition = () => {
   return (
     <div className="max-w-6xl mx-auto p-6 bg-gradient-to-br from-gray-50 to-blue-50 min-h-screen">
       <div className="mb-6 text-center">
-        <h1 className="text-4xl font-bold text-gray-800 mb-2">
-          📸 AI Vocabulary Finder
+        <h1 className="text-4xl font-bold text-gray-800 mb-2 flex items-center justify-center gap-3">
+          <Camera className="w-10 h-10 text-blue-600" /> AI Vocabulary Finder
         </h1>
         <p className="text-gray-600 text-lg">
           Chụp ảnh đồ vật → Học từ vựng tiếng Anh với phiên âm IPA!
@@ -335,7 +336,7 @@ const ImageRecognition = () => {
       {/* Settings */}
       {!mode && (
         <div className="mb-6 p-6 bg-white rounded-xl shadow-md">
-          <h3 className="font-semibold text-lg mb-4">⚙️ Cài đặt</h3>
+          <h3 className="font-semibold text-lg mb-4 flex items-center gap-2"><Settings className="w-5 h-5" /> Cài đặt</h3>
           <div className="max-w-md">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Trình độ tiếng Anh
@@ -345,9 +346,9 @@ const ImageRecognition = () => {
               onChange={(e) => setLevel(e.target.value)}
               className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg"
             >
-              <option value="beginner">🌱 Beginner (A1-A2)</option>
-              <option value="intermediate">🌿 Intermediate (B1-B2)</option>
-              <option value="advanced">🌳 Advanced (C1-C2)</option>
+              <option value="beginner">• Beginner (A1-A2)</option>
+              <option value="intermediate">• Intermediate (B1-B2)</option>
+              <option value="advanced">• Advanced (C1-C2)</option>
             </select>
           </div>
         </div>
@@ -361,7 +362,7 @@ const ImageRecognition = () => {
             className="flex flex-col items-center justify-center p-12 border-4 border-dashed border-blue-300 rounded-2xl hover:border-blue-500 hover:bg-blue-50 transition-all group"
           >
             <MdCameraAlt className="w-20 h-20 text-blue-500 mb-4 group-hover:scale-110 transition-transform" />
-            <span className="font-bold text-xl text-gray-700">📷 Mở Camera</span>
+            <span className="font-bold text-xl text-gray-700 flex items-center gap-2"><Camera className="w-6 h-6" /> Mở Camera</span>
             <span className="text-sm text-gray-500 mt-2">Chụp ảnh trực tiếp</span>
           </button>
 
@@ -370,7 +371,7 @@ const ImageRecognition = () => {
             className="flex flex-col items-center justify-center p-12 border-4 border-dashed border-green-300 rounded-2xl hover:border-green-500 hover:bg-green-50 transition-all group"
           >
             <MdUpload className="w-20 h-20 text-green-500 mb-4 group-hover:scale-110 transition-transform" />
-            <span className="font-bold text-xl text-gray-700">📁 Tải ảnh lên</span>
+            <span className="font-bold text-xl text-gray-700 flex items-center gap-2"><Folder className="w-6 h-6" /> Tải ảnh lên</span>
             <span className="text-sm text-gray-500 mt-2">Từ thư viện</span>
           </button>
 
@@ -472,7 +473,7 @@ const ImageRecognition = () => {
       {/* Error Message */}
       {error && (
         <div className="mb-6 p-6 bg-red-50 border-2 border-red-200 rounded-xl">
-          <p className="text-red-800 text-lg">❌ {error}</p>
+          <p className="text-red-800 text-lg flex items-center gap-2"><XCircle className="w-5 h-5" /> {error}</p>
         </div>
       )}
 
@@ -482,8 +483,9 @@ const ImageRecognition = () => {
           {/* Scene Description */}
           {result.scene_description && (
             <div className="p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded-r-xl">
-              <p className="text-gray-700">
-                <span className="font-semibold">🖼️ Scene: </span>
+              <p className="text-gray-700 flex items-center gap-2">
+                <ImageIcon className="w-5 h-5" />
+                <span className="font-semibold">Scene: </span>
                 {result.scene_description}
               </p>
             </div>
@@ -529,7 +531,7 @@ const ImageRecognition = () => {
       {/* Message */}
       {result && result.message && (
         <div className="mt-4 p-4 bg-blue-50 border-l-4 border-blue-400 rounded-r-xl">
-          <p className="text-blue-800">💡 {result.message}</p>
+          <p className="text-blue-800 flex items-center gap-2"><Lightbulb className="w-5 h-5 text-yellow-500" /> {result.message}</p>
         </div>
       )}
     </div>
