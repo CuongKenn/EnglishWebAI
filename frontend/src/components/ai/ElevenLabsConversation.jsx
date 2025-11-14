@@ -1,7 +1,7 @@
 import { useConversation } from "@elevenlabs/react";
 import { Card } from "../ui/card";
 import { Button } from "../ui/button";
-import { Radio, Mic, MicOff, Loader2, Info } from "lucide-react";
+import { Radio, Mic, MicOff, Loader2, Info, Lightbulb, Sparkles, Target, CheckCircle } from "lucide-react";
 import { useState } from "react";
 
 /**
@@ -102,7 +102,7 @@ export function ElevenLabsConversation() {
 
             <div className="mt-6 pt-6 border-t border-blue-300 dark:border-blue-600">
               <h4 className="font-bold text-blue-900 dark:text-blue-100 mb-3 flex items-center gap-2">
-                <span className="text-lg">💡</span>
+                <Lightbulb className="w-5 h-5 text-yellow-500" />
                 Mẹo hữu ích
               </h4>
               <ul className="space-y-2 text-sm text-blue-800 dark:text-blue-200">
@@ -227,8 +227,8 @@ export function ElevenLabsConversation() {
                 </div>
 
                 <div className="text-center">
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    💡 AI sẽ tự động nhận biết khi bạn nói và trả lời
+                  <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center justify-center gap-2">
+                    <Lightbulb className="w-4 h-4 text-yellow-500" /> AI sẽ tự động nhận biết khi bạn nói và trả lời
                   </p>
                 </div>
               </div>
@@ -242,28 +242,28 @@ export function ElevenLabsConversation() {
           {/* Features */}
           <Card className="p-6 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 border-2 border-green-300 dark:border-green-700 shadow-lg">
             <h3 className="text-xl font-bold text-green-900 dark:text-green-100 mb-4 flex items-center gap-2">
-              <span className="text-2xl">✨</span>
+              <Sparkles className="w-5 h-5 text-green-600" />
               Tính năng
             </h3>
             <ul className="space-y-3 text-sm text-green-900 dark:text-green-100">
               <li className="flex items-start gap-2">
-                <span className="text-green-600 font-bold text-lg">✓</span>
+                <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
                 <span className="leading-relaxed">Hội thoại giọng nói tự nhiên</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-green-600 font-bold text-lg">✓</span>
+                <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
                 <span className="leading-relaxed">Phản hồi thời gian thực</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-green-600 font-bold text-lg">✓</span>
+                <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
                 <span className="leading-relaxed">AI hiểu ngữ cảnh</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-green-600 font-bold text-lg">✓</span>
+                <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
                 <span className="leading-relaxed">Giọng nói như người thật</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-green-600 font-bold text-lg">✓</span>
+                <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
                 <span className="leading-relaxed">Sẵn sàng 24/7</span>
               </li>
             </ul>
@@ -272,7 +272,7 @@ export function ElevenLabsConversation() {
           {/* Benefits */}
           <Card className="p-6 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 border-2 border-purple-300 dark:border-purple-700 shadow-lg">
             <h3 className="text-xl font-bold text-purple-900 dark:text-purple-100 mb-4 flex items-center gap-2">
-              <span className="text-2xl">🎯</span>
+              <Target className="w-5 h-5 text-purple-600" />
               Lợi ích
             </h3>
             <ul className="space-y-3 text-sm text-purple-900 dark:text-purple-100">
