@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "../ui/button";
 import { Card } from "../ui/card";
 import { Badge } from "../ui/badge";
-import { Layers, Check, X, Volume2, Star, GraduationCap, RefreshCw, BookOpen, PenTool, RotateCcw, Sprout, Leaf, Flower2, Flower, TreeDeciduous, Trophy, Bot, Lightbulb, Library } from "lucide-react";
+import { Layers, Check, X, Volume2, Star, GraduationCap, RefreshCw, BookOpen, PenTool, RotateCcw, Sprout, Leaf, Flower2, Flower, TreeDeciduous, Trophy, Bot, Lightbulb, Library, Filter, Heart, Eye, EyeOff, Sparkles } from "lucide-react";
 import { Progress } from "../ui/progress";
 import { getFlashcards, saveFlashcardProgress } from "../../services/aiService";
 import { aiUsageAPI } from "../../services/api";
@@ -16,6 +16,13 @@ export function FlashcardAI() {
   const [allFlashcards, setAllFlashcards] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  
+  // Filter options
+  const [showOptions, setShowOptions] = useState(true);
+  const [filterFavorites, setFilterFavorites] = useState(false);
+  const [filterUnlearned, setFilterUnlearned] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [cardsPerLevel, setCardsPerLevel] = useState(7);
   
   // Refs for Web Speech API
   const speechSynthRef = useRef(null);
@@ -43,12 +50,6 @@ export function FlashcardAI() {
     };
   }, []);
 
-  // Load flashcards khi component mount
-  useEffect(() => {
-    loadFlashcards();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const loadFlashcards = async () => {
     setLoading(true);
     try {
@@ -58,7 +59,7 @@ export function FlashcardAI() {
 
       for (const level of levels) {
         try {
-          const cards = await getFlashcards(level, 7); // 7 cards per level from AI (tổng 42 cards)
+          const cards = await getFlashcards(level, cardsPerLevel);
 
           if (cards && Array.isArray(cards) && cards.length > 0) {
             allCards.push(...cards);
@@ -194,7 +195,23 @@ export function FlashcardAI() {
     },
   };
 
-  const filteredFlashcards = allFlashcards.filter(card => card.level === selectedLevel);
+  // Get unique categories
+  const categories = ['all', ...new Set(allFlashcards.map(card => card.category))];
+  
+  // Apply filters
+  let filteredFlashcards = allFlashcards.filter(card => card.level === selectedLevel);
+  
+  if (filterFavorites) {
+    filteredFlashcards = filteredFlashcards.filter(card => favorites.includes(card.id));
+  }
+  
+  if (filterUnlearned) {
+    filteredFlashcards = filteredFlashcards.filter(card => !learned.includes(card.id));
+  }
+  
+  if (selectedCategory !== 'all') {
+    filteredFlashcards = filteredFlashcards.filter(card => card.category === selectedCategory);
+  }
   const currentCard = filteredFlashcards[currentIndex];
   const progress = filteredFlashcards.length > 0 
     ? ((learned.filter(id => filteredFlashcards.some(card => card.id === id)).length) / filteredFlashcards.length) * 100 
@@ -313,8 +330,171 @@ export function FlashcardAI() {
         </div>
       </div>
 
-      {/* CEFR Level Selection */}
+      {/* Filter Options */}
       <Card className="overflow-hidden">
+        <div 
+          className="bg-gradient-to-r from-blue-500 to-indigo-500 p-4 cursor-pointer hover:from-blue-600 hover:to-indigo-600 transition-all"
+          onClick={() => setShowOptions(!showOptions)}
+        >
+          <div className="flex items-center justify-between text-white">
+            <div className="flex items-center gap-2">
+              <Filter className="h-5 w-5" />
+              <h3 className="font-semibold">Cài đặt Flashcard</h3>
+            </div>
+            <div className="flex items-center gap-2">
+              {showOptions ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </div>
+          </div>
+        </div>
+        
+        {showOptions && (
+          <div className="p-6 space-y-4">
+            {/* Number of cards per level */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Số lượng từ mỗi cấp độ
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {[5, 7, 10, 15, 20].map((count) => (
+                  <Button
+                    key={count}
+                    variant={cardsPerLevel === count ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setCardsPerLevel(count)}
+                    className={cardsPerLevel === count ? "bg-blue-600 hover:bg-blue-700" : ""}
+                  >
+                    {count} từ
+                  </Button>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Tổng cộng: {cardsPerLevel * 6} từ (6 cấp độ CEFR)
+              </p>
+            </div>
+
+            {/* Generate Button */}
+            <div className="pt-4 border-t">
+              <Button
+                onClick={loadFlashcards}
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white"
+                size="lg"
+              >
+                {loading ? (
+                  <>
+                    <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
+                    Đang tạo flashcards...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="mr-2 h-5 w-5" />
+                    Tạo Flashcards với AI
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        )}
+      </Card>
+
+      {/* Show filter options only when flashcards are loaded */}
+      {allFlashcards.length > 0 && (
+        <Card className="overflow-hidden">
+          <div className="bg-gradient-to-r from-indigo-500 to-purple-500 p-4">
+            <div className="flex items-center gap-2 text-white">
+              <Filter className="h-5 w-5" />
+              <h3 className="font-semibold">Bộ lọc</h3>
+              {(filterFavorites || filterUnlearned || selectedCategory !== 'all') && (
+                <Badge className="bg-white/20 hover:bg-white/30">
+                  {[filterFavorites && 'Yêu thích', filterUnlearned && 'Cần học', selectedCategory !== 'all' && selectedCategory].filter(Boolean).length} đang lọc
+                </Badge>
+              )}
+            </div>
+          </div>
+          
+          <div className="p-6 space-y-4">
+            {/* Category Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Lọc theo chủ đề
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {categories.map((category) => {
+                  const isActive = selectedCategory === category;
+                  const count = allFlashcards.filter(card => 
+                    card.level === selectedLevel && 
+                    (category === 'all' || card.category === category)
+                  ).length;
+                  
+                  return (
+                    <Button
+                      key={category}
+                      variant={isActive ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setSelectedCategory(category)}
+                      className={isActive ? "bg-indigo-600 hover:bg-indigo-700" : ""}
+                    >
+                      {category === 'all' ? 'Tất cả' : category} ({count})
+                    </Button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Quick Filters */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Lọc nhanh
+              </label>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant={filterFavorites ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setFilterFavorites(!filterFavorites)}
+                  className={filterFavorites ? "bg-pink-600 hover:bg-pink-700" : ""}
+                >
+                  <Heart className={`w-4 h-4 mr-2 ${filterFavorites ? 'fill-current' : ''}`} />
+                  Chỉ yêu thích ({favorites.filter(id => allFlashcards.some(card => card.id === id && card.level === selectedLevel)).length})
+                </Button>
+                
+                <Button
+                  variant={filterUnlearned ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setFilterUnlearned(!filterUnlearned)}
+                  className={filterUnlearned ? "bg-orange-600 hover:bg-orange-700" : ""}
+                >
+                  <Library className="w-4 h-4 mr-2" />
+                  Cần học ({allFlashcards.filter(card => card.level === selectedLevel && !learned.includes(card.id)).length})
+                </Button>
+              </div>
+            </div>
+
+            {/* Reset Filters */}
+            {(filterFavorites || filterUnlearned || selectedCategory !== 'all') && (
+              <div className="pt-2 border-t">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setFilterFavorites(false);
+                    setFilterUnlearned(false);
+                    setSelectedCategory('all');
+                  }}
+                  className="text-gray-600 hover:text-gray-900"
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  Xóa tất cả bộ lọc
+                </Button>
+              </div>
+            )}
+          </div>
+        </Card>
+      )}
+
+      {/* CEFR Level Selection - Only show when flashcards are loaded */}
+      {allFlashcards.length > 0 && (
+        <>
+          <Card className="overflow-hidden">
         <div className="bg-gradient-to-r from-pink-500 to-rose-500 p-6 text-white">
           <div className="mb-2 flex items-center gap-2">
             <GraduationCap className="h-6 w-6" />
@@ -601,6 +781,8 @@ export function FlashcardAI() {
           </div>
         </div>
       </Card>
+        </>
+      )}
     </div>
   );
 }
