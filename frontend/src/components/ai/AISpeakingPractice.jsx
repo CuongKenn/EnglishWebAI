@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Card } from "../ui/card";
 import { Button } from "../ui/button";
-import { Mic, MicOff, Video, VideoOff, RefreshCw, Send, Loader2 } from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, RefreshCw, Send, Loader2, Target, Mic2, BarChart3, MessageCircle, CheckCircle, ArrowRight, Smile, Meh, Frown, Angry, Zap, Heart, Sparkles } from "lucide-react";
 import axios from "axios";
 import { useFaceAPI, detectEmotions } from "../../hooks/useFaceAPI";
 
@@ -12,37 +12,37 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000
  */
 const EMOTION_MESSAGES = {
   happy: {
-    label: "Tuyệt vời! 😊",
+    label: "Tuỹt vời!",
     message: "Bạn đang rất tự tin và vui vẻ!",
     color: "bg-green-500/80"
   },
   neutral: {
-    label: "Bình tĩnh 😌",
+    label: "Bình tĩnh",
     message: "Hãy thư giãn và tự tin hơn nhé!",
     color: "bg-blue-500/80"
   },
   sad: {
-    label: "Đừng lo! 💪",
+    label: "Đừng lo!",
     message: "Hãy mỉm cười và tự tin lên bạn nhé!",
     color: "bg-yellow-500/80"
   },
   angry: {
-    label: "Thư giãn 🌈",
+    label: "Thư giãn",
     message: "Hít thở sâu và bình tĩnh lại nhé!",
     color: "bg-orange-500/80"
   },
   fearful: {
-    label: "Cố lên! 🌟",
+    label: "Cố lên!",
     message: "Đừng lo lắng, bạn làm rất tốt rồi!",
     color: "bg-purple-500/80"
   },
   disgusted: {
-    label: "Thoải mái 🎯",
+    label: "Thoải mái",
     message: "Hãy tập trung vào nội dung nhé!",
     color: "bg-red-500/80"
   },
   surprised: {
-    label: "Bất ngờ! ✨",
+    label: "Bất ngờ!",
     message: "Bạn đang làm tốt lắm, tiếp tục nhé!",
     color: "bg-pink-500/80"
   }
@@ -446,8 +446,8 @@ export function AISpeakingPractice() {
         {/* Left Panel - Topic Generation */}
         <div className="lg:col-span-4">
           <Card className="p-6 bg-white dark:bg-gray-800 shadow-lg">
-            <h2 className="text-2xl font-bold text-purple-900 dark:text-purple-100 mb-4">
-              🎯 Tạo đề Speaking
+            <h2 className="text-2xl font-bold text-purple-900 dark:text-purple-100 mb-4 flex items-center gap-2">
+              <Target className="w-6 h-6" /> Tạo đề Speaking
             </h2>
 
             {options && (
@@ -581,8 +581,8 @@ export function AISpeakingPractice() {
         {/* Center Panel - Recording & Camera */}
         <div className="lg:col-span-4">
           <Card className="p-6 bg-white dark:bg-gray-800 shadow-lg h-full flex flex-col">
-            <h2 className="text-2xl font-bold text-blue-900 dark:text-blue-100 mb-4">
-              🎤 Ghi âm & Camera
+            <h2 className="text-2xl font-bold text-blue-900 dark:text-blue-100 mb-4 flex items-center gap-2">
+              <Mic2 className="w-6 h-6" /> Ghi âm & Camera
             </h2>
 
             {/* Camera Preview */}
@@ -711,8 +711,8 @@ export function AISpeakingPractice() {
         {/* Right Panel - Results & Feedback */}
         <div className="lg:col-span-4">
           <Card className="p-6 bg-white dark:bg-gray-800 shadow-lg">
-            <h2 className="text-2xl font-bold text-green-900 dark:text-green-100 mb-4">
-              📊 Kết quả & Phản hồi
+            <h2 className="text-2xl font-bold text-green-900 dark:text-green-100 mb-4 flex items-center gap-2">
+              <BarChart3 className="w-6 h-6" /> Kết quả & Phản hồi
             </h2>
 
             {!gradingResult && (
@@ -770,7 +770,7 @@ export function AISpeakingPractice() {
 
                 {/* Overall Feedback */}
                 <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <h4 className="font-semibold text-gray-900 dark:text-white mb-2">💬 Nhận xét chung:</h4>
+                  <h4 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2"><MessageCircle className="w-5 h-5" /> Nhận xét chung:</h4>
                   <p className="text-sm text-gray-700 dark:text-gray-300">
                     {gradingResult.grading.overall_feedback}
                   </p>
@@ -794,7 +794,7 @@ export function AISpeakingPractice() {
                 {/* Strengths */}
                 {gradingResult.grading.strengths && gradingResult.grading.strengths.length > 0 && (
                   <div className="mt-4">
-                    <h4 className="font-semibold text-green-900 dark:text-green-100 mb-2">✅ Điểm mạnh:</h4>
+                    <h4 className="font-semibold text-green-900 dark:text-green-100 mb-2 flex items-center gap-2"><CheckCircle className="w-5 h-5" /> Điểm mạnh:</h4>
                     <ul className="list-disc list-inside space-y-1 text-sm text-green-800 dark:text-green-200">
                       {gradingResult.grading.strengths.map((strength, idx) => (
                         <li key={idx}>{strength}</li>
@@ -818,7 +818,7 @@ export function AISpeakingPractice() {
                 {/* Next Steps */}
                 {gradingResult.grading.suggested_next_steps && gradingResult.grading.suggested_next_steps.length > 0 && (
                   <div className="mt-4">
-                    <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">🎯 Bước tiếp theo:</h4>
+                    <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2 flex items-center gap-2"><Target className="w-5 h-5" /> Bước tiếp theo:</h4>
                     <ul className="list-decimal list-inside space-y-1 text-sm text-blue-800 dark:text-blue-200">
                       {gradingResult.grading.suggested_next_steps.map((step, idx) => (
                         <li key={idx}>{step}</li>
