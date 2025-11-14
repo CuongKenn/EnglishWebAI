@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "../ui/button";
 import { Card } from "../ui/card";
 import { Badge } from "../ui/badge";
-import { Layers, Check, X, Volume2, Star, GraduationCap, RefreshCw, BookOpen, PenTool, RotateCcw } from "lucide-react";
+import { Layers, Check, X, Volume2, Star, GraduationCap, RefreshCw, BookOpen, PenTool, RotateCcw, Sprout, Leaf, Flower2, Flower, TreeDeciduous, Trophy, Bot, Lightbulb, Library } from "lucide-react";
 import { Progress } from "../ui/progress";
 import { getFlashcards, saveFlashcardProgress } from "../../services/aiService";
 import { aiUsageAPI } from "../../services/api";
@@ -155,42 +155,42 @@ export function FlashcardAI() {
       description: "Người mới bắt đầu - Từ vựng cơ bản",
       ielts: "IELTS 1-2",
       color: "from-green-400 to-emerald-500",
-      emoji: "🌱",
+      emoji: <Sprout className="w-6 h-6" />,
     },
     A2: {
       name: "Elementary",
       description: "Sơ cấp - Giao tiếp đơn giản",
       ielts: "IELTS 3-3.5",
       color: "from-blue-400 to-cyan-500",
-      emoji: "🌿",
+      emoji: <Leaf className="w-6 h-6" />,
     },
     B1: {
       name: "Intermediate",
       description: "Trung cấp - Giao tiếp thành thạo",
       ielts: "IELTS 4-5",
       color: "from-purple-400 to-pink-500",
-      emoji: "🌸",
+      emoji: <Flower2 className="w-6 h-6" />,
     },
     B2: {
       name: "Upper-Intermediate",
       description: "Trung cấp cao - Sử dụng linh hoạt",
       ielts: "IELTS 5.5-6.5",
       color: "from-orange-400 to-red-500",
-      emoji: "🌺",
+      emoji: <Flower className="w-6 h-6" />,
     },
     C1: {
       name: "Advanced",
       description: "Nâng cao - Thành thạo ngôn ngữ",
       ielts: "IELTS 7-8",
       color: "from-indigo-400 to-purple-600",
-      emoji: "🌳",
+      emoji: <TreeDeciduous className="w-6 h-6" />,
     },
     C2: {
       name: "Proficiency",
       description: "Thành thục - Gần như người bản xứ",
       ielts: "IELTS 8.5-9",
       color: "from-pink-500 to-rose-600",
-      emoji: "🏆",
+      emoji: <Trophy className="w-6 h-6" />,
     },
   };
 
@@ -293,7 +293,7 @@ export function FlashcardAI() {
           <Layers className="h-5 w-5" />
           <span className="font-medium">Flashcard AI thông minh</span>
         </div>
-        <h1 className="mb-2">Flashcard AI 🎴</h1>
+        <h1 className="mb-2 flex items-center gap-2"><Layers className="w-8 h-8" /> Flashcard AI</h1>
         <p className="text-gray-600">
           Học từ vựng hiệu quả với hệ thống flashcard theo cấp độ CEFR & IELTS
         </p>
@@ -304,7 +304,7 @@ export function FlashcardAI() {
         <div className="flex items-center gap-3">
           <GraduationCap className="h-5 w-5 text-purple-700" />
           <div>
-            <p className="font-medium text-purple-900">🤖 Từ vựng được sinh bởi AI</p>
+            <p className="font-medium text-purple-900 flex items-center gap-2"><Bot className="w-5 h-5" /> Từ vựng được sinh bởi AI</p>
             <p className="text-sm text-purple-700">
               Mỗi flashcard được ChatGPT AI tạo ra dựa trên chuẩn CEFR, phù hợp với từng cấp độ của bạn.
               Từ vựng được chọn lọc và giải thích rõ ràng để tối ưu quá trình học tập.
@@ -409,14 +409,14 @@ export function FlashcardAI() {
         </div>
         <Progress value={progress} className="h-3" />
         <div className="mt-3 flex flex-wrap gap-2">
-          <Badge variant="outline" className="bg-green-50">
-            ✓ {learned.filter(id => filteredFlashcards.some(card => card.id === id)).length} Đã biết
+          <Badge variant="outline" className="bg-green-50 flex items-center gap-1">
+            <Check className="w-3 h-3" /> {learned.filter(id => filteredFlashcards.some(card => card.id === id)).length} Đã biết
           </Badge>
-          <Badge variant="outline" className="bg-orange-50">
-            📚 {filteredFlashcards.length - learned.filter(id => filteredFlashcards.some(card => card.id === id)).length} Cần học
+          <Badge variant="outline" className="bg-orange-50 flex items-center gap-1">
+            <Library className="w-3 h-3" /> {filteredFlashcards.length - learned.filter(id => filteredFlashcards.some(card => card.id === id)).length} Cần học
           </Badge>
-          <Badge variant="outline" className="bg-pink-50">
-            ⭐ {favorites.filter(id => filteredFlashcards.some(card => card.id === id)).length} Yêu thích
+          <Badge variant="outline" className="bg-pink-50 flex items-center gap-1">
+            <Star className="w-3 h-3" /> {favorites.filter(id => filteredFlashcards.some(card => card.id === id)).length} Yêu thích
           </Badge>
         </div>
       </Card>
@@ -551,13 +551,13 @@ export function FlashcardAI() {
       {/* Study Tips */}
       <Card className="overflow-hidden bg-gradient-to-br from-pink-50 to-rose-50">
         <div className="border-b border-pink-200 bg-gradient-to-r from-pink-100 to-rose-100 p-5">
-          <h3 className="font-bold text-gray-900">💡 Lộ trình học từ vựng theo CEFR</h3>
+          <h3 className="font-bold text-gray-900 flex items-center gap-2"><Lightbulb className="w-5 h-5 text-yellow-500" /> Lộ trình học từ vựng theo CEFR</h3>
           <p className="mt-1 text-sm text-gray-700">Các mẹo học từ vựng hiệu quả</p>
         </div>
         <div className="p-6">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <div className="flex gap-3 rounded-xl border border-pink-200 bg-white p-4 shadow-sm">
-              <div className="text-2xl">📚</div>
+              <div className="text-2xl"><Library className="w-6 h-6" /></div>
               <div>
                 <p className="font-semibold text-gray-900">A1-A2: Nền tảng</p>
                 <p className="text-sm text-gray-700">500-1000 từ cơ bản</p>
@@ -592,7 +592,7 @@ export function FlashcardAI() {
               </div>
             </div>
             <div className="flex gap-3 rounded-xl border border-pink-200 bg-white p-4 shadow-sm">
-              <div className="text-2xl">⭐</div>
+              <div className="text-2xl"><Star className="w-6 h-6" /></div>
               <div>
                 <p className="font-semibold text-gray-900">Đánh dấu từ khó</p>
                 <p className="text-sm text-gray-700">Ôn lại nhiều lần</p>
