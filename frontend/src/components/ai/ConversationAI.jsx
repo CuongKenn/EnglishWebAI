@@ -3,7 +3,7 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Card } from "../ui/card";
 import { Avatar, AvatarFallback } from "../ui/avatar";
-import { MessageCircle, Send, Mic, Volume2, Loader2, MicOff, Globe, Film, Lightbulb, Bot, AlertTriangle } from "lucide-react";
+import { MessageCircle, Send, Mic, Volume2, Loader2, MicOff, Globe, Film, Lightbulb, Bot, AlertTriangle, Radio } from "lucide-react";
 import { ScrollArea } from "../ui/scroll-area";
 import { aiAPI, aiUsageAPI } from "../../services/api";
 import { useSpeechRecognition } from "../../hooks/useMicrophone";
@@ -339,8 +339,8 @@ export function ConversationAI() {
           <div className="mt-2 flex items-center justify-between">
             <p className="text-xs text-gray-500">
               {isListening ? (
-                <span className="text-red-500">
-                  🔴 Listening... Speak in English
+                <span className="text-red-500 flex items-center gap-1">
+                  <Radio className="w-3 h-3 animate-pulse" /> Listening... Speak in English
                   {interimTranscript && ` (${interimTranscript}...)`}
                 </span>
               ) : isLoading ? (
