@@ -280,6 +280,64 @@ export function FlashcardAI() {
     );
   }
 
+  // Show setup/options UI if no flashcards
+  if (allFlashcards.length === 0) {
+    return (
+      <div className="max-w-xl mx-auto py-12">
+        <div className="mb-6 text-center">
+          <Layers className="h-10 w-10 mx-auto text-pink-500" />
+          <h1 className="mt-2 mb-2 text-2xl font-bold">Flashcard AI</h1>
+          <p className="text-gray-600">Chọn số lượng từ mỗi cấp độ và nhấn <b>Tạo Flashcards với AI</b> để bắt đầu.</p>
+        </div>
+        <Card className="overflow-hidden">
+          <div className="p-6 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Số lượng từ mỗi cấp độ
+              </label>
+              <div className="flex flex-wrap gap-2 justify-center">
+                {[5, 7, 10, 15, 20].map((count) => (
+                  <Button
+                    key={count}
+                    variant={cardsPerLevel === count ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setCardsPerLevel(count)}
+                    className={cardsPerLevel === count ? "bg-pink-600 hover:bg-pink-700" : ""}
+                  >
+                    {count} từ
+                  </Button>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500 mt-1 text-center">
+                Tổng cộng: {cardsPerLevel * 6} từ (6 cấp độ CEFR)
+              </p>
+            </div>
+            <div className="pt-4">
+              <Button
+                onClick={loadFlashcards}
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white"
+                size="lg"
+              >
+                {loading ? (
+                  <>
+                    <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
+                    Đang tạo flashcards...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="mr-2 h-5 w-5" />
+                    Tạo Flashcards với AI
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   if (!currentCard || filteredFlashcards.length === 0) {
     return (
       <div className="flex h-96 items-center justify-center">
