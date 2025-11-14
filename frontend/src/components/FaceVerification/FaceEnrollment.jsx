@@ -14,18 +14,31 @@ const FaceEnrollment = ({ onEnrollmentComplete }) => {
   const [error, setError] = useState(null);
   const [modelsReady, setModelsReady] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState(true);
+  const [isEnrolled, setIsEnrolled] = useState(false);
+  const [enrollmentDate, setEnrollmentDate] = useState(null);
 
   useEffect(() => {
-    checkModelsStatus();
+    checkEnrollmentStatus();
   }, []);
 
-  const checkModelsStatus = async () => {
+  const checkEnrollmentStatus = async () => {
+    setCheckingStatus(true);
     try {
       const response = await api.get('/api/v1/face/enrollment-status');
       setModelsReady(response.data.models_ready || false);
+      setIsEnrolled(response.data.enrolled || false);
+      setEnrollmentDate(response.data.enrollment_date || null);
+      
+      if (response.data.enrolled) {
+        setEnrollmentStatus({
+          success: true,
+          message: response.data.message || 'Bạn đã đăng ký khuôn mặt'
+        });
+      }
     } catch (err) {
-      console.error('Failed to check models status:', err);
+      console.error('Failed to check enrollment status:', err);
       setModelsReady(false);
+      setIsEnrolled(false);
     } finally {
       setCheckingStatus(false);
     }
@@ -53,6 +66,9 @@ const FaceEnrollment = ({ onEnrollmentComplete }) => {
           message: response.data.message,
           enrollmentId: response.data.enrollment_id
         });
+        
+        // Reload enrollment status to update UI
+        await checkEnrollmentStatus();
         
         if (onEnrollmentComplete) {
           onEnrollmentComplete(response.data);
@@ -92,7 +108,25 @@ const FaceEnrollment = ({ onEnrollmentComplete }) => {
         </div>
 
         {/* Status Messages */}
-        {enrollmentStatus?.success && (
+        {isEnrolled && enrollmentDate && (
+          <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
+            <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-medium text-green-800">Đã đăng ký khuôn mặt</p>
+              <p className="text-sm text-green-700 mt-1">
+                Ngày đăng ký: {new Date(enrollmentDate).toLocaleDateString('vi-VN', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {enrollmentStatus?.success && !isEnrolled && (
           <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
             <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
             <div>
