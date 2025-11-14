@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
 import { Card } from "../ui/card";
-import { Languages, ArrowRightLeft, Volume2, Copy, Check, Loader2 } from "lucide-react";
+import { Languages, ArrowRightLeft, Volume2, Copy, Check, Loader2, Lightbulb, AlertTriangle } from "lucide-react";
 import { aiUsageAPI } from "../../services/api";
 import translationService from "../../services/translationService";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
@@ -327,9 +327,12 @@ export function TranslateAI() {
                 background: '#fee2e2', 
                 border: '1px solid #fca5a5', 
                 borderRadius: '8px',
-                color: '#dc2626'
+                color: '#dc2626',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
               }}>
-                ⚠️ {error}
+                <AlertTriangle style={{ width: '16px', height: '16px', flexShrink: 0 }} /> {error}
               </div>
             ) : translatedText ? (
               <p style={{ color: '#1f2937', lineHeight: '1.6', margin: 0 }}>{translatedText}</p>
@@ -344,7 +347,7 @@ export function TranslateAI() {
 
       {/* Quick Phrases */}
       <Card style={{ padding: '24px' }}>
-        <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '16px' }}>💡 Cụm từ thông dụng</h3>
+        <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}><Lightbulb style={{ width: '20px', height: '20px' }} /> Cụm từ thông dụng</h3>
         <div style={{ 
           display: 'grid', 
           gridTemplateColumns: window.innerWidth >= 640 ? (window.innerWidth >= 1024 ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)') : '1fr',

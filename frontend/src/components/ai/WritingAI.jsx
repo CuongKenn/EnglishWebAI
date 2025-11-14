@@ -3,7 +3,7 @@ import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
 import { Card } from "../ui/card";
 import { Badge } from "../ui/badge";
-import { PenTool, Sparkles, CheckCircle2, AlertCircle, RefreshCw, Loader2, RotateCcw, Send } from "lucide-react";
+import { PenTool, Sparkles, CheckCircle2, AlertCircle, RefreshCw, Loader2, RotateCcw, Send, Lightbulb } from "lucide-react";
 import { Progress } from "../ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { ScrollArea } from "../ui/scroll-area";
@@ -187,7 +187,7 @@ export function WritingAI() {
                 <p className="mb-3 text-sm text-gray-700">{topic.prompt}</p>
                 {topic.tips && topic.tips.length > 0 && (
                   <div className="border-t border-orange-200 pt-3">
-                    <p className="mb-2 text-xs font-medium text-orange-800">💡 Tips:</p>
+                    <p className="mb-2 text-xs font-medium text-orange-800 flex items-center gap-1"><Lightbulb className="w-3 h-3" /> Tips:</p>
                     <ul className="space-y-1">
                       {topic.tips.map((tip, idx) => (
                         <li key={idx} className="flex items-start gap-2 text-xs text-gray-600">

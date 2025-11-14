@@ -1,5 +1,5 @@
 ﻿import { useState } from 'react';
-import { Book, Loader2, Check, X, Award, TrendingUp, Sparkles } from 'lucide-react';
+import { Book, Loader2, Check, X, Award, TrendingUp, Sparkles, Newspaper, Tv, FileText, Mail, Lightbulb, Search, Library, Edit3, Target, HelpCircle, Circle, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { aiAPI, aiUsageAPI } from '../../services/api';
 
 export function ReadingAI() {
@@ -20,10 +20,10 @@ export function ReadingAI() {
 
   const types = [
     { value: 'story', label: 'Story', icon: <Book className="w-6 h-6" />, desc: 'Truyện ngắn' },
-    { value: 'article', label: 'Article', icon: '📰', desc: 'Bài báo' },
-    { value: 'news', label: 'News', icon: '📺', desc: 'Tin tức' },
-    { value: 'essay', label: 'Essay', icon: '📝', desc: 'Tiểu luận' },
-    { value: 'letter', label: 'Letter', icon: '✉️', desc: 'Thư tín' }
+    { value: 'article', label: 'Article', icon: <Newspaper className="w-6 h-6" />, desc: 'Bài báo' },
+    { value: 'news', label: 'News', icon: <Tv className="w-6 h-6" />, desc: 'Tin tức' },
+    { value: 'essay', label: 'Essay', icon: <FileText className="w-6 h-6" />, desc: 'Tiểu luận' },
+    { value: 'letter', label: 'Letter', icon: <Mail className="w-6 h-6" />, desc: 'Thư tín' }
   ];
 
   const handleGeneratePassage = async () => {
@@ -126,24 +126,24 @@ export function ReadingAI() {
 
   const getQuestionTypeLabel = (type) => {
     const labels = {
-      'main_idea': '💡 Main Idea',
-      'detail': '🔍 Detail',
-      'inference': '🧠 Inference',
-      'vocabulary': '📚 Vocabulary',
-      'author_purpose': '✍️ Author\'s Purpose',
-      'reference': '🔗 Reference',
-      'application': '🎯 Application'
+      'main_idea': <><Lightbulb className="w-4 h-4 inline" /> Main Idea</>,
+      'detail': <><Search className="w-4 h-4 inline" /> Detail</>,
+      'inference': <><TrendingUp className="w-4 h-4 inline" /> Inference</>,
+      'vocabulary': <><Library className="w-4 h-4 inline" /> Vocabulary</>,
+      'author_purpose': <><Edit3 className="w-4 h-4 inline" /> Author's Purpose</>,
+      'reference': <><Book className="w-4 h-4 inline" /> Reference</>,
+      'application': <><Target className="w-4 h-4 inline" /> Application</>
     };
-    return labels[type] || '❓ Question';
+    return labels[type] || <><HelpCircle className="w-4 h-4 inline" /> Question</>;
   };
 
   const getQuestionFormatLabel = (format) => {
     const labels = {
-      'multiple_choice': '🔘 Multiple Choice',
-      'true_false': '✓✗ True/False',
-      'fill_blank': '✏️ Fill in the Blank'
+      'multiple_choice': <><Circle className="w-4 h-4 inline" /> Multiple Choice</>,
+      'true_false': <><CheckCircle className="w-4 h-4 inline" /><XCircle className="w-4 h-4 inline" /> True/False</>,
+      'fill_blank': <><Edit3 className="w-4 h-4 inline" /> Fill in the Blank</>
     };
-    return labels[format] || '❓ Question';
+    return labels[format] || <><HelpCircle className="w-4 h-4 inline" /> Question</>;
   };
 
   const getQuestionFormatColor = (format) => {
@@ -286,8 +286,8 @@ export function ReadingAI() {
               </div>
               
               <div className="flex gap-4 text-sm text-gray-600 mb-6">
-                <span>📝 {passage.word_count} từ</span>
-                <span>⏱️ ~{passage.estimated_time} phút</span>
+                <span className="flex items-center gap-1"><FileText className="w-4 h-4" /> {passage.word_count} từ</span>
+                <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> ~{passage.estimated_time} phút</span>
               </div>
 
               <div className="prose max-w-none">
@@ -298,8 +298,8 @@ export function ReadingAI() {
             </div>
 
             <div className="bg-white rounded-2xl shadow-xl p-6 border border-indigo-100">
-              <h3 className="text-xl font-bold text-gray-800 mb-6">
-                📋 Comprehension Questions ({passage.questions.length} câu - MC, T/F, Fill-in)
+              <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                <FileText className="w-5 h-5" /> Comprehension Questions ({passage.questions.length} câu - MC, T/F, Fill-in)
               </h3>
 
               <div className="space-y-6">
