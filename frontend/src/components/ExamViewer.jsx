@@ -4,6 +4,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import examService from '../services/examService';
+import ExamProctoringMonitor from './exam/ExamProctoringMonitor';
 import './ExamViewer.css';
 
 const ExamViewer = ({ examId, onSubmitSuccess }) => {
@@ -110,14 +111,22 @@ const ExamViewer = ({ examId, onSubmitSuccess }) => {
     }
   };
 
-  const handleAutoSubmit = async () => {
+  const handleAutoSubmit = async (reason = 'Hết thời gian') => {
     try {
       await examService.submitExam(submission.id, answers);
-      alert('⏰ Hết thời gian! Bài thi đã được tự động nộp.');
+      alert(`⏰ ${reason}! Bài thi đã được tự động nộp.`);
       loadExam();
     } catch (err) {
       console.error('Auto-submit error:', err);
     }
+  };
+
+  const handleProctoringWarning = (type, message) => {
+    console.warn(`[Proctoring Warning] ${type}: ${message}`);
+  };
+
+  const handleProctoringAutoSubmit = (reason) => {
+    handleAutoSubmit(`Vi phạm quy định giám sát: ${reason}`);
   };
 
   const formatTime = (seconds) => {
@@ -341,8 +350,22 @@ const ExamViewer = ({ examId, onSubmitSuccess }) => {
   }
 
   // In progress - show exam
+  // Enable proctoring for midterm and final exams
+  const enableProctoring = exam.exam_type === 'midterm' || exam.exam_type === 'final';
+
   return (
     <div className="exam-viewer-container">
+      {/* Proctoring Monitor */}
+      {enableProctoring && submission && (
+        <ExamProctoringMonitor
+          submissionId={submission.id}
+          examId={examId}
+          onAutoSubmit={handleProctoringAutoSubmit}
+          onWarning={handleProctoringWarning}
+          isActive={submission.status === 'in_progress'}
+        />
+      )}
+
       {/* Header */}
       <div className="exam-header">
         <h1>{exam.title}</h1>
