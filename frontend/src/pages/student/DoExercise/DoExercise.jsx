@@ -2358,21 +2358,32 @@ export default function DoExercise() {
       )}
       
       {/* Exam Proctoring Monitor for Midterm/Final */}
-      {exercise && submission && !showStartScreen && viewMode === 'exercise' && (exercise.type === 'midterm' || exercise.type === 'final') && (
-        <ExamProctoringMonitor
-          submissionId={submission.id}
-          examId={exerciseId}
-          onAutoSubmit={(reason) => {
-            showWarning(`Bài thi bị tự động nộp: ${reason}`);
-            handleSubmit();
-          }}
-          onWarning={(type, message) => {
-            console.warn(`[Proctoring] ${type}: ${message}`);
-            showWarning(message);
-          }}
-          isActive={true}
-        />
-      )}
+      {(() => {
+        const shouldShow = exercise && submission && !showStartScreen && viewMode === 'exercise' && (exercise.type === 'midterm' || exercise.type === 'final');
+        console.log('[PROCTORING DEBUG]', {
+          exercise: !!exercise,
+          submission: !!submission,
+          showStartScreen,
+          viewMode,
+          exerciseType: exercise?.type,
+          shouldShow
+        });
+        return shouldShow ? (
+          <ExamProctoringMonitor
+            submissionId={submission.id}
+            examId={exerciseId}
+            onAutoSubmit={(reason) => {
+              showWarning(`Bài thi bị tự động nộp: ${reason}`);
+              handleSubmit();
+            }}
+            onWarning={(type, message) => {
+              console.warn(`[Proctoring] ${type}: ${message}`);
+              showWarning(message);
+            }}
+            isActive={true}
+          />
+        ) : null;
+      })()}
       
       {/* Fullscreen Warning Banner - Only show when doing exercise */}
       {viewMode === 'exercise' && !showStartScreen && isFullscreen && (

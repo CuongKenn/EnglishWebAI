@@ -4,7 +4,6 @@
  */
 import React, { useState, useEffect } from 'react';
 import examService from '../services/examService';
-import ExamProctoringMonitor from './exam/ExamProctoringMonitor';
 import './ExamViewer.css';
 
 const ExamViewer = ({ examId, onSubmitSuccess }) => {
@@ -119,14 +118,6 @@ const ExamViewer = ({ examId, onSubmitSuccess }) => {
     } catch (err) {
       console.error('Auto-submit error:', err);
     }
-  };
-
-  const handleProctoringWarning = (type, message) => {
-    console.warn(`[Proctoring Warning] ${type}: ${message}`);
-  };
-
-  const handleProctoringAutoSubmit = (reason) => {
-    handleAutoSubmit(`Vi phạm quy định giám sát: ${reason}`);
   };
 
   const formatTime = (seconds) => {
@@ -350,49 +341,8 @@ const ExamViewer = ({ examId, onSubmitSuccess }) => {
   }
 
   // In progress - show exam
-  // Enable proctoring for midterm and final exams
-  // TEMPORARY: Enable for ALL exams for testing
-  const enableProctoring = true; // exam.exam_type === 'midterm' || exam.exam_type === 'final';
-  
-  // Debug logging
-  console.log('[ExamViewer] Proctoring Check:', {
-    exam_type: exam.exam_type,
-    enableProctoring,
-    hasSubmission: !!submission,
-    submissionStatus: submission?.status,
-    submissionId: submission?.id,
-    examId
-  });
-
   return (
     <div className="exam-viewer-container">
-      {/* Debug Banner */}
-      {submission && submission.status === 'in_progress' && (
-        <div style={{
-          background: '#fef3c7',
-          padding: '12px',
-          marginBottom: '16px',
-          borderRadius: '8px',
-          border: '2px solid #f59e0b',
-          color: '#92400e'
-        }}>
-          <strong>🔍 Debug:</strong> Proctoring {enableProctoring ? 'ENABLED' : 'DISABLED'} 
-          | Exam Type: {exam.exam_type}
-          | Submission: {submission.id}
-          | Status: {submission.status}
-        </div>
-      )}
-      
-      {/* Proctoring Monitor */}
-      {enableProctoring && submission && (
-        <ExamProctoringMonitor
-          submissionId={submission.id}
-          examId={examId}
-          onAutoSubmit={handleProctoringAutoSubmit}
-          onWarning={handleProctoringWarning}
-          isActive={submission.status === 'in_progress'}
-        />
-      )}
 
       {/* Header */}
       <div className="exam-header">
