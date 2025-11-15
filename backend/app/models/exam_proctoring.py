@@ -21,7 +21,7 @@ class ExamProctoringLog(Base):
 
     # Technical details
     confidence_score = Column(Float, nullable=True)  # Face similarity score, gaze confidence, etc.
-    metadata = Column(Text, nullable=True)  # JSON string for additional data
+    event_metadata = Column(Text, nullable=True)  # JSON string for additional data
 
     # Timestamps
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
