@@ -113,14 +113,24 @@
 
 /* Section Title */
 .section-title {
-  font-size: 22px;
-  font-weight: 800;
+  font-size: 1.05rem;
+  font-weight: 650;
   color: #0f172a;
   margin: 0 0 16px 0;
   background: none !important;
   -webkit-background-clip: initial !important;
   -webkit-text-fill-color: inherit !important;
   background-clip: initial !important;
+}
+
+.lessons-content-wrapper .section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.section-header-with-icon .section-title {
+  margin-bottom: 0;
 }
 
 /* Today's Goal Section */

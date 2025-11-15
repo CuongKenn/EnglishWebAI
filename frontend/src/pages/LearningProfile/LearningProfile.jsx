@@ -347,10 +347,6 @@ const LearningProfile = () => {
                   <GraduationCap size={16} />
                   {getUserGrade()}
                 </span>
-                <span className="user-level">
-                  <Star size={16} />
-                  Level {overallStats.level}
-                </span>
               </div>
             </div>
           </div>
