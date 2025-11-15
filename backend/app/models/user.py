@@ -63,6 +63,7 @@ class User(Base):
     username = Column(String, unique=True, index=True, nullable=False)
     full_name = Column(String)
     hashed_password = Column(String, nullable=False)
+    google_id = Column(String, nullable=True, index=True)  # Google OAuth ID
     role = Column(Enum(UserRole), default=UserRole.USER, nullable=False)
     is_active = Column(Boolean, default=True)
     is_verified = Column(Boolean, default=False)

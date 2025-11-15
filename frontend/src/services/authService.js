@@ -23,6 +23,14 @@ class AuthService {
   }
 
   /**
+   * Đăng nhập bằng Google
+   */
+  async googleLogin(idToken) {
+    const response = await authAPI.googleLogin(idToken);
+    return response;
+  }
+
+  /**
    * Đăng xuất
    */
   logout() {

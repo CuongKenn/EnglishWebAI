@@ -46,6 +46,11 @@ class Settings(BaseSettings):
     AZURE_SPEECH_KEY: str = os.getenv("AZURE_SPEECH_KEY", "")
     AZURE_SPEECH_REGION: str = os.getenv("AZURE_SPEECH_REGION", "eastus")
 
+    # Google OAuth Configuration
+    GOOGLE_CLIENT_ID: str = os.getenv("GOOGLE_CLIENT_ID", "")
+    GOOGLE_CLIENT_SECRET: str = os.getenv("GOOGLE_CLIENT_SECRET", "")
+    GOOGLE_REDIRECT_URI: str = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:5173/auth/google/callback")
+
     # Redis Configuration
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://redis:6379/0")
     REDIS_ENABLED: bool = os.getenv("REDIS_ENABLED", "True") == "True"

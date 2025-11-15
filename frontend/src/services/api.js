@@ -175,6 +175,26 @@ export const authAPI = {
     }
   },
 
+  // Đăng nhập bằng Google
+  googleLogin: async (idToken) => {
+    try {
+      const response = await apiClient.post('/api/v1/auth/google', { id_token: idToken });
+      if (response.data.access_token) {
+        localStorage.setItem('access_token', response.data.access_token);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+      }
+      return response.data;
+    } catch (error) {
+      if (error.response) {
+        const errorData = error.response.data;
+        if (errorData.detail) {
+          throw { detail: errorData.detail, status: error.response.status };
+        }
+      }
+      throw { detail: 'Đăng nhập bằng Google thất bại!' };
+    }
+  },
+
   // Đăng xuất
   logout: () => {
     localStorage.removeItem('access_token');
