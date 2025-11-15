@@ -11,7 +11,9 @@ class ExamProctoringLog(Base):
     __tablename__ = "exam_proctoring_logs"
 
     id = Column(Integer, primary_key=True, index=True)
-    submission_id = Column(Integer, ForeignKey("course_submissions.id"), nullable=False, index=True)
+    # Support both course_submissions and exercise submissions
+    submission_id = Column(Integer, ForeignKey("course_submissions.id"), nullable=True, index=True)
+    exercise_submission_id = Column(Integer, ForeignKey("exercise_submissions.id"), nullable=True, index=True)
     session_token = Column(String(64), index=True)
 
     # Event information
@@ -38,7 +40,9 @@ class ExamMonitoringSession(Base):
     __tablename__ = "exam_monitoring_sessions"
 
     id = Column(Integer, primary_key=True, index=True)
-    submission_id = Column(Integer, ForeignKey("course_submissions.id"), nullable=False, unique=True, index=True)
+    # Support both course_submissions and exercise submissions
+    submission_id = Column(Integer, ForeignKey("course_submissions.id"), nullable=True, index=True)
+    exercise_submission_id = Column(Integer, ForeignKey("exercise_submissions.id"), nullable=True, index=True)
     student_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     exam_id = Column(Integer, nullable=False, index=True)
 

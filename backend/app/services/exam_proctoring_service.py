@@ -44,11 +44,25 @@ class ExamProctoringService:
         Returns (success, session, error_message)
         """
         try:
+            # Check if this is an exercise submission (from exercises table) or course submission
+            # Exercise submissions go to exercise_submission_id, course submissions to submission_id
+            from app.models.submission import Submission as ExerciseSubmission
+
+            is_exercise_submission = db.query(ExerciseSubmission).filter(
+                ExerciseSubmission.id == submission_id
+            ).first() is not None
+
             # Check if session already exists
-            existing = db.query(ExamMonitoringSession).filter(
-                ExamMonitoringSession.submission_id == submission_id,
-                ExamMonitoringSession.is_active
-            ).first()
+            if is_exercise_submission:
+                existing = db.query(ExamMonitoringSession).filter(
+                    ExamMonitoringSession.exercise_submission_id == submission_id,
+                    ExamMonitoringSession.is_active
+                ).first()
+            else:
+                existing = db.query(ExamMonitoringSession).filter(
+                    ExamMonitoringSession.submission_id == submission_id,
+                    ExamMonitoringSession.is_active
+                ).first()
 
             if existing:
                 return True, existing, None
@@ -56,18 +70,24 @@ class ExamProctoringService:
             # Generate session token
             session_token = secrets.token_urlsafe(32)
 
-            # Create new session
-            session = ExamMonitoringSession(
-                submission_id=submission_id,
-                student_id=student_id,
-                exam_id=exam_id,
-                session_token=session_token,
-                is_active=True,
-                warning_count=0,
-                critical_count=0,
-                last_identity_check=None,
-                auto_submitted=False
-            )
+            # Create new session with appropriate field
+            session_data = {
+                'student_id': student_id,
+                'exam_id': exam_id,
+                'session_token': session_token,
+                'is_active': True,
+                'warning_count': 0,
+                'critical_count': 0,
+                'last_identity_check': None,
+                'auto_submitted': False
+            }
+
+            if is_exercise_submission:
+                session_data['exercise_submission_id'] = submission_id
+            else:
+                session_data['submission_id'] = submission_id
+
+            session = ExamMonitoringSession(**session_data)
 
             db.add(session)
             db.commit()
@@ -475,15 +495,28 @@ class ExamProctoringService:
     ):
         """Log a proctoring event"""
         try:
-            log = ExamProctoringLog(
-                submission_id=submission_id,
-                session_token=session_token,
-                event_type=event_type,
-                severity=severity,
-                message=message,
-                confidence_score=confidence_score,
-                metadata=metadata
-            )
+            # Check if this is an exercise submission or course submission
+            from app.models.submission import Submission as ExerciseSubmission
+
+            is_exercise_submission = db.query(ExerciseSubmission).filter(
+                ExerciseSubmission.id == submission_id
+            ).first() is not None
+
+            log_data = {
+                'session_token': session_token,
+                'event_type': event_type,
+                'severity': severity,
+                'message': message,
+                'confidence_score': confidence_score,
+                'event_metadata': metadata  # Note: column name is event_metadata
+            }
+
+            if is_exercise_submission:
+                log_data['exercise_submission_id'] = submission_id
+            else:
+                log_data['submission_id'] = submission_id
+
+            log = ExamProctoringLog(**log_data)
             db.add(log)
             db.commit()
         except Exception as e:
