@@ -173,9 +173,9 @@ body::-webkit-scrollbar,
     }
 
     h2 {
-      font-size: var(--text-xl);
+      font-size: 1.125rem;
       font-weight: var(--font-weight-medium);
-      line-height: 1.5;
+      line-height: 1.4;
     }
 
     h3 {

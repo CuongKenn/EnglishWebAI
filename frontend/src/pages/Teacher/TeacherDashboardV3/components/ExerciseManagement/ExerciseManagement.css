@@ -1894,13 +1894,26 @@
 
 /* Section Title */
 .section-title {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   color: #333;
   margin-bottom: 16px;
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.create-exercise-modal .section-title,
+.add-lesson-content-modal .section-title,
+.listening-form-content .section-title,
+.reading-form-content .section-title,
+.speaking-form-content .section-title,
+.writing-form-content .section-title,
+.questions-section .section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.3;
+  margin-bottom: 12px;
 }
 
 /* Checkbox Label */
