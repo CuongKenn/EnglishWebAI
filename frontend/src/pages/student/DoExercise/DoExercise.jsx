@@ -244,14 +244,19 @@ export default function DoExercise() {
       // Create submission immediately if it doesn't exist (for proctoring)
       if (!submission) {
         try {
-          const response = await apiV1.post(`/exercises/${exerciseId}/submissions`, {
-            answers: answers,
+          // Submit with empty answers to create submission (required for proctoring)
+          // This will be updated when student actually submits
+          const response = await apiV1.post(`/exercises/${exerciseId}/submit`, {
+            answers: {}, // Empty answers
             time_spent: 0
           });
           setSubmission(response.data);
-          console.log('Created initial submission for proctoring:', response.data.id);
+          console.log('[Proctoring] Created initial submission:', response.data.id);
+          // Fetch updated submission to sync state
+          await fetchSubmission();
         } catch (error) {
-          console.error('Failed to create submission:', error);
+          console.error('[Proctoring] Failed to create submission:', error);
+          showError('Không thể khởi tạo phiên làm bài. Vui lòng thử lại.');
         }
       }
       
