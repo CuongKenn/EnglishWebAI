@@ -1,7 +1,7 @@
 // src/App.jsx
 
 import React, { useState } from 'react'; // 1. Import useState
-import { Routes, Route, useNavigate, Navigate } from 'react-router-dom';
+import { Routes, Route, useNavigate, Navigate, useLocation, matchPath } from 'react-router-dom';
 import { ToastProvider } from './components/ui/Toast'; // Import Toast Provider
 import RouteErrorBoundary from './components/ErrorBoundary/RouteErrorBoundary'; // Import Route Error Boundary
 import ChatBot from './components/ChatBot/ChatBot'; // Import ChatBot
@@ -84,6 +84,11 @@ function App() {
 
   // Lấy hàm navigate để chuyển trang sau khi đăng nhập
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const hideChatBotPatterns = ['/exam/:examId', '/exercise/:exerciseId'];
+  const isAssessmentPage = hideChatBotPatterns.some(pattern => matchPath(pattern, location.pathname));
+  const shouldShowChatBot = isLoggedIn && !isAssessmentPage;
 
   // 3. Hàm xử lý đăng nhập (nhận role từ API)
   const handleLogin = (role = 'user') => {
@@ -541,8 +546,8 @@ function App() {
       <Route path="*" element={<NotFound />} />
       </Routes>
 
-      {/* ChatBot - Only show when logged in */}
-      {isLoggedIn && <ChatBot />}
+      {/* ChatBot - Only show when logged in và không ở trang làm bài kiểm tra */}
+      {shouldShowChatBot && <ChatBot />}
     </ToastProvider>
   );
 }
