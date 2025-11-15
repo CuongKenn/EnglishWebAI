@@ -71,6 +71,8 @@ class CourseSubmission(Base):
 
     # Relationships
     exercise = relationship("CourseExercise", back_populates="submissions")
+    proctoring_logs = relationship("ExamProctoringLog", back_populates="submission", cascade="all, delete-orphan")
+    monitoring_session = relationship("ExamMonitoringSession", back_populates="submission", uselist=False, cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         return f"<CourseSubmission(id={self.id}, exercise_id={self.exercise_id}, student_id={self.student_id})>"

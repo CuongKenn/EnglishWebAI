@@ -30,6 +30,7 @@ from app.routers import (
     enhanced_weekly_assessments,
     error_analysis_export,
     exam_assessments,
+    exam_proctoring,
     exercises,
     exports,
     face_verification,
@@ -137,6 +138,7 @@ app.include_router(worksheets.router, tags=["Worksheets"])
 app.include_router(weekly_assessments.router, tags=["Weekly Assessments"])
 app.include_router(enhanced_weekly_assessments.router, tags=["Enhanced Weekly Assessments"])
 app.include_router(exam_assessments.router, tags=["Exam Assessments"])
+app.include_router(exam_proctoring.router, prefix=f"{settings.API_PREFIX}/proctoring", tags=["Exam Proctoring"])
 app.include_router(translation.router, prefix=f"{settings.API_PREFIX}/translation", tags=["Translation"])
 app.include_router(error_analysis_export.router, tags=["Error Analysis Export"])
 app.include_router(media.router, prefix=f"{settings.API_PREFIX}/media", tags=["Media"])
