@@ -57,6 +57,25 @@
   margin-bottom: 16px;
 }
 
+.camera-preview {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.camera-preview video {
+  width: 100%;
+  max-width: 320px;
+  height: auto;
+  border-radius: 8px;
+  background-color: #000;
+  transform: scaleX(-1); /* Mirror effect */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
 .status-display {
   margin-bottom: 16px;
 }

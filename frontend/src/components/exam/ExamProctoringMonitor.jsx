@@ -306,14 +306,15 @@ const ExamProctoringMonitor = ({
       </div>
       
       <div className="proctoring-content">
-        {/* Hidden video and canvas for capture */}
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted
-          style={{ display: 'none' }}
-        />
+        {/* Camera preview */}
+        <div className="camera-preview">
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+          />
+        </div>
         <canvas ref={canvasRef} style={{ display: 'none' }} />
         
         {/* Status display */}
