@@ -4,6 +4,7 @@ import React, { useState } from 'react'; // 1. Import useState
 import { Routes, Route, useNavigate, Navigate } from 'react-router-dom';
 import { ToastProvider } from './components/ui/Toast'; // Import Toast Provider
 import RouteErrorBoundary from './components/ErrorBoundary/RouteErrorBoundary'; // Import Route Error Boundary
+import ChatBot from './components/ChatBot/ChatBot'; // Import ChatBot
 
 // Import Layout và các trang
 import Layout from './components/Layout/Layout';
@@ -539,6 +540,9 @@ function App() {
       {/* 404 Not Found - Must be last route */}
       <Route path="*" element={<NotFound />} />
       </Routes>
+
+      {/* ChatBot - Only show when logged in */}
+      {isLoggedIn && <ChatBot />}
     </ToastProvider>
   );
 }

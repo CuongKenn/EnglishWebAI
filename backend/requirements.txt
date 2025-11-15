@@ -42,6 +42,9 @@ python-docx==1.1.2
 packaging>=25.0
 Pillow==10.1.0
 
+# Google Gemini AI
+google-generativeai==0.8.3
+
 # Support for old .doc files (Word 97-2003) - text extraction only
 pypandoc==1.13  # Convert doc to text via pandoc
 
