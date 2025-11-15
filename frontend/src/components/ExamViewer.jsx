@@ -351,10 +351,38 @@ const ExamViewer = ({ examId, onSubmitSuccess }) => {
 
   // In progress - show exam
   // Enable proctoring for midterm and final exams
-  const enableProctoring = exam.exam_type === 'midterm' || exam.exam_type === 'final';
+  // TEMPORARY: Enable for ALL exams for testing
+  const enableProctoring = true; // exam.exam_type === 'midterm' || exam.exam_type === 'final';
+  
+  // Debug logging
+  console.log('[ExamViewer] Proctoring Check:', {
+    exam_type: exam.exam_type,
+    enableProctoring,
+    hasSubmission: !!submission,
+    submissionStatus: submission?.status,
+    submissionId: submission?.id,
+    examId
+  });
 
   return (
     <div className="exam-viewer-container">
+      {/* Debug Banner */}
+      {submission && submission.status === 'in_progress' && (
+        <div style={{
+          background: '#fef3c7',
+          padding: '12px',
+          marginBottom: '16px',
+          borderRadius: '8px',
+          border: '2px solid #f59e0b',
+          color: '#92400e'
+        }}>
+          <strong>🔍 Debug:</strong> Proctoring {enableProctoring ? 'ENABLED' : 'DISABLED'} 
+          | Exam Type: {exam.exam_type}
+          | Submission: {submission.id}
+          | Status: {submission.status}
+        </div>
+      )}
+      
       {/* Proctoring Monitor */}
       {enableProctoring && submission && (
         <ExamProctoringMonitor
