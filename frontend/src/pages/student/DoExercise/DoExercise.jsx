@@ -9,6 +9,7 @@ import { apiV1 } from '../../../services/api';
 import Toast from '../../../components/Toast/Toast';
 import useToast from '../../../hooks/useToast';
 import FaceVerificationGate from '../../../components/FaceVerification/FaceVerificationGate';
+import ExamProctoringMonitor from '../../../components/exam/ExamProctoringMonitor';
 
 const normalizeMatchingPairs = (question) => {
   if (!question || question.type !== 'matching') return [];
@@ -2353,6 +2354,23 @@ export default function DoExercise() {
           onVerificationSuccess={handleFaceVerificationSuccess}
           onVerificationFailed={handleFaceVerificationFailed}
           exerciseId={exerciseId}
+        />
+      )}
+      
+      {/* Exam Proctoring Monitor for Midterm/Final */}
+      {exercise && submission && !showStartScreen && viewMode === 'exercise' && (exercise.type === 'midterm' || exercise.type === 'final') && (
+        <ExamProctoringMonitor
+          submissionId={submission.id}
+          examId={exerciseId}
+          onAutoSubmit={(reason) => {
+            showWarning(`Bài thi bị tự động nộp: ${reason}`);
+            handleSubmit();
+          }}
+          onWarning={(type, message) => {
+            console.warn(`[Proctoring] ${type}: ${message}`);
+            showWarning(message);
+          }}
+          isActive={true}
         />
       )}
       
