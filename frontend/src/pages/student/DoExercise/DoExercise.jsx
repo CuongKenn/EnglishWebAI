@@ -240,6 +240,21 @@ export default function DoExercise() {
     const success = await enterFullscreen();
     if (success) {
       setShowStartScreen(false);
+      
+      // Create submission immediately if it doesn't exist (for proctoring)
+      if (!submission) {
+        try {
+          const response = await apiV1.post(`/exercises/${exerciseId}/submissions`, {
+            answers: answers,
+            time_spent: 0
+          });
+          setSubmission(response.data);
+          console.log('Created initial submission for proctoring:', response.data.id);
+        } catch (error) {
+          console.error('Failed to create submission:', error);
+        }
+      }
+      
       // Start timer if needed
       if (exercise?.duration && timeRemaining === null) {
         setTimeRemaining(exercise.duration * 60);
@@ -2358,32 +2373,21 @@ export default function DoExercise() {
       )}
       
       {/* Exam Proctoring Monitor for Midterm/Final */}
-      {(() => {
-        const shouldShow = exercise && submission && !showStartScreen && viewMode === 'exercise' && (exercise.type === 'midterm' || exercise.type === 'final');
-        console.log('[PROCTORING DEBUG]', {
-          exercise: !!exercise,
-          submission: !!submission,
-          showStartScreen,
-          viewMode,
-          exerciseType: exercise?.type,
-          shouldShow
-        });
-        return shouldShow ? (
-          <ExamProctoringMonitor
-            submissionId={submission.id}
-            examId={exerciseId}
-            onAutoSubmit={(reason) => {
-              showWarning(`Bài thi bị tự động nộp: ${reason}`);
-              handleSubmit();
-            }}
-            onWarning={(type, message) => {
-              console.warn(`[Proctoring] ${type}: ${message}`);
-              showWarning(message);
-            }}
-            isActive={true}
-          />
-        ) : null;
-      })()}
+      {exercise && submission && !showStartScreen && viewMode === 'exercise' && (exercise.type === 'midterm' || exercise.type === 'final') && (
+        <ExamProctoringMonitor
+          submissionId={submission.id}
+          examId={exerciseId}
+          onAutoSubmit={(reason) => {
+            showWarning(`Bài thi bị tự động nộp: ${reason}`);
+            handleSubmit();
+          }}
+          onWarning={(type, message) => {
+            console.warn(`[Proctoring] ${type}: ${message}`);
+            showWarning(message);
+          }}
+          isActive={true}
+        />
+      )}
       
       {/* Fullscreen Warning Banner - Only show when doing exercise */}
       {viewMode === 'exercise' && !showStartScreen && isFullscreen && (
