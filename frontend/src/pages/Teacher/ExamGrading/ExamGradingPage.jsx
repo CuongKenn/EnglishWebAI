@@ -3,13 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { 
   FileText, Clock, User, CheckCircle, XCircle, Eye, Edit, 
   Sparkles, Download, Filter, Search, Award, AlertCircle, 
-  TrendingUp, BookOpen, Calendar, Users, Loader2
+  TrendingUp, BookOpen, Calendar, Users, Loader2, Camera
 } from 'lucide-react';
 import './ExamGradingPage.css';
 import { apiV1 } from '../../../services/api';
 import examService from '../../../services/examService';
 import Toast from '../../../components/Toast/Toast';
 import useToast from '../../../hooks/useToast';
+import ProctoringLogsViewer from '../../../components/exam/ProctoringLogsViewer';
 
 export default function ExamGradingPage() {
   const [classes, setClasses] = useState([]);
@@ -25,6 +26,7 @@ export default function ExamGradingPage() {
   const [feedbackInput, setFeedbackInput] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState('answers'); // 'answers' or 'proctoring'
   const { toast, showSuccess, showError, hideToast } = useToast();
   const navigate = useNavigate();
 
@@ -240,7 +242,26 @@ export default function ExamGradingPage() {
               </div>
             </div>
 
-            <div className="grading-content">
+            {/* Tabs for Answers and Proctoring */}
+            <div className="grading-tabs">
+              <button 
+                className={`tab-button ${activeTab === 'answers' ? 'active' : ''}`}
+                onClick={() => setActiveTab('answers')}
+              >
+                <FileText size={16} />
+                Câu trả lời
+              </button>
+              <button 
+                className={`tab-button ${activeTab === 'proctoring' ? 'active' : ''}`}
+                onClick={() => setActiveTab('proctoring')}
+              >
+                <Camera size={16} />
+                Giám sát thi
+              </button>
+            </div>
+
+            {activeTab === 'answers' && (
+              <div className="grading-content">
               {/* Left: Answers & Results */}
               <div className="grading-main">
                 {/* Auto-graded Results */}
@@ -385,6 +406,13 @@ export default function ExamGradingPage() {
                 </div>
               </div>
             </div>
+            )}
+
+            {activeTab === 'proctoring' && (
+              <div className="proctoring-tab-content">
+                <ProctoringLogsViewer submissionId={selectedSubmission.id} />
+              </div>
+            )}
           </div>
         </div>
       </div>

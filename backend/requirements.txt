@@ -69,3 +69,7 @@ langdetect==1.0.9
 torch==2.1.0
 torchvision==0.16.0
 opencv-python==4.8.1.78
+
+# Exam Proctoring - MediaPipe for gaze tracking and head pose
+mediapipe==0.10.9
+scipy==1.11.4

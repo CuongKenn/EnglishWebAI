@@ -9,6 +9,7 @@ import { apiV1 } from '../../../services/api';
 import Toast from '../../../components/Toast/Toast';
 import useToast from '../../../hooks/useToast';
 import FaceVerificationGate from '../../../components/FaceVerification/FaceVerificationGate';
+import ExamProctoringMonitor from '../../../components/exam/ExamProctoringMonitor';
 
 const normalizeMatchingPairs = (question) => {
   if (!question || question.type !== 'matching') return [];
@@ -239,6 +240,26 @@ export default function DoExercise() {
     const success = await enterFullscreen();
     if (success) {
       setShowStartScreen(false);
+      
+      // Create submission immediately if it doesn't exist (for proctoring)
+      if (!submission) {
+        try {
+          // Submit with empty answers to create submission (required for proctoring)
+          // This will be updated when student actually submits
+          const response = await apiV1.post(`/exercises/${exerciseId}/submit`, {
+            answers: {}, // Empty answers
+            time_spent: 0
+          });
+          setSubmission(response.data);
+          console.log('[Proctoring] Created initial submission:', response.data.id);
+          // Fetch updated submission to sync state
+          await fetchSubmission();
+        } catch (error) {
+          console.error('[Proctoring] Failed to create submission:', error);
+          showError('Không thể khởi tạo phiên làm bài. Vui lòng thử lại.');
+        }
+      }
+      
       // Start timer if needed
       if (exercise?.duration && timeRemaining === null) {
         setTimeRemaining(exercise.duration * 60);
@@ -2353,6 +2374,23 @@ export default function DoExercise() {
           onVerificationSuccess={handleFaceVerificationSuccess}
           onVerificationFailed={handleFaceVerificationFailed}
           exerciseId={exerciseId}
+        />
+      )}
+      
+      {/* Exam Proctoring Monitor for Midterm/Final */}
+      {exercise && submission && !showStartScreen && viewMode === 'exercise' && (exercise.type === 'midterm' || exercise.type === 'final') && (
+        <ExamProctoringMonitor
+          submissionId={submission.id}
+          examId={exerciseId}
+          onAutoSubmit={(reason) => {
+            showWarning(`Bài thi bị tự động nộp: ${reason}`);
+            handleSubmit();
+          }}
+          onWarning={(type, message) => {
+            console.warn(`[Proctoring] ${type}: ${message}`);
+            showWarning(message);
+          }}
+          isActive={true}
         />
       )}
       

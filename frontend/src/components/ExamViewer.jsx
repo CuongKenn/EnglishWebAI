@@ -110,10 +110,10 @@ const ExamViewer = ({ examId, onSubmitSuccess }) => {
     }
   };
 
-  const handleAutoSubmit = async () => {
+  const handleAutoSubmit = async (reason = 'Hết thời gian') => {
     try {
       await examService.submitExam(submission.id, answers);
-      alert('⏰ Hết thời gian! Bài thi đã được tự động nộp.');
+      alert(`⏰ ${reason}! Bài thi đã được tự động nộp.`);
       loadExam();
     } catch (err) {
       console.error('Auto-submit error:', err);
@@ -343,6 +343,7 @@ const ExamViewer = ({ examId, onSubmitSuccess }) => {
   // In progress - show exam
   return (
     <div className="exam-viewer-container">
+
       {/* Header */}
       <div className="exam-header">
         <h1>{exam.title}</h1>
