@@ -246,14 +246,21 @@ export default function DoExercise() {
     }
   };
   
-  const handleFaceVerificationSuccess = (result) => {
+  const handleFaceVerificationSuccess = async (result) => {
     console.log('Face verification successful:', result);
     setFaceVerified(true);
     setShowFaceVerification(false);
     showSuccess('Xác minh danh tính thành công! Bạn có thể bắt đầu làm bài.');
-    // Auto-start exam after short delay
-    setTimeout(() => {
-      handleStartExercise();
+    // Auto-start exam after short delay, directly enter fullscreen
+    setTimeout(async () => {
+      const success = await enterFullscreen();
+      if (success) {
+        setShowStartScreen(false);
+        // Start timer if needed
+        if (exercise?.duration && timeRemaining === null) {
+          setTimeRemaining(exercise.duration * 60);
+        }
+      }
     }, 1500);
   };
   
