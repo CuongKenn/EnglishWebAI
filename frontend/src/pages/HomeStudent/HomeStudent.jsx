@@ -326,7 +326,7 @@ import './HomeStudent.css';const HomeStudent = () => {
           }}
         >
           <img 
-            src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1920&h=1080&fit=crop" 
+            src="https://images.unsplash.com/photo-1513258496099-48168024aec0?w=1920&h=1080&fit=crop" 
             alt="Learning Background" 
             className="hero-bg-image"
           />
