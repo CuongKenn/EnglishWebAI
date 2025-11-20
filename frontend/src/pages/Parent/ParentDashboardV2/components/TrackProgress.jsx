@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { parentAPI } from '../../../../services/parentService';
-import { TrendingUp, BookOpen, Award, Calendar, ChevronRight, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { TrendingUp, BookOpen, Award, Calendar, ChevronRight, CheckCircle, Clock, AlertCircle, Target } from 'lucide-react';
 import './TrackProgress.css';
 
 const TrackProgress = () => {
@@ -49,11 +49,16 @@ const TrackProgress = () => {
           completed: Math.floor((subject.progress / 100) * 50),
           total: 50,
         })) || [],
-        attendance: {
-          present: progressData.attendance?.present || 0,
-          absent: progressData.attendance?.absent || 0,
-          late: progressData.attendance?.late || 0,
-          total: progressData.attendance?.total || 0,
+        progressOverview: {
+          completedLessons: progressData.completed_lessons ?? 0,
+          totalLessons: progressData.total_lessons ?? 0,
+          overallProgress: (() => {
+            const completed = progressData.completed_lessons ?? 0;
+            const total = progressData.total_lessons ?? 0;
+            return total > 0 ? Math.round((completed / total) * 100) : 0;
+          })(),
+          averageScore: progressData.overall_average ?? 0,
+          totalSubmissions: progressData.total_submissions ?? 0
         },
         recentActivities: progressData.recent_activities?.map(activity => ({
           id: activity.title,
@@ -126,49 +131,47 @@ const TrackProgress = () => {
       {/* Progress Content */}
       {selectedChild && childProgress && (
         <div className="progress-content">
-          {/* Attendance Section */}
+          {/* Overall Progress Section */}
           <div className="progress-section">
             <div className="section-header-progress">
               <h2 className="section-title-progress">
-                <Calendar className="section-icon-progress" />
-                Chuyên cần
+                <Target className="section-icon-progress" />
+                Tổng quan tiến độ
               </h2>
             </div>
-            <div className="attendance-cards">
-              <div className="attendance-card card-present">
-                <div className="attendance-icon-wrapper">
-                  <CheckCircle className="attendance-icon" />
+            <div className="progress-overview-cards">
+              <div className="progress-overview-card primary">
+                <div className="progress-overview-icon">
+                  <CheckCircle className="overview-icon" />
                 </div>
-                <div className="attendance-info">
-                  <h3 className="attendance-number">{childProgress.attendance.present}</h3>
-                  <p className="attendance-label">Có mặt</p>
-                </div>
-              </div>
-              <div className="attendance-card card-absent">
-                <div className="attendance-icon-wrapper">
-                  <AlertCircle className="attendance-icon" />
-                </div>
-                <div className="attendance-info">
-                  <h3 className="attendance-number">{childProgress.attendance.absent}</h3>
-                  <p className="attendance-label">Vắng</p>
+                <div className="progress-overview-info">
+                  <span className="overview-label">Tổng tiến độ</span>
+                  <h3 className="overview-value">{childProgress.progressOverview.totalLessons > 0 ? `${childProgress.progressOverview.overallProgress}%` : '—'}</h3>
+                  <p className="overview-subtext">
+                    {childProgress.progressOverview.completedLessons}/{childProgress.progressOverview.totalLessons} bài học đã hoàn thành
+                  </p>
                 </div>
               </div>
-              <div className="attendance-card card-late">
-                <div className="attendance-icon-wrapper">
-                  <Clock className="attendance-icon" />
+
+              <div className="progress-overview-card">
+                <div className="progress-overview-icon secondary">
+                  <TrendingUp className="overview-icon" />
                 </div>
-                <div className="attendance-info">
-                  <h3 className="attendance-number">{childProgress.attendance.late}</h3>
-                  <p className="attendance-label">Muộn</p>
+                <div className="progress-overview-info">
+                  <span className="overview-label">Điểm trung bình</span>
+                  <h3 className="overview-value">{childProgress.progressOverview.averageScore || 'N/A'}</h3>
+                  <p className="overview-subtext">Từ các bài đã chấm</p>
                 </div>
               </div>
-              <div className="attendance-card card-total">
-                <div className="attendance-icon-wrapper">
-                  <Calendar className="attendance-icon" />
+
+              <div className="progress-overview-card">
+                <div className="progress-overview-icon tertiary">
+                  <Calendar className="overview-icon" />
                 </div>
-                <div className="attendance-info">
-                  <h3 className="attendance-number">{childProgress.attendance.total}</h3>
-                  <p className="attendance-label">Tổng số</p>
+                <div className="progress-overview-info">
+                  <span className="overview-label">Bài đã nộp</span>
+                  <h3 className="overview-value">{childProgress.progressOverview.totalSubmissions}</h3>
+                  <p className="overview-subtext">Trong khoảng thời gian đã chọn</p>
                 </div>
               </div>
             </div>

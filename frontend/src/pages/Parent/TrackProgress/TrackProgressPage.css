@@ -509,7 +509,101 @@
 }
 
 .card-modern-body {
-  
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.card-subtext {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* Progress overview cards */
+.progress-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+}
+
+.progress-card-modern {
+  background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+  border: 1px solid #e5e7eb;
+  border-radius: 1rem;
+  padding: 1.75rem;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  min-height: 185px;
+}
+
+.progress-card-modern::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(14, 165, 233, 0.08));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.progress-card-modern:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 15px 35px -10px rgba(15, 23, 42, 0.18);
+  border-color: transparent;
+}
+
+.progress-card-modern:hover::before {
+  opacity: 1;
+}
+
+.progress-card-modern .card-modern-header {
+  position: relative;
+  z-index: 1;
+}
+
+.progress-card-modern .card-modern-body {
+  position: relative;
+  z-index: 1;
+  margin-top: 1rem;
+}
+
+.progress-card-modern .card-value {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin-bottom: 0.25rem;
+}
+
+.progress-card-modern.primary .card-icon-wrapper,
+.card-icon-wrapper.primary {
+  background: linear-gradient(135deg, #4c6ef5 0%, #7c3aed 100%);
+}
+
+.progress-card-modern.secondary .card-icon-wrapper,
+.card-icon-wrapper.secondary {
+  background: linear-gradient(135deg, #0ea5e9 0%, #38bdf8 100%);
+}
+
+.progress-card-modern.tertiary .card-icon-wrapper,
+.card-icon-wrapper.tertiary {
+  background: linear-gradient(135deg, #22c55e 0%, #4ade80 100%);
+}
+
+.progress-card-modern.neutral .card-icon-wrapper,
+.card-icon-wrapper.neutral {
+  background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
+}
+
+.progress-card-modern .card-label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+}
+
+.progress-card-modern .card-subtext {
+  color: #6b7280;
+  line-height: 1.4;
 }
 
 .card-value {
