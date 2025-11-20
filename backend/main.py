@@ -47,6 +47,7 @@ from app.routers import (
     teacher_dashboard,
     translation,
     users,
+    video_lessons,
     weekly_assessments,
     worksheets,
 )
@@ -124,6 +125,7 @@ app.include_router(ai_image_recognition.router, tags=["AI Image Recognition"])
 app.include_router(ai_usage.router, tags=["AI Usage"])
 app.include_router(ai_analytics.router, tags=["AI Analytics (Admin)"])
 app.include_router(chatbot.router, prefix=f"{settings.API_PREFIX}/chatbot", tags=["Chatbot"])
+app.include_router(video_lessons.router, tags=["Video Lessons"])
 app.include_router(student_profile.router)
 app.include_router(question_bank_router.router, prefix=f"{settings.API_PREFIX}/question-bank", tags=["Question Bank"])
 app.include_router(exports.router, tags=["Exports"])

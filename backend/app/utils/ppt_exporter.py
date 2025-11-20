@@ -1,0 +1,264 @@
+"""
+PowerPoint Slide Export Helper
+Convert PPT slides to images using platform-specific methods
+"""
+import os
+import sys
+import logging
+import subprocess
+import platform
+from pathlib import Path
+from typing import List, Optional
+
+logger = logging.getLogger(__name__)
+
+
+class PPTExporter:
+    """Export PowerPoint slides to images"""
+    
+    @staticmethod
+    def detect_method() -> str:
+        """
+        Detect which export method to use based on platform and available tools
+        
+        Returns:
+            'win32com' | 'libreoffice' | 'unoconv' | 'none'
+        """
+        system = platform.system()
+        
+        if system == "Windows":
+            try:
+                import win32com.client
+                return "win32com"
+            except ImportError:
+                logger.warning("win32com not available on Windows, falling back to LibreOffice")
+        
+        # Check for LibreOffice
+        if PPTExporter._check_command("soffice") or PPTExporter._check_command("libreoffice"):
+            return "libreoffice"
+        
+        # Check for unoconv
+        if PPTExporter._check_command("unoconv"):
+            return "unoconv"
+        
+        return "none"
+    
+    @staticmethod
+    def _check_command(cmd: str) -> bool:
+        """Check if a command exists"""
+        try:
+            result = subprocess.run(
+                [cmd, "--version"],
+                capture_output=True,
+                timeout=5
+            )
+            return result.returncode == 0
+        except (subprocess.SubprocessError, FileNotFoundError):
+            return False
+    
+    @staticmethod
+    def export_slides_win32com(ppt_path: str, output_dir: str) -> List[str]:
+        """
+        Export slides using Windows COM automation (fastest, Windows only)
+        
+        Args:
+            ppt_path: Path to PowerPoint file
+            output_dir: Directory to save images
+        
+        Returns:
+            List of image file paths
+        """
+        try:
+            import win32com.client
+            from win32com.client import constants as c
+        except ImportError:
+            raise ImportError(
+                "win32com not installed. Install with: pip install pywin32"
+            )
+        
+        # Ensure absolute paths
+        ppt_path = os.path.abspath(ppt_path)
+        output_dir = os.path.abspath(output_dir)
+        os.makedirs(output_dir, exist_ok=True)
+        
+        # Start PowerPoint
+        powerpoint = win32com.client.Dispatch("PowerPoint.Application")
+        powerpoint.Visible = 1
+        
+        try:
+            # Open presentation
+            presentation = powerpoint.Presentations.Open(ppt_path, WithWindow=False)
+            
+            image_paths = []
+            
+            # Export each slide
+            for i, slide in enumerate(presentation.Slides, 1):
+                output_file = os.path.join(output_dir, f"slide_{i:03d}.png")
+                
+                # Export slide as PNG (ppSaveAsPNG = 18)
+                slide.Export(output_file, "PNG", 1920, 1080)
+                
+                image_paths.append(output_file)
+                logger.info(f"Exported slide {i}/{presentation.Slides.Count} to {output_file}")
+            
+            # Close presentation
+            presentation.Close()
+            
+            return image_paths
+            
+        finally:
+            powerpoint.Quit()
+    
+    @staticmethod
+    def export_slides_libreoffice(ppt_path: str, output_dir: str) -> List[str]:
+        """
+        Export slides using LibreOffice (cross-platform)
+        
+        Args:
+            ppt_path: Path to PowerPoint file
+            output_dir: Directory to save images
+        
+        Returns:
+            List of image file paths
+        """
+        os.makedirs(output_dir, exist_ok=True)
+        
+        # Find LibreOffice executable
+        if platform.system() == "Windows":
+            soffice_paths = [
+                r"C:\Program Files\LibreOffice\program\soffice.exe",
+                r"C:\Program Files (x86)\LibreOffice\program\soffice.exe",
+            ]
+            soffice = next((p for p in soffice_paths if os.path.exists(p)), "soffice")
+        else:
+            soffice = "soffice"
+        
+        try:
+            # Convert PPT to PDF first (more reliable)
+            pdf_path = os.path.join(output_dir, "temp.pdf")
+            
+            cmd_pdf = [
+                soffice,
+                "--headless",
+                "--convert-to", "pdf",
+                "--outdir", output_dir,
+                ppt_path
+            ]
+            
+            logger.info(f"Converting PPT to PDF: {' '.join(cmd_pdf)}")
+            result = subprocess.run(cmd_pdf, capture_output=True, text=True, timeout=120)
+            
+            if result.returncode != 0:
+                raise RuntimeError(f"LibreOffice conversion failed: {result.stderr}")
+            
+            # Find the generated PDF
+            pdf_files = list(Path(output_dir).glob("*.pdf"))
+            if not pdf_files:
+                raise FileNotFoundError("PDF not generated by LibreOffice")
+            
+            pdf_path = str(pdf_files[0])
+            
+            # Convert PDF pages to images using ImageMagick or pdftoppm
+            image_paths = PPTExporter._pdf_to_images(pdf_path, output_dir)
+            
+            # Cleanup PDF
+            try:
+                os.remove(pdf_path)
+            except:
+                pass
+            
+            return image_paths
+            
+        except subprocess.TimeoutExpired:
+            raise TimeoutError("LibreOffice conversion timed out (120s)")
+        except Exception as e:
+            logger.error(f"LibreOffice export failed: {e}")
+            raise
+    
+    @staticmethod
+    def _pdf_to_images(pdf_path: str, output_dir: str) -> List[str]:
+        """Convert PDF pages to PNG images"""
+        
+        # Try pdftoppm first (faster)
+        if PPTExporter._check_command("pdftoppm"):
+            try:
+                cmd = [
+                    "pdftoppm",
+                    "-png",
+                    "-r", "150",  # 150 DPI
+                    pdf_path,
+                    os.path.join(output_dir, "slide")
+                ]
+                subprocess.run(cmd, check=True, capture_output=True, timeout=60)
+                
+                # pdftoppm creates files like slide-1.png, slide-2.png
+                image_files = sorted(Path(output_dir).glob("slide-*.png"))
+                
+                # Rename to slide_001.png format
+                image_paths = []
+                for i, old_path in enumerate(image_files, 1):
+                    new_path = os.path.join(output_dir, f"slide_{i:03d}.png")
+                    os.rename(old_path, new_path)
+                    image_paths.append(new_path)
+                
+                return image_paths
+                
+            except Exception as e:
+                logger.warning(f"pdftoppm failed: {e}, trying PyMuPDF")
+        
+        # Try PyMuPDF (fitz)
+        try:
+            import fitz  # PyMuPDF
+            
+            doc = fitz.open(pdf_path)
+            image_paths = []
+            
+            for i, page in enumerate(doc, 1):
+                pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))  # 2x scale
+                output_file = os.path.join(output_dir, f"slide_{i:03d}.png")
+                pix.save(output_file)
+                image_paths.append(output_file)
+            
+            doc.close()
+            return image_paths
+            
+        except ImportError:
+            raise ImportError(
+                "Neither pdftoppm nor PyMuPDF available. "
+                "Install with: apt-get install poppler-utils  OR  pip install PyMuPDF"
+            )
+    
+    @staticmethod
+    def export_slides(ppt_path: str, output_dir: str, method: Optional[str] = None) -> List[str]:
+        """
+        Export PowerPoint slides to images (auto-detect method)
+        
+        Args:
+            ppt_path: Path to PowerPoint file
+            output_dir: Directory to save images
+            method: Force specific method ('win32com', 'libreoffice', or None for auto)
+        
+        Returns:
+            List of image file paths
+        """
+        if not os.path.exists(ppt_path):
+            raise FileNotFoundError(f"PowerPoint file not found: {ppt_path}")
+        
+        if method is None:
+            method = PPTExporter.detect_method()
+        
+        logger.info(f"Using export method: {method}")
+        
+        if method == "win32com":
+            return PPTExporter.export_slides_win32com(ppt_path, output_dir)
+        elif method == "libreoffice":
+            return PPTExporter.export_slides_libreoffice(ppt_path, output_dir)
+        else:
+            raise RuntimeError(
+                "No suitable PPT export method available. "
+                "Install either pywin32 (Windows) or LibreOffice (cross-platform)"
+            )
+
+
+# Convenience instance
+ppt_exporter = PPTExporter()
