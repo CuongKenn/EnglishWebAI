@@ -90,6 +90,8 @@ class ChildProgress(BaseModel):
     recent_activities: list[ActivityItem]
     upcoming_tasks: list[TaskItem]
     subject_progress: list[SubjectProgress]
+    completed_lessons: int
+    total_lessons: int
     attendance: AttendanceStats
     detailed_grades: list[GradeDetail]
     overall_average: float
@@ -384,9 +386,23 @@ async def get_parent_children(
             Enrollment.user_id == student.id
         ).scalar() or 0
 
-        # TODO: Calculate completed lessons and total lessons
-        completed_lessons = 0
-        total_lessons = 0
+        # Calculate learning progress based on exercises and submissions
+        enrollments = db.query(Enrollment).filter(Enrollment.user_id == student.id).all()
+        enrolled_class_ids = [enrollment.class_id for enrollment in enrollments if enrollment.class_id]
+
+        if enrolled_class_ids:
+            total_exercises = db.query(func.count(Exercise.id)).filter(
+                Exercise.class_id.in_(enrolled_class_ids)
+            ).scalar() or 0
+        else:
+            total_exercises = 0
+
+        completed_exercises = db.query(func.count(Submission.id)).filter(
+            Submission.student_id == student.id
+        ).scalar() or 0
+
+        completed_lessons = completed_exercises
+        total_lessons = total_exercises
 
         # Calculate average score from submissions
         avg_score_result = db.query(
@@ -520,7 +536,14 @@ async def get_child_progress(
         Enrollment.user_id == child_id
     ).all()
 
-    enrolled_class_ids = [e.class_id for e in enrollments]
+    enrolled_class_ids = [e.class_id for e in enrollments if e.class_id]
+
+    if enrolled_class_ids:
+        total_exercises = db.query(func.count(Exercise.id)).filter(
+            Exercise.class_id.in_(enrolled_class_ids)
+        ).scalar() or 0
+    else:
+        total_exercises = 0
 
     # Get upcoming tasks (exercises not yet submitted)
     upcoming_exercises = db.query(Exercise).filter(
@@ -615,6 +638,11 @@ async def get_child_progress(
         total=len(attendance_records)
     )
 
+    completed_lessons = len({s.exercise_id for s in all_submissions})
+
+    if total_exercises == 0 and completed_lessons > 0:
+        total_exercises = completed_lessons
+
     # Calculate overall average
     graded_submissions = [s for s in all_submissions if s.score is not None]
     overall_average = 0.0
@@ -625,6 +653,8 @@ async def get_child_progress(
         recent_activities=recent_activities,
         upcoming_tasks=upcoming_tasks,
         subject_progress=subject_progress,
+        completed_lessons=completed_lessons,
+        total_lessons=total_exercises,
         attendance=attendance,
         detailed_grades=detailed_grades,
         overall_average=overall_average,
