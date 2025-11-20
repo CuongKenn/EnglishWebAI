@@ -117,7 +117,7 @@ class OTPService:
         db.query(OTP).filter(
             OTP.user_id == user_id,
             OTP.purpose == purpose,
-            not OTP.is_used
+            OTP.is_used.is_(False)  # Use explicit comparison instead of 'not'
         ).delete()
 
         # Create new OTP
@@ -159,7 +159,7 @@ class OTPService:
         otp = db.query(OTP).filter(
             OTP.user_id == user_id,
             OTP.purpose == purpose,
-            not OTP.is_used
+            OTP.is_used.is_(False)  # Use explicit comparison instead of 'not'
         ).order_by(OTP.created_at.desc()).first()
 
         if not otp:

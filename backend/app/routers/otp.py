@@ -143,19 +143,26 @@ async def verify_otp(
     - **otp_code**: OTP code to verify
     - **purpose**: Purpose of OTP (verification, password_reset, etc.)
     """
+    import logging
+    logger = logging.getLogger(__name__)
+
     # Find user by email
     user = db.query(User).filter(User.email == request.email).first()
 
     if not user:
+        logger.warning(f"OTP verification failed: User not found for email {request.email}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
 
+    logger.info(f"Verifying OTP for user {user.id}, email {request.email}, purpose {request.purpose}")
+
     # Verify OTP
     is_valid = OTPService.verify_otp(db, user.id, request.otp_code, request.purpose)
 
     if not is_valid:
+        logger.warning(f"OTP verification failed: Invalid or expired OTP for user {user.id}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid or expired OTP"
@@ -164,11 +171,14 @@ async def verify_otp(
     # If purpose is verification, mark user as verified
     if request.purpose == "verification":
         user.is_verified = True
+        # Keep user inactive until full registration completes
         db.commit()
+        logger.info(f"User {user.id} email verified successfully")
 
     return {
         "message": "OTP verified successfully",
-        "verified": True
+        "verified": True,
+        "user_id": user.id  # Return user_id for registration flow
     }
 
 

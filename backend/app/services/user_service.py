@@ -36,14 +36,19 @@ class UserService:
         if existing_user:
             # If user exists but is inactive (temporary from OTP), update it
             if not existing_user.is_active:
+                # Check if OTP was verified before completing registration
+                if not existing_user.is_verified:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Email not verified. Please verify your email with OTP first."
+                    )
                 # Update the temporary user with real registration data
                 existing_user.username = user.username
                 existing_user.full_name = user.full_name
                 existing_user.hashed_password = get_password_hash(user.password)
                 existing_user.role = user.role
                 existing_user.phone = user.phone
-                existing_user.is_active = True  # Activate the user
-                existing_user.is_verified = True  # Mark as verified (OTP was verified)
+                existing_user.is_active = True  # Activate the user after OTP verified
                 db.commit()
                 db.refresh(existing_user)
                 return existing_user
