@@ -7,6 +7,12 @@ export const parentAPI = {
     return res.data;
   },
 
+  // Get teachers associated with a specific child for communication feature
+  getTeachersForChild: async (childId) => {
+    const res = await apiV1.get(`/parent/children/${childId}/teachers`);
+    return res.data;
+  },
+
   // Get progress details for a specific child with optional filters
   getChildProgress: async (childId, filters = {}) => {
     const params = new URLSearchParams();

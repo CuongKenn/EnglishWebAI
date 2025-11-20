@@ -34,25 +34,57 @@ const TeacherCommunication = () => {
   const [sending, setSending] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [teachersLoading, setTeachersLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
     loadCurrentUser();
     loadConversations();
     loadChildren();
+
+    const conversationInterval = setInterval(() => {
+      loadConversations();
+    }, 15000);
+
+    return () => clearInterval(conversationInterval);
   }, []);
 
   useEffect(() => {
-    if (selectedChild) {
-      loadTeachersForChild(selectedChild.id);
+    if (!selectedChild) {
+      setTeachers([]);
+      setSelectedUser(null);
+      setMessages([]);
+      return;
     }
+
+    const childId = selectedChild.id;
+    setSearchQuery('');
+    setSelectedUser(null);
+    setMessages([]);
+    setTeachers([]);
+    loadTeachersForChild(childId);
+
+    const teacherInterval = setInterval(() => {
+      loadTeachersForChild(childId);
+    }, 60000);
+
+    return () => clearInterval(teacherInterval);
   }, [selectedChild]);
 
   useEffect(() => {
-    if (selectedUser) {
-      loadMessages(selectedUser.user_id || selectedUser.id);
-      markConversationAsRead(selectedUser.user_id || selectedUser.id);
+    if (!selectedUser) {
+      return;
     }
+
+    const userId = selectedUser.user_id || selectedUser.id;
+    loadMessages(userId);
+    markConversationAsRead(userId);
+
+    const messageInterval = setInterval(() => {
+      loadMessages(userId);
+    }, 5000);
+
+    return () => clearInterval(messageInterval);
   }, [selectedUser]);
 
   useEffect(() => {
@@ -98,13 +130,28 @@ const TeacherCommunication = () => {
 
   const loadTeachersForChild = async (childId) => {
     try {
-      setLoading(true);
+      setTeachersLoading(true);
       const data = await parentAPI.getTeachersForChild(childId);
-      setTeachers(data);
+      const teacherList = Array.isArray(data) ? data : [];
+      setTeachers(teacherList);
+
+      if (teacherList.length === 0) {
+        setSelectedUser(null);
+      } else if (!selectedUser || (selectedUser && selectedUser.user_id && !teacherList.some(t => t.id === selectedUser.user_id)) || (selectedUser && selectedUser.id && !teacherList.some(t => t.id === selectedUser.id))) {
+        const firstTeacher = teacherList[0];
+        setSelectedUser({
+          id: firstTeacher.id,
+          full_name: firstTeacher.full_name,
+          email: firstTeacher.email,
+          role: firstTeacher.role,
+          avatar: firstTeacher.avatar_url
+        });
+      }
     } catch (error) {
       console.error('Error loading teachers for child:', error);
+      setTeachers([]);
     } finally {
-      setLoading(false);
+      setTeachersLoading(false);
     }
   };
 
@@ -171,7 +218,7 @@ const TeacherCommunication = () => {
         full_name: teacher.full_name,
         email: teacher.email,
         role: teacher.role,
-        avatar: teacher.avatar
+        avatar: teacher.avatar_url
       });
       setMessages([]); // No messages yet
     }
@@ -204,10 +251,12 @@ const TeacherCommunication = () => {
     });
   };
 
-  const filteredTeachers = teachers.filter(teacher =>
-    teacher.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    teacher.email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredTeachers = teachers.filter(teacher => {
+    const name = (teacher.full_name || teacher.name || '').toLowerCase();
+    const email = (teacher.email || '').toLowerCase();
+    const keyword = searchQuery.toLowerCase();
+    return name.includes(keyword) || email.includes(keyword);
+  });
 
   const handleLogout = () => {
     authService.logout();
@@ -349,36 +398,47 @@ const TeacherCommunication = () => {
                 placeholder="Tìm giáo viên..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                disabled={teachersLoading || teachers.length === 0}
               />
             </div>
             <div className="teacher-list">
-              {filteredTeachers.map((teacher) => (
-                <div
-                  key={teacher.id}
-                  className={`teacher-item ${selectedUser?.id === teacher.id ? 'active' : ''}`}
-                  onClick={() => handleSelectTeacher(teacher)}
-                >
-                  <div className="teacher-avatar">
-                    {teacher.avatar_url ? (
-                      <img src={teacher.avatar_url} alt={teacher.full_name} />
-                    ) : (
-                      <FaUserCircle />
-                    )}
-                  </div>
-                  <div className="teacher-info">
-                    <div className="teacher-name">{teacher.full_name}</div>
-                    <div className="teacher-classes">
-                      {teacher.classes && teacher.classes.length > 0 ? (
-                        <small style={{ color: '#666' }}>
-                          Lớp: {teacher.classes.join(', ')}
-                        </small>
+              {teachersLoading ? (
+                <div className="no-conversations">
+                  <p>Đang tải danh sách giáo viên...</p>
+                </div>
+              ) : filteredTeachers.length > 0 ? (
+                filteredTeachers.map((teacher) => (
+                  <div
+                    key={teacher.id}
+                    className={`teacher-item ${selectedUser?.id === teacher.id ? 'active' : ''}`}
+                    onClick={() => handleSelectTeacher(teacher)}
+                  >
+                    <div className="teacher-avatar">
+                      {teacher.avatar_url ? (
+                        <img src={teacher.avatar_url} alt={teacher.full_name} />
                       ) : (
-                        <div className="teacher-email">{teacher.email}</div>
+                        <FaUserCircle />
                       )}
                     </div>
+                    <div className="teacher-info">
+                      <div className="teacher-name">{teacher.full_name}</div>
+                      <div className="teacher-classes">
+                        {teacher.classes && teacher.classes.length > 0 ? (
+                          <small style={{ color: '#666' }}>
+                            Lớp: {teacher.classes.join(', ')}
+                          </small>
+                        ) : (
+                          <div className="teacher-email">{teacher.email}</div>
+                        )}
+                      </div>
+                    </div>
                   </div>
+                ))
+              ) : (
+                <div className="no-conversations">
+                  <p>Chưa có giáo viên nào được phân công cho bé.</p>
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </div>
