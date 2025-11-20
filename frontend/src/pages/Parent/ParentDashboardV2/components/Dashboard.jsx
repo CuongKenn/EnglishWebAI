@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { parentAPI } from '../../../../services/parentService';
 import { 
   BookOpenIcon, ArrowTrendingUpIcon, TrophyIcon, CalendarIcon, ClockIcon, UserGroupIcon,
-  BellIcon, ChatBubbleLeftRightIcon, ChevronRightIcon, ChartBarIcon, StarIcon, ChartPieIcon,
+  BellIcon, ChatBubbleLeftRightIcon, ChevronRightIcon, ChartBarIcon, ChartPieIcon,
   CurrencyDollarIcon, DocumentTextIcon, AcademicCapIcon, BoltIcon, ArrowTrendingDownIcon,
   CheckCircleIcon, ExclamationTriangleIcon, BookmarkIcon, CalendarDaysIcon, CreditCardIcon,
   CreditCardIcon as WalletIcon, InformationCircleIcon, UserPlusIcon, EyeIcon, DocumentChartBarIcon, ArrowDownTrayIcon, XMarkIcon
@@ -58,16 +58,21 @@ const Dashboard = () => {
         parentAPI.getDashboardSummary()
       ]);
       
-      const transformedChildren = childrenData.map(child => ({
-        id: child.id,
-        name: child.name,
-        grade: child.grade || 'N/A',
-        avatar: child.avatar_url || child.name?.charAt(0)?.toUpperCase() || 'S',
-        averageScore: child.average_score || 'N/A',
-        totalClasses: child.total_classes || 0,
-        attendance: child.attendance || 95,
-        recentActivity: child.recent_activity || 'Hoàn thành bài tập Writing'
-      }));
+      const transformedChildren = childrenData.map(child => {
+        const averageScore = child.average_score != null
+          ? Math.round(Number(child.average_score) * 10) / 10
+          : null;
+        return {
+          id: child.id,
+          name: child.name,
+          grade: child.grade || '',
+          avatar: child.avatar_url || child.name?.charAt(0)?.toUpperCase() || 'S',
+          averageScore,
+          totalClasses: child.total_classes ?? 0,
+          attendance: child.attendance ?? null,
+          recentActivity: child.recent_activity || ''
+        };
+      });
       
       setChildren(transformedChildren);
       
@@ -396,70 +401,85 @@ const Dashboard = () => {
                 <p className="section-subtitle-dash">Theo dõi từng con một cách chi tiết</p>
               </div>
             </div>
-            <button className="section-action-btn" onClick={() => navigate('/track-progress')}>
-              <UserGroupIcon className="btn-icon-left" />
-              Xem tất cả
-              <ChevronRightIcon className="btn-arrow-section" />
-            </button>
+            <div className="section-actions-wrapper">
+              <button
+                className="section-action-btn"
+                onClick={() => {
+                  closeAllModals();
+                  setShowAddChildModal(true);
+                }}
+              >
+                <UserPlusIcon className="btn-icon-left" />
+                Thêm con em
+              </button>
+              <button className="section-action-btn outline" onClick={() => navigate('/track-progress')}>
+                <UserGroupIcon className="btn-icon-left" />
+                Xem tất cả
+                <ChevronRightIcon className="btn-arrow-section" />
+              </button>
+            </div>
           </div>
 
           <div className="children-cards-grid">
-            {children.map((child) => (
-              <div key={child.id} className="child-card-premium">
-                <div className="child-card-top">
-                  <div className="child-avatar-premium">{child.avatar}</div>
-                  <div className="child-badge-premium">
-                    <StarIcon className="badge-star" />
-                    <span>Học sinh giỏi</span>
+            {children.map((child) => {
+              const attendanceDisplay = child.attendance != null ? `${child.attendance}%` : '—';
+              const averageScoreDisplay = child.averageScore != null ? child.averageScore : 'N/A';
+
+              return (
+                <div key={child.id} className="child-card-premium">
+                  <div className="child-card-top">
+                    <div className="child-avatar-premium">{child.avatar}</div>
                   </div>
-                </div>
-                
-                <div className="child-card-middle">
-                  <h3 className="child-name-premium">{child.name}</h3>
-                  <p className="child-grade-premium">{child.grade}</p>
-                  
-                  <div className="child-quick-stats">
-                    <div className="quick-stat">
-                      <div className="quick-stat-header">
-                        <BookOpenIcon className="quick-stat-icon" />
-                        <span className="quick-stat-label">Lớp học</span>
+
+                  <div className="child-card-middle">
+                    <h3 className="child-name-premium">{child.name}</h3>
+                    {child.grade && <p className="child-grade-premium">{child.grade}</p>}
+
+                    <div className="child-quick-stats">
+                      <div className="quick-stat">
+                        <div className="quick-stat-header">
+                          <BookOpenIcon className="quick-stat-icon" />
+                          <span className="quick-stat-label">Lớp học</span>
+                        </div>
+                        <span className="quick-stat-value">{child.totalClasses}</span>
                       </div>
-                      <span className="quick-stat-value">{child.totalClasses}</span>
-                    </div>
-                    
-                    <div className="quick-stat">
-                      <div className="quick-stat-header">
-                        <TrophyIcon className="quick-stat-icon" />
-                        <span className="quick-stat-label">Điểm TB</span>
+
+                      <div className="quick-stat">
+                        <div className="quick-stat-header">
+                          <TrophyIcon className="quick-stat-icon" />
+                          <span className="quick-stat-label">Điểm TB</span>
+                        </div>
+                        <span className="quick-stat-value">{averageScoreDisplay}</span>
                       </div>
-                      <span className="quick-stat-value">{child.averageScore}</span>
-                    </div>
-                    
-                    <div className="quick-stat">
-                      <div className="quick-stat-header">
-                        <CheckCircleIcon className="quick-stat-icon" />
-                        <span className="quick-stat-label">Chuyên cần</span>
+
+                      <div className="quick-stat">
+                        <div className="quick-stat-header">
+                          <CheckCircleIcon className="quick-stat-icon" />
+                          <span className="quick-stat-label">Chuyên cần</span>
+                        </div>
+                        <span className="quick-stat-value">{attendanceDisplay}</span>
                       </div>
-                      <span className="quick-stat-value">{child.attendance}%</span>
                     </div>
+
+                    {child.recentActivity && (
+                      <div className="child-recent-activity">
+                        <BoltIcon className="activity-icon-small" />
+                        <span className="activity-text">{child.recentActivity}</span>
+                      </div>
+                    )}
                   </div>
-                  
-                  <div className="child-recent-activity">
-                    <BoltIcon className="activity-icon-small" />
-                    <span className="activity-text">{child.recentActivity}</span>
-                    </div>
-                  </div>
-                  
-                  <button 
-                  className="view-details-btn-premium"
-                  onClick={() => navigate('/track-progress')}
+
+                  <button
+                    className="view-details-btn-premium"
+                    onClick={() => navigate('/track-progress')}
                   >
-                  <EyeIcon className="btn-icon-left" />
+                    <EyeIcon className="btn-icon-left" />
                     Xem chi tiết
-                  <ChevronRightIcon className="btn-arrow-detail" />
+                    <ChevronRightIcon className="btn-arrow-detail" />
                   </button>
-              </div>
-            ))}
+                </div>
+              );
+            })}
           </div>
         </div>
       ) : (
