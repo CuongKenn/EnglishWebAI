@@ -180,13 +180,13 @@ async def get_dashboard_summary(
         # Count notifications
         notifications_count = db.query(func.count(Notification.id)).filter(
             Notification.user_id == current_user.id,
-            not Notification.is_read
+            Notification.is_read.is_(False)
         ).scalar() or 0
 
         # Count messages
         messages_count = db.query(func.count(Message.id)).filter(
             Message.receiver_id == current_user.id,
-            not Message.is_read
+            Message.is_read.is_(False)
         ).scalar() or 0
 
         # Get enrolled class IDs
