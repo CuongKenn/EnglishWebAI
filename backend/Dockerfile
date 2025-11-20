@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 # Backend Dockerfile for FastAPI
 FROM python:3.11-slim
 
@@ -23,11 +24,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy requirements file
 COPY requirements.txt .
 
-# Install Python dependencies with increased timeout, retries, and fallback mirrors
-RUN pip install --no-cache-dir --timeout=1000 --retries=10 \
-    --index-url https://pypi.org/simple \
-    --extra-index-url https://pypi.python.org/simple \
-    -r requirements.txt
+# Install dependencies with cache mount for faster rebuilds
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --timeout=1000 --retries=10 -r requirements.txt
 
 # Copy application code
 COPY . .
