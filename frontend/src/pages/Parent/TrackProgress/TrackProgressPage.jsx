@@ -292,11 +292,16 @@ const TrackProgressPage = () => {
           total: subject.total_exercises || 0,
           averageScore: subject.average_score
         })) || [],
-        attendance: {
-          present: progressData.attendance?.present || 0,
-          absent: progressData.attendance?.absent || 0,
-          late: progressData.attendance?.late || 0,
-          total: progressData.attendance?.total || 0,
+        progressOverview: {
+          completedLessons: progressData.completed_lessons ?? 0,
+          totalLessons: progressData.total_lessons ?? 0,
+          overallProgress: (() => {
+            const completed = progressData.completed_lessons ?? 0;
+            const total = progressData.total_lessons ?? 0;
+            return total > 0 ? Math.round((completed / total) * 100) : 0;
+          })(),
+          averageScore: progressData.overall_average ?? 0,
+          totalSubmissions: progressData.total_submissions ?? 0
         },
         recentActivities: progressData.recent_activities?.map(activity => ({
           id: activity.title,
@@ -435,88 +440,71 @@ const TrackProgressPage = () => {
         {/* Progress Content */}
         {selectedChild && childProgress && (
           <div className="progress-main-content">
-            {/* Attendance Cards - Premium Design */}
+            {/* Progress Overview Section */}
             <div className="content-section">
               <div className="section-header-modern">
                 <div className="section-header-left">
-                  <CalendarIcon className="section-header-icon" />
+                  <ArrowTrendingUpIcon className="section-header-icon" />
                   <div>
-                    <h2 className="section-title-modern">Chuyên cần</h2>
-                    <p className="section-subtitle-modern">Thống kê tham gia học tập của con em</p>
+                    <h2 className="section-title-modern">Tổng quan tiến độ</h2>
+                    <p className="section-subtitle-modern">Theo dõi tỉ lệ hoàn thành và điểm số của con em</p>
                   </div>
                 </div>
               </div>
-              <div className="attendance-grid-modern">
-                <div className="attendance-card-modern card-present">
+              <div className="progress-overview-grid">
+                <div className="progress-card-modern primary">
                   <div className="card-modern-header">
-                    <div className="card-icon-wrapper present">
+                    <div className="card-icon-wrapper primary">
                       <CheckCircleIcon className="card-icon" />
                     </div>
-                    <span className="card-trend positive">+5%</span>
                   </div>
                   <div className="card-modern-body">
-                    <h3 className="card-value">{childProgress.attendance.present}</h3>
-                    <p className="card-label">Buổi có mặt</p>
-                    <div className="card-progress-bar">
-                      <div 
-                        className="card-progress-fill present"
-                        style={{ width: `${(childProgress.attendance.present / childProgress.attendance.total) * 100}%` }}
-                      ></div>
-                    </div>
+                    <h3 className="card-value">
+                      {childProgress.progressOverview.totalLessons > 0 ? `${childProgress.progressOverview.overallProgress}%` : '—'}
+                    </h3>
+                    <p className="card-label">Tổng tiến độ</p>
+                    <p className="card-subtext">
+                      {childProgress.progressOverview.completedLessons}/{childProgress.progressOverview.totalLessons} bài học đã hoàn thành
+                    </p>
                   </div>
                 </div>
 
-                <div className="attendance-card-modern card-absent">
+                <div className="progress-card-modern secondary">
                   <div className="card-modern-header">
-                    <div className="card-icon-wrapper absent">
-                      <ExclamationCircleIcon className="card-icon" />
+                    <div className="card-icon-wrapper secondary">
+                      <TrophyIcon className="card-icon" />
                     </div>
-                    {childProgress.attendance.absent > 0 && (
-                      <span className="card-trend negative">Cần chú ý</span>
-                    )}
                   </div>
                   <div className="card-modern-body">
-                    <h3 className="card-value">{childProgress.attendance.absent}</h3>
-                    <p className="card-label">Buổi vắng</p>
-                    <div className="card-progress-bar">
-                      <div 
-                        className="card-progress-fill absent"
-                        style={{ width: `${(childProgress.attendance.absent / childProgress.attendance.total) * 100}%` }}
-                      ></div>
-                    </div>
+                    <h3 className="card-value">{childProgress.progressOverview.averageScore || 'N/A'}</h3>
+                    <p className="card-label">Điểm trung bình</p>
+                    <p className="card-subtext">Từ các bài đã chấm</p>
                   </div>
                 </div>
 
-                <div className="attendance-card-modern card-late">
+                <div className="progress-card-modern tertiary">
                   <div className="card-modern-header">
-                    <div className="card-icon-wrapper late">
-                      <ClockIcon className="card-icon" />
+                    <div className="card-icon-wrapper tertiary">
+                      <BookOpenIcon className="card-icon" />
                     </div>
                   </div>
                   <div className="card-modern-body">
-                    <h3 className="card-value">{childProgress.attendance.late}</h3>
-                    <p className="card-label">Buổi đi muộn</p>
-                    <div className="card-progress-bar">
-                      <div 
-                        className="card-progress-fill late"
-                        style={{ width: `${(childProgress.attendance.late / childProgress.attendance.total) * 100}%` }}
-                      ></div>
-                    </div>
+                    <h3 className="card-value">{childProgress.progressOverview.totalLessons}</h3>
+                    <p className="card-label">Tổng số bài học</p>
+                    <p className="card-subtext">Bao gồm tất cả bài được giao</p>
                   </div>
                 </div>
 
-                <div className="attendance-card-modern card-total">
+                <div className="progress-card-modern neutral">
                   <div className="card-modern-header">
-                    <div className="card-icon-wrapper total">
-                      <ChartBarIcon className="card-icon" />
+                    <div className="card-icon-wrapper neutral">
+                      <CalendarIcon className="card-icon" />
                     </div>
                   </div>
                   <div className="card-modern-body">
-                    <h3 className="card-value">{childProgress.attendance.total}</h3>
-                    <p className="card-label">Tổng số buổi học</p>
-                    <div className="attendance-rate">
-                      Tỷ lệ tham gia: {Math.round((childProgress.attendance.present / childProgress.attendance.total) * 100)}%
-                    </div>
+                    <h3 className="card-value">{childProgress.progressOverview.totalSubmissions}</h3>
+                    <p className="card-label">Bài đã nộp</p>
+                    <p className="card-subtext">Trong khoảng thời gian đã chọn</p>
                   </div>
                 </div>
               </div>

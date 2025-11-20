@@ -62,6 +62,11 @@ const Dashboard = () => {
         const averageScore = child.average_score != null
           ? Math.round(Number(child.average_score) * 10) / 10
           : null;
+        const completedLessons = child.completed_lessons ?? 0;
+        const totalLessons = child.total_lessons ?? 0;
+        const progressPercent = totalLessons > 0
+          ? Math.round((completedLessons / totalLessons) * 100)
+          : 0;
         return {
           id: child.id,
           name: child.name,
@@ -69,7 +74,9 @@ const Dashboard = () => {
           avatar: child.avatar_url || child.name?.charAt(0)?.toUpperCase() || 'S',
           averageScore,
           totalClasses: child.total_classes ?? 0,
-          attendance: child.attendance ?? null,
+          progressPercent,
+          completedLessons,
+          totalLessons,
           recentActivity: child.recent_activity || ''
         };
       });
@@ -422,7 +429,6 @@ const Dashboard = () => {
 
           <div className="children-cards-grid">
             {children.map((child) => {
-              const attendanceDisplay = child.attendance != null ? `${child.attendance}%` : '—';
               const averageScoreDisplay = child.averageScore != null ? child.averageScore : 'N/A';
 
               return (
@@ -455,9 +461,11 @@ const Dashboard = () => {
                       <div className="quick-stat">
                         <div className="quick-stat-header">
                           <CheckCircleIcon className="quick-stat-icon" />
-                          <span className="quick-stat-label">Chuyên cần</span>
+                          <span className="quick-stat-label">Tiến độ</span>
                         </div>
-                        <span className="quick-stat-value">{attendanceDisplay}</span>
+                        <span className="quick-stat-value">
+                          {child.totalLessons > 0 ? `${child.progressPercent}%` : '—'}
+                        </span>
                       </div>
                     </div>
 
