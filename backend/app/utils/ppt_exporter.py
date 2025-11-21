@@ -45,8 +45,10 @@ class PPTExporter:
     def _check_command(cmd: str) -> bool:
         """Check if a command exists"""
         try:
+            # pdftoppm uses -v instead of --version
+            flag = "-v" if cmd == "pdftoppm" else "--version"
             result = subprocess.run(
-                [cmd, "--version"],
+                [cmd, flag],
                 capture_output=True,
                 timeout=5
             )
