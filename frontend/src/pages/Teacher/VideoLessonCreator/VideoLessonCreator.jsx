@@ -185,6 +185,24 @@ const VideoLessonCreator = () => {
             </label>
           </div>
 
+          {/* Quality Notice */}
+          {file && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <FileText className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-amber-900">
+                    Lưu ý về chất lượng slide
+                  </p>
+                  <p className="text-xs text-amber-700 mt-1">
+                    Để đảm bảo chất lượng tốt nhất, nên sử dụng slide có font đơn giản, tránh hiệu ứng phức tạp. 
+                    Các slide có nhiều hiệu ứng hoặc font đặc biệt có thể bị lỗi hiển thị do quá trình chuyển đổi.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Basic Settings */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>

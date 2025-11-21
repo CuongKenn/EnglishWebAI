@@ -140,13 +140,27 @@ class PPTExporter:
             cmd_pdf = [
                 soffice,
                 "--headless",
+                "--norestore",
+                "--nologo",
+                "--nofirststartwizard",
                 "--convert-to", "pdf",
                 "--outdir", output_dir,
                 ppt_path
             ]
 
             logger.info(f"Converting PPT to PDF: {' '.join(cmd_pdf)}")
-            result = subprocess.run(cmd_pdf, capture_output=True, text=True, timeout=120)
+            
+            # Set environment variables to improve rendering
+            env = os.environ.copy()
+            env['SAL_USE_VCLPLUGIN'] = 'gen'  # Better rendering on Linux
+            
+            result = subprocess.run(
+                cmd_pdf, 
+                capture_output=True, 
+                text=True, 
+                timeout=120,
+                env=env
+            )
 
             if result.returncode != 0:
                 raise RuntimeError(f"LibreOffice conversion failed: {result.stderr}")
@@ -184,7 +198,7 @@ class PPTExporter:
                 cmd = [
                     "pdftoppm",
                     "-png",
-                    "-r", "150",  # 150 DPI
+                    "-r", "300",  # 300 DPI for better quality
                     pdf_path,
                     os.path.join(output_dir, "slide")
                 ]
