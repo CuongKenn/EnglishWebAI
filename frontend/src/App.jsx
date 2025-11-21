@@ -49,6 +49,7 @@ import AdminDashboardV2 from './pages/Admin/AdminDashboardV2/AdminDashboardV2';
 import TeacherDashboardV3 from './pages/Teacher/TeacherDashboardV3/TeacherDashboardV3';
 import TeacherMaterials from './pages/Teacher/TeacherMaterials/TeacherMaterials';
 import SubmissionGradingPage from './pages/Teacher/Grading/SubmissionGradingPage';
+import { VideoLessonCreator, VideoLessonList, VideoLessonViewer } from './pages/Teacher/VideoLessonCreator';
 
 // Import Parent Pages
 import ParentDashboardV2 from './pages/Parent/ParentDashboardV2/ParentDashboardV2';
@@ -440,6 +441,46 @@ function App() {
             <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
               <CourseContentPage />
             </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Video Lessons - Protected for Teachers */}
+      <Route
+        path="/teacher/video-lessons"
+        element={
+          <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="teacher">
+            <RouteErrorBoundary routeName="Video Lessons">
+              <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+                <VideoLessonList />
+              </Layout>
+            </RouteErrorBoundary>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/teacher/video-lessons/create"
+        element={
+          <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="teacher">
+            <RouteErrorBoundary routeName="Create Video Lesson">
+              <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+                <VideoLessonCreator />
+              </Layout>
+            </RouteErrorBoundary>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/teacher/video-lessons/:videoId"
+        element={
+          <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} requiredRole="teacher">
+            <RouteErrorBoundary routeName="View Video Lesson">
+              <Layout userRole={userRole} isLoggedIn={isLoggedIn} onLogout={handleLogout}>
+                <VideoLessonViewer />
+              </Layout>
+            </RouteErrorBoundary>
           </ProtectedRoute>
         }
       />
