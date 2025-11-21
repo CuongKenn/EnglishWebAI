@@ -24,12 +24,6 @@ try:
 except ImportError:
     HAS_AZURE_SPEECH = False
 
-try:
-    from moviepy.editor import AudioFileClip, ImageClip
-    HAS_MOVIEPY = True
-except ImportError:
-    HAS_MOVIEPY = False
-
 from app.core.config import settings
 from app.services.openai_service import openai_service
 from app.utils.ppt_exporter import ppt_exporter
@@ -50,8 +44,6 @@ class PPTVideoService:
             missing.append("Pillow")
         if not HAS_AZURE_SPEECH:
             missing.append("azure-cognitiveservices-speech")
-        if not HAS_MOVIEPY:
-            missing.append("moviepy")
 
         if missing:
             raise ImportError(
@@ -232,7 +224,7 @@ SCRIPT:
         fps: int = 24
     ) -> bool:
         """
-        Create video from image + audio
+        Create video from image + audio using ffmpeg directly (more reliable)
 
         Args:
             image_path: Path to slide image
@@ -243,39 +235,83 @@ SCRIPT:
         Returns:
             True if successful
         """
-        PPTVideoService.check_dependencies()
+        import json
+        import subprocess
 
         try:
-            # Load audio to get duration
-            audio_clip = AudioFileClip(audio_path)
-            duration = audio_clip.duration
+            # Get audio duration using ffprobe (comes with ffmpeg)
+            probe_cmd = [
+                'ffprobe',
+                '-v', 'quiet',
+                '-print_format', 'json',
+                '-show_format',
+                audio_path
+            ]
 
-            # Create image clip with same duration as audio
-            image_clip = ImageClip(image_path, duration=duration)
-
-            # Set audio
-            video_clip = image_clip.set_audio(audio_clip)
-            video_clip.fps = fps
-
-            # Write video file
-            video_clip.write_videofile(
-                output_path,
-                codec='libx264',
-                audio_codec='aac',
-                fps=fps,
-                preset='medium',
-                logger=None  # Suppress moviepy logs
+            probe_result = subprocess.run(
+                probe_cmd,
+                capture_output=True,
+                text=True,
+                timeout=30
             )
 
-            # Close clips
-            audio_clip.close()
-            video_clip.close()
+            if probe_result.returncode != 0:
+                logger.error(f"ffprobe failed: {probe_result.stderr}")
+                return False
 
-            logger.info(f"Created video segment: {output_path}")
+            probe_data = json.loads(probe_result.stdout)
+            duration = float(probe_data.get('format', {}).get('duration', 0))
+
+            if duration <= 0:
+                logger.error(f"Invalid audio duration: {duration}")
+                return False
+
+            # Ensure output directory exists and use absolute paths
+            import os
+            abs_image_path = os.path.abspath(image_path)
+            abs_audio_path = os.path.abspath(audio_path)
+            abs_output_path = os.path.abspath(output_path)
+            os.makedirs(os.path.dirname(abs_output_path), exist_ok=True)
+
+            # Use ffmpeg directly - more reliable than moviepy
+            # Scale down to 1920x1080 (Full HD) for faster encoding while maintaining quality
+            # Use faster preset to speed up encoding significantly
+            cmd = [
+                'ffmpeg',
+                '-y',  # Overwrite output
+                '-loop', '1',  # Loop image
+                '-framerate', str(fps),  # Input framerate
+                '-i', abs_image_path,  # Input image (absolute path)
+                '-i', abs_audio_path,  # Input audio (absolute path)
+                '-vf', 'scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2,setsar=1',  # Scale to 1920x1080 with padding
+                '-c:v', 'libx264',  # Video codec
+                '-preset', 'faster',  # Faster encoding (medium is default, faster is 2x speed)
+                '-tune', 'stillimage',  # Optimize for still image
+                '-c:a', 'aac',  # Audio codec
+                '-b:a', '192k',  # Audio bitrate
+                '-pix_fmt', 'yuv420p',  # Pixel format for compatibility
+                '-shortest',  # Stop when audio ends
+                abs_output_path
+            ]
+
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=600  # Increase timeout to 10 minutes for safety
+            )
+
+            if result.returncode != 0:
+                logger.error(f"ffmpeg error: {result.stderr}")
+                return False
+
+            logger.info(f"Created video segment: {output_path} ({duration:.1f}s)")
             return True
 
         except Exception as e:
             logger.error(f"Error creating video segment: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             return False
 
     @staticmethod
