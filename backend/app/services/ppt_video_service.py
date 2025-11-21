@@ -25,7 +25,7 @@ except ImportError:
     HAS_AZURE_SPEECH = False
 
 try:
-    from moviepy.editor import AudioFileClip, ImageClip, VideoFileClip, concatenate_videoclips
+    from moviepy.editor import AudioFileClip, ImageClip
     HAS_MOVIEPY = True
 except ImportError:
     HAS_MOVIEPY = False
@@ -281,11 +281,10 @@ SCRIPT:
     @staticmethod
     def merge_video_segments(
         segment_paths: list[str],
-        output_path: str,
-        fps: int = 24
+        output_path: str
     ) -> bool:
         """
-        Merge multiple video segments into one
+        Merge multiple video segments using ffmpeg concat (memory efficient)
 
         Args:
             segment_paths: List of video file paths
@@ -295,34 +294,45 @@ SCRIPT:
         Returns:
             True if successful
         """
-        PPTVideoService.check_dependencies()
+        import subprocess
+        import tempfile
 
         try:
-            # Load all video clips
-            clips = [VideoFileClip(path) for path in segment_paths]
+            # Create a temporary file list for ffmpeg concat
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False, encoding='utf-8') as f:
+                concat_file = f.name
+                for path in segment_paths:
+                    # Use absolute path and escape single quotes
+                    abs_path = os.path.abspath(path).replace("'", "'\\''")
+                    f.write(f"file '{abs_path}'\n")
 
-            # Concatenate
-            final_clip = concatenate_videoclips(clips, method="compose")
-            final_clip.fps = fps
+            # Use ffmpeg concat demuxer (very memory efficient)
+            cmd = [
+                'ffmpeg',
+                '-f', 'concat',
+                '-safe', '0',
+                '-i', concat_file,
+                '-c', 'copy',  # Copy streams without re-encoding (fast & efficient)
+                '-y',  # Overwrite output
+                output_path
+            ]
 
-            # Write final video
-            final_clip.write_videofile(
-                output_path,
-                codec='libx264',
-                audio_codec='aac',
-                fps=fps,
-                preset='medium',
-                logger=None
+            subprocess.run(
+                cmd,
+                capture_output=True,
+                timeout=300,  # 5 minutes max
+                check=True
             )
 
-            # Close
-            final_clip.close()
-            for clip in clips:
-                clip.close()
+            # Cleanup
+            os.unlink(concat_file)
 
             logger.info(f"Merged video saved to: {output_path}")
             return True
 
+        except subprocess.CalledProcessError as e:
+            logger.error(f"ffmpeg concat failed: {e.stderr.decode()}")
+            return False
         except Exception as e:
             logger.error(f"Error merging videos: {e}")
             return False
