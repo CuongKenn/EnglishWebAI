@@ -25,7 +25,7 @@ except ImportError:
     HAS_AZURE_SPEECH = False
 
 try:
-    from moviepy.editor import AudioFileClip, ImageClip, concatenate_videoclips
+    from moviepy.editor import AudioFileClip, ImageClip, VideoFileClip, concatenate_videoclips
     HAS_MOVIEPY = True
 except ImportError:
     HAS_MOVIEPY = False
@@ -299,7 +299,7 @@ SCRIPT:
 
         try:
             # Load all video clips
-            clips = [ImageClip(path).set_duration(3) for path in segment_paths]
+            clips = [VideoFileClip(path) for path in segment_paths]
 
             # Concatenate
             final_clip = concatenate_videoclips(clips, method="compose")

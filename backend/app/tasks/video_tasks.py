@@ -1,6 +1,7 @@
 """
 Celery tasks for video processing
 """
+import asyncio
 import logging
 from datetime import datetime
 from pathlib import Path
@@ -84,7 +85,7 @@ def process_ppt_to_video(
             )
 
             # Generate script
-            script = ppt_video_service.generate_script_for_slide(slide_data, language)
+            script = asyncio.run(ppt_video_service.generate_script_for_slide(slide_data, language))
 
             if not script.strip():
                 # Skip slides without content
