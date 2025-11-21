@@ -74,4 +74,4 @@ opencv-python==4.8.1.78
 # Video Processing for PPT-to-Video
 python-pptx==0.6.23
 moviepy==1.0.3
-pywin32==306  # Windows only - for PPT export
+# pywin32==306  # Windows only - for PPT export (not needed in Docker, install locally if on Windows)
