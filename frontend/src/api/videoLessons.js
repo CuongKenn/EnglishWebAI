@@ -1,12 +1,4 @@
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-
-// Get auth token from localStorage
-const getAuthHeader = () => {
-  const token = localStorage.getItem('token');
-  return token ? { Authorization: `Bearer ${token}` } : {};
-};
+import { apiV1 } from '../services/api';
 
 /**
  * Video Lesson API
@@ -19,12 +11,11 @@ export const videoLessonAPI = {
    * @returns {Promise<Object>} Video lesson details
    */
   generateFromPPT: async (formData) => {
-    const response = await axios.post(
-      `${API_URL}/api/v1/video-lessons/generate-from-ppt`,
+    const response = await apiV1.post(
+      '/video-lessons/generate-from-ppt',
       formData,
       {
         headers: {
-          ...getAuthHeader(),
           'Content-Type': 'multipart/form-data',
         },
       }
@@ -38,10 +29,7 @@ export const videoLessonAPI = {
    * @returns {Promise<Object>} Video lesson details
    */
   getVideoLesson: async (videoId) => {
-    const response = await axios.get(
-      `${API_URL}/api/v1/video-lessons/${videoId}`,
-      { headers: getAuthHeader() }
-    );
+    const response = await apiV1.get(`/video-lessons/${videoId}`);
     return response.data;
   },
 
@@ -51,13 +39,7 @@ export const videoLessonAPI = {
    * @returns {Promise<Array>} List of video lessons
    */
   listVideoLessons: async (params = {}) => {
-    const response = await axios.get(
-      `${API_URL}/api/v1/video-lessons/`,
-      {
-        params,
-        headers: getAuthHeader(),
-      }
-    );
+    const response = await apiV1.get('/video-lessons/', { params });
     return response.data;
   },
 

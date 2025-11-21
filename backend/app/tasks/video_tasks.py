@@ -27,7 +27,7 @@ def process_ppt_to_video(
 ):
     """
     Background task to convert PPT to video
-    
+
     Args:
         video_lesson_id: VideoLesson database ID
         ppt_path: Path to uploaded PPT file

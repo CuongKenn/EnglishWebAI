@@ -18,7 +18,7 @@ class PPTExporter:
     def detect_method() -> str:
         """
         Detect which export method to use based on platform and available tools
-        
+
         Returns:
             'win32com' | 'libreoffice' | 'unoconv' | 'none'
         """
@@ -58,11 +58,11 @@ class PPTExporter:
     def export_slides_win32com(ppt_path: str, output_dir: str) -> list[str]:
         """
         Export slides using Windows COM automation (fastest, Windows only)
-        
+
         Args:
             ppt_path: Path to PowerPoint file
             output_dir: Directory to save images
-        
+
         Returns:
             List of image file paths
         """
@@ -111,11 +111,11 @@ class PPTExporter:
     def export_slides_libreoffice(ppt_path: str, output_dir: str) -> list[str]:
         """
         Export slides using LibreOffice (cross-platform)
-        
+
         Args:
             ppt_path: Path to PowerPoint file
             output_dir: Directory to save images
-        
+
         Returns:
             List of image file paths
         """
@@ -160,10 +160,9 @@ class PPTExporter:
             image_paths = PPTExporter._pdf_to_images(pdf_path, output_dir)
 
             # Cleanup PDF
-            try:
+            import contextlib
+            with contextlib.suppress(Exception):
                 os.remove(pdf_path)
-            except Exception:  # noqa: S110
-                pass
 
             return image_paths
 
@@ -230,12 +229,12 @@ class PPTExporter:
     def export_slides(ppt_path: str, output_dir: str, method: str | None = None) -> list[str]:
         """
         Export PowerPoint slides to images (auto-detect method)
-        
+
         Args:
             ppt_path: Path to PowerPoint file
             output_dir: Directory to save images
             method: Force specific method ('win32com', 'libreoffice', or None for auto)
-        
+
         Returns:
             List of image file paths
         """

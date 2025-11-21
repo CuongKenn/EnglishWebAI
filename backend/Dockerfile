@@ -29,8 +29,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 
 # Install dependencies with cache mount for faster rebuilds
-RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install --timeout=1000 --retries=10 -r requirements.txt
+RUN pip install --no-cache -r requirements.txt
 
 # Copy application code
 COPY . .

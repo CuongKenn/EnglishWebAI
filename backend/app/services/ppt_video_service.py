@@ -63,7 +63,7 @@ class PPTVideoService:
     def extract_slides(ppt_path: str, output_dir: str) -> list[dict]:
         """
         Extract slides from PowerPoint as images and text
-        
+
         Returns:
             List of dicts with 'image_path', 'notes', 'content'
         """
@@ -116,11 +116,11 @@ class PPTVideoService:
     async def generate_script_for_slide(slide_data: dict, language: str = "vi") -> str:
         """
         Generate narration script for a slide using GPT-4
-        
+
         Args:
             slide_data: Dict with 'content' and 'notes'
             language: Language for script (vi/en)
-        
+
         Returns:
             Generated script text
         """
@@ -164,14 +164,14 @@ SCRIPT:
     ) -> bool:
         """
         Convert text to speech using Azure Cognitive Services
-        
+
         Args:
             text: Text to convert
             output_path: Output audio file path (.wav)
             voice: Azure voice name
             rate: Speech rate (-50% to +100%)
             pitch: Pitch adjustment (-50% to +50%)
-        
+
         Returns:
             True if successful
         """
@@ -233,13 +233,13 @@ SCRIPT:
     ) -> bool:
         """
         Create video from image + audio
-        
+
         Args:
             image_path: Path to slide image
             audio_path: Path to narration audio
             output_path: Output video path (.mp4)
             fps: Frames per second
-        
+
         Returns:
             True if successful
         """
@@ -286,12 +286,12 @@ SCRIPT:
     ) -> bool:
         """
         Merge multiple video segments into one
-        
+
         Args:
             segment_paths: List of video file paths
             output_path: Final video output path
             fps: Frames per second
-        
+
         Returns:
             True if successful
         """

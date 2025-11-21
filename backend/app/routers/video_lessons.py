@@ -150,7 +150,7 @@ async def generate_video_from_ppt(
 ):
     """
     Upload PowerPoint and generate video lesson with AI narration
-    
+
     Process:
     1. Upload PPT file
     2. Extract slides as images
@@ -158,7 +158,7 @@ async def generate_video_from_ppt(
     4. Convert text to speech
     5. Create video from slides + audio
     6. Return video URL
-    
+
     This is an async operation - returns immediately with status 'processing'
     """
     # Check permissions
