@@ -2,10 +2,12 @@
 Celery Application Configuration
 Background task processing for video generation
 """
-from celery import Celery
-from celery.signals import task_prerun, task_postrun
-from app.core.config import settings
 import logging
+
+from celery import Celery
+from celery.signals import task_postrun, task_prerun
+
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 

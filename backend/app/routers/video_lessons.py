@@ -2,21 +2,19 @@
 Video Lesson Generation API
 Convert PowerPoint slides to video lessons with AI narration
 """
-import os
-import asyncio
 import logging
-from typing import Optional
+import os
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, BackgroundTasks, status
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile, status
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.models.user import User, UserRole
 from app.models.video_lesson import VideoLesson
-from app.services.ppt_video_service import ppt_video_service, PPTVideoService
+from app.services.ppt_video_service import PPTVideoService
 from app.tasks.video_tasks import process_ppt_to_video
 
 logger = logging.getLogger(__name__)
@@ -26,15 +24,15 @@ router = APIRouter(prefix="/api/v1/video-lessons", tags=["video-lessons"])
 
 class VideoLessonResponse(BaseModel):
     id: int
-    lesson_id: Optional[int]
+    lesson_id: int | None
     teacher_id: int
     title: str
-    video_url: Optional[str]
+    video_url: str | None
     status: str  # pending, processing, completed, failed
-    slides_count: Optional[int]
-    duration_seconds: Optional[int]
+    slides_count: int | None
+    duration_seconds: int | None
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -62,30 +60,30 @@ async def process_ppt_to_video_background(
     """
     try:
         logger.info(f"Starting PPT to video conversion: {ppt_path}")
-        
+
         # 1. Extract slides
         temp_dir = os.path.join(os.path.dirname(ppt_path), "slides_temp")
         slides_data = PPTVideoService.extract_slides(ppt_path, temp_dir)
-        
+
         if not slides_data:
             raise ValueError("No slides found in PowerPoint")
-        
+
         # 2. Generate scripts and audio for each slide
         video_segments = []
-        
+
         for idx, slide_data in enumerate(slides_data, 1):
             logger.info(f"Processing slide {idx}/{len(slides_data)}")
-            
+
             # Generate or use existing script
             if auto_generate or not slide_data['notes']:
                 script = await PPTVideoService.generate_script_for_slide(slide_data, language)
             else:
                 script = slide_data['notes']
-            
+
             if not script.strip():
                 logger.warning(f"Slide {idx} has no script, skipping narration")
                 continue
-            
+
             # Text to speech
             audio_path = os.path.join(temp_dir, f"audio_{idx:03d}.wav")
             success = PPTVideoService.text_to_speech_azure(
@@ -95,11 +93,11 @@ async def process_ppt_to_video_background(
                 rate=rate,
                 pitch=pitch
             )
-            
+
             if not success:
                 logger.error(f"Failed to generate audio for slide {idx}")
                 continue
-            
+
             # Create video segment
             segment_path = os.path.join(temp_dir, f"segment_{idx:03d}.mp4")
             success = PPTVideoService.create_video_segment(
@@ -107,30 +105,30 @@ async def process_ppt_to_video_background(
                 audio_path=audio_path,
                 output_path=segment_path
             )
-            
+
             if success:
                 video_segments.append(segment_path)
-        
+
         # 3. Merge all segments
         if not video_segments:
             raise ValueError("No video segments were created")
-        
+
         logger.info(f"Merging {len(video_segments)} video segments")
         success = PPTVideoService.merge_video_segments(
             segment_paths=video_segments,
             output_path=output_video_path
         )
-        
+
         if not success:
             raise ValueError("Failed to merge video segments")
-        
+
         logger.info(f"Video generation completed: {output_video_path}")
-        
+
         # Cleanup temp files
         # TODO: Clean up temp directory
-        
+
         return True
-        
+
     except Exception as e:
         logger.error(f"Error in background video processing: {e}", exc_info=True)
         return False
@@ -140,7 +138,7 @@ async def process_ppt_to_video_background(
 async def generate_video_from_ppt(
     file: UploadFile = File(..., description="PowerPoint file (.ppt or .pptx)"),
     title: str = Form(..., description="Video title"),
-    lesson_id: Optional[int] = Form(None, description="Associated lesson ID"),
+    lesson_id: int | None = Form(None, description="Associated lesson ID"),
     voice_type: str = Form("vi-VN-HoaiMyNeural", description="Azure TTS voice"),
     speech_rate: str = Form("0%", description="Speech rate (-50% to +100%)"),
     speech_pitch: str = Form("0%", description="Speech pitch (-50% to +50%)"),
@@ -169,14 +167,14 @@ async def generate_video_from_ppt(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only teachers can generate video lessons"
         )
-    
+
     # Validate file type
     if not file.filename.endswith(('.ppt', '.pptx')):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Only PowerPoint files (.ppt, .pptx) are supported"
         )
-    
+
     # Check dependencies
     try:
         PPTVideoService.check_dependencies()
@@ -184,23 +182,23 @@ async def generate_video_from_ppt(
         raise HTTPException(
             status_code=status.HTTP_501_NOT_IMPLEMENTED,
             detail=str(e)
-        )
-    
+        ) from e
+
     # Save uploaded file
     upload_dir = os.path.join("media", "video_lessons", "uploads")
     os.makedirs(upload_dir, exist_ok=True)
-    
+
     timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
     filename = f"{timestamp}_{file.filename}"
     ppt_path = os.path.join(upload_dir, filename)
-    
+
     # Save file
     with open(ppt_path, "wb") as f:
         content = await file.read()
         f.write(content)
-    
+
     logger.info(f"Uploaded PPT: {ppt_path} ({len(content)} bytes)")
-    
+
     # Create database record
     video_lesson = VideoLesson(
         title=title,
@@ -214,9 +212,9 @@ async def generate_video_from_ppt(
     db.add(video_lesson)
     db.commit()
     db.refresh(video_lesson)
-    
+
     logger.info(f"Created VideoLesson record: ID {video_lesson.id}")
-    
+
     # Dispatch Celery task for async processing
     task = process_ppt_to_video.delay(
         video_lesson_id=video_lesson.id,
@@ -226,9 +224,9 @@ async def generate_video_from_ppt(
         pitch=speech_pitch,
         language=language
     )
-    
+
     logger.info(f"Dispatched Celery task {task.id} for VideoLesson {video_lesson.id}")
-    
+
     # Return response immediately
     return VideoLessonResponse(
         id=video_lesson.id,
@@ -251,20 +249,20 @@ async def get_video_lesson(
 ):
     """Get video lesson details and status"""
     video_lesson = db.query(VideoLesson).filter(VideoLesson.id == video_id).first()
-    
+
     if not video_lesson:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Video lesson {video_id} not found"
         )
-    
+
     # Check permissions (only teacher who created it or admin can view)
     if video_lesson.teacher_id != current_user.id and current_user.role not in (UserRole.ADMIN, UserRole.SUPERADMIN):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to view this video lesson"
         )
-    
+
     return VideoLessonResponse.model_validate(video_lesson)
 
 
@@ -277,12 +275,12 @@ async def list_video_lessons(
 ):
     """List all video lessons for current teacher"""
     query = db.query(VideoLesson)
-    
+
     # Teachers see only their own videos
     if current_user.role == UserRole.TEACHER:
         query = query.filter(VideoLesson.teacher_id == current_user.id)
     # Admins see all videos (no filter needed)
-    
+
     videos = query.order_by(VideoLesson.created_at.desc()).offset(skip).limit(limit).all()
-    
+
     return [VideoLessonResponse.model_validate(v) for v in videos]

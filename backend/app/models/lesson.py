@@ -22,6 +22,7 @@ class Lesson(Base):
     classroom = relationship("Classroom", back_populates="lessons")
     materials = relationship("Material", back_populates="lesson", cascade="all, delete-orphan")
     exercises = relationship("Exercise", back_populates="lesson", cascade="all, delete-orphan")
+    video_lessons = relationship("VideoLesson", back_populates="lesson", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         return f"<Lesson(id={self.id}, title={self.title})>"
