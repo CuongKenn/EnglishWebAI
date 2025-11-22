@@ -2,7 +2,6 @@ import React, { useEffect } from 'react';
 
 // Component that attaches global scroll/observer driven animations.
 // No JSX output; cleans up listeners on unmount.
-const ScrollAnimations = () => {
   useEffect(() => {
     // Intersection Observer for scroll animations
     const observerOptions = {
