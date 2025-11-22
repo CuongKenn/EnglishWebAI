@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { 
+import {
   Clock, Save, Send, Volume2, Mic, Play, Pause, RotateCcw,
   Check, X, FileText, AlertCircle, Zap, BookOpen, Headphones, PenLine, CheckCircle, Target
 } from 'lucide-react';
@@ -50,7 +50,7 @@ export default function DoExercise() {
   const navigate = useNavigate();
   const location = useLocation();
   const requestedViewMode = location.state?.viewMode; // 'result' if coming from "Xem kết quả"
-  
+
   // Full screen management
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showStartScreen, setShowStartScreen] = useState(true);
@@ -62,7 +62,7 @@ export default function DoExercise() {
   const isFullscreenRef = useRef(false); // Use ref to avoid re-render loops
   const viewModeRef = useRef('exercise');
   const showStartScreenRef = useRef(true);
-  
+
   const [exercise, setExercise] = useState(null);
   const [answers, setAnswers] = useState({});
   const [timeRemaining, setTimeRemaining] = useState(null);
@@ -70,7 +70,7 @@ export default function DoExercise() {
   const [loading, setLoading] = useState(true);
   const [submission, setSubmission] = useState(null);
   const [viewMode, setViewMode] = useState('exercise'); // 'exercise' or 'result'
-  
+
   // For Speaking
   const [isRecording, setIsRecording] = useState(false);
   const [recordedAudio, setRecordedAudio] = useState(null); // { url, blob, mimeType }
@@ -84,18 +84,18 @@ export default function DoExercise() {
   // For comprehensive test speaking per-question
   const [activeSpeakingQ, setActiveSpeakingQ] = useState(null);
   const [speakingAnswers, setSpeakingAnswers] = useState({}); // qId -> { url, blob, mimeType }
-  
+
   // For Writing
   const [wordCount, setWordCount] = useState(0);
   const [content, setContent] = useState('');
   // For comprehensive test writing per-question
   const [writingAnswers, setWritingAnswers] = useState({}); // qId -> text
   const [writingCounts, setWritingCounts] = useState({}); // qId -> number
-  
+
   useEffect(() => {
     fetchExercise();
     fetchSubmission();
-    
+
     // If coming from "Xem kết quả" button, force result view
     if (requestedViewMode === 'result') {
       setViewMode('result');
@@ -103,56 +103,131 @@ export default function DoExercise() {
 
     }
   }, [exerciseId, requestedViewMode]);
-  
+
   // Sync refs with state
   useEffect(() => {
     isFullscreenRef.current = isFullscreen;
   }, [isFullscreen]);
-  
+
   useEffect(() => {
     viewModeRef.current = viewMode;
   }, [viewMode]);
-  
+
   useEffect(() => {
     showStartScreenRef.current = showStartScreen;
   }, [showStartScreen]);
-  
+
   // Separate effect for fullscreen management based on viewMode
   useEffect(() => {
     // Only enable fullscreen blocking when already in fullscreen and in exercise mode
     if (viewMode === 'exercise' && isFullscreen && !showStartScreen) {
       let reenterTimeout = null;
-      
+
       // Block fullscreen exit - re-enter immediately
       const preventExit = () => {
         const isInFullscreen = !!(
-          document.fullscreenElement || 
-          document.webkitFullscreenElement || 
-          document.mozFullScreenElement || 
+          document.fullscreenElement ||
+          document.webkitFullscreenElement ||
+          document.mozFullScreenElement ||
           document.msFullscreenElement
         );
-        
-        if (!isInFullscreen && viewModeRef.current === 'exercise' && !showStartScreenRef.current) {
-          // Fullscreen was exited, schedule re-enter
-          if (reenterTimeout) clearTimeout(reenterTimeout);
-          
-          reenterTimeout = setTimeout(() => {
-            if (viewModeRef.current === 'exercise' && !showStartScreenRef.current && isFullscreenRef.current) {
 
+        if (!isInFullscreen && viewModeRef.current === 'exercise' && !showStartScreenRef.current) {
+          // Fullscreen was exited, increment warning count
+          setFullscreenWarningCount(prev => {
+            const newCount = prev + 1;
+
+            // First exit: Warning and re-enter fullscreen
+            if (newCount === 1) {
+              showWarning('Cảnh báo: Bạn đã thoát chế độ toàn màn hình! Hệ thống sẽ tự động bật lại.');
+              // Immediately re-enter fullscreen without delay
               enterFullscreen();
-              setFullscreenWarningCount(prev => prev + 1);
             }
-          }, 200);
+            // Second exit or more: Use centralized auto-submit
+            else {
+              checkAndAutoSubmit(newCount);
+            }
+
+            return newCount;
+          });
         }
       };
-      
-      // Prevent ESC key, F11, and other fullscreen exit shortcuts
+
+      // Auto-submit helper function
+      const checkAndAutoSubmit = (newCount) => {
+        if (newCount >= 2) {
+          showError('Bạn đã vi phạm quy định quá nhiều lần! Bài thi sẽ tự động nộp.');
+          // Auto-submit after short delay
+          setTimeout(async () => {
+            if (viewModeRef.current === 'exercise') {
+              setIsSubmitting(true);
+              try {
+                const formData = new FormData();
+                if (answers && Object.keys(answers).length > 0) {
+                  formData.append('answers', JSON.stringify(answers));
+                }
+                if (exercise.skill_type === 'writing' && content) {
+                  formData.append('content_text', content);
+                }
+                const res = await apiV1.post(`/exercises/${exerciseId}/submit`, formData, {
+                  headers: { 'Content-Type': 'multipart/form-data' }
+                });
+                const sub = res?.data;
+                if (sub) {
+                  setSubmission(sub);
+                  setViewMode('result');
+                  exitFullscreen();
+                }
+                showSuccess('Bài thi đã được tự động nộp do vi phạm quy định.');
+              } catch (error) {
+                console.error('Error auto-submitting:', error);
+                showError('Lỗi khi tự động nộp bài: ' + (error.response?.data?.detail || error.message));
+              } finally {
+                setIsSubmitting(false);
+              }
+            }
+          }, 1000);
+        }
+      };
+
+      // Prevent tab switching (Alt+Tab detection)
+      const handleVisibilityChange = () => {
+        if (document.hidden && viewModeRef.current === 'exercise' && !showStartScreenRef.current) {
+          showWarning('Cảnh báo: Bạn đã rời khỏi trang làm bài!');
+          setFullscreenWarningCount(prev => {
+            const newCount = prev + 1;
+            checkAndAutoSubmit(newCount);
+            return newCount;
+          });
+        }
+      };
+
+      const handleBlur = () => {
+        if (viewModeRef.current === 'exercise' && !showStartScreenRef.current) {
+          showWarning('Cảnh báo: Bạn đã rời khỏi trang làm bài!');
+          setFullscreenWarningCount(prev => {
+            const newCount = prev + 1;
+            checkAndAutoSubmit(newCount);
+            return newCount;
+          });
+        }
+      };
+
+      const handleFocus = () => {
+        // Re-enter fullscreen when returning to page
+        if (viewModeRef.current === 'exercise' && !showStartScreenRef.current && !document.fullscreenElement) {
+          enterFullscreen();
+        }
+      };
+
+      // Prevent ESC key, F11, copy-paste, and other shortcuts
       const preventKeys = (e) => {
-        // Block ESC key
+        // Block ESC key - CRITICAL for fullscreen
         if (e.key === 'Escape' || e.keyCode === 27) {
           e.preventDefault();
           e.stopPropagation();
           e.stopImmediatePropagation();
+          showWarning('Không được thoát chế độ toàn màn hình!');
           return false;
         }
         // Block F11 (fullscreen toggle)
@@ -163,39 +238,77 @@ export default function DoExercise() {
           return false;
         }
         // Block Cmd+Shift+F (Mac fullscreen)
-        if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'f') {
+        if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 'f' || e.key === 'F')) {
           e.preventDefault();
           e.stopPropagation();
           e.stopImmediatePropagation();
           return false;
         }
+        // Block Alt+Tab
+        if (e.altKey && e.key === 'Tab') {
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          showWarning('Không được sử dụng Alt+Tab khi đang làm bài!');
+          return false;
+        }
+        // Block Ctrl+C (Copy)
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C')) {
+          e.preventDefault();
+          e.stopPropagation();
+          showWarning('Không được copy trong khi làm bài!');
+          return false;
+        }
+        // Block Ctrl+V (Paste)
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'v' || e.key === 'V')) {
+          e.preventDefault();
+          e.stopPropagation();
+          showWarning('Không được paste trong khi làm bài!');
+          return false;
+        }
+        // Block Ctrl+X (Cut)
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'x' || e.key === 'X')) {
+          e.preventDefault();
+          e.stopPropagation();
+          showWarning('Không được cut trong khi làm bài!');
+          return false;
+        }
       };
-      
+
       // Add listeners with capture phase for maximum priority
       document.addEventListener('fullscreenchange', preventExit, true);
       document.addEventListener('webkitfullscreenchange', preventExit, true);
       document.addEventListener('mozfullscreenchange', preventExit, true);
       document.addEventListener('MSFullscreenChange', preventExit, true);
-      
+
       document.addEventListener('keydown', preventKeys, { capture: true, passive: false });
       document.addEventListener('keyup', preventKeys, { capture: true, passive: false });
       document.addEventListener('keypress', preventKeys, { capture: true, passive: false });
-      
+
+      // Add tab/window switching detection
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      window.addEventListener('blur', handleBlur);
+      window.addEventListener('focus', handleFocus);
+
       // Also prevent via window
       window.addEventListener('keydown', preventKeys, { capture: true, passive: false });
-      
+
       return () => {
         if (reenterTimeout) clearTimeout(reenterTimeout);
-        
+
         document.removeEventListener('fullscreenchange', preventExit, true);
         document.removeEventListener('webkitfullscreenchange', preventExit, true);
         document.removeEventListener('mozfullscreenchange', preventExit, true);
         document.removeEventListener('MSFullscreenChange', preventExit, true);
-        
+
         document.removeEventListener('keydown', preventKeys, true);
         document.removeEventListener('keyup', preventKeys, true);
         document.removeEventListener('keypress', preventKeys, true);
-        
+
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+        window.removeEventListener('blur', handleBlur);
+        window.removeEventListener('focus', handleFocus);
+
         window.removeEventListener('keydown', preventKeys, true);
       };
     } else if (requestedViewMode === 'result') {
@@ -203,7 +316,7 @@ export default function DoExercise() {
       exitFullscreen();
     }
   }, [viewMode, isFullscreen, showStartScreen]);
-  
+
   // Fullscreen functions
   const enterFullscreen = async () => {
     try {
@@ -226,7 +339,7 @@ export default function DoExercise() {
       return false;
     }
   };
-  
+
   // Start exercise with fullscreen
   const handleStartExercise = async () => {
     // Check if this is midterm or final exam - require face verification
@@ -238,7 +351,7 @@ export default function DoExercise() {
         return;
       }
     }
-    
+
     const success = await enterFullscreen();
     if (success) {
       setShowStartScreen(false);
@@ -252,7 +365,7 @@ export default function DoExercise() {
       }
     }
   };
-  
+
   const handleFaceVerificationSuccess = async (result) => {
     console.log('Face verification successful:', result);
     setFaceVerified(true);
@@ -274,11 +387,11 @@ export default function DoExercise() {
       }
     }, 1500);
   };
-  
+
   const handleFaceVerificationFailed = (error) => {
     console.error('Face verification failed:', error);
     setShowFaceVerification(false);
-    showError(error.reason === 'max_attempts_exceeded' 
+    showError(error.reason === 'max_attempts_exceeded'
       ? 'Đã vượt quá số lần xác minh. Vui lòng liên hệ giáo viên.'
       : 'Xác minh danh tính thất bại. Vui lòng thử lại hoặc liên hệ giáo viên.');
     // Navigate back after failed verification
@@ -299,14 +412,9 @@ export default function DoExercise() {
     console.error('Face monitoring alert:', alert);
     setFaceMonitoringWarnings(prev => [...prev, { ...alert, timestamp: new Date(), isAlert: true }]);
     showError(alert.alert || alert.message || 'CẢNH BÁO: Phát hiện hành vi bất thường! Có thể có người khác đang làm bài thay bạn.');
-    
-    // If too many alerts, consider auto-submitting or blocking
-    if (alert.consecutiveFailures >= 5) {
-      showError('Quá nhiều cảnh báo. Hệ thống sẽ tự động nộp bài để bảo vệ tính trung thực.');
-      setTimeout(() => {
-        handleSubmit();
-      }, 5000);
-    }
+
+    // Note: Images are automatically saved to backend for teacher review
+    // No auto-submit - teacher will review the alerts and decide
   };
 
   // Handle face monitoring status changes
@@ -314,19 +422,19 @@ export default function DoExercise() {
     console.log('Face monitoring status:', status);
     // You can add additional logic here if needed
   };
-  
+
   const exitFullscreen = () => {
     try {
       // Check if document is actually in fullscreen mode
-      const isInFullscreen = document.fullscreenElement || 
-                            document.webkitFullscreenElement || 
-                            document.msFullscreenElement;
-      
+      const isInFullscreen = document.fullscreenElement ||
+        document.webkitFullscreenElement ||
+        document.msFullscreenElement;
+
       if (!isInFullscreen) {
         setIsFullscreen(false);
         return;
       }
-      
+
       if (document.exitFullscreen) {
         document.exitFullscreen();
       } else if (document.webkitExitFullscreen) { /* Safari */
@@ -364,7 +472,7 @@ export default function DoExercise() {
       } catch {
         // Ignore recorder cleanup errors on unmount
       }
-      
+
       // Exit fullscreen when component unmounts
       exitFullscreen();
     };
@@ -378,7 +486,7 @@ export default function DoExercise() {
 
 
       setExercise(response.data);
-      
+
       // Initialize answers
       if (response.data.content && response.data.content.questions) {
 
@@ -388,13 +496,13 @@ export default function DoExercise() {
         });
         setAnswers(initialAnswers);
       }
-      
+
       // Set timer if applicable (but don't start it yet)
       if (response.data.duration) {
 
         // Don't set timer here, will be set when user clicks Start
       }
-      
+
       setLoading(false);
     } catch (error) {
       console.error('[DoExercise] Error fetching exercise:', error);
@@ -408,16 +516,16 @@ export default function DoExercise() {
 
       const response = await apiV1.get(`/exercises/my-submissions`);
 
-      
+
       // Find submission for this exercise
       const exerciseSubmission = response.data.find(s => s.exercise_id === parseInt(exerciseId));
 
-      
+
       if (exerciseSubmission) {
         // Check grading status
         const gradingStatus = exerciseSubmission.grading_status;
         const hasScore = exerciseSubmission.score !== null || exerciseSubmission.ai_score !== null;
-        
+
         // Show result view if:
         // 1. Coming from "Xem kết quả" button (requestedViewMode === 'result') OR
         // 2. Has final score (teacher reviewed) OR
@@ -428,15 +536,16 @@ export default function DoExercise() {
           gradingStatus === 'ai_graded' ||
           gradingStatus === 'graded'
         ));
-        
+
         setSubmission(exerciseSubmission);
-        
+
         if (shouldShowResult) {
           setViewMode('result');
           setShowStartScreen(false);
 
         } else {
-          setShowStartScreen(false);}
+          setShowStartScreen(false);
+        }
       }
     } catch (error) {
       console.error('[DoExercise] Error fetching submission:', error);
@@ -447,7 +556,7 @@ export default function DoExercise() {
     console.log('[DoExercise] Answer change:', { questionId, value, currentAnswers: answers });
     setAnswers(prev => ({ ...prev, [questionId]: value }));
   };
-  
+
   // Helper to safely render any value (prevent React error #31)
   const safeRenderValue = (value, questionType = null) => {
     if (value === null || value === undefined) return '-';
@@ -470,14 +579,14 @@ export default function DoExercise() {
     }
     return String(value);
   };
-  
+
   // Helper to handle matching questions safely
   const handleMatchingChange = (questionId, pairIndex, value, leftLabel = null) => {
     setAnswers(prev => {
-      const currentMatching = typeof prev[questionId] === 'object' && prev[questionId] !== null 
-        ? prev[questionId] 
+      const currentMatching = typeof prev[questionId] === 'object' && prev[questionId] !== null
+        ? prev[questionId]
         : {};
-      
+
       const newMatching = { ...currentMatching, [pairIndex]: value, [String(pairIndex)]: value };
 
       if (leftLabel) {
@@ -516,22 +625,22 @@ export default function DoExercise() {
   };
 
   const handleSubmit = async () => {
-    if (!confirm('Bạn có chắc muốn nộp bài?')) return;setIsSubmitting(true);
+    if (!confirm('Bạn có chắc muốn nộp bài?')) return; setIsSubmitting(true);
     try {
       // Prepare submission data
       const formData = new FormData();
-      
+
       // Keep uniqueQuestionId format (listening_1, reading_1) for backend
       // Backend will handle these prefixed keys
       if (answers && Object.keys(answers).length > 0) {
         formData.append('answers', JSON.stringify(answers));
       }
-      
+
       // Add writing content if exists
       if (exercise.skill_type === 'writing' && content) {
         formData.append('content_text', content);
       }
-      
+
       // Add speaking audio if exists
       if (exercise.skill_type === 'speaking' && recordedAudio?.blob) {
         const extension = getAudioExtension(recordedAudio.mimeType);
@@ -547,19 +656,19 @@ export default function DoExercise() {
       if (!exercise.skill_type && exercise.content?.type === 'comprehensive_test') {
         // Map writing answers
         const mergedAnswers = { ...(answers || {}) };
-        
+
         // Add writing_main answer
         if (writingAnswers['writing_main']) {
           mergedAnswers['writing_main'] = writingAnswers['writing_main'];
         }
-        
+
         // Add other writing answers
         Object.entries(writingAnswers).forEach(([qid, txt]) => {
           if (qid !== 'writing_main') {
             mergedAnswers[qid] = txt;
           }
         });
-        
+
         // Handle speaking_main audio
         if (speakingAnswers['speaking_main']?.blob) {
           try {
@@ -576,7 +685,7 @@ export default function DoExercise() {
             // Ignore speaking_main audio extraction errors
           }
         }
-        
+
         // Handle other speaking answers
         const speakingQIds = Object.keys(speakingAnswers).filter(
           (id) => id !== 'speaking_main' && speakingAnswers[id]?.blob
@@ -597,13 +706,13 @@ export default function DoExercise() {
             // Ignore first speaking answer audio extraction errors
           }
         }
-        
+
         if (Object.keys(mergedAnswers).length > 0) {
           // Replace answers payload
           formData.set('answers', JSON.stringify(mergedAnswers));
         }
       }
-      
+
       const res = await apiV1.post(`/exercises/${exerciseId}/submit`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
@@ -630,159 +739,161 @@ export default function DoExercise() {
     // Normalize param: if called as onClick handler without args, first arg is the event
     const qid = (questionIdOrEvent && typeof questionIdOrEvent === 'object' && (questionIdOrEvent.nativeEvent || questionIdOrEvent.target))
       ? null
-      : questionIdOrEvent;try {
-      setRecordingError(null);
+      : questionIdOrEvent; try {
+        setRecordingError(null);
 
 
-      // Allow localhost/127.0.0.1 even if secureContext is false (older browsers)
-      if (!window.isSecureContext) {
+        // Allow localhost/127.0.0.1 even if secureContext is false (older browsers)
+        if (!window.isSecureContext) {
 
-        const host = window.location.hostname;
+          const host = window.location.hostname;
 
-        const isLocal = host === 'localhost' || host === '127.0.0.1';
-        if (!isLocal) {
-          const message = 'Trình duyệt yêu cầu kết nối an toàn (https hoặc localhost) để ghi âm.';
+          const isLocal = host === 'localhost' || host === '127.0.0.1';
+          if (!isLocal) {
+            const message = 'Trình duyệt yêu cầu kết nối an toàn (https hoặc localhost) để ghi âm.';
+            setRecordingError(message);
+            showWarning(message);
+            console.error('[startRecording] BLOCKED: not secure context and not local');
+            return;
+          }
+
+        }
+
+        if (!navigator.mediaDevices?.getUserMedia) {
+          const message = 'Trình duyệt của bạn không hỗ trợ ghi âm (getUserMedia).';
           setRecordingError(message);
           showWarning(message);
-          console.error('[startRecording] BLOCKED: not secure context and not local');
+          console.error('[startRecording] BLOCKED: getUserMedia not supported');
           return;
         }
 
-      }
 
-      if (!navigator.mediaDevices?.getUserMedia) {
-        const message = 'Trình duyệt của bạn không hỗ trợ ghi âm (getUserMedia).';
-        setRecordingError(message);
-        showWarning(message);
-        console.error('[startRecording] BLOCKED: getUserMedia not supported');
-        return;
-      }
-
-
-      if (typeof window.MediaRecorder === 'undefined') {
-        const message = 'Trình duyệt của bạn chưa hỗ trợ MediaRecorder. Vui lòng dùng Chrome, Edge hoặc Firefox phiên bản mới.';
-        setRecordingError(message);
-        showWarning(message);
-        console.error('[startRecording] BLOCKED: MediaRecorder not defined');
-        return;
-      }
-
-
-      // Release any previous recording for this slot
-      if (qid) {
-        const prev = speakingAnswers[qid];
-        if (prev?.url) {
-          URL.revokeObjectURL(prev.url);
-          objectUrlRef.current.delete(prev.url);
-
-        }
-      } else if (recordedAudio?.url) {
-        URL.revokeObjectURL(recordedAudio.url);
-        objectUrlRef.current.delete(recordedAudio.url);
-        setRecordedAudio(null);
-
-      }
-
-
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true }
-      });
-
-
-      const mimeCandidates = [
-        'audio/webm;codecs=opus',
-        'audio/ogg;codecs=opus',
-        'audio/mp4',
-        'audio/webm'
-      ];
-      let recorderOptions;
-      let selectedMime = '';
-      if (typeof MediaRecorder.isTypeSupported === 'function') {
-        for (const candidate of mimeCandidates) {
-          if (MediaRecorder.isTypeSupported(candidate)) {
-            recorderOptions = { mimeType: candidate };
-            selectedMime = candidate;
-
-            break;
-          }
-        }
-      } else {
-        // MediaRecorder.isTypeSupported not available in this browser
-      }
-
-      let recorder;
-      try {
-        recorder = recorderOptions ? new MediaRecorder(stream, recorderOptions) : new MediaRecorder(stream);
-      } catch {
-        // Fallback to MediaRecorder without options if mimeType not supported
-        recorder = new MediaRecorder(stream);
-      }
-      mediaRecorderRef.current = recorder;
-      audioChunksRef.current = [];
-
-      let hadData = false;
-      recorder.ondataavailable = (event) => {
-        if (event.data && event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-          hadData = true;
-
-        }
-      };
-
-      recorder.onerror = (e) => {
-        console.error('[Recorder] error:', e);
-        setRecordingError('Có lỗi khi ghi âm. Vui lòng kiểm tra quyền micro và thử lại.');
-      };
-
-      recorder.onstop = () => {
-        const mimeType = recorder.mimeType || selectedMime || 'audio/webm';
-        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
-
-        if (!hadData || !audioBlob || audioBlob.size === 0) {
-
-          setRecordingError('Không nhận được dữ liệu âm thanh. Hãy đảm bảo đã cho phép micro và thử lại, hoặc tải file âm thanh ở dưới.');
-          try { recorder.stream?.getTracks().forEach(t => t.stop()); } catch { /* Ignore track cleanup errors */ }
+        if (typeof window.MediaRecorder === 'undefined') {
+          const message = 'Trình duyệt của bạn chưa hỗ trợ MediaRecorder. Vui lòng dùng Chrome, Edge hoặc Firefox phiên bản mới.';
+          setRecordingError(message);
+          showWarning(message);
+          console.error('[startRecording] BLOCKED: MediaRecorder not defined');
           return;
         }
-        const audioUrl = URL.createObjectURL(audioBlob);
-        objectUrlRef.current.add(audioUrl);
-        const audioPayload = { url: audioUrl, blob: audioBlob, mimeType };
 
-        // Ensure stream is fully released after stopping
-        try { recorder.stream?.getTracks().forEach(t => t.stop()); } catch { /* Ignore track cleanup errors */ }
 
+        // Release any previous recording for this slot
         if (qid) {
-          setSpeakingAnswers(prev => ({ ...prev, [qid]: audioPayload }));
-          setActiveSpeakingQ(null);
+          const prev = speakingAnswers[qid];
+          if (prev?.url) {
+            URL.revokeObjectURL(prev.url);
+            objectUrlRef.current.delete(prev.url);
 
-        } else {
-          setRecordedAudio(audioPayload);
+          }
+        } else if (recordedAudio?.url) {
+          URL.revokeObjectURL(recordedAudio.url);
+          objectUrlRef.current.delete(recordedAudio.url);
+          setRecordedAudio(null);
 
         }
-      };
 
-      // Use a small timeslice to ensure dataavailable fires consistently across browsers
 
-      try {
-        recorder.start(200);} catch {
-        recorder.start();}
-      setIsRecording(true);
-      if (qid) setActiveSpeakingQ(qid);
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: true, noiseSuppression: true }
+        });
 
-    } catch (error) {
-      console.error('Error accessing microphone:', error);
-      console.error('[startRecording] Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
-      const message = error?.name === 'NotAllowedError'
-        ? 'Bạn đã từ chối quyền truy cập micro. Hãy bật lại quyền trong cài đặt trình duyệt và thử lại.'
-        : 'Không thể truy cập microphone!';
-      setRecordingError(message);
-      showError(message);
-      try {
-        mediaRecorderRef.current?.stream?.getTracks().forEach(track => track.stop());
-      } catch {
-        // Ignore cleanup errors
+
+        const mimeCandidates = [
+          'audio/webm;codecs=opus',
+          'audio/ogg;codecs=opus',
+          'audio/mp4',
+          'audio/webm'
+        ];
+        let recorderOptions;
+        let selectedMime = '';
+        if (typeof MediaRecorder.isTypeSupported === 'function') {
+          for (const candidate of mimeCandidates) {
+            if (MediaRecorder.isTypeSupported(candidate)) {
+              recorderOptions = { mimeType: candidate };
+              selectedMime = candidate;
+
+              break;
+            }
+          }
+        } else {
+          // MediaRecorder.isTypeSupported not available in this browser
+        }
+
+        let recorder;
+        try {
+          recorder = recorderOptions ? new MediaRecorder(stream, recorderOptions) : new MediaRecorder(stream);
+        } catch {
+          // Fallback to MediaRecorder without options if mimeType not supported
+          recorder = new MediaRecorder(stream);
+        }
+        mediaRecorderRef.current = recorder;
+        audioChunksRef.current = [];
+
+        let hadData = false;
+        recorder.ondataavailable = (event) => {
+          if (event.data && event.data.size > 0) {
+            audioChunksRef.current.push(event.data);
+            hadData = true;
+
+          }
+        };
+
+        recorder.onerror = (e) => {
+          console.error('[Recorder] error:', e);
+          setRecordingError('Có lỗi khi ghi âm. Vui lòng kiểm tra quyền micro và thử lại.');
+        };
+
+        recorder.onstop = () => {
+          const mimeType = recorder.mimeType || selectedMime || 'audio/webm';
+          const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+
+          if (!hadData || !audioBlob || audioBlob.size === 0) {
+
+            setRecordingError('Không nhận được dữ liệu âm thanh. Hãy đảm bảo đã cho phép micro và thử lại, hoặc tải file âm thanh ở dưới.');
+            try { recorder.stream?.getTracks().forEach(t => t.stop()); } catch { /* Ignore track cleanup errors */ }
+            return;
+          }
+          const audioUrl = URL.createObjectURL(audioBlob);
+          objectUrlRef.current.add(audioUrl);
+          const audioPayload = { url: audioUrl, blob: audioBlob, mimeType };
+
+          // Ensure stream is fully released after stopping
+          try { recorder.stream?.getTracks().forEach(t => t.stop()); } catch { /* Ignore track cleanup errors */ }
+
+          if (qid) {
+            setSpeakingAnswers(prev => ({ ...prev, [qid]: audioPayload }));
+            setActiveSpeakingQ(null);
+
+          } else {
+            setRecordedAudio(audioPayload);
+
+          }
+        };
+
+        // Use a small timeslice to ensure dataavailable fires consistently across browsers
+
+        try {
+          recorder.start(200);
+        } catch {
+          recorder.start();
+        }
+        setIsRecording(true);
+        if (qid) setActiveSpeakingQ(qid);
+
+      } catch (error) {
+        console.error('Error accessing microphone:', error);
+        console.error('[startRecording] Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+        const message = error?.name === 'NotAllowedError'
+          ? 'Bạn đã từ chối quyền truy cập micro. Hãy bật lại quyền trong cài đặt trình duyệt và thử lại.'
+          : 'Không thể truy cập microphone!';
+        setRecordingError(message);
+        showError(message);
+        try {
+          mediaRecorderRef.current?.stream?.getTracks().forEach(track => track.stop());
+        } catch {
+          // Ignore cleanup errors
+        }
       }
-    }
   };
 
   const stopRecording = () => {
@@ -906,9 +1017,9 @@ export default function DoExercise() {
 
 
 
-    
+
     const { skill_type, content: exerciseContent } = exercise;
-    
+
 
 
 
@@ -920,7 +1031,7 @@ export default function DoExercise() {
           <AlertCircle size={64} />
           <h2>Bài tập chưa có nội dung</h2>
           <p>Giáo viên chưa thiết lập nội dung cho bài tập này.</p>
-          <button 
+          <button
             onClick={() => navigate('/exercise-hub')}
             style={{
               marginTop: '20px',
@@ -939,33 +1050,33 @@ export default function DoExercise() {
     }
 
     // COMPREHENSIVE TEST (Mid-term/Final)
-  if (!skill_type && exerciseContent.type === 'comprehensive_test') {
+    if (!skill_type && exerciseContent.type === 'comprehensive_test') {
 
-      
+
       const listening = exerciseContent.listening || {};
       const reading = exerciseContent.reading || {};
       const writing = exerciseContent.writing || {};
       const speaking = exerciseContent.speaking || {};
-      
 
-      
+
+
       // Get questions from each section
       const listeningQuestions = listening.questions || [];
       const readingQuestions = reading.questions || [];
-      
+
       return (
         <div className="comprehensive-test-exercise">
           <div className="test-header">
             <h3>📝 Đề thi {exercise.type === 'midterm' ? 'Giữa kỳ' : 'Cuối kỳ'}</h3>
             <p className="test-subtitle">Tổng điểm: 10 điểm (4 phần x 2.5 điểm)</p>
           </div>
-          
+
           {/* PART 1: LISTENING (2.5 điểm) */}
           <div className="test-section">
             <div className="section-header">
               <h4><Headphones className="inline-block w-5 h-5 mr-2" /> PHẦN 1: NGHE HIỂU (2.5 điểm)</h4>
             </div>
-            
+
             {/* Audio Player */}
             {listening.audio_url && (
               <div className="audio-section">
@@ -983,7 +1094,7 @@ export default function DoExercise() {
                 )}
               </div>
             )}
-            
+
             {/* Listening Questions */}
             {listeningQuestions.length > 0 && (
               <div className="questions-container">
@@ -991,117 +1102,117 @@ export default function DoExercise() {
                 {listeningQuestions.map((q, idx) => {
                   // Create unique ID for this question within listening section
                   const uniqueQuestionId = `listening_${q.id}`;
-                  
-                  return (
-                  <div key={idx} className="question-card">
-                    <div className="question-header">
-                      <span className="question-number">Câu {idx + 1}</span>
-                      <span className="question-points">{q.points || 0.5} điểm</span>
-                    </div>
-                    <p className="question-text">{q.question}</p>
 
-                    {q.type === 'multiple_choice' && (
-                      <div className="options-list">
-                        {q.options && q.options.map((opt, optIdx) => {
-                          const optionLetter = opt.match(/^[A-D]\./)?.[0] || `${String.fromCharCode(65 + optIdx)}.`;
-                          const optionText = opt.replace(/^[A-D]\.\s*/, '');
-                          return (
-                            <label key={optIdx} className="option-label">
-                              <input
-                                type="radio"
-                                name={uniqueQuestionId}
-                                value={optionLetter[0]}
-                                checked={answers[uniqueQuestionId] === optionLetter[0]}
-                                onChange={(e) => handleAnswerChange(uniqueQuestionId, e.target.value)}
-                              />
-                              <span>{optionLetter} {optionText}</span>
-                            </label>
-                          );
-                        })}
+                  return (
+                    <div key={idx} className="question-card">
+                      <div className="question-header">
+                        <span className="question-number">Câu {idx + 1}</span>
+                        <span className="question-points">{q.points || 0.5} điểm</span>
                       </div>
-                    )}
-                    
-                    {q.type === 'fill_blank' && (
-                      <div className="fill-blank-input">
-                        <input
-                          type="text"
-                          placeholder="Nhập câu trả lời..."
-                          value={answers[uniqueQuestionId] || ''}
-                          onChange={(e) => handleAnswerChange(uniqueQuestionId, e.target.value)}
-                          className="text-input"
-                        />
-                      </div>
-                    )}
-                    
-                    {q.type === 'true_false' && (
-                      <div className="options-list">
-                        <label className="option-label">
+                      <p className="question-text">{q.question}</p>
+
+                      {q.type === 'multiple_choice' && (
+                        <div className="options-list">
+                          {q.options && q.options.map((opt, optIdx) => {
+                            const optionLetter = opt.match(/^[A-D]\./)?.[0] || `${String.fromCharCode(65 + optIdx)}.`;
+                            const optionText = opt.replace(/^[A-D]\.\s*/, '');
+                            return (
+                              <label key={optIdx} className="option-label">
+                                <input
+                                  type="radio"
+                                  name={uniqueQuestionId}
+                                  value={optionLetter[0]}
+                                  checked={answers[uniqueQuestionId] === optionLetter[0]}
+                                  onChange={(e) => handleAnswerChange(uniqueQuestionId, e.target.value)}
+                                />
+                                <span>{optionLetter} {optionText}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {q.type === 'fill_blank' && (
+                        <div className="fill-blank-input">
                           <input
-                            type="radio"
-                            name={uniqueQuestionId}
-                            value="True"
-                            checked={answers[uniqueQuestionId] === 'True'}
+                            type="text"
+                            placeholder="Nhập câu trả lời..."
+                            value={answers[uniqueQuestionId] || ''}
                             onChange={(e) => handleAnswerChange(uniqueQuestionId, e.target.value)}
+                            className="text-input"
                           />
-                          <span>✓ True (Đúng)</span>
-                        </label>
-                        <label className="option-label">
-                          <input
-                            type="radio"
-                            name={uniqueQuestionId}
-                            value="False"
-                            checked={answers[uniqueQuestionId] === 'False'}
-                            onChange={(e) => handleAnswerChange(uniqueQuestionId, e.target.value)}
-                          />
-                          <span>✗ False (Sai)</span>
-                        </label>
-                      </div>
-                    )}
-                    
-                    {q.type === 'matching' && normalizeMatchingPairs(q).length > 0 && (
-                      <div className="matching-container">
-                        <p className="matching-instruction">Ghép các cặp sau cho đúng:</p>
-                        {normalizeMatchingPairs(q).map((pair, pairIdx) => {
-                          const currentMatching = typeof answers[uniqueQuestionId] === 'object' && answers[uniqueQuestionId] !== null 
-                            ? answers[uniqueQuestionId] 
-                            : {};
-                          const normalizedValue =
-                            currentMatching[pairIdx] ??
-                            currentMatching[String(pairIdx)] ??
-                            (pair.left ? currentMatching[String(pair.left).trim()] : '');
-                          
-                          return (
-                            <div key={pairIdx} className="matching-pair">
-                              <div className="match-left">{pair.left}</div>
-                              <div className="match-arrow">→</div>
-                              <select
-                                className="match-select"
-                                value={normalizedValue || ''}
-                                onChange={(e) => handleMatchingChange(uniqueQuestionId, pairIdx, e.target.value, pair.left)}
-                              >
-                                <option value="">-- Chọn --</option>
-                                {normalizeMatchingPairs(q).map((p, i) => (
-                                  <option key={i} value={p.right}>{p.right}</option>
-                                ))}
-                              </select>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
+                        </div>
+                      )}
+
+                      {q.type === 'true_false' && (
+                        <div className="options-list">
+                          <label className="option-label">
+                            <input
+                              type="radio"
+                              name={uniqueQuestionId}
+                              value="True"
+                              checked={answers[uniqueQuestionId] === 'True'}
+                              onChange={(e) => handleAnswerChange(uniqueQuestionId, e.target.value)}
+                            />
+                            <span>✓ True (Đúng)</span>
+                          </label>
+                          <label className="option-label">
+                            <input
+                              type="radio"
+                              name={uniqueQuestionId}
+                              value="False"
+                              checked={answers[uniqueQuestionId] === 'False'}
+                              onChange={(e) => handleAnswerChange(uniqueQuestionId, e.target.value)}
+                            />
+                            <span>✗ False (Sai)</span>
+                          </label>
+                        </div>
+                      )}
+
+                      {q.type === 'matching' && normalizeMatchingPairs(q).length > 0 && (
+                        <div className="matching-container">
+                          <p className="matching-instruction">Ghép các cặp sau cho đúng:</p>
+                          {normalizeMatchingPairs(q).map((pair, pairIdx) => {
+                            const currentMatching = typeof answers[uniqueQuestionId] === 'object' && answers[uniqueQuestionId] !== null
+                              ? answers[uniqueQuestionId]
+                              : {};
+                            const normalizedValue =
+                              currentMatching[pairIdx] ??
+                              currentMatching[String(pairIdx)] ??
+                              (pair.left ? currentMatching[String(pair.left).trim()] : '');
+
+                            return (
+                              <div key={pairIdx} className="matching-pair">
+                                <div className="match-left">{pair.left}</div>
+                                <div className="match-arrow">→</div>
+                                <select
+                                  className="match-select"
+                                  value={normalizedValue || ''}
+                                  onChange={(e) => handleMatchingChange(uniqueQuestionId, pairIdx, e.target.value, pair.left)}
+                                >
+                                  <option value="">-- Chọn --</option>
+                                  {normalizeMatchingPairs(q).map((p, i) => (
+                                    <option key={i} value={p.right}>{p.right}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </div>
             )}
           </div>
-          
+
           {/* PART 2: READING (2.5 điểm) */}
           <div className="test-section">
             <div className="section-header">
               <h4><BookOpen className="inline-block w-5 h-5 mr-2" /> PHẦN 2: ĐỌC HIỂU (2.5 điểm)</h4>
             </div>
-            
+
             {/* Reading Passage */}
             {reading.passage && (
               <div className="reading-passage">
@@ -1110,7 +1221,7 @@ export default function DoExercise() {
                 </div>
               </div>
             )}
-            
+
             {/* Reading Questions */}
             {readingQuestions.length > 0 && (
               <div className="questions-container">
@@ -1118,117 +1229,117 @@ export default function DoExercise() {
                 {readingQuestions.map((q, idx) => {
                   // Create unique ID for this question within reading section
                   const uniqueQuestionId = `reading_${q.id}`;
-                  
-                  return (
-                  <div key={idx} className="question-card">
-                    <div className="question-header">
-                      <span className="question-number">Câu {idx + 1}</span>
-                      <span className="question-points">{q.points || 0.5} điểm</span>
-                    </div>
-                    <p className="question-text">{q.question}</p>
 
-                    {q.type === 'multiple_choice' && (
-                      <div className="options-list">
-                        {q.options && q.options.map((opt, optIdx) => {
-                          const optionLetter = opt.match(/^[A-D]\./)?.[0] || `${String.fromCharCode(65 + optIdx)}.`;
-                          const optionText = opt.replace(/^[A-D]\.\s*/, '');
-                          return (
-                            <label key={optIdx} className="option-label">
-                              <input
-                                type="radio"
-                                name={uniqueQuestionId}
-                                value={optionLetter[0]}
-                                checked={answers[uniqueQuestionId] === optionLetter[0]}
-                                onChange={(e) => handleAnswerChange(uniqueQuestionId, e.target.value)}
-                              />
-                              <span>{optionLetter} {optionText}</span>
-                            </label>
-                          );
-                        })}
+                  return (
+                    <div key={idx} className="question-card">
+                      <div className="question-header">
+                        <span className="question-number">Câu {idx + 1}</span>
+                        <span className="question-points">{q.points || 0.5} điểm</span>
                       </div>
-                    )}
-                    
-                    {q.type === 'fill_blank' && (
-                      <div className="fill-blank-input">
-                        <input
-                          type="text"
-                          placeholder="Nhập câu trả lời..."
-                          value={answers[uniqueQuestionId] || ''}
-                          onChange={(e) => handleAnswerChange(uniqueQuestionId, e.target.value)}
-                          className="text-input"
-                        />
-                      </div>
-                    )}
-                    
-                    {q.type === 'true_false' && (
-                      <div className="options-list">
-                        <label className="option-label">
+                      <p className="question-text">{q.question}</p>
+
+                      {q.type === 'multiple_choice' && (
+                        <div className="options-list">
+                          {q.options && q.options.map((opt, optIdx) => {
+                            const optionLetter = opt.match(/^[A-D]\./)?.[0] || `${String.fromCharCode(65 + optIdx)}.`;
+                            const optionText = opt.replace(/^[A-D]\.\s*/, '');
+                            return (
+                              <label key={optIdx} className="option-label">
+                                <input
+                                  type="radio"
+                                  name={uniqueQuestionId}
+                                  value={optionLetter[0]}
+                                  checked={answers[uniqueQuestionId] === optionLetter[0]}
+                                  onChange={(e) => handleAnswerChange(uniqueQuestionId, e.target.value)}
+                                />
+                                <span>{optionLetter} {optionText}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {q.type === 'fill_blank' && (
+                        <div className="fill-blank-input">
                           <input
-                            type="radio"
-                            name={uniqueQuestionId}
-                            value="True"
-                            checked={answers[uniqueQuestionId] === 'True'}
+                            type="text"
+                            placeholder="Nhập câu trả lời..."
+                            value={answers[uniqueQuestionId] || ''}
                             onChange={(e) => handleAnswerChange(uniqueQuestionId, e.target.value)}
+                            className="text-input"
                           />
-                          <span>✓ True (Đúng)</span>
-                        </label>
-                        <label className="option-label">
-                          <input
-                            type="radio"
-                            name={uniqueQuestionId}
-                            value="False"
-                            checked={answers[uniqueQuestionId] === 'False'}
-                            onChange={(e) => handleAnswerChange(uniqueQuestionId, e.target.value)}
-                          />
-                          <span>✗ False (Sai)</span>
-                        </label>
-                      </div>
-                    )}
-                    
-                    {q.type === 'matching' && normalizeMatchingPairs(q).length > 0 && (
-                      <div className="matching-container">
-                        <p className="matching-instruction">Ghép các cặp sau cho đúng:</p>
-                        {normalizeMatchingPairs(q).map((pair, pairIdx) => {
-                          const currentMatching = typeof answers[uniqueQuestionId] === 'object' && answers[uniqueQuestionId] !== null 
-                            ? answers[uniqueQuestionId] 
-                            : {};
-                          const normalizedValue =
-                            currentMatching[pairIdx] ??
-                            currentMatching[String(pairIdx)] ??
-                            (pair.left ? currentMatching[String(pair.left).trim()] : '');
-                          
-                          return (
-                            <div key={pairIdx} className="matching-pair">
-                              <div className="match-left">{pair.left}</div>
-                              <div className="match-arrow">→</div>
-                              <select
-                                className="match-select"
-                                value={normalizedValue || ''}
-                                onChange={(e) => handleMatchingChange(uniqueQuestionId, pairIdx, e.target.value, pair.left)}
-                              >
-                                <option value="">-- Chọn --</option>
-                                {normalizeMatchingPairs(q).map((p, i) => (
-                                  <option key={i} value={p.right}>{p.right}</option>
-                                ))}
-                              </select>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
+                        </div>
+                      )}
+
+                      {q.type === 'true_false' && (
+                        <div className="options-list">
+                          <label className="option-label">
+                            <input
+                              type="radio"
+                              name={uniqueQuestionId}
+                              value="True"
+                              checked={answers[uniqueQuestionId] === 'True'}
+                              onChange={(e) => handleAnswerChange(uniqueQuestionId, e.target.value)}
+                            />
+                            <span>✓ True (Đúng)</span>
+                          </label>
+                          <label className="option-label">
+                            <input
+                              type="radio"
+                              name={uniqueQuestionId}
+                              value="False"
+                              checked={answers[uniqueQuestionId] === 'False'}
+                              onChange={(e) => handleAnswerChange(uniqueQuestionId, e.target.value)}
+                            />
+                            <span>✗ False (Sai)</span>
+                          </label>
+                        </div>
+                      )}
+
+                      {q.type === 'matching' && normalizeMatchingPairs(q).length > 0 && (
+                        <div className="matching-container">
+                          <p className="matching-instruction">Ghép các cặp sau cho đúng:</p>
+                          {normalizeMatchingPairs(q).map((pair, pairIdx) => {
+                            const currentMatching = typeof answers[uniqueQuestionId] === 'object' && answers[uniqueQuestionId] !== null
+                              ? answers[uniqueQuestionId]
+                              : {};
+                            const normalizedValue =
+                              currentMatching[pairIdx] ??
+                              currentMatching[String(pairIdx)] ??
+                              (pair.left ? currentMatching[String(pair.left).trim()] : '');
+
+                            return (
+                              <div key={pairIdx} className="matching-pair">
+                                <div className="match-left">{pair.left}</div>
+                                <div className="match-arrow">→</div>
+                                <select
+                                  className="match-select"
+                                  value={normalizedValue || ''}
+                                  onChange={(e) => handleMatchingChange(uniqueQuestionId, pairIdx, e.target.value, pair.left)}
+                                >
+                                  <option value="">-- Chọn --</option>
+                                  {normalizeMatchingPairs(q).map((p, i) => (
+                                    <option key={i} value={p.right}>{p.right}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </div>
             )}
           </div>
-          
+
           {/* PART 3: WRITING (2.5 điểm) */}
           <div className="test-section">
             <div className="section-header">
               <h4><PenLine className="inline-block w-5 h-5 mr-2" /> PHẦN 3: VIẾT (2.5 điểm)</h4>
             </div>
-            
+
             <div className="writing-section">
               {/* Writing Prompt */}
               {writing.prompt && (
@@ -1237,7 +1348,7 @@ export default function DoExercise() {
                   <p style={{ whiteSpace: 'pre-wrap' }}>{writing.prompt}</p>
                 </div>
               )}
-              
+
               {/* Writing Instructions */}
               {writing.instructions && writing.instructions.length > 0 && (
                 <div className="instructions-box">
@@ -1249,14 +1360,14 @@ export default function DoExercise() {
                   </ul>
                 </div>
               )}
-              
+
               {/* Writing Word Count Info */}
               {(writing.min_words || writing.max_words) && (
                 <p className="word-requirement">
                   Yêu cầu: {writing.min_words || 0} - {writing.max_words || 0} từ
                 </p>
               )}
-              
+
               {/* Writing Textarea */}
               <textarea
                 className="writing-textarea"
@@ -1275,13 +1386,13 @@ export default function DoExercise() {
               </div>
             </div>
           </div>
-          
+
           {/* PART 4: SPEAKING (2.5 điểm) */}
           <div className="test-section">
             <div className="section-header">
               <h4><Mic className="inline-block w-5 h-5 mr-2" /> PHẦN 4: NÓI (2.5 điểm)</h4>
             </div>
-            
+
             <div className="speaking-section">
               {/* Speaking Prompt */}
               {speaking.prompt && (
@@ -1290,7 +1401,7 @@ export default function DoExercise() {
                   <p style={{ whiteSpace: 'pre-wrap' }}>{speaking.prompt}</p>
                 </div>
               )}
-              
+
               {/* Speaking Instructions */}
               {speaking.instructions && speaking.instructions.length > 0 && (
                 <div className="instructions-box">
@@ -1302,15 +1413,15 @@ export default function DoExercise() {
                   </ul>
                 </div>
               )}
-              
+
               {/* Speaking Time Info */}
               {(speaking.prep_time || speaking.speak_time) && (
                 <p className="time-info">
-                  ⏱️ Thời gian chuẩn bị: {speaking.prep_time || 60}s | 
+                  ⏱️ Thời gian chuẩn bị: {speaking.prep_time || 60}s |
                   Thời gian nói: {speaking.speak_time || 120}s
                 </p>
               )}
-              
+
               {/* Recording Area */}
               <div className="recording-area">
                 {!isRecording && !speakingAnswers['speaking_main'] && (
@@ -1346,7 +1457,7 @@ export default function DoExercise() {
                 {recordingError && (
                   <p className="recording-error-message">{recordingError}</p>
                 )}
-                
+
                 <div className="upload-fallback">
                   <span>Hoặc tải file âm thanh:</span>
                   <input
@@ -1753,7 +1864,7 @@ export default function DoExercise() {
 
     const gradingStatus = submission.grading_status;
     const teacherReviewed = submission.teacher_reviewed;
-    
+
     // If still pending or grading, show waiting message
     // But if ai_graded, show results even without teacher review
     if (['pending', 'grading'].includes(gradingStatus)) {
@@ -1797,7 +1908,7 @@ export default function DoExercise() {
               )}
             </div>
             <div style={{ marginTop: '20px', textAlign: 'center' }}>
-              <button 
+              <button
                 onClick={() => navigate('/exercise-hub')}
                 className="btn-primary"
                 style={{
@@ -1828,7 +1939,7 @@ export default function DoExercise() {
       ? 'Đã chấm'
       : (submission.score == null && submission.ai_score != null)
         ? 'Đã chấm (AI)'
-        : (submission.status === 'pending_review' ? 'Đang chờ duyệt' : (submission.status || '')); 
+        : (submission.status === 'pending_review' ? 'Đang chờ duyệt' : (submission.status || ''));
 
     return (
       <div className="result-view-container">
@@ -1909,18 +2020,18 @@ export default function DoExercise() {
                     }
                   }
                 }
-                
+
                 // If it's still a string (plain text feedback), display with line breaks
                 if (typeof feedbackData === 'string') {
                   // Split by double newlines to create sections
                   const sections = feedbackData.split('\n\n').filter(s => s.trim());
-                  
+
                   return (
                     <div className="formatted-feedback">
                       {sections.map((section, idx) => {
                         // Check if section starts with skill icons (removed emoji regex, icons now in JSX)
                         const hasIcon = false;
-                        
+
                         return (
                           <div key={idx} className={`feedback-section ${hasIcon ? 'with-icon' : ''}`}>
                             {section.split('\n').map((line, lineIdx) => (
@@ -1934,7 +2045,7 @@ export default function DoExercise() {
                     </div>
                   );
                 }
-                
+
                 // Handle object type (parsed JSON or direct object)
                 if (typeof feedbackData === 'object' && feedbackData !== null) {
                   // If it has sections property
@@ -1954,12 +2065,12 @@ export default function DoExercise() {
                       </div>
                     );
                   }
-                  
+
                   // If it's a comprehensive feedback structure with nested objects, don't display raw
                   // This includes structures like {listening: {...}, reading: {...}, writing: {...}}
                   return <p>Nhận xét chi tiết có trong phần đánh giá từng kỹ năng bên dưới</p>;
                 }
-                
+
                 // Fallback
                 return <p>Chưa có nhận xét chi tiết</p>;
               })()}
@@ -1971,12 +2082,12 @@ export default function DoExercise() {
         {submission.rubrics_scores && (
           <div className="feedback-card">
             <h3>📊 Chi tiết chấm điểm</h3>
-            
+
             {/* Speaking Assessment - Detailed like teacher view */}
             {(submission.rubrics_scores.speaking_assessment || submission.rubrics_scores.speaking) && (
               <div className="rubric-section speaking-detailed">
                 <h4><Mic className="inline-block w-5 h-5 mr-2" /> Đánh giá kỹ năng Speaking</h4>
-                
+
                 {/* KPI Scores Display */}
                 {submission.rubrics_scores.speaking_assessment && (
                   <div className="kpi-scores-grid">
@@ -1997,8 +2108,8 @@ export default function DoExercise() {
                           </div>
                           <div className="kpi-label">{labels[key].name}</div>
                           <div className="kpi-progress-bar">
-                            <div 
-                              className="kpi-progress-fill" 
+                            <div
+                              className="kpi-progress-fill"
                               style={{ width: `${value}%`, backgroundColor: labels[key].color }}
                             />
                           </div>
@@ -2007,7 +2118,7 @@ export default function DoExercise() {
                     })}
                   </div>
                 )}
-                
+
                 {/* Speaking Content Feedback */}
                 {submission.rubrics_scores.speaking?.content && (
                   <div className="speaking-content-feedback">
@@ -2017,67 +2128,67 @@ export default function DoExercise() {
                         <p>{submission.rubrics_scores.speaking.content.content_feedback}</p>
                       </div>
                     )}
-                    
+
                     {submission.rubrics_scores.speaking.content.grammar_feedback && (
                       <div className="feedback-item grammar-feedback">
                         <strong>📐 Ngữ pháp:</strong>
                         <p>{submission.rubrics_scores.speaking.content.grammar_feedback}</p>
                       </div>
                     )}
-                    
+
                     {submission.rubrics_scores.speaking.content.vocabulary_feedback && (
                       <div className="feedback-item vocabulary-feedback">
                         <strong>📚 Từ vựng:</strong>
                         <p>{submission.rubrics_scores.speaking.content.vocabulary_feedback}</p>
                       </div>
                     )}
-                    
+
                     {submission.rubrics_scores.speaking.content.pronunciation_note && (
                       <div className="feedback-item pronunciation-feedback">
                         <strong><Mic className="inline-block w-4 h-4 mr-1" /> Phát âm:</strong>
                         <p>{submission.rubrics_scores.speaking.content.pronunciation_note}</p>
                       </div>
                     )}
-                    
+
                     {/* Strengths */}
-                    {Array.isArray(submission.rubrics_scores.speaking.content.strengths) && 
-                     submission.rubrics_scores.speaking.content.strengths.length > 0 && (
-                      <div className="feedback-item strengths">
-                        <strong>💪 Điểm mạnh:</strong>
-                        <ul>
-                          {submission.rubrics_scores.speaking.content.strengths.map((s, i) => (
-                            <li key={i}>{s}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                    
+                    {Array.isArray(submission.rubrics_scores.speaking.content.strengths) &&
+                      submission.rubrics_scores.speaking.content.strengths.length > 0 && (
+                        <div className="feedback-item strengths">
+                          <strong>💪 Điểm mạnh:</strong>
+                          <ul>
+                            {submission.rubrics_scores.speaking.content.strengths.map((s, i) => (
+                              <li key={i}>{s}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
                     {/* Improvements */}
-                    {Array.isArray(submission.rubrics_scores.speaking.content.improvements) && 
-                     submission.rubrics_scores.speaking.content.improvements.length > 0 && (
-                      <div className="feedback-item improvements">
-                        <strong>📈 Cần cải thiện:</strong>
-                        <ul>
-                          {submission.rubrics_scores.speaking.content.improvements.map((s, i) => (
-                            <li key={i}>{s}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                    
+                    {Array.isArray(submission.rubrics_scores.speaking.content.improvements) &&
+                      submission.rubrics_scores.speaking.content.improvements.length > 0 && (
+                        <div className="feedback-item improvements">
+                          <strong>📈 Cần cải thiện:</strong>
+                          <ul>
+                            {submission.rubrics_scores.speaking.content.improvements.map((s, i) => (
+                              <li key={i}>{s}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
                     {/* Suggestions */}
-                    {Array.isArray(submission.rubrics_scores.speaking.content.suggestions) && 
-                     submission.rubrics_scores.speaking.content.suggestions.length > 0 && (
-                      <div className="feedback-item suggestions">
-                        <strong>💡 Gợi ý:</strong>
-                        <ul>
-                          {submission.rubrics_scores.speaking.content.suggestions.map((s, i) => (
-                            <li key={i}>{s}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                    
+                    {Array.isArray(submission.rubrics_scores.speaking.content.suggestions) &&
+                      submission.rubrics_scores.speaking.content.suggestions.length > 0 && (
+                        <div className="feedback-item suggestions">
+                          <strong>💡 Gợi ý:</strong>
+                          <ul>
+                            {submission.rubrics_scores.speaking.content.suggestions.map((s, i) => (
+                              <li key={i}>{s}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
                     {/* Overall Comment */}
                     {submission.rubrics_scores.speaking.content.overall_comment && (
                       <div className="feedback-item overall-comment">
@@ -2087,7 +2198,7 @@ export default function DoExercise() {
                     )}
                   </div>
                 )}
-                
+
                 {/* Recognized Text */}
                 {submission.rubrics_scores.recognized_text && (
                   <div className="recognized-text-section">
@@ -2100,12 +2211,12 @@ export default function DoExercise() {
                 )}
               </div>
             )}
-            
+
             {/* Writing breakdown */}
             {submission.rubrics_scores.writing_assessment && (
               <div className="rubric-section">
                 <h4><PenLine className="inline-block w-5 h-5 mr-2" /> Đánh giá kỹ năng Writing</h4>
-                
+
                 {/* Writing Assessment Grid */}
                 <div className="writing-assessment-grid">
                   {Object.entries(submission.rubrics_scores.writing_assessment).map(([k, v]) => (
@@ -2115,14 +2226,14 @@ export default function DoExercise() {
                     </div>
                   ))}
                 </div>
-                
+
                 {/* Word Count */}
                 {submission.rubrics_scores.word_count != null && (
                   <div className="word-count-display">
                     <strong>📊 Số từ:</strong> {submission.rubrics_scores.word_count}
                   </div>
                 )}
-                
+
                 {/* Writing Content Feedback */}
                 {submission.rubrics_scores.writing && submission.rubrics_scores.writing.content && (
                   <div className="speaking-content-feedback">
@@ -2132,21 +2243,21 @@ export default function DoExercise() {
                         <p>{submission.rubrics_scores.writing.content.content_feedback}</p>
                       </div>
                     )}
-                    
+
                     {submission.rubrics_scores.writing.content.grammar_feedback && (
                       <div className="feedback-item grammar-feedback">
                         <strong>📐 Ngữ pháp:</strong>
                         <p>{submission.rubrics_scores.writing.content.grammar_feedback}</p>
                       </div>
                     )}
-                    
+
                     {submission.rubrics_scores.writing.content.vocabulary_feedback && (
                       <div className="feedback-item vocabulary-feedback">
                         <strong>📚 Từ vựng:</strong>
                         <p>{submission.rubrics_scores.writing.content.vocabulary_feedback}</p>
                       </div>
                     )}
-                    
+
                     {submission.rubrics_scores.writing.content.structure_feedback && (
                       <div className="feedback-item pronunciation-feedback">
                         <strong>🏗️ Cấu trúc:</strong>
@@ -2155,7 +2266,7 @@ export default function DoExercise() {
                     )}
                   </div>
                 )}
-                
+
                 {/* Strengths */}
                 {Array.isArray(submission.rubrics_scores.strengths) && submission.rubrics_scores.strengths.length > 0 && (
                   <div className="feedback-item strengths">
@@ -2165,7 +2276,7 @@ export default function DoExercise() {
                     </ul>
                   </div>
                 )}
-                
+
                 {/* Improvements */}
                 {Array.isArray(submission.rubrics_scores.improvements) && submission.rubrics_scores.improvements.length > 0 && (
                   <div className="feedback-item improvements">
@@ -2175,20 +2286,20 @@ export default function DoExercise() {
                     </ul>
                   </div>
                 )}
-                
+
                 {/* Suggestions */}
-                {Array.isArray(submission.rubrics_scores.writing?.content?.suggestions) && 
-                 submission.rubrics_scores.writing.content.suggestions.length > 0 && (
-                  <div className="feedback-item suggestions">
-                    <strong>💡 Gợi ý:</strong>
-                    <ul>
-                      {submission.rubrics_scores.writing.content.suggestions.map((s, i) => (
-                        <li key={i}>{s}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                
+                {Array.isArray(submission.rubrics_scores.writing?.content?.suggestions) &&
+                  submission.rubrics_scores.writing.content.suggestions.length > 0 && (
+                    <div className="feedback-item suggestions">
+                      <strong>💡 Gợi ý:</strong>
+                      <ul>
+                        {submission.rubrics_scores.writing.content.suggestions.map((s, i) => (
+                          <li key={i}>{s}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
                 {/* Overall Comment */}
                 {submission.rubrics_scores.writing?.content?.overall_comment && (
                   <div className="feedback-item overall-comment">
@@ -2198,7 +2309,7 @@ export default function DoExercise() {
                 )}
               </div>
             )}
-            
+
             {/* Detailed Feedback from Teacher */}
             {submission.rubrics_scores.detailed_feedback && (
               <div className="detailed-feedback-section">
@@ -2208,7 +2319,7 @@ export default function DoExercise() {
                 </div>
               </div>
             )}
-            
+
             {/* Objective questions auto-grade breakdown */}
             {submission.rubrics_scores.auto_grade_results && (
               <div className="rubric-section">
@@ -2258,7 +2369,7 @@ export default function DoExercise() {
                   // Try to find the question in exercise content to get pairs info
                   let questionData = null;
                   const exerciseContent = exercise.content || {};
-                  
+
                   // For comprehensive test, check all sections
                   if (exerciseContent.type === 'comprehensive_test') {
                     const allQuestions = [
@@ -2271,13 +2382,13 @@ export default function DoExercise() {
                     const questions = exerciseContent.questions || [];
                     questionData = questions.find(q => String(q.id) === String(qId));
                   }
-                  
+
                   // Check if answer is a matching question (object with numeric keys)
-                  const isMatchingAnswer = typeof answer === 'object' && 
-                    answer !== null && 
+                  const isMatchingAnswer = typeof answer === 'object' &&
+                    answer !== null &&
                     !Array.isArray(answer) &&
                     Object.keys(answer).every(k => !isNaN(k));
-                  
+
                   return (
                     <li key={qId}>
                       <strong>Câu {qId}:</strong>{' '}
@@ -2341,7 +2452,7 @@ export default function DoExercise() {
           </div>
         </div>
       )}
-      
+
       {/* Start Screen - Must click to enter fullscreen */}
       {viewMode === 'exercise' && showStartScreen && exercise && (
         <div className="start-screen-overlay">
@@ -2355,7 +2466,7 @@ export default function DoExercise() {
             </div>
             <h2>{exercise.title}</h2>
             <p className="start-screen-desc">{exercise.description}</p>
-            
+
             <div className="start-screen-info">
               <div className="info-item">
                 <strong><Clock className="inline-block w-4 h-4 mr-1" /> Thời gian:</strong> {exercise.duration ? `${exercise.duration} phút` : 'Không giới hạn'}
@@ -2364,7 +2475,7 @@ export default function DoExercise() {
                 <strong><Target className="inline-block w-4 h-4 mr-1" /> Điểm tối đa:</strong> {exercise.max_score || 10} điểm
               </div>
             </div>
-            
+
             <div className="start-screen-warning">
               <AlertCircle size={24} />
               <div>
@@ -2380,19 +2491,19 @@ export default function DoExercise() {
                 </ul>
               </div>
             </div>
-            
+
             <button className="btn-start-exam" onClick={handleStartExercise}>
               <Zap size={24} />
               Bắt đầu làm bài
             </button>
-            
+
             <button className="btn-cancel" onClick={() => navigate('/exercise-hub')}>
               Quay lại
             </button>
           </div>
         </div>
       )}
-      
+
       {/* Face Verification Gate for Midterm/Final Exams */}
       {showFaceVerification && (exercise.type === 'midterm' || exercise.type === 'final') && (
         <FaceVerificationGate
@@ -2401,76 +2512,71 @@ export default function DoExercise() {
           exerciseId={exerciseId}
         />
       )}
-      
+
       {/* Continuous Face Monitoring - Only for midterm/final exams during exercise */}
-      {viewMode === 'exercise' && !showStartScreen && continuousMonitoringEnabled && 
-       (exercise?.type === 'midterm' || exercise?.type === 'final') && (
-        <ContinuousFaceMonitor
-          enabled={continuousMonitoringEnabled}
-          checkInterval={5000} // Check every 5 seconds
-          onWarning={handleFaceMonitoringWarning}
-          onAlert={handleFaceMonitoringAlert}
-          onStatusChange={handleFaceMonitoringStatusChange}
-        />
-      )}
-      
-      {/* Fullscreen Warning Banner - Only show when doing exercise */}
-      {viewMode === 'exercise' && !showStartScreen && isFullscreen && (
-        <div className="fullscreen-warning-banner">
-          <AlertCircle size={20} />
-          <span>Chế độ làm bài: Toàn màn hình. Không được thoát fullscreen!</span>
-        </div>
-      )}
-      
+      {viewMode === 'exercise' && !showStartScreen && continuousMonitoringEnabled &&
+        (exercise?.type === 'midterm' || exercise?.type === 'final') && (
+          <ContinuousFaceMonitor
+            enabled={continuousMonitoringEnabled}
+            checkInterval={5000} // Check every 5 seconds
+            onWarning={handleFaceMonitoringWarning}
+            onAlert={handleFaceMonitoringAlert}
+            onStatusChange={handleFaceMonitoringStatusChange}
+            exerciseId={exerciseId ? parseInt(exerciseId) : null}
+            submissionId={submission?.id || null}
+          />
+        )}
+
+
       {/* Show result view if graded, otherwise show exercise view */}
       {viewMode === 'result' ? renderResultView() : !showStartScreen && (
         <>
-      {/* Header */}
-      <div className="exercise-header">
-        <div className="header-left">
-          <h1>
-            {exercise.skill_type === 'listening' && <Headphones className="inline-block w-6 h-6 mr-2" />}
-            {exercise.skill_type === 'speaking' && <Mic className="inline-block w-6 h-6 mr-2" />}
-            {exercise.skill_type === 'reading' && <BookOpen className="inline-block w-6 h-6 mr-2" />}
-            {exercise.skill_type === 'writing' && <PenLine className="inline-block w-6 h-6 mr-2" />}
-            {' '}
-            {exercise.title}
-          </h1>
-          <p className="exercise-description">{exercise.description}</p>
-        </div>
-        {timeRemaining !== null && (
-          <div className="time-display">
-            <Clock size={24} />
-            <span className={timeRemaining < 300 ? 'time-warning' : ''}>
-              {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
-            </span>
+          {/* Header */}
+          <div className="exercise-header">
+            <div className="header-left">
+              <h1>
+                {exercise.skill_type === 'listening' && <Headphones className="inline-block w-6 h-6 mr-2" />}
+                {exercise.skill_type === 'speaking' && <Mic className="inline-block w-6 h-6 mr-2" />}
+                {exercise.skill_type === 'reading' && <BookOpen className="inline-block w-6 h-6 mr-2" />}
+                {exercise.skill_type === 'writing' && <PenLine className="inline-block w-6 h-6 mr-2" />}
+                {' '}
+                {exercise.title}
+              </h1>
+              <p className="exercise-description">{exercise.description}</p>
+            </div>
+            {timeRemaining !== null && (
+              <div className="time-display">
+                <Clock size={24} />
+                <span className={timeRemaining < 300 ? 'time-warning' : ''}>
+                  {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
+                </span>
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      {/* Content */}
-      <div className="exercise-content">
-        {renderExerciseContent()}
-      </div>
+          {/* Content */}
+          <div className="exercise-content">
+            {renderExerciseContent()}
+          </div>
 
-      {/* Footer Actions */}
-      <div className="exercise-footer">
-        <button className="btn-save-draft" onClick={handleSaveDraft}>
-          <Save size={18} />
-          Lưu nháp
-        </button>
-        <button
-          className="btn-submit-exercise"
-          onClick={handleSubmit}
-          disabled={isSubmitting || (exercise.skill_type === 'writing' && exercise.content?.word_limit && wordCount < exercise.content.word_limit.min)}
-        >
-          <Send size={18} />
-          {isSubmitting ? 'Đang nộp...' : 'Nộp bài và xem kết quả'}
-        </button>
-      </div>
+          {/* Footer Actions */}
+          <div className="exercise-footer">
+            <button className="btn-save-draft" onClick={handleSaveDraft}>
+              <Save size={18} />
+              Lưu nháp
+            </button>
+            <button
+              className="btn-submit-exercise"
+              onClick={handleSubmit}
+              disabled={isSubmitting || (exercise.skill_type === 'writing' && exercise.content?.word_limit && wordCount < exercise.content.word_limit.min)}
+            >
+              <Send size={18} />
+              {isSubmitting ? 'Đang nộp...' : 'Nộp bài và xem kết quả'}
+            </button>
+          </div>
         </>
       )}
-      
+
       {toast.show && (
         <Toast
           message={toast.message}

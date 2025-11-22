@@ -26,6 +26,7 @@ import Worksheets from '../Worksheets/Worksheets';
 import WeeklyAssessments from '../WeeklyAssessments/WeeklyAssessments';
 import ErrorAnalysisExport from '../ErrorAnalysis/ErrorAnalysisExport';
 import ExamGradingPage from '../ExamGrading/ExamGradingPage';
+import ExamMonitoring from './components/ExamMonitoring';
 import Navbar from '../../../components/Navbar/Navbar';
 import authService from '../../../services/authService';
 import './TeacherDashboardV3.css';
@@ -67,6 +68,8 @@ const TeacherDashboardV3 = ({ onLogout }) => {
         return <WeeklyAssessments />;
       case 'error-analysis':
         return <ErrorAnalysisExport />;
+      case 'exam-monitoring':
+        return <ExamMonitoring />;
       case 'worksheet-generator':
         return <WorksheetGenerator />;
       case 'lesson-plans':

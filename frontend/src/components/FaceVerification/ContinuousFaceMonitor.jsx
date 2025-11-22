@@ -12,13 +12,17 @@ const ContinuousFaceMonitor = ({
   onAlert, 
   onStatusChange,
   checkInterval = 5000, // Check every 5 seconds
-  enabled = true 
+  enabled = true,
+  exerciseId = null, // For saving alert images
+  examId = null, // For exam assessments
+  submissionId = null // For linking to submission
 }) => {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
   const checkIntervalRef = useRef(null);
   const isCheckingRef = useRef(false);
+  const isStartingRef = useRef(false);
   
   const [isActive, setIsActive] = useState(false);
   const [status, setStatus] = useState('idle'); // 'idle', 'checking', 'verified', 'warning', 'alert'
@@ -29,8 +33,28 @@ const ContinuousFaceMonitor = ({
 
   // Start camera
   const startCamera = useCallback(async () => {
+    // Don't start if already active or starting
+    if (isActive || isStartingRef.current || streamRef.current) {
+      console.log('Camera already active or starting, skipping...');
+      return;
+    }
+
     try {
+      isStartingRef.current = true;
       setError(null);
+      console.log('Starting camera...');
+      
+      // Check if getUserMedia is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Trình duyệt không hỗ trợ truy cập camera');
+      }
+
+      // Stop any existing stream first
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
+      
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           width: { ideal: 640 },
@@ -40,21 +64,80 @@ const ContinuousFaceMonitor = ({
         audio: false
       });
       
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        streamRef.current = stream;
-        videoRef.current.onloadedmetadata = () => {
-          setIsActive(true);
-          if (onStatusChange) {
-            onStatusChange({ active: true, status: 'ready' });
-          }
-        };
+      console.log('Got media stream:', stream);
+      
+      if (!videoRef.current) {
+        console.error('Video ref is null');
+        stream.getTracks().forEach(track => track.stop());
+        throw new Error('Video element chưa sẵn sàng');
+      }
+
+      const video = videoRef.current;
+      video.srcObject = stream;
+      streamRef.current = stream;
+      
+      // Wait for video to be ready
+      const handleLoadedMetadata = () => {
+        console.log('Video metadata loaded, playing video...');
+        video.play()
+          .then(() => {
+            console.log('Video playing successfully');
+            setIsActive(true);
+            isStartingRef.current = false;
+            if (onStatusChange) {
+              onStatusChange({ active: true, status: 'ready' });
+            }
+            // Remove event listener after success
+            video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+          })
+          .catch((playErr) => {
+            console.error('Error playing video:', playErr);
+            setIsActive(false);
+            isStartingRef.current = false;
+            setError('Không thể phát video từ camera');
+            if (onStatusChange) {
+              onStatusChange({ active: false, status: 'error', error: 'Không thể phát video từ camera' });
+            }
+            video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+          });
+      };
+
+      const handleError = (err) => {
+        console.error('Video error:', err);
+        setIsActive(false);
+        isStartingRef.current = false;
+        setError('Lỗi khi phát video từ camera');
+        if (onStatusChange) {
+          onStatusChange({ active: false, status: 'error', error: 'Lỗi khi phát video từ camera' });
+        }
+        video.removeEventListener('error', handleError);
+      };
+      
+      // Add event listeners
+      video.addEventListener('loadedmetadata', handleLoadedMetadata);
+      video.addEventListener('error', handleError);
+
+      // If metadata is already loaded, trigger manually
+      if (video.readyState >= 1) {
+        handleLoadedMetadata();
       }
     } catch (err) {
+      isStartingRef.current = false;
       console.error('Camera access error:', err);
-      const errorMsg = err.name === 'NotAllowedError' 
-        ? 'Camera bị từ chối. Vui lòng cho phép quyền truy cập camera.'
-        : 'Không thể truy cập camera. Vui lòng kiểm tra thiết bị.';
+      let errorMsg = 'Không thể truy cập camera. Vui lòng kiểm tra thiết bị.';
+      
+      if (err.name === 'NotAllowedError') {
+        errorMsg = 'Camera bị từ chối. Vui lòng cho phép quyền truy cập camera.';
+      } else if (err.name === 'NotFoundError') {
+        errorMsg = 'Không tìm thấy camera. Vui lòng kiểm tra thiết bị.';
+      } else if (err.name === 'NotReadableError') {
+        errorMsg = 'Camera đang được sử dụng bởi ứng dụng khác. Vui lòng đóng ứng dụng đó.';
+      } else if (err.name === 'OverconstrainedError') {
+        errorMsg = 'Camera không hỗ trợ cài đặt yêu cầu.';
+      } else if (err.message) {
+        errorMsg = err.message;
+      }
+      
       setError(errorMsg);
       setIsActive(false);
       if (onStatusChange) {
@@ -65,6 +148,7 @@ const ContinuousFaceMonitor = ({
 
   // Stop camera
   const stopCamera = useCallback(() => {
+    isStartingRef.current = false;
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
@@ -127,13 +211,42 @@ const ContinuousFaceMonitor = ({
         const failures = consecutiveFailures + 1;
         setConsecutiveFailures(failures);
         
+        // Save alert image to backend for teacher review
+        const saveAlertImage = async (alertType, alertMessage) => {
+          try {
+            await api.post('/api/v1/face/save-monitoring-alert', {
+              image: base64Image,
+              alert_type: alertType,
+              exercise_id: exerciseId,
+              exam_id: examId,
+              submission_id: submissionId,
+              message: alertMessage,
+              face_count: result.face_count,
+              verified: result.verified,
+              similarity: result.similarity?.toString(),
+              confidence: result.confidence,
+              consecutive_failures: failures
+            });
+            console.log(`Monitoring ${alertType} image saved successfully`);
+          } catch (err) {
+            console.error(`Error saving ${alertType} image:`, err);
+            // Don't block the flow if saving fails
+          }
+        };
+        
         if (failures >= 3) {
           // 3 consecutive failures = alert
           setStatus('alert');
           setWarningCount(prev => prev + 1);
+          
+          const alertMessage = result.alert || result.warning || 'Phát hiện hành vi bất thường';
+          
+          // Save alert image
+          saveAlertImage('alert', alertMessage);
+          
           if (onAlert) {
             onAlert({
-              message: result.alert || result.warning || 'Phát hiện hành vi bất thường',
+              message: alertMessage,
               faceCount: result.face_count,
               verified: result.verified,
               consecutiveFailures: failures
@@ -151,9 +264,15 @@ const ContinuousFaceMonitor = ({
           // Warning
           setStatus('warning');
           setWarningCount(prev => prev + 1);
+          
+          const warningMessage = result.warning || 'Cảnh báo: Phát hiện vấn đề với khuôn mặt';
+          
+          // Save warning image
+          saveAlertImage('warning', warningMessage);
+          
           if (onWarning) {
             onWarning({
-              message: result.warning || 'Cảnh báo: Phát hiện vấn đề với khuôn mặt',
+              message: warningMessage,
               faceCount: result.face_count,
               verified: result.verified,
               consecutiveFailures: failures
@@ -179,21 +298,57 @@ const ContinuousFaceMonitor = ({
     } finally {
       isCheckingRef.current = false;
     }
-  }, [consecutiveFailures, onWarning, onAlert, onStatusChange]);
+  }, [consecutiveFailures, onWarning, onAlert, onStatusChange, exerciseId, examId, submissionId]);
 
-  // Start monitoring
+  // Start/stop camera when enabled changes
   useEffect(() => {
     if (!enabled) {
       stopCamera();
+      return;
+    }
+
+    // Retry mechanism to ensure video element is mounted
+    let retryCount = 0;
+    const maxRetries = 10;
+    
+    const tryStartCamera = () => {
+      if (!enabled) return;
+      
+      if (videoRef.current) {
+        console.log('Video element found, starting camera...');
+        startCamera();
+      } else if (retryCount < maxRetries) {
+        retryCount++;
+        console.log(`Video element not ready, retrying... (${retryCount}/${maxRetries})`);
+        setTimeout(tryStartCamera, 200);
+      } else {
+        console.error('Video element not found after retries');
+        setError('Không thể khởi động camera. Vui lòng tải lại trang.');
+        setIsActive(false);
+      }
+    };
+
+    // Start trying after a short delay
+    const timer = setTimeout(tryStartCamera, 100);
+
+    return () => {
+      clearTimeout(timer);
+      // Only stop camera if component is unmounting or disabled
+      if (!enabled) {
+        stopCamera();
+      }
+    };
+  }, [enabled, startCamera, stopCamera]);
+
+  // Start periodic checks when camera is active
+  useEffect(() => {
+    if (!enabled || !isActive) {
       if (checkIntervalRef.current) {
         clearInterval(checkIntervalRef.current);
         checkIntervalRef.current = null;
       }
       return;
     }
-
-    // Start camera
-    startCamera();
 
     // Start periodic checks
     checkIntervalRef.current = setInterval(() => {
@@ -204,19 +359,19 @@ const ContinuousFaceMonitor = ({
 
     // Initial check after 2 seconds
     const initialCheck = setTimeout(() => {
-      if (isActive) {
+      if (isActive && !isCheckingRef.current) {
         captureAndCheck();
       }
     }, 2000);
 
     return () => {
-      stopCamera();
       if (checkIntervalRef.current) {
         clearInterval(checkIntervalRef.current);
+        checkIntervalRef.current = null;
       }
       clearTimeout(initialCheck);
     };
-  }, [enabled, isActive, startCamera, stopCamera, captureAndCheck, checkInterval]);
+  }, [enabled, isActive, captureAndCheck, checkInterval]);
 
   // Status indicator component
   const StatusIndicator = () => {
@@ -271,16 +426,35 @@ const ContinuousFaceMonitor = ({
           <StatusIndicator />
         </div>
 
-        {/* Video preview (hidden but needed for capture) */}
-        <div className="hidden">
+        {/* Video preview - hiển thị camera */}
+        <div className="mb-2 rounded-lg overflow-hidden bg-black relative" style={{ width: '200px', height: '150px' }}>
           <video
             ref={videoRef}
             autoPlay
             playsInline
             muted
-            className="w-full"
+            style={{ 
+              width: '100%', 
+              height: '100%', 
+              objectFit: 'cover',
+              transform: 'scaleX(-1)', // Mirror effect để giống gương
+              display: isActive ? 'block' : 'none'
+            }}
           />
-          <canvas ref={canvasRef} />
+          {/* Loading/Placeholder khi camera chưa sẵn sàng */}
+          {!isActive && (
+            <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
+              <div className="text-center text-gray-400">
+                <Camera className="w-8 h-8 mx-auto mb-1" />
+                <p className="text-xs">Đang khởi động...</p>
+              </div>
+            </div>
+          )}
+          {/* Canvas for capture (hidden) */}
+          <canvas 
+            ref={canvasRef} 
+            style={{ position: 'absolute', visibility: 'hidden', width: '1px', height: '1px' }}
+          />
         </div>
 
         {/* Status info */}
