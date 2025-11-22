@@ -123,6 +123,41 @@ services:
       timeout: 5s
       retries: 5
 
+  # Celery worker for async video processing
+  celery_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: englishwebai_celery_worker
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./backend:/app
+      - backend_data:/app/data
+      - backend_media:/app/media
+      - backend_logs:/app/logs
+    networks:
+      - englishwebai_network
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: >
+      sh -c "
+        echo 'Starting Celery Worker...' &&
+        celery -A celery_app worker --loglevel=info --concurrency=2
+      "
+
 networks:
   englishwebai_network:
     driver: bridge

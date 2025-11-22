@@ -40,6 +40,7 @@ from app.models.student_face_data import StudentFaceData
 from app.models.submission import Submission
 from app.models.system_config import SystemConfig
 from app.models.user import User
+from app.models.video_lesson import VideoLesson
 from app.models.weekly_assessment import WeeklyAssessment, WeeklySubmission
 from app.models.worksheet import Worksheet
 
@@ -87,4 +88,5 @@ __all__ = [
     "ExamSubmission",
     "ExamMonitoringAlert",
     "StudentFaceData",
+    "VideoLesson",
 ]

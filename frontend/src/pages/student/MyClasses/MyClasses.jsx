@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BookOpen, Users, Calendar, FileText, Video, ChevronRight, Download, Eye, PlayCircle, Star, Clock, Award, TrendingUp, CheckCircle2, Target, Bell, AlertCircle, HandRaisedIcon as HandRaised, PenLine, FileCheck } from 'lucide-react';
+import { BookOpen, Users, Calendar, FileText, Video, ChevronRight, Download, Eye, PlayCircle, Star, Clock, Award, TrendingUp, CheckCircle2, Target, Bell, AlertCircle, HandRaisedIcon as HandRaised, PenLine, FileCheck, X, FolderOpen } from 'lucide-react';
 import './MyClasses.css';
 import { apiV1 } from '../../../services/api';
 
@@ -11,6 +11,9 @@ export default function MyClasses() {
   const [materials, setMaterials] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const [playingVideo, setPlayingVideo] = useState(null);
+  const [viewingSlides, setViewingSlides] = useState(null);
+  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
 
   useEffect(() => {
     fetchMyClasses();
@@ -201,6 +204,14 @@ export default function MyClasses() {
               <span>Bài tập</span>
               <span className="tab-count-new">{exercises.length}</span>
             </button>
+            <button
+              className={`tab-btn-new ${activeTab === 'materials' ? 'active' : ''}`}
+              onClick={() => setActiveTab('materials')}
+            >
+              <FolderOpen size={18} />
+              <span>Tài liệu</span>
+              <span className="tab-count-new">{materials.length}</span>
+            </button>
           </div>
 
           {/* Content */}
@@ -328,14 +339,51 @@ export default function MyClasses() {
                         <div className="lesson-body-new">
                           <h3>{lesson.title}</h3>
                           <p>{lesson.content || 'Không có nội dung'}</p>
+                          
+                          {/* Video Lessons List */}
+                          {lesson.video_lessons && lesson.video_lessons.length > 0 && (
+                            <div className="lesson-videos-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '10px', marginTop: '15px' }}>
+                              {lesson.video_lessons.map(video => (
+                                <div key={video.id} 
+                                  className="video-card-item"
+                                  onClick={() => video.status === 'completed' && setPlayingVideo(video)}
+                                  style={{ 
+                                    cursor: video.status === 'completed' ? 'pointer' : 'default',
+                                    border: '1px solid #e5e7eb', borderRadius: '8px', overflow: 'hidden',
+                                    opacity: video.status === 'completed' ? 1 : 0.7,
+                                    backgroundColor: '#fff'
+                                  }}
+                                >
+                                  <div className="video-thumbnail" style={{ position: 'relative', paddingTop: '56.25%', background: '#f3f4f6' }}>
+                                    {video.thumbnail_url ? (
+                                      <img src={video.thumbnail_url} alt={video.title} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    ) : (
+                                      <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>
+                                        <Video size={32} />
+                                      </div>
+                                    )}
+                                    {video.status === 'completed' && (
+                                      <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: 'rgba(0,0,0,0.5)', borderRadius: '50%', padding: '8px', display: 'flex' }}>
+                                        <PlayCircle size={24} color="white" />
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="video-info" style={{ padding: '8px' }}>
+                                    <h4 style={{ margin: 0, fontSize: '13px', fontWeight: '600', color: '#374151', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={video.title}>{video.title}</h4>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px', fontSize: '11px', color: '#6b7280' }}>
+                                       <span>{video.duration_seconds ? `${Math.floor(video.duration_seconds / 60)}:${(video.duration_seconds % 60).toString().padStart(2, '0')}` : '--:--'}</span>
+                                       <span style={{ textTransform: 'capitalize' }}>{video.status === 'completed' ? 'Sẵn sàng' : video.status}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                         <div className="lesson-actions-new">
-                          <button className="lesson-btn-new primary">
-                            <PlayCircle size={16} />
-                            <span>Xem bài giảng</span>
-                          </button>
                           <button className="lesson-btn-new secondary">
                             <Download size={16} />
+                            <span>Tài liệu</span>
                           </button>
                         </div>
                       </div>
@@ -427,8 +475,242 @@ export default function MyClasses() {
                 )}
               </div>
             )}
+
+            {activeTab === 'materials' && (
+              <div className="materials-new">
+                <div className="section-header-new">
+                  <h2>Tài liệu học tập</h2>
+                  <p>Tài liệu tham khảo và bài đọc thêm</p>
+                </div>
+                {materials.length === 0 ? (
+                  <div className="empty-section-new">
+                    <FolderOpen size={64} strokeWidth={1} />
+                    <p>Chưa có tài liệu nào</p>
+                  </div>
+                ) : (
+                  <div className="materials-grid-new" style={{ display: 'grid', gap: '12px' }}>
+                    {materials.map((material) => (
+                      <div key={material.id} className="material-item-new" style={{
+                        display: 'flex', alignItems: 'center', gap: '15px', padding: '15px',
+                        background: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px'
+                      }}>
+                        <div className="material-icon" style={{
+                          width: '40px', height: '40px', background: '#eff6ff', borderRadius: '8px',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563eb'
+                        }}>
+                          <FileText size={20} />
+                        </div>
+                        <div className="material-info" style={{ flex: 1 }}>
+                          <h3 style={{ fontSize: '15px', fontWeight: '600', marginBottom: '4px', color: '#1f2937' }}>{material.title}</h3>
+                          <p style={{ fontSize: '13px', color: '#6b7280', margin: 0 }}>{material.description || 'Không có mô tả'}</p>
+                          <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>
+                            {new Date(material.created_at).toLocaleDateString('vi-VN')}
+                          </div>
+                        </div>
+                        {material.url && (
+                          <a 
+                            href={material.url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="material-action-btn"
+                            style={{
+                              padding: '8px 16px', background: '#f3f4f6', color: '#374151',
+                              borderRadius: '6px', textDecoration: 'none', fontSize: '13px', fontWeight: '500',
+                              display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s'
+                            }}
+                          >
+                            <Download size={16} />
+                            Tải về
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </>
+      )}
+
+      {/* Video Player Modal */}
+      {playingVideo && (
+        <div className="video-modal-overlay" style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.9)', zIndex: 1000,
+          display: 'flex', alignItems: 'center', justifyContent: 'center'
+        }} onClick={() => setPlayingVideo(null)}>
+          <div className="video-modal-content" style={{
+            width: '95%', maxWidth: '1200px', background: 'black',
+            borderRadius: '12px', overflow: 'hidden', position: 'relative',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{ padding: '15px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#1f2937', color: 'white' }}>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>{playingVideo.title}</h3>
+              <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                {playingVideo.ppt_url && (
+                  <a 
+                    href={playingVideo.ppt_url} 
+                    download
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      background: '#10b981', border: 'none', color: 'white', 
+                      padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', textDecoration: 'none',
+                      display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', fontWeight: '500'
+                    }}
+                  >
+                    <Download size={16} />
+                    Tải PPT
+                  </a>
+                )}
+                {playingVideo.slides_metadata && playingVideo.slides_metadata.length > 0 && (
+                  <button 
+                    onClick={() => {
+                      setViewingSlides(playingVideo);
+                      setPlayingVideo(null);
+                      setCurrentSlideIndex(0);
+                    }}
+                    style={{
+                      background: '#3b82f6', border: 'none', color: 'white', 
+                      padding: '6px 12px', borderRadius: '6px', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', fontWeight: '500'
+                    }}
+                  >
+                    <FileText size={16} />
+                    Xem Slide
+                  </button>
+                )}
+                <button onClick={() => setPlayingVideo(null)} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', padding: '4px', display: 'flex' }}>
+                  <X size={24} />
+                </button>
+              </div>
+            </div>
+            <div style={{ position: 'relative', paddingTop: '56.25%', background: '#000' }}>
+              <video 
+                src={playingVideo.video_url} 
+                controls 
+                autoPlay 
+                playsInline
+                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Slide Viewer Modal */}
+      {viewingSlides && (
+        <div className="slide-modal-overlay" style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.95)', zIndex: 1000,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
+        }} onClick={() => setViewingSlides(null)}>
+          
+          {/* Header */}
+          <div style={{ 
+            width: '100%', padding: '15px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
+            position: 'absolute', top: 0, left: 0, zIndex: 10, background: 'rgba(0,0,0,0.5)'
+          }} onClick={e => e.stopPropagation()}>
+            <h3 style={{ margin: 0, color: 'white', fontSize: '18px' }}>
+              {viewingSlides.title} - Slide {currentSlideIndex + 1}/{viewingSlides.slides_metadata.length}
+            </h3>
+            <div style={{ display: 'flex', gap: '15px' }}>
+              <button 
+                onClick={() => {
+                  setPlayingVideo(viewingSlides);
+                  setViewingSlides(null);
+                }}
+                style={{
+                  background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', 
+                  padding: '6px 12px', borderRadius: '6px', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: '6px'
+                }}
+              >
+                <Video size={16} />
+                Xem Video
+              </button>
+              <button onClick={() => setViewingSlides(null)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>
+                <X size={24} />
+              </button>
+            </div>
+          </div>
+
+          {/* Main Slide Image */}
+          <div style={{ 
+            flex: 1, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', 
+            padding: '60px 20px 20px', boxSizing: 'border-box', position: 'relative'
+          }} onClick={e => e.stopPropagation()}>
+            
+            {/* Prev Button */}
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                setCurrentSlideIndex(prev => Math.max(0, prev - 1));
+              }}
+              disabled={currentSlideIndex === 0}
+              style={{
+                position: 'absolute', left: '20px', top: '50%', transform: 'translateY(-50%)',
+                background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white',
+                width: '50px', height: '50px', borderRadius: '50%', cursor: currentSlideIndex === 0 ? 'default' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                opacity: currentSlideIndex === 0 ? 0.3 : 1, transition: 'all 0.2s'
+              }}
+            >
+              <ChevronRight size={32} style={{ transform: 'rotate(180deg)' }} />
+            </button>
+
+            <img 
+              src={viewingSlides.slides_metadata[currentSlideIndex]} 
+              alt={`Slide ${currentSlideIndex + 1}`}
+              style={{ 
+                maxWidth: '100%', maxHeight: '85vh', objectFit: 'contain', 
+                boxShadow: '0 0 20px rgba(0,0,0,0.5)', borderRadius: '4px'
+              }}
+            />
+
+            {/* Next Button */}
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                setCurrentSlideIndex(prev => Math.min(viewingSlides.slides_metadata.length - 1, prev + 1));
+              }}
+              disabled={currentSlideIndex === viewingSlides.slides_metadata.length - 1}
+              style={{
+                position: 'absolute', right: '20px', top: '50%', transform: 'translateY(-50%)',
+                background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white',
+                width: '50px', height: '50px', borderRadius: '50%', cursor: currentSlideIndex === viewingSlides.slides_metadata.length - 1 ? 'default' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                opacity: currentSlideIndex === viewingSlides.slides_metadata.length - 1 ? 0.3 : 1, transition: 'all 0.2s'
+              }}
+            >
+              <ChevronRight size={32} />
+            </button>
+          </div>
+
+          {/* Thumbnails Strip */}
+          <div style={{ 
+            height: '80px', width: '100%', background: 'rgba(0,0,0,0.8)', 
+            display: 'flex', gap: '10px', padding: '10px', overflowX: 'auto',
+            justifyContent: 'center'
+          }} onClick={e => e.stopPropagation()}>
+            {viewingSlides.slides_metadata.map((slide, idx) => (
+              <div 
+                key={idx}
+                onClick={() => setCurrentSlideIndex(idx)}
+                style={{
+                  height: '100%', aspectRatio: '16/9', cursor: 'pointer',
+                  border: idx === currentSlideIndex ? '2px solid #3b82f6' : '2px solid transparent',
+                  borderRadius: '4px', overflow: 'hidden', flexShrink: 0,
+                  opacity: idx === currentSlideIndex ? 1 : 0.6, transition: 'all 0.2s'
+                }}
+              >
+                <img src={slide} alt={`Thumb ${idx}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </div>
+            ))}
+          </div>
+
+        </div>
       )}
     </div>
   );

@@ -17,10 +17,11 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column(
-        'course_submissions',
-        sa.Column('time_spent', sa.Integer(), nullable=True)
-    )
+    # op.add_column(
+    #     'course_submissions',
+    #     sa.Column('time_spent', sa.Integer(), nullable=True)
+    # )
+    pass
 
 
 def downgrade() -> None:

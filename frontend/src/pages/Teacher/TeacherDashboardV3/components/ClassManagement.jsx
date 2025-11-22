@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Users, UserPlus, Upload, Download, Search, Trash2, Mail, User, CheckCircle, XCircle, FileText, Presentation, FolderOpen, Book } from 'lucide-react';
+import { Users, UserPlus, Upload, Download, Search, Trash2, Mail, User, CheckCircle, XCircle, FileText, Presentation, FolderOpen, Book, PlayCircle, Plus } from 'lucide-react';
 import { PresentationChartBarIcon } from '@heroicons/react/24/outline';
 import { apiV1 } from '../../../../services/api';
 import Toast from '../../../../components/Toast/Toast';
 import useToast from '../../../../hooks/useToast';
+import VideoLessonCreator from '../../VideoLessonCreator/VideoLessonCreator';
 import './ClassManagement.css';
 
 export default function ClassManagement() {
@@ -23,6 +24,18 @@ export default function ClassManagement() {
     type: 'file'
   });
   const { toast, showSuccess, showError, showWarning, hideToast } = useToast();
+  
+  // New state for Lessons and Tabs
+  const [activeTab, setActiveTab] = useState('students'); // 'students', 'lessons', 'materials'
+  const [lessons, setLessons] = useState([]);
+  const [showVideoCreator, setShowVideoCreator] = useState(false);
+  const [selectedLessonForVideo, setSelectedLessonForVideo] = useState(null);
+  
+  // Add Existing Video State
+  const [showAddVideoModal, setShowAddVideoModal] = useState(false);
+  const [availableVideos, setAvailableVideos] = useState([]);
+  const [selectedVideoToAdd, setSelectedVideoToAdd] = useState(null);
+
   // Import students state
   const [importFile, setImportFile] = useState(null);
   const [importing, setImporting] = useState(false);
@@ -41,9 +54,11 @@ export default function ClassManagement() {
   // Fetch students when class is selected
   useEffect(() => {
     if (selectedClass) {
-      fetchStudents(selectedClass.id);
+      if (activeTab === 'students') fetchStudents(selectedClass.id);
+      if (activeTab === 'lessons') fetchLessons(selectedClass.id);
+      if (activeTab === 'materials') fetchMaterials(selectedClass.id);
     }
-  }, [selectedClass]);
+  }, [selectedClass, activeTab]);
 
   const fetchClasses = async () => {
     setLoading(true);
@@ -53,6 +68,19 @@ export default function ClassManagement() {
     } catch (error) {
       console.error('Error fetching classes:', error);
       showError('Lỗi khi tải danh sách lớp học!');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchLessons = async (classId) => {
+    setLoading(true);
+    try {
+      const response = await apiV1.get(`/classes/${classId}/lessons`);
+      setLessons(response.data || []);
+    } catch (error) {
+      console.error('Error fetching lessons:', error);
+      showError('Lỗi khi tải danh sách bài học!');
     } finally {
       setLoading(false);
     }
@@ -128,6 +156,40 @@ export default function ClassManagement() {
     } catch (error) {
       console.error('Error fetching materials:', error);
       showError('Lỗi khi tải danh sách tài liệu!');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchAvailableVideos = async () => {
+    try {
+      const response = await apiV1.get('/video-lessons/');
+      // Filter videos that are not yet assigned to any lesson (optional, or just show all)
+      // For now, show all so they can re-assign if needed, or maybe filter by null lesson_id
+      // Let's show all for flexibility
+      setAvailableVideos(response.data || []);
+    } catch (error) {
+      console.error('Error fetching videos:', error);
+      showError('Lỗi khi tải danh sách video!');
+    }
+  };
+
+  const handleAddVideoToLesson = async () => {
+    if (!selectedVideoToAdd || !selectedLessonForVideo) return;
+
+    setLoading(true);
+    try {
+      await apiV1.put(`/video-lessons/${selectedVideoToAdd.id}`, {
+        lesson_id: selectedLessonForVideo.id
+      });
+      
+      showSuccess('Đã thêm video vào bài học!');
+      setShowAddVideoModal(false);
+      setSelectedVideoToAdd(null);
+      fetchLessons(selectedClass.id); // Refresh lessons to show new video
+    } catch (error) {
+      console.error('Error adding video to lesson:', error);
+      showError('Lỗi khi thêm video!');
     } finally {
       setLoading(false);
     }
@@ -935,6 +997,94 @@ export default function ClassManagement() {
     </div>
   );
 
+  const renderAddVideoModal = () => (
+    <div className="class-modal-overlay" onClick={() => setShowAddVideoModal(false)}>
+      <div className="class-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="class-modal-header">
+          <h2>Thêm Video có sẵn vào bài học</h2>
+          <button className="modal-close-btn" onClick={() => setShowAddVideoModal(false)}>×</button>
+        </div>
+        <div className="class-modal-body">
+          <p style={{ marginBottom: '15px', color: '#666' }}>
+            Chọn video từ thư viện để thêm vào bài: <strong>{selectedLessonForVideo?.title}</strong>
+          </p>
+          
+          {availableVideos.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '20px', color: '#999' }}>
+              Chưa có video nào trong thư viện.
+            </div>
+          ) : (
+            <div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid #eee', borderRadius: '8px' }}>
+              {availableVideos.map(video => (
+                <div 
+                  key={video.id}
+                  onClick={() => setSelectedVideoToAdd(video)}
+                  style={{
+                    padding: '10px',
+                    borderBottom: '1px solid #eee',
+                    cursor: 'pointer',
+                    background: selectedVideoToAdd?.id === video.id ? '#eff6ff' : 'white',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px'
+                  }}
+                >
+                  <div style={{ 
+                    width: '40px', height: '40px', background: '#eee', borderRadius: '4px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}>
+                    <PlayCircle size={20} color="#666" />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: '500', fontSize: '14px' }}>{video.title}</div>
+                    <div style={{ fontSize: '12px', color: '#888' }}>
+                      {new Date(video.created_at).toLocaleDateString('vi-VN')} • {video.status}
+                    </div>
+                  </div>
+                  {selectedVideoToAdd?.id === video.id && <CheckCircle size={18} color="#2563eb" />}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="class-modal-footer">
+          <button className="btn-cancel-class" onClick={() => setShowAddVideoModal(false)}>Hủy</button>
+          <button 
+            className="btn-add-class"
+            onClick={handleAddVideoToLesson}
+            disabled={!selectedVideoToAdd || loading}
+          >
+            {loading ? 'Đang thêm...' : 'Thêm Video'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderVideoCreatorModal = () => (
+    <div className="class-modal-overlay" onClick={() => setShowVideoCreator(false)}>
+      <div className="class-modal large-modal" onClick={(e) => e.stopPropagation()} style={{maxWidth: '1000px'}}>
+        <div className="class-modal-header">
+          <h2>
+            <PlayCircle size={20} className="inline-block mr-2" />
+            Tạo Video Bài Giảng - {selectedLessonForVideo?.title}
+          </h2>
+          <button className="modal-close-btn" onClick={() => setShowVideoCreator(false)}>×</button>
+        </div>
+        <div className="class-modal-body" style={{ maxHeight: '80vh', overflowY: 'auto' }}>
+          <VideoLessonCreator 
+            initialLessonId={selectedLessonForVideo?.id}
+            onSuccess={() => {
+              setShowVideoCreator(false);
+              fetchLessons(selectedClass.id);
+              showSuccess('Đã tạo video bài giảng thành công!');
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="class-management-container">
       {/* Header */}
@@ -996,91 +1146,213 @@ export default function ClassManagement() {
               <div className="panel-header">
                 <div className="panel-header-left">
                   <h2>{selectedClass.name}</h2>
-                  <span className="student-count-badge">{students.length} học sinh</span>
+                  <span className="student-count-badge">
+                    {activeTab === 'students' ? `${students.length} học sinh` : 
+                     activeTab === 'lessons' ? `${lessons.length} bài học` :
+                     `${materials.length} tài liệu`}
+                  </span>
                 </div>
                 <div className="panel-header-actions">
-                  <button className="btn-action-class primary" onClick={() => setShowAddModal(true)}>
-                    <UserPlus size={18} />
-                    Thêm học sinh
-                  </button>
-                  <button className="btn-action-class secondary" onClick={() => setShowImportModal(true)}>
-                    <Upload size={18} />
-                    Import Excel
-                  </button>
-                  <button className="btn-action-class secondary" onClick={() => {
-                    setShowMaterialsModal(true);
-                    fetchMaterials(selectedClass.id);
-                  }}>
-                    <FileText size={18} />
-                    Tài liệu lớp học
-                  </button>
+                  <div className="tab-group">
+                    <button 
+                      className={`tab-btn ${activeTab === 'students' ? 'active' : ''}`}
+                      onClick={() => setActiveTab('students')}
+                    >
+                      <Users size={16} /> Học sinh
+                    </button>
+                    <button 
+                      className={`tab-btn ${activeTab === 'lessons' ? 'active' : ''}`}
+                      onClick={() => setActiveTab('lessons')}
+                    >
+                      <Book size={16} /> Bài giảng
+                    </button>
+                    <button 
+                      className={`tab-btn ${activeTab === 'materials' ? 'active' : ''}`}
+                      onClick={() => setActiveTab('materials')}
+                    >
+                      <FolderOpen size={16} /> Tài liệu
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              {/* Search Bar */}
-              <div className="search-bar-class">
-                <Search size={20} className="search-icon" />
-                <input
-                  type="text"
-                  placeholder="Tìm kiếm học sinh theo tên hoặc email..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="search-input-class"
-                />
-              </div>
+              {/* Content based on Active Tab */}
+              {activeTab === 'students' && (
+                <>
+                  <div className="tab-actions-bar" style={{ padding: '15px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div className="search-bar-class" style={{ margin: 0, width: '300px' }}>
+                      <Search size={20} className="search-icon" />
+                      <input
+                        type="text"
+                        placeholder="Tìm kiếm học sinh..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="search-input-class"
+                      />
+                    </div>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <button className="btn-action-class primary" onClick={() => setShowAddModal(true)}>
+                        <UserPlus size={18} /> Thêm học sinh
+                      </button>
+                      <button className="btn-action-class secondary" onClick={() => setShowImportModal(true)}>
+                        <Upload size={18} /> Import Excel
+                      </button>
+                    </div>
+                  </div>
 
-              {/* Students Table */}
-              <div className="students-table">
-                {loading ? (
-                  <div style={{padding: '40px', textAlign: 'center', color: '#666'}}>
-          Đang tải danh sách học sinh...
-                  </div>
-                ) : filteredStudents.length === 0 ? (
-                  <div className="empty-search-state">
-                    <Search size={48} strokeWidth={1} />
-          <p>{searchTerm ? 'Không tìm thấy học sinh nào' : 'Chưa có học sinh trong lớp'}</p>
-                  </div>
-                ) : (
-                  filteredStudents.map((student) => (
-                    <div key={student.id} className="student-row">
-                      <div className="student-row-left">
-                        <div className="student-avatar">
-                          <User size={20} />
-                        </div>
-                        <div className="student-info">
-                          <div className="student-name">{student.name}</div>
-                          <div className="student-email">
-                            <Mail size={14} />
-                            {student.email}
+                  <div className="students-table">
+                    {loading ? (
+                      <div style={{padding: '40px', textAlign: 'center', color: '#666'}}>Đang tải...</div>
+                    ) : filteredStudents.length === 0 ? (
+                      <div className="empty-search-state">
+                        <Search size={48} strokeWidth={1} />
+                        <p>{searchTerm ? 'Không tìm thấy học sinh nào' : 'Chưa có học sinh trong lớp'}</p>
+                      </div>
+                    ) : (
+                      filteredStudents.map((student) => (
+                        <div key={student.id} className="student-row">
+                          <div className="student-row-left">
+                            <div className="student-avatar"><User size={20} /></div>
+                            <div className="student-info">
+                              <div className="student-name">{student.name}</div>
+                              <div className="student-email"><Mail size={14} />{student.email}</div>
+                            </div>
+                          </div>
+                          <div className="student-row-right">
+                            <div className={`student-status ${student.status}`}>
+                              {student.status === 'active' ? <><CheckCircle size={14} /><span>Đang học</span></> : <><XCircle size={14} /><span>Nghỉ học</span></>}
+                            </div>
+                            <button className="btn-remove-student" title="Xóa học sinh" onClick={() => handleRemoveStudent(student.id)}>
+                              <Trash2 size={16} />
+                            </button>
                           </div>
                         </div>
-                      </div>
-                      <div className="student-row-right">
-                        <div className={`student-status ${student.status}`}>
-                          {student.status === 'active' ? (
-                            <>
-                <CheckCircle size={14} />
-                <span>Đang học</span>
-                            </>
-                          ) : (
-                            <>
-                <XCircle size={14} />
-                <span>Nghỉ học</span>
-                            </>
+                      ))
+                    )}
+                  </div>
+                </>
+              )}
+
+              {activeTab === 'lessons' && (
+                <div className="lessons-panel" style={{ padding: '20px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '20px' }}>
+                    <button className="btn-action-class primary" onClick={() => {
+                      // TODO: Implement create lesson
+                      showWarning('Chức năng tạo bài học đang phát triển');
+                    }}>
+                      <Plus size={18} /> Tạo bài học mới
+                    </button>
+                  </div>
+                  
+                  {loading ? (
+                    <div style={{padding: '40px', textAlign: 'center', color: '#666'}}>Đang tải bài học...</div>
+                  ) : lessons.length === 0 ? (
+                    <div className="empty-state-class">
+                      <Book size={64} strokeWidth={1} />
+                      <p>Chưa có bài học nào</p>
+                    </div>
+                  ) : (
+                    <div className="lessons-list" style={{ display: 'grid', gap: '15px' }}>
+                      {lessons.map(lesson => (
+                        <div key={lesson.id} className="lesson-card" style={{
+                          background: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '20px'
+                        }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div>
+                              <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '5px' }}>{lesson.title}</h3>
+                              <p style={{ color: '#6b7280', fontSize: '14px' }}>{lesson.content || 'Chưa có nội dung'}</p>
+                            </div>
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                              <button 
+                                className="btn-action-class secondary"
+                                onClick={() => {
+                                  setSelectedLessonForVideo(lesson);
+                                  fetchAvailableVideos();
+                                  setShowAddVideoModal(true);
+                                }}
+                                title="Thêm video có sẵn"
+                              >
+                                <FolderOpen size={16} />
+                              </button>
+                              <button 
+                                className="btn-action-class secondary"
+                                onClick={() => {
+                                  setSelectedLessonForVideo(lesson);
+                                  setShowVideoCreator(true);
+                                }}
+                              >
+                                <PlayCircle size={16} /> Tạo Video AI
+                              </button>
+                            </div>
+                          </div>
+                          
+                          {/* Display attached video lessons */}
+                          {lesson.video_lessons && lesson.video_lessons.length > 0 && (
+                            <div style={{ marginTop: '15px', padding: '10px', background: '#f9fafb', borderRadius: '6px' }}>
+                              <h4 style={{ fontSize: '13px', fontWeight: '600', color: '#4b5563', marginBottom: '8px' }}>Video bài giảng:</h4>
+                              {lesson.video_lessons.map(video => (
+                                <div key={video.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px' }}>
+                                  <PlayCircle size={14} color="#2563eb" />
+                                  <span>{video.title}</span>
+                                  <span className={`status-badge ${video.status}`} style={{
+                                    fontSize: '10px', padding: '2px 6px', borderRadius: '4px',
+                                    background: video.status === 'completed' ? '#dcfce7' : '#f3f4f6',
+                                    color: video.status === 'completed' ? '#166534' : '#374151'
+                                  }}>
+                                    {video.status === 'completed' ? 'Hoàn thành' : 'Đang xử lý'}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
                           )}
                         </div>
-                        <button 
-                          className="btn-remove-student" 
-              title="Xóa học sinh"
-                          onClick={() => handleRemoveStudent(student.id)}
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
+                      ))}
                     </div>
-                  ))
-                )}
-              </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'materials' && (
+                <div className="materials-panel" style={{ padding: '20px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '20px' }}>
+                    <button className="btn-action-class primary" onClick={() => {
+                      setShowMaterialsModal(true);
+                      fetchMaterials(selectedClass.id);
+                    }}>
+                      <Upload size={18} /> Quản lý tài liệu
+                    </button>
+                  </div>
+                  {/* Reuse existing materials list logic or component */}
+                  <div className="materials-list">
+                    {materials.length === 0 ? (
+                      <div className="empty-state-class">
+                        <FolderOpen size={64} strokeWidth={1} />
+                        <p>Chưa có tài liệu nào</p>
+                      </div>
+                    ) : (
+                      <div style={{display: 'grid', gap: '12px'}}>
+                        {materials.map(material => (
+                          <div key={material.id} style={{
+                            display: 'flex', alignItems: 'center', gap: '15px', padding: '15px',
+                            background: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px'
+                          }}>
+                            {getFileIcon(material.type)}
+                            <div style={{flex: 1}}>
+                              <h4 style={{fontSize: '14px', fontWeight: '600'}}>{material.title}</h4>
+                              <p style={{fontSize: '13px', color: '#6b7280'}}>{material.description}</p>
+                            </div>
+                            {material.url && (
+                              <a href={material.url} target="_blank" rel="noopener noreferrer" className="btn-action-class secondary">
+                                <Download size={16} />
+                              </a>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>
@@ -1090,6 +1362,8 @@ export default function ClassManagement() {
       {showAddModal && renderAddStudentModal()}
       {showImportModal && renderImportModal()}
       {showMaterialsModal && renderMaterialsModal()}
+      {showVideoCreator && renderVideoCreatorModal()}
+      {showAddVideoModal && renderAddVideoModal()}
 
       {/* Info Box */}
       <div className="info-box-class">

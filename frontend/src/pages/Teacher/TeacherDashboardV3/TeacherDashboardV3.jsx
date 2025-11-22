@@ -26,7 +26,11 @@ import Worksheets from '../Worksheets/Worksheets';
 import WeeklyAssessments from '../WeeklyAssessments/WeeklyAssessments';
 import ErrorAnalysisExport from '../ErrorAnalysis/ErrorAnalysisExport';
 import ExamGradingPage from '../ExamGrading/ExamGradingPage';
+
+import VideoLessonList from '../VideoLessonCreator/VideoLessonList';
+
 import ExamMonitoring from './components/ExamMonitoring';
+
 import Navbar from '../../../components/Navbar/Navbar';
 import authService from '../../../services/authService';
 import './TeacherDashboardV3.css';
@@ -76,6 +80,8 @@ const TeacherDashboardV3 = ({ onLogout }) => {
         return <LessonPlans />;
       case 'worksheets':
         return <Worksheets />;
+      case 'video-lessons':
+        return <VideoLessonList />;
       case 'student-analytics':
         return <StudentAnalytics />;
       case 'support-groups':

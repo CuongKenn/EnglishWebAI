@@ -19,14 +19,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     antiword \
     pandoc \
+    libreoffice-core \
+    libreoffice-writer \
+    libreoffice-impress \
+    poppler-utils \
+    xvfb \
+    xauth \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements file
 COPY requirements.txt .
 
 # Install dependencies with cache mount for faster rebuilds
-RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install --timeout=1000 --retries=10 -r requirements.txt
+RUN pip install --no-cache -r requirements.txt
 
 # Copy application code
 COPY . .

@@ -48,6 +48,8 @@ class Settings(BaseSettings):
 
     # Redis Configuration
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://redis:6379/0")
+    REDIS_HOST: str = os.getenv("REDIS_HOST", "redis")
+    REDIS_PORT: int = int(os.getenv("REDIS_PORT", "6379"))
     REDIS_ENABLED: bool = os.getenv("REDIS_ENABLED", "True") == "True"
 
     class Config:

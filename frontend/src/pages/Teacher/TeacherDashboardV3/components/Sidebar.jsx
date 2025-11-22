@@ -54,6 +54,7 @@ const Sidebar = ({ currentPage, onNavigate }) => {
       items: [
         { id: 'lesson-plans', label: 'Tạo giáo án', icon: SparklesIcon },
         { id: 'worksheets', label: 'Tạo phiếu học tập', icon: SparklesIcon },
+        { id: 'video-lessons', label: 'Tạo Video PPT', icon: VideoCameraIcon },
         { id: 'student-analytics', label: 'Phân tích tiến độ', icon: ArrowTrendingUpIcon },
         { id: 'support-groups', label: 'Nhóm cần hỗ trợ', icon: UserGroupIcon }
       ]
