@@ -12,6 +12,8 @@ export default function MyClasses() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [playingVideo, setPlayingVideo] = useState(null);
+  const [viewingSlides, setViewingSlides] = useState(null);
+  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
 
   useEffect(() => {
     fetchMyClasses();
@@ -535,20 +537,40 @@ export default function MyClasses() {
       {playingVideo && (
         <div className="video-modal-overlay" style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.8)', zIndex: 1000,
+          backgroundColor: 'rgba(0, 0, 0, 0.9)', zIndex: 1000,
           display: 'flex', alignItems: 'center', justifyContent: 'center'
         }} onClick={() => setPlayingVideo(null)}>
           <div className="video-modal-content" style={{
-            width: '90%', maxWidth: '1000px', background: 'black',
-            borderRadius: '12px', overflow: 'hidden', position: 'relative'
+            width: '95%', maxWidth: '1200px', background: 'black',
+            borderRadius: '12px', overflow: 'hidden', position: 'relative',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
           }} onClick={e => e.stopPropagation()}>
-            <div style={{ padding: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#1f2937', color: 'white' }}>
-              <h3 style={{ margin: 0, fontSize: '16px' }}>{playingVideo.title}</h3>
-              <button onClick={() => setPlayingVideo(null)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>
-                <X size={24} />
-              </button>
+            <div style={{ padding: '15px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#1f2937', color: 'white' }}>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>{playingVideo.title}</h3>
+              <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                {playingVideo.slides_metadata && playingVideo.slides_metadata.length > 0 && (
+                  <button 
+                    onClick={() => {
+                      setViewingSlides(playingVideo);
+                      setPlayingVideo(null);
+                      setCurrentSlideIndex(0);
+                    }}
+                    style={{
+                      background: '#3b82f6', border: 'none', color: 'white', 
+                      padding: '6px 12px', borderRadius: '6px', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', fontWeight: '500'
+                    }}
+                  >
+                    <FileText size={16} />
+                    Xem Slide
+                  </button>
+                )}
+                <button onClick={() => setPlayingVideo(null)} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', padding: '4px', display: 'flex' }}>
+                  <X size={24} />
+                </button>
+              </div>
             </div>
-            <div style={{ position: 'relative', paddingTop: '56.25%' /* 16:9 Aspect Ratio */ }}>
+            <div style={{ position: 'relative', paddingTop: '56.25%', background: '#000' }}>
               <video 
                 src={playingVideo.video_url} 
                 controls 
@@ -557,6 +579,120 @@ export default function MyClasses() {
               />
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Slide Viewer Modal */}
+      {viewingSlides && (
+        <div className="slide-modal-overlay" style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.95)', zIndex: 1000,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
+        }} onClick={() => setViewingSlides(null)}>
+          
+          {/* Header */}
+          <div style={{ 
+            width: '100%', padding: '15px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
+            position: 'absolute', top: 0, left: 0, zIndex: 10, background: 'rgba(0,0,0,0.5)'
+          }} onClick={e => e.stopPropagation()}>
+            <h3 style={{ margin: 0, color: 'white', fontSize: '18px' }}>
+              {viewingSlides.title} - Slide {currentSlideIndex + 1}/{viewingSlides.slides_metadata.length}
+            </h3>
+            <div style={{ display: 'flex', gap: '15px' }}>
+              <button 
+                onClick={() => {
+                  setPlayingVideo(viewingSlides);
+                  setViewingSlides(null);
+                }}
+                style={{
+                  background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', 
+                  padding: '6px 12px', borderRadius: '6px', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: '6px'
+                }}
+              >
+                <Video size={16} />
+                Xem Video
+              </button>
+              <button onClick={() => setViewingSlides(null)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>
+                <X size={24} />
+              </button>
+            </div>
+          </div>
+
+          {/* Main Slide Image */}
+          <div style={{ 
+            flex: 1, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', 
+            padding: '60px 20px 20px', boxSizing: 'border-box', position: 'relative'
+          }} onClick={e => e.stopPropagation()}>
+            
+            {/* Prev Button */}
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                setCurrentSlideIndex(prev => Math.max(0, prev - 1));
+              }}
+              disabled={currentSlideIndex === 0}
+              style={{
+                position: 'absolute', left: '20px', top: '50%', transform: 'translateY(-50%)',
+                background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white',
+                width: '50px', height: '50px', borderRadius: '50%', cursor: currentSlideIndex === 0 ? 'default' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                opacity: currentSlideIndex === 0 ? 0.3 : 1, transition: 'all 0.2s'
+              }}
+            >
+              <ChevronRight size={32} style={{ transform: 'rotate(180deg)' }} />
+            </button>
+
+            <img 
+              src={viewingSlides.slides_metadata[currentSlideIndex]} 
+              alt={`Slide ${currentSlideIndex + 1}`}
+              style={{ 
+                maxWidth: '100%', maxHeight: '85vh', objectFit: 'contain', 
+                boxShadow: '0 0 20px rgba(0,0,0,0.5)', borderRadius: '4px'
+              }}
+            />
+
+            {/* Next Button */}
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                setCurrentSlideIndex(prev => Math.min(viewingSlides.slides_metadata.length - 1, prev + 1));
+              }}
+              disabled={currentSlideIndex === viewingSlides.slides_metadata.length - 1}
+              style={{
+                position: 'absolute', right: '20px', top: '50%', transform: 'translateY(-50%)',
+                background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white',
+                width: '50px', height: '50px', borderRadius: '50%', cursor: currentSlideIndex === viewingSlides.slides_metadata.length - 1 ? 'default' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                opacity: currentSlideIndex === viewingSlides.slides_metadata.length - 1 ? 0.3 : 1, transition: 'all 0.2s'
+              }}
+            >
+              <ChevronRight size={32} />
+            </button>
+          </div>
+
+          {/* Thumbnails Strip */}
+          <div style={{ 
+            height: '80px', width: '100%', background: 'rgba(0,0,0,0.8)', 
+            display: 'flex', gap: '10px', padding: '10px', overflowX: 'auto',
+            justifyContent: 'center'
+          }} onClick={e => e.stopPropagation()}>
+            {viewingSlides.slides_metadata.map((slide, idx) => (
+              <div 
+                key={idx}
+                onClick={() => setCurrentSlideIndex(idx)}
+                style={{
+                  height: '100%', aspectRatio: '16/9', cursor: 'pointer',
+                  border: idx === currentSlideIndex ? '2px solid #3b82f6' : '2px solid transparent',
+                  borderRadius: '4px', overflow: 'hidden', flexShrink: 0,
+                  opacity: idx === currentSlideIndex ? 1 : 0.6, transition: 'all 0.2s'
+                }}
+              >
+                <img src={slide} alt={`Thumb ${idx}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </div>
+            ))}
+          </div>
+
         </div>
       )}
     </div>

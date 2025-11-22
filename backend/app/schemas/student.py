@@ -115,6 +115,7 @@ class VideoLessonResponse(BaseModel):
     description: str | None = None
     video_url: str | None = None
     thumbnail_url: str | None = None
+    slides_metadata: list[str] | None = None
     duration_seconds: int | None = None
     status: str
     progress: int = 0

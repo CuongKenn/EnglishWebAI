@@ -65,6 +65,14 @@ def process_ppt_to_video(
         logger.info(f"[Task {self.request.id}] Extracting slides from {ppt_path}")
         slides_data = ppt_video_service.extract_slides(ppt_path, str(slides_dir))
 
+        # Store slide URLs
+        slide_urls = []
+        for slide in slides_data:
+            filename = Path(slide['image_path']).name
+            url = f"/media/video_lessons/{video_lesson_id}/slides/{filename}"
+            slide_urls.append(url)
+
+        video_lesson.slides_metadata = slide_urls
         video_lesson.slides_count = len(slides_data)
         video_lesson.progress = 5
         db.commit()

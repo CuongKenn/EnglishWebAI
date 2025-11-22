@@ -4,7 +4,7 @@ Stores generated video lessons from PowerPoint
 """
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -28,6 +28,7 @@ class VideoLesson(Base):
     ppt_file_path = Column(String(500), nullable=True)  # Original PPT
     video_url = Column(String(500), nullable=True)  # Generated video
     thumbnail_url = Column(String(500), nullable=True)  # Video thumbnail
+    slides_metadata = Column(JSON, nullable=True)  # List of slide image URLs
 
     # Metadata
     slides_count = Column(Integer, nullable=True)

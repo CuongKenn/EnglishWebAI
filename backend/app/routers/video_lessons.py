@@ -31,6 +31,7 @@ class VideoLessonResponse(BaseModel):
     status: str  # pending, processing, completed, failed
     progress: int | None = 0
     slides_count: int | None
+    slides_metadata: list[str] | None = None
     duration_seconds: int | None
     voice_type: str | None
     language: str | None
