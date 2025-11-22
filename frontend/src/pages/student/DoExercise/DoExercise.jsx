@@ -9,6 +9,7 @@ import { apiV1 } from '../../../services/api';
 import Toast from '../../../components/Toast/Toast';
 import useToast from '../../../hooks/useToast';
 import FaceVerificationGate from '../../../components/FaceVerification/FaceVerificationGate';
+import ContinuousFaceMonitor from '../../../components/FaceVerification/ContinuousFaceMonitor';
 
 const normalizeMatchingPairs = (question) => {
   if (!question || question.type !== 'matching') return [];
@@ -56,6 +57,8 @@ export default function DoExercise() {
   const [fullscreenWarningCount, setFullscreenWarningCount] = useState(0);
   const [showFaceVerification, setShowFaceVerification] = useState(false);
   const [faceVerified, setFaceVerified] = useState(false);
+  const [continuousMonitoringEnabled, setContinuousMonitoringEnabled] = useState(false);
+  const [faceMonitoringWarnings, setFaceMonitoringWarnings] = useState([]);
   const isFullscreenRef = useRef(false); // Use ref to avoid re-render loops
   const viewModeRef = useRef('exercise');
   const showStartScreenRef = useRef(true);
@@ -239,6 +242,10 @@ export default function DoExercise() {
     const success = await enterFullscreen();
     if (success) {
       setShowStartScreen(false);
+      // Enable continuous monitoring for midterm/final exams
+      if (exercise && (exercise.type === 'midterm' || exercise.type === 'final')) {
+        setContinuousMonitoringEnabled(true);
+      }
       // Start timer if needed
       if (exercise?.duration && timeRemaining === null) {
         setTimeRemaining(exercise.duration * 60);
@@ -256,6 +263,10 @@ export default function DoExercise() {
       const success = await enterFullscreen();
       if (success) {
         setShowStartScreen(false);
+        // Enable continuous monitoring for midterm/final exams
+        if (exercise && (exercise.type === 'midterm' || exercise.type === 'final')) {
+          setContinuousMonitoringEnabled(true);
+        }
         // Start timer if needed
         if (exercise?.duration && timeRemaining === null) {
           setTimeRemaining(exercise.duration * 60);
@@ -274,6 +285,34 @@ export default function DoExercise() {
     setTimeout(() => {
       navigate('/exercise-hub');
     }, 3000);
+  };
+
+  // Handle continuous face monitoring warnings
+  const handleFaceMonitoringWarning = (warning) => {
+    console.warn('Face monitoring warning:', warning);
+    setFaceMonitoringWarnings(prev => [...prev, { ...warning, timestamp: new Date() }]);
+    showWarning(warning.message || 'Cảnh báo: Phát hiện vấn đề với khuôn mặt. Vui lòng đảm bảo bạn đang ngồi trước camera.');
+  };
+
+  // Handle continuous face monitoring alerts
+  const handleFaceMonitoringAlert = (alert) => {
+    console.error('Face monitoring alert:', alert);
+    setFaceMonitoringWarnings(prev => [...prev, { ...alert, timestamp: new Date(), isAlert: true }]);
+    showError(alert.alert || alert.message || 'CẢNH BÁO: Phát hiện hành vi bất thường! Có thể có người khác đang làm bài thay bạn.');
+    
+    // If too many alerts, consider auto-submitting or blocking
+    if (alert.consecutiveFailures >= 5) {
+      showError('Quá nhiều cảnh báo. Hệ thống sẽ tự động nộp bài để bảo vệ tính trung thực.');
+      setTimeout(() => {
+        handleSubmit();
+      }, 5000);
+    }
+  };
+
+  // Handle face monitoring status changes
+  const handleFaceMonitoringStatusChange = (status) => {
+    console.log('Face monitoring status:', status);
+    // You can add additional logic here if needed
   };
   
   const exitFullscreen = () => {
@@ -2360,6 +2399,18 @@ export default function DoExercise() {
           onVerificationSuccess={handleFaceVerificationSuccess}
           onVerificationFailed={handleFaceVerificationFailed}
           exerciseId={exerciseId}
+        />
+      )}
+      
+      {/* Continuous Face Monitoring - Only for midterm/final exams during exercise */}
+      {viewMode === 'exercise' && !showStartScreen && continuousMonitoringEnabled && 
+       (exercise?.type === 'midterm' || exercise?.type === 'final') && (
+        <ContinuousFaceMonitor
+          enabled={continuousMonitoringEnabled}
+          checkInterval={5000} // Check every 5 seconds
+          onWarning={handleFaceMonitoringWarning}
+          onAlert={handleFaceMonitoringAlert}
+          onStatusChange={handleFaceMonitoringStatusChange}
         />
       )}
       

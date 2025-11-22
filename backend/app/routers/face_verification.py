@@ -46,6 +46,25 @@ class VerifyFaceResponse(BaseModel):
     confidence: str | None = None
 
 
+class ContinuousFaceCheckRequest(BaseModel):
+    """Request body for continuous face monitoring"""
+    image: str  # base64 encoded image
+    exercise_id: int | None = None  # For logging purposes
+
+
+class ContinuousFaceCheckResponse(BaseModel):
+    """Response for continuous face monitoring"""
+    success: bool
+    verified: bool
+    face_detected: bool
+    face_count: int
+    similarity: float | None = None
+    confidence: str | None = None
+    warning: str | None = None
+    alert: str | None = None
+    message: str | None = None
+
+
 @router.post("/enroll-face", response_model=EnrollFaceResponse)
 async def enroll_student_face(
     request: EnrollFaceRequest,
@@ -231,3 +250,56 @@ async def remove_face_enrollment(
         "success": True,
         "message": "Face enrollment removed successfully"
     }
+
+
+@router.post("/continuous-check", response_model=ContinuousFaceCheckResponse)
+async def continuous_face_check(
+    request: ContinuousFaceCheckRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Continuous face verification during exam
+    This endpoint is called periodically to verify the student's identity
+    while they are taking the exam
+    """
+    # Only students can use continuous check
+    if current_user.role != UserRole.USER:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only students can use continuous face check"
+        )
+
+    # Get student's enrolled face data
+    face_data = db.query(StudentFaceData).filter(
+        StudentFaceData.user_id == current_user.id,
+        StudentFaceData.is_active.is_(True)
+    ).first()
+
+    if not face_data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No face enrolled. Please enroll your face first in your profile settings."
+        )
+
+    # Get face recognition service
+    face_service = get_face_recognition_service()
+
+    # Perform continuous check
+    result = face_service.continuous_face_check(
+        base64_image=request.image,
+        stored_embedding=face_data.embedding,
+        threshold=0.6  # 60% similarity threshold
+    )
+
+    return ContinuousFaceCheckResponse(
+        success=result["success"],
+        verified=result.get("verified", False),
+        face_detected=result.get("face_detected", False),
+        face_count=result.get("face_count", 0),
+        similarity=result.get("similarity"),
+        confidence=result.get("confidence"),
+        warning=result.get("warning"),
+        alert=result.get("alert"),
+        message=result.get("message")
+    )

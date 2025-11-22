@@ -1,6 +1,7 @@
 """
 Face Recognition Service for Exam Verification
-Uses CenterFace for detection and CurricularFace for recognition
+Uses RetinaFace for detection and CurricularFace for recognition
+Supports continuous face monitoring during exams
 """
 
 import base64
@@ -25,8 +26,10 @@ class FaceRecognitionService:
     def __init__(self):
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.detection_model = None
+        self.retinaface_model = None
         self.recognition_model = None
         self.initialized = False
+        self.use_retinaface = True  # Use RetinaFace by default for better accuracy
 
     def initialize_models(self):
         """Lazy load models only when needed"""
@@ -39,28 +42,45 @@ class FaceRecognitionService:
             if str(app_path) not in sys.path:
                 sys.path.insert(0, str(app_path))
 
-            from ml_models.CenterFace.models.centerface import CenterFace
-            from ml_models.CurricularFace.models.seesawfacenet import SeesawFaceNet
+            # Try to load RetinaFace first (preferred for continuous monitoring)
+            # RetinaFace will be loaded lazily when needed, not here
+            # This allows the system to work even if RetinaFace is not installed
+            if self.use_retinaface:
+                try:
+                    # Just test if RetinaFace can be imported
+                    import retinaface
+                    print("✓ RetinaFace package available")
+                    # Don't load model here, load it lazily in detect_faces
+                except ImportError:
+                    print("⚠ RetinaFace package not available, falling back to CenterFace")
+                    self.use_retinaface = False
+                except Exception as e:
+                    print(f"⚠ Error checking RetinaFace: {e}, falling back to CenterFace")
+                    self.use_retinaface = False
 
-            # Setup CenterFace transforms
-            self.centerface_transforms = T.Compose([
-                T.ToTensor(),
-                T.Normalize(mean=[0.408, 0.447, 0.47], std=[0.289, 0.274, 0.278])
-            ])
+            # Fallback to CenterFace if RetinaFace not available
+            if not self.use_retinaface:
+                from ml_models.CenterFace.models.centerface import CenterFace
+                # Setup CenterFace transforms
+                self.centerface_transforms = T.Compose([
+                    T.ToTensor(),
+                    T.Normalize(mean=[0.408, 0.447, 0.47], std=[0.289, 0.274, 0.278])
+                ])
 
-            # Load CenterFace for detection
-            centerface_weights = ML_MODELS_PATH / "CenterFace" / "checkpoints" / "500.pth"
-            if centerface_weights.exists():
-                self.detection_model = CenterFace()
-                checkpoint = torch.load(str(centerface_weights), map_location=self.device)
-                self.detection_model.load_state_dict(checkpoint)
-                self.detection_model.to(self.device)
-                self.detection_model.eval()
-                print(f"✓ CenterFace loaded from {centerface_weights}")
-            else:
-                print("⚠ CenterFace model not found")
+                # Load CenterFace for detection
+                centerface_weights = ML_MODELS_PATH / "CenterFace" / "checkpoints" / "500.pth"
+                if centerface_weights.exists():
+                    self.detection_model = CenterFace()
+                    checkpoint = torch.load(str(centerface_weights), map_location=self.device)
+                    self.detection_model.load_state_dict(checkpoint)
+                    self.detection_model.to(self.device)
+                    self.detection_model.eval()
+                    print(f"✓ CenterFace loaded from {centerface_weights}")
+                else:
+                    print("⚠ CenterFace model not found")
 
             # Load CurricularFace for recognition
+            from ml_models.CurricularFace.models.seesawfacenet import SeesawFaceNet
             recognition_weights = ML_MODELS_PATH / "CurricularFace" / "checkpoints" / "25.pth"
             if recognition_weights.exists():
                 self.recognition_model = SeesawFaceNet(embedding_size=512)
@@ -89,6 +109,8 @@ class FaceRecognitionService:
 
         except Exception as e:
             print(f"✗ Error initializing face recognition models: {e}")
+            import traceback
+            traceback.print_exc()
             return False
 
     def decode_base64_image(self, base64_str: str) -> np.ndarray | None:
@@ -125,12 +147,71 @@ class FaceRecognitionService:
 
     def detect_faces(self, image: np.ndarray, threshold: float = 0.5) -> list[tuple[int, int, int, int]]:
         """
-        Detect faces in image using CenterFace
+        Detect faces in image using RetinaFace (preferred) or CenterFace (fallback)
         Returns list of bounding boxes [(x1, y1, x2, y2), ...]
         """
         if not self.initialized:
             self.initialize_models()
 
+        try:
+            # Use RetinaFace if available (better accuracy for continuous monitoring)
+            if self.use_retinaface and self.retinaface_model is not None:
+                return self._detect_faces_retinaface(image, threshold)
+            elif self.detection_model is not None:
+                return self._detect_faces_centerface(image, threshold)
+            else:
+                print("⚠ No face detection model available")
+                return []
+        except Exception as e:
+            print(f"Error detecting faces: {e}")
+            import traceback
+            traceback.print_exc()
+            return []
+
+    def _detect_faces_retinaface(self, image: np.ndarray, threshold: float = 0.5) -> list[tuple[int, int, int, int]]:
+        """Detect faces using RetinaFace"""
+        try:
+            # Try different import methods for RetinaFace
+            try:
+                from retinaface import RetinaFace
+                # Method 1: Using retinaface package
+                rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                faces = RetinaFace.detect_faces(rgb_image, threshold=threshold)
+                
+                boxes = []
+                if isinstance(faces, dict):
+                    for face_key, face_data in faces.items():
+                        if 'facial_area' in face_data:
+                            facial_area = face_data['facial_area']
+                            x1, y1, x2, y2 = facial_area
+                            boxes.append((int(x1), int(y1), int(x2), int(y2)))
+                return boxes
+            except (ImportError, AttributeError):
+                # Method 2: Try alternative import
+                try:
+                    from retinaface.detector import RetinaFaceDetector
+                    detector = RetinaFaceDetector()
+                    rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                    detections = detector.detect(rgb_image, threshold=threshold)
+                    
+                    boxes = []
+                    for det in detections:
+                        if len(det) >= 4:
+                            x1, y1, x2, y2 = int(det[0]), int(det[1]), int(det[2]), int(det[3])
+                            boxes.append((x1, y1, x2, y2))
+                    return boxes
+                except Exception:
+                    # If all methods fail, return empty and let it fall back to CenterFace
+                    print("⚠ RetinaFace detection methods failed, will use CenterFace")
+                    return []
+        except Exception as e:
+            print(f"Error in RetinaFace detection: {e}")
+            import traceback
+            traceback.print_exc()
+            return []
+
+    def _detect_faces_centerface(self, image: np.ndarray, threshold: float = 0.5) -> list[tuple[int, int, int, int]]:
+        """Detect faces using CenterFace (fallback)"""
         if self.detection_model is None:
             return []
 
@@ -177,7 +258,7 @@ class FaceRecognitionService:
             return boxes
 
         except Exception as e:
-            print(f"Error detecting faces: {e}")
+            print(f"Error in CenterFace detection: {e}")
             import traceback
             traceback.print_exc()
             return []
@@ -295,6 +376,85 @@ class FaceRecognitionService:
             "similarity": similarity,
             "threshold": threshold,
             "confidence": f"{similarity * 100:.1f}%"
+        }
+
+    def continuous_face_check(self, base64_image: str, stored_embedding: list[float], threshold: float = 0.6) -> dict:
+        """
+        Continuous face verification during exam
+        Returns detailed result including face count, verification status, and warnings
+        """
+        image = self.decode_base64_image(base64_image)
+        if image is None:
+            return {
+                "success": False,
+                "verified": False,
+                "face_detected": False,
+                "face_count": 0,
+                "error": "Invalid image",
+                "warning": "Không thể đọc hình ảnh từ camera"
+            }
+
+        faces = self.detect_faces(image, threshold=0.5)
+
+        # Check face count
+        face_count = len(faces)
+        if face_count == 0:
+            return {
+                "success": True,
+                "verified": False,
+                "face_detected": False,
+                "face_count": 0,
+                "error": "No face detected",
+                "warning": "Không phát hiện khuôn mặt. Vui lòng đảm bảo camera đang bật và bạn đang ngồi trước camera."
+            }
+
+        if face_count > 1:
+            return {
+                "success": True,
+                "verified": False,
+                "face_detected": True,
+                "face_count": face_count,
+                "error": "Multiple faces detected",
+                "warning": f"Phát hiện {face_count} khuôn mặt trong khung hình. Vui lòng đảm bảo chỉ có bạn trong khung hình."
+            }
+
+        # Extract embedding from detected face
+        current_embedding = self.extract_face_embedding(image, faces[0])
+
+        if current_embedding is None:
+            return {
+                "success": True,
+                "verified": False,
+                "face_detected": True,
+                "face_count": 1,
+                "error": "Failed to extract face features",
+                "warning": "Không thể trích xuất đặc trưng khuôn mặt. Vui lòng đảm bảo ánh sáng đủ và khuôn mặt rõ ràng."
+            }
+
+        # Compare with stored embedding
+        stored_emb = np.array(stored_embedding, dtype=np.float32)
+        is_match, similarity = self.compare_embeddings(current_embedding, stored_emb, threshold)
+
+        if not is_match:
+            return {
+                "success": True,
+                "verified": False,
+                "face_detected": True,
+                "face_count": 1,
+                "similarity": similarity,
+                "confidence": f"{similarity * 100:.1f}%",
+                "warning": f"Khuôn mặt không khớp với người đăng ký. Độ tương đồng: {similarity * 100:.1f}%",
+                "alert": "CẢNH BÁO: Có thể có người khác đang làm bài thay bạn!"
+            }
+
+        return {
+            "success": True,
+            "verified": True,
+            "face_detected": True,
+            "face_count": 1,
+            "similarity": similarity,
+            "confidence": f"{similarity * 100:.1f}%",
+            "message": "Xác minh thành công"
         }
 
 
