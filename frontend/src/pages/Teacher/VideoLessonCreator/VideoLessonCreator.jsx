@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Upload, Video, Loader2, Settings, FileText, Volume2, BookOpen, School } from 'lucide-react';
 import { videoLessonAPI } from '../../../api/videoLessons';
 import { classesAPI, lessonsAPI } from '../../../services/api';
+import Toast from '../../../components/Toast/Toast';
+import useToast from '../../../hooks/useToast';
 
 /**
  * VideoLessonCreator Component
@@ -12,6 +14,8 @@ const VideoLessonCreator = ({ initialLessonId, onSuccess }) => {
   const [title, setTitle] = useState('');
   const [lessonId, setLessonId] = useState(initialLessonId || '');
   
+  const { toast, showSuccess, hideToast } = useToast();
+
   // Class selection state
   const [classes, setClasses] = useState([]);
   const [selectedClassId, setSelectedClassId] = useState('');
@@ -195,7 +199,7 @@ const VideoLessonCreator = ({ initialLessonId, onSuccess }) => {
               setTitle('');
               setLessonId('');
               setProgress(0);
-              alert(`Video đã tạo thành công! ID: ${response.id}`);
+              showSuccess(`Video đã tạo thành công!`);
               if (onSuccess) onSuccess(response);
             }, 1000);
           } else if (videoStatus.status === 'failed') {
@@ -223,6 +227,14 @@ const VideoLessonCreator = ({ initialLessonId, onSuccess }) => {
 
   return (
     <div className="max-w-4xl mx-auto p-6">
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          duration={toast.duration}
+          onClose={hideToast}
+        />
+      )}
       <div className="bg-white rounded-lg shadow-lg p-8">
         {/* Header */}
         <div className="flex items-center mb-6">
