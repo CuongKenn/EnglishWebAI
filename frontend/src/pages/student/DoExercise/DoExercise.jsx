@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   Clock, Save, Send, Volume2, Mic, Play, Pause, RotateCcw,
-  Check, X, FileText, AlertCircle, Zap, BookOpen, Headphones, PenLine, CheckCircle, Target
+  Check, X, FileText, AlertCircle, Zap, BookOpen, Headphones, PenLine, CheckCircle, Target, Lock, Siren
 } from 'lucide-react';
 import './DoExercise.css';
 import { apiV1 } from '../../../services/api';
@@ -63,6 +63,16 @@ export default function DoExercise() {
   const viewModeRef = useRef('exercise');
   const showStartScreenRef = useRef(true);
 
+  const [fullscreenInterrupted, setFullscreenInterrupted] = useState(false);
+  const isFullscreenRef = useRef(false); // Use ref to avoid re-render loops
+  const viewModeRef = useRef('exercise');
+  const showStartScreenRef = useRef(true);
+  const lastFocusLossRef = useRef(0);
+  const fullscreenInterruptedRef = useRef(false);
+  const lastEscAttemptRef = useRef(0);
+  const allowFullscreenExitRef = useRef(false);
+  const fullscreenRecoveryTimeoutRef = useRef(null);
+  
   const [exercise, setExercise] = useState(null);
   const [answers, setAnswers] = useState({});
   const [timeRemaining, setTimeRemaining] = useState(null);
@@ -319,7 +329,17 @@ export default function DoExercise() {
 
   // Fullscreen functions
   const enterFullscreen = async () => {
+  useEffect(() => {
+    fullscreenInterruptedRef.current = fullscreenInterrupted;
+  }, [fullscreenInterrupted]);
+
+  const enterFullscreen = useCallback(async () => {
     try {
+      if (fullscreenRecoveryTimeoutRef.current) {
+        clearTimeout(fullscreenRecoveryTimeoutRef.current);
+        fullscreenRecoveryTimeoutRef.current = null;
+      }
+
       const elem = document.documentElement;
       if (elem.requestFullscreen) {
         await elem.requestFullscreen();
@@ -329,14 +349,240 @@ export default function DoExercise() {
         await elem.msRequestFullscreen();
       }
       setIsFullscreen(true);
+      isFullscreenRef.current = true;
+      setFullscreenInterrupted(false);
+      fullscreenInterruptedRef.current = false;
+      allowFullscreenExitRef.current = false;
 
       return true;
     } catch {
       // Only show error on initial attempt, not on re-entry
       if (showStartScreenRef.current) {
         showError('Không thể vào chế độ toàn màn hình. Vui lòng thử lại hoặc cho phép quyền fullscreen trong trình duyệt.');
+      } else {
+        setFullscreenInterrupted(true);
+        fullscreenInterruptedRef.current = true;
       }
       return false;
+    }
+  }, [showError]);
+
+  // Track fullscreen changes globally to detect manual exits (ESC, browser controls)
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      const fullscreenElement =
+        document.fullscreenElement ||
+        document.webkitFullscreenElement ||
+        document.mozFullScreenElement ||
+        document.msFullscreenElement;
+
+      if (fullscreenElement) {
+        isFullscreenRef.current = true;
+        allowFullscreenExitRef.current = false;
+        if (!isFullscreen) {
+          setIsFullscreen(true);
+        }
+
+        if (fullscreenInterruptedRef.current) {
+          fullscreenInterruptedRef.current = false;
+          setFullscreenInterrupted(false);
+        }
+        return;
+      }
+
+      // Update refs/state when leaving fullscreen
+      isFullscreenRef.current = false;
+      setIsFullscreen(false);
+
+      if (allowFullscreenExitRef.current) {
+        allowFullscreenExitRef.current = false;
+        return;
+      }
+
+      if (viewModeRef.current !== 'exercise' || showStartScreenRef.current) {
+        return;
+      }
+
+      if (!fullscreenInterruptedRef.current) {
+        fullscreenInterruptedRef.current = true;
+        setFullscreenInterrupted(true);
+        setFullscreenWarningCount(prev => prev + 1);
+
+        const recentEsc = Date.now() - lastEscAttemptRef.current < 1200;
+        const reason = recentEsc ? 'nhấn phím Escape' : 'thoát chế độ toàn màn hình';
+        showWarning(`Hệ thống phát hiện bạn ${reason}. Vui lòng bật lại fullscreen để tiếp tục làm bài.`);
+
+        if (fullscreenRecoveryTimeoutRef.current) {
+          clearTimeout(fullscreenRecoveryTimeoutRef.current);
+        }
+
+        fullscreenRecoveryTimeoutRef.current = setTimeout(async () => {
+          fullscreenRecoveryTimeoutRef.current = null;
+
+          if (
+            viewModeRef.current !== 'exercise' ||
+            showStartScreenRef.current ||
+            allowFullscreenExitRef.current
+          ) {
+            return;
+          }
+
+          const isStillFullscreen = !!(
+            document.fullscreenElement ||
+            document.webkitFullscreenElement ||
+            document.mozFullScreenElement ||
+            document.msFullscreenElement
+          );
+
+          if (isStillFullscreen) {
+            return;
+          }
+
+          const success = await enterFullscreen();
+          if (!success) {
+            setFullscreenInterrupted(true);
+            fullscreenInterruptedRef.current = true;
+          }
+        }, 350);
+      }
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+    return () => {
+      if (fullscreenRecoveryTimeoutRef.current) {
+        clearTimeout(fullscreenRecoveryTimeoutRef.current);
+        fullscreenRecoveryTimeoutRef.current = null;
+      }
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+    };
+  }, [isFullscreen, showWarning, enterFullscreen]);
+
+  // Separate effect for fullscreen management keys based on viewMode
+  useEffect(() => {
+    if (requestedViewMode === 'result') {
+      exitFullscreen();
+    }
+
+    if (viewMode !== 'exercise' || showStartScreen) {
+      return;
+    }
+
+    const handleKeydown = (e) => {
+      if (viewModeRef.current !== 'exercise' || showStartScreenRef.current) {
+        return;
+      }
+
+      const key = e.key || '';
+      const keyLower = key.toLowerCase();
+      const isEscape = key === 'Escape' || e.keyCode === 27;
+      const isFullscreenActive = !!(
+        document.fullscreenElement ||
+        document.webkitFullscreenElement ||
+        document.mozFullScreenElement ||
+        document.msFullscreenElement
+      );
+
+      if (isEscape) {
+        lastEscAttemptRef.current = Date.now();
+        if (isFullscreenActive) {
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+        }
+        return;
+      }
+
+      if (key === 'F11' || e.keyCode === 122) {
+        if (isFullscreenActive) {
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+        }
+        return;
+      }
+
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && keyLower === 'f') {
+        if (isFullscreenActive) {
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeydown, { capture: true, passive: false });
+    window.addEventListener('keydown', handleKeydown, { capture: true, passive: false });
+
+    return () => {
+      document.removeEventListener('keydown', handleKeydown, true);
+      window.removeEventListener('keydown', handleKeydown, true);
+    };
+  }, [viewMode, showStartScreen, requestedViewMode]);
+
+  // Detect focus/visibility changes (Alt+Tab, switching apps)
+  useEffect(() => {
+    if (viewMode !== 'exercise' || showStartScreen || fullscreenInterrupted) return;
+
+    const attemptReenter = () => {
+      if (
+        viewModeRef.current === 'exercise' &&
+        !showStartScreenRef.current &&
+        isFullscreenRef.current &&
+        !fullscreenInterruptedRef.current
+      ) {
+        setTimeout(() => {
+          if (
+            viewModeRef.current === 'exercise' &&
+            !showStartScreenRef.current &&
+            isFullscreenRef.current &&
+            !fullscreenInterruptedRef.current
+          ) {
+            enterFullscreen();
+          }
+        }, 150);
+      }
+    };
+
+    const warnAndRecover = (reason) => {
+      const now = Date.now();
+      if (now - lastFocusLossRef.current < 1000) return;
+      lastFocusLossRef.current = now;
+
+      setFullscreenWarningCount(prev => prev + 1);
+      showWarning(`Hệ thống phát hiện bạn ${reason}. Vui lòng tiếp tục làm bài trong chế độ toàn màn hình.`);
+      attemptReenter();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        warnAndRecover('rời khỏi bài thi');
+      } else if (document.visibilityState === 'visible') {
+        attemptReenter();
+      }
+    };
+
+    const handleWindowBlur = () => warnAndRecover('chuyển sang cửa sổ khác');
+
+    window.addEventListener('blur', handleWindowBlur, true);
+    document.addEventListener('visibilitychange', handleVisibilityChange, true);
+
+    return () => {
+      window.removeEventListener('blur', handleWindowBlur, true);
+      document.removeEventListener('visibilitychange', handleVisibilityChange, true);
+    };
+  }, [viewMode, showStartScreen, showWarning, fullscreenInterrupted]);
+
+  const handleResumeFullscreen = async () => {
+    const success = await enterFullscreen();
+    if (!success) {
+      showError('Trình duyệt đã chặn yêu cầu fullscreen. Vui lòng nhấn lại hoặc kiểm tra cài đặt trình duyệt.');
     }
   };
 
@@ -359,6 +605,7 @@ export default function DoExercise() {
       if (exercise && (exercise.type === 'midterm' || exercise.type === 'final')) {
         setContinuousMonitoringEnabled(true);
       }
+      setFullscreenInterrupted(false);
       // Start timer if needed
       if (exercise?.duration && timeRemaining === null) {
         setTimeRemaining(exercise.duration * 60);
@@ -424,6 +671,11 @@ export default function DoExercise() {
   };
 
   const exitFullscreen = () => {
+    allowFullscreenExitRef.current = true;
+    if (fullscreenRecoveryTimeoutRef.current) {
+      clearTimeout(fullscreenRecoveryTimeoutRef.current);
+      fullscreenRecoveryTimeoutRef.current = null;
+    }
     try {
       // Check if document is actually in fullscreen mode
       const isInFullscreen = document.fullscreenElement ||
@@ -432,6 +684,9 @@ export default function DoExercise() {
 
       if (!isInFullscreen) {
         setIsFullscreen(false);
+        setFullscreenInterrupted(false);
+        fullscreenInterruptedRef.current = false;
+        allowFullscreenExitRef.current = false;
         return;
       }
 
@@ -443,9 +698,16 @@ export default function DoExercise() {
         document.msExitFullscreen();
       }
       setIsFullscreen(false);
+      isFullscreenRef.current = false;
+      setFullscreenInterrupted(false);
+      fullscreenInterruptedRef.current = false;
     } catch {
       // Ignore exit fullscreen errors
       setIsFullscreen(false);
+      isFullscreenRef.current = false;
+      setFullscreenInterrupted(false);
+      fullscreenInterruptedRef.current = false;
+      allowFullscreenExitRef.current = false;
     }
   };
 
@@ -461,6 +723,10 @@ export default function DoExercise() {
 
   useEffect(() => {
     return () => {
+      if (fullscreenRecoveryTimeoutRef.current) {
+        clearTimeout(fullscreenRecoveryTimeoutRef.current);
+        fullscreenRecoveryTimeoutRef.current = null;
+      }
       objectUrlRef.current.forEach((url) => URL.revokeObjectURL(url));
       objectUrlRef.current.clear();
 
@@ -2440,7 +2706,9 @@ export default function DoExercise() {
       {fullscreenWarningCount > 2 && viewMode === 'exercise' && !showStartScreen && (
         <div className="fullscreen-violation-overlay">
           <div className="violation-card">
-            <div className="violation-icon">🚨</div>
+            <div className="violation-icon">
+              <Siren />
+            </div>
             <h2>CẢNH BÁO VI PHẠM</h2>
             <p>Bạn đã cố gắng thoát chế độ toàn màn hình <strong>{fullscreenWarningCount}</strong> lần!</p>
             <p className="violation-warning">
@@ -2453,6 +2721,36 @@ export default function DoExercise() {
         </div>
       )}
 
+      
+      {/* Fullscreen interrupted overlay */}
+      {viewMode === 'exercise' && !showStartScreen && fullscreenInterrupted && (
+        <div className="fullscreen-resume-overlay">
+          <div className="resume-card">
+            <div className="resume-icon">
+              <Lock />
+            </div>
+            <h2>Quay lại chế độ toàn màn hình</h2>
+            <p>Để tiếp tục làm bài, bạn phải bật lại fullscreen. Đây là yêu cầu bắt buộc trong kỳ thi.</p>
+            <div className="resume-actions">
+              <button className="btn-resume" onClick={handleResumeFullscreen}>
+                <Play size={18} /> Bật lại fullscreen
+              </button>
+              <button
+                className="btn-exit"
+                onClick={() => {
+                  setFullscreenInterrupted(false);
+                  fullscreenInterruptedRef.current = false;
+                  navigate('/exercise-hub');
+                }}
+              >
+                <X size={18} /> Thoát bài thi
+              </button>
+            </div>
+            <small>Nếu nút không hoạt động, hãy kiểm tra cài đặt trình duyệt và cho phép quyền fullscreen.</small>
+          </div>
+        </div>
+      )}
+      
       {/* Start Screen - Must click to enter fullscreen */}
       {viewMode === 'exercise' && showStartScreen && exercise && (
         <div className="start-screen-overlay">
