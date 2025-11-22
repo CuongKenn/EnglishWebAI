@@ -1,0 +1,11 @@
+name,email,username,role,status,password
+Nguyen Van A,student1@example.com,student1,student,active,User123!
+Tran Thi B,teacher_a@example.com,,teacher,active,Teacher123!
+Le Van C,parent1@example.com,,parent,active,Parent123!
+System Admin,admin2@example.com,admin2,admin,active,Admin123!
+Nguyen Van B,student2@example.com,,student,active,
+Tran Van C,student3@example.com,sv003,student,active,User123!
+Hoang Thi D,teacher_b@example.com,teacher_b,teacher,inactive,Teacher123!
+Pham Van E,parent2@example.com,parent2,parent,active,
+User Mixed,user_mixed@example.com,,user,active,Temp123!
+Super Admin,superadmin@example.com,superadmin,superadmin,active,Super123!

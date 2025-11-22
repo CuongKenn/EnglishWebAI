@@ -1,0 +1,315 @@
+/* Consistent Sidebar Layout - Modern Gradient Design */
+
+.consistent-sidebar-layout {
+  display: flex;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+/* ===== SIDEBAR TRÁI - Modern Design ===== */
+.consistent-sidebar-left {
+  width: 300px;
+  background: white;
+  border-right: 1px solid #e2e8f0;
+  padding: 24px 16px;
+  position: fixed;
+  height: 100vh;
+  overflow-y: auto;
+  z-index: 100;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.06);
+}
+
+.sidebar-menu {
+  padding: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Program Header with Gradient Icon */
+.program-selector {
+  margin-bottom: 32px;
+}
+
+.program-badge {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
+}
+
+.program-icon-wrapper {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.program-title {
+  font-weight: 600;
+  font-size: 15px;
+  color: #1e293b;
+  margin-bottom: 2px;
+}
+
+.program-subtitle {
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* Menu Navigation */
+.menu-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  text-decoration: none;
+  color: #475569;
+  border-radius: 16px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid transparent;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.menu-item:hover {
+  background: white;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  transform: scale(1.01);
+  border-color: #e2e8f0;
+}
+
+.menu-icon-wrapper {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.menu-item:hover .menu-icon-wrapper {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.menu-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.menu-label {
+  font-weight: 500;
+  font-size: 14px;
+  flex: 1;
+}
+
+/* Active State */
+.menu-item.active {
+  background: white;
+  border-color: #e2e8f0;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  transform: scale(1.02);
+}
+
+.menu-item.active .menu-label {
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.active-indicator {
+  position: absolute;
+  right: 14px;
+  width: 8px;
+  height: 8px;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+}
+
+.active-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  opacity: 0.08;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.menu-item > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Sidebar Footer */
+.sidebar-footer {
+  margin-top: auto;
+  padding-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Tip Card */
+.tip-card {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.25);
+  display: flex;
+  gap: 12px;
+  align-items: start;
+  margin-bottom: 12px;
+}
+
+.tip-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tip-content {
+  flex: 1;
+}
+
+.tip-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: white;
+  margin-bottom: 4px;
+}
+
+.tip-text {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.5;
+}
+
+.back-to-home-btn {
+  width: 100%;
+  padding: 12px 16px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  color: #64748b;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.back-to-home-btn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #475569;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Fix text cutoff issues - Enhanced */
+.consistent-main-content {
+  flex: 1;
+  margin-left: 300px;
+  padding: 32px;
+  min-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  box-sizing: border-box;
+  position: relative;
+  z-index: 1;
+}
+
+/* Ensure all text is visible */
+.consistent-main-content * {
+  overflow: visible !important;
+  text-overflow: unset !important;
+  white-space: normal !important;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .consistent-sidebar-left {
+    width: 100%;
+    position: relative;
+    height: auto;
+  }
+
+  .consistent-main-content {
+    margin-left: 0;
+    padding: 16px;
+  }
+
+  .consistent-sidebar-layout {
+    flex-direction: column;
+  }
+
+  .program-badge {
+    flex-direction: row;
+  }
+}
+
+/* Tablet adjustments */
+@media (max-width: 1200px) {
+  .consistent-main-content {
+    padding: 24px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .consistent-sidebar-left {
+    width: 280px;
+  }
+
+  .consistent-main-content {
+    margin-left: 280px;
+    padding: 20px;
+  }
+}
+
+/* Scrollbar styling cho sidebar */
+.consistent-sidebar-left::-webkit-scrollbar {
+  width: 6px;
+}
+
+.consistent-sidebar-left::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.consistent-sidebar-left::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.consistent-sidebar-left::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}

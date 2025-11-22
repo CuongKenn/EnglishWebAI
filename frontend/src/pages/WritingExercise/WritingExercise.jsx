@@ -1,0 +1,676 @@
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import {
+  ArrowLeftIcon,
+  ClockIcon,
+  QuestionMarkCircleIcon,
+  ExclamationCircleIcon,
+  XMarkIcon,
+  CheckCircleIcon,
+  DocumentIcon,
+  DocumentTextIcon,
+  ArrowTrendingUpIcon,
+  PencilSquareIcon
+} from '@heroicons/react/24/outline';
+import { ArrowDownTrayIcon as SaveIcon, TrophyIcon } from '@heroicons/react/24/solid';
+import './WritingExercise.css';
+import { coursesAPI, aiAPI } from '../../services/api';
+import { getWritingPrompt } from '../../api/courseContent';
+import Toast from '../../components/Toast/Toast';
+import useToast from '../../hooks/useToast';
+import { HelpCircle, RotateCcw, Target } from 'lucide-react';
+
+const DEFAULT_GRADING_CRITERIA = [
+  'Nội dung và ý tưởng (40%)',
+  'Tổ chức và cấu trúc (25%)',
+  'Sử dụng ngôn ngữ (25%)',
+  'Cơ học viết (10%)'
+];
+
+const WritingExercise = () => {
+  const { courseId, lessonId } = useParams();
+  const navigate = useNavigate();
+  const { toast, showError, showWarning, hideToast } = useToast();
+
+  // State management
+  const [userEssay, setUserEssay] = useState('');
+  const [timeSpent, setTimeSpent] = useState(0);
+  const [wordCount, setWordCount] = useState(0);
+  const [sentenceCount, setSentenceCount] = useState(0);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [showHint, setShowHint] = useState(false);
+  const [showCompletionMessage, setShowCompletionMessage] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [aiResult, setAiResult] = useState(null);
+
+  // Real data from server
+  const [writingData, setWritingData] = useState(null);
+  const [unitData, setUnitData] = useState(null);
+
+  const safeParseJSON = (value, fallback) => {
+    if (typeof value !== 'string') {
+      return value ?? fallback;
+    }
+    try {
+      return JSON.parse(value);
+    } catch (err) {
+      console.warn('Không thể parse JSON:', err);
+      return fallback;
+    }
+  };
+
+  // Load real data from server
+  useEffect(() => {
+    const loadData = async () => {
+      if (!lessonId) return;
+      
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Try to load from new API first
+        try {
+          const promptData = await getWritingPrompt(lessonId);
+
+          let matchedUnit = null;
+          if (courseId) {
+            try {
+              const units = await coursesAPI.getUnits(courseId);
+              matchedUnit = units.find((u) => u.id === parseInt(lessonId, 10));
+            } catch (unitErr) {
+              console.warn('Không thể tải thông tin unit để tính cúp:', unitErr);
+            }
+          }
+          if (matchedUnit) {
+            setUnitData(matchedUnit);
+          }
+          
+          // Parse hints if it's a string
+          const hints = safeParseJSON(promptData.hints, []);
+          
+          // Transform to component format
+          setWritingData({
+            id: promptData.id,
+            title: promptData.title,
+            courseTitle: 'Writing',
+            difficulty: promptData.difficulty || 'Intermediate',
+            estimatedTime: promptData.time_limit || 30,
+            wordLimit: promptData.max_words || 350,
+            minWords: promptData.min_words || 100,
+            currentQuestion: 1,
+            totalQuestions: 1,
+            question: {
+              id: promptData.id,
+              type: promptData.type || 'essay',
+              instruction: promptData.instruction,
+              prompt: promptData.prompt,
+              additionalInstruction: promptData.additional_instruction || '',
+              wordLimit: promptData.max_words || 350,
+              gradingCriteria: promptData.rubrics?.map(r => `${r.category} (${r.max_points} điểm)`) || DEFAULT_GRADING_CRITERIA,
+              hints: hints || [],
+              sampleAnswer: promptData.sample_answer
+            }
+          });
+          
+          return; // Success, exit
+        } catch {
+          // If new API fails (404), fallback to old method silently
+        }
+
+        const numericLessonId = parseInt(lessonId, 10);
+
+        const [courseResult, unitsResult, questionsResult] = await Promise.allSettled([
+          courseId ? coursesAPI.getCourse(courseId) : Promise.resolve(null),
+          courseId ? coursesAPI.getUnits(courseId) : Promise.resolve([]),
+          coursesAPI.getQuestions(numericLessonId)
+        ]);
+
+        let course = null;
+        if (courseResult.status === 'fulfilled' && courseResult.value) {
+          course = courseResult.value;
+        } else if (courseResult.status === 'rejected') {
+          console.warn('Không thể tải thông tin khóa học:', courseResult.reason);
+        }
+
+        let matchedUnit = null;
+        if (unitsResult.status === 'fulfilled' && Array.isArray(unitsResult.value)) {
+          const units = unitsResult.value;
+          matchedUnit = units.find((u) => u.id === numericLessonId) || null;
+          if (matchedUnit) {
+            setUnitData(matchedUnit);
+          }
+        } else if (unitsResult.status === 'rejected') {
+          console.warn('Không thể tải danh sách bài học:', unitsResult.reason);
+        }
+
+        let qs = [];
+        if (questionsResult.status === 'fulfilled' && Array.isArray(questionsResult.value)) {
+          qs = questionsResult.value;
+        } else {
+          console.warn('Không thể tải câu hỏi viết:', questionsResult.reason);
+        }
+
+        if (!qs || qs.length === 0) {
+          throw new Error('Bài viết này chưa có nội dung để luyện.');
+        }
+
+        const firstQuestion = qs[0];
+        const answerPayload = firstQuestion?.answer_json ?? firstQuestion?.answer ?? null;
+        const parsedAnswer = safeParseJSON(answerPayload, {});
+
+        const resolveRubrics = () => {
+          if (Array.isArray(parsedAnswer?.gradingCriteria)) {
+            return parsedAnswer.gradingCriteria;
+          }
+          if (Array.isArray(parsedAnswer?.rubrics)) {
+            return parsedAnswer.rubrics.map((r) => {
+              if (!r) return '';
+              if (typeof r === 'string') return r;
+              const category = r.category || r.title || 'Tiêu chí';
+              const points = r.max_points ?? r.points;
+              return points ? `${category} (${points} điểm)` : category;
+            }).filter(Boolean);
+          }
+          return DEFAULT_GRADING_CRITERIA;
+        };
+
+        const minWords = parsedAnswer?.min_words ?? parsedAnswer?.minWords ?? 100;
+        const maxWords = parsedAnswer?.max_words ?? parsedAnswer?.maxWords ?? 350;
+        const estimatedTime = parsedAnswer?.estimated_time ?? parsedAnswer?.time_limit ?? 30;
+        const instructionText = parsedAnswer?.instruction || parsedAnswer?.instructions || 'Viết bài luận theo yêu cầu dưới đây';
+        const promptText = firstQuestion?.prompt || parsedAnswer?.prompt || parsedAnswer?.question || '';
+        const additionalInstruction = parsedAnswer?.additional_instruction ?? parsedAnswer?.additionalInstruction ?? '';
+        const hints = Array.isArray(parsedAnswer?.hints) ? parsedAnswer.hints : [];
+        const sampleAnswer = parsedAnswer?.sample_answer ?? parsedAnswer?.sampleAnswer ?? '';
+
+        setWritingData({
+          id: lessonId,
+          title: matchedUnit?.title || course?.title || 'Bài viết',
+          courseTitle: course?.title || 'Writing',
+          difficulty: course?.level || matchedUnit?.difficulty || 'Intermediate',
+          estimatedTime,
+          wordLimit: maxWords,
+          minWords,
+          currentQuestion: 1,
+          totalQuestions: qs.length,
+          question: {
+            id: firstQuestion.id,
+            type: firstQuestion.type || 'essay',
+            instruction: instructionText,
+            prompt: promptText,
+            additionalInstruction,
+            wordLimit: maxWords,
+            gradingCriteria: resolveRubrics(),
+            hints,
+            sampleAnswer
+          }
+        });
+
+      } catch (err) {
+        console.error('Error loading writing exercise:', err);
+        setError(err?.detail || err?.message || 'Không thể tải bài tập');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [courseId, lessonId]);
+
+  // Timer effect
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeSpent(prev => prev + 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  // Word and sentence count effect
+  useEffect(() => {
+    const words = userEssay.trim().split(/\s+/).filter(word => word.length > 0);
+    const sentences = userEssay.split(/[.!?]+/).filter(sentence => sentence.trim().length > 0);
+
+    setWordCount(words.length);
+    setSentenceCount(sentences.length);
+  }, [userEssay]);
+
+  // Auto-save effect
+  useEffect(() => {
+    const autoSave = setTimeout(() => {
+      if (userEssay.trim().length > 0) {
+        setIsSaved(true);
+        setTimeout(() => setIsSaved(false), 2000);
+      }
+    }, 3000);
+
+    return () => clearTimeout(autoSave);
+  }, [userEssay]);
+
+  // Handle essay change
+  const handleEssayChange = (e) => {
+    const value = e.target.value;
+    if (value.length <= writingData.wordLimit * 6) { // Rough character limit
+      setUserEssay(value);
+    }
+  };
+
+  // Format time
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Calculate score (mock for now - in real app this would come from AI evaluation)
+  const calculateScore = () => {
+    // Mock score based on word count and basic criteria
+    let score = 60; // Base score
+
+    // Bonus for word count
+    if (wordCount >= writingData.wordLimit) {
+      score += 20;
+    } else if (wordCount >= writingData.wordLimit * 0.8) {
+      score += 10;
+    }
+
+    // Bonus for sentence count (good structure)
+    if (sentenceCount >= 8) {
+      score += 10;
+    }
+
+    return Math.min(score, 100); // Cap at 100
+  };
+
+  // Submit essay
+  const submitEssay = async () => {
+    if (wordCount < 50) {
+      showWarning('Bài viết phải có ít nhất 50 từ');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+
+      // Call AI to grade writing first
+      const result = await aiAPI.checkWriting(
+        userEssay,
+        'essay',
+        writingData?.difficulty?.toLowerCase() || 'intermediate'
+      );
+
+      setAiResult(result);
+
+      // Calculate score
+      const score = result?.score || calculateScore();
+
+      // Submit to course API with AI result
+      const rawMaxCups = unitData?.max_cups;
+      let cupCapacity = typeof rawMaxCups === 'number' ? rawMaxCups : parseInt(rawMaxCups, 10);
+      if (!Number.isFinite(cupCapacity) || cupCapacity <= 0) {
+        cupCapacity = writingData?.totalQuestions || 1;
+      }
+      const cupsEarned = Math.min(cupCapacity, Math.round((score / 100) * cupCapacity));
+
+      await coursesAPI.submitUnitAnswers(parseInt(lessonId, 10), {
+        content_text: userEssay,
+        content_url: null,
+        score: cupsEarned,
+        time_spent: timeSpent
+      });
+
+      setIsCompleted(true);
+      setIsSaved(true);
+
+      const completionData = {
+        lessonId,
+        courseId,
+        score,
+        completedAt: new Date().toISOString(),
+        type: 'writing',
+        wordCount,
+        timeSpent,
+        aiResult: result
+      };
+
+      // Save to localStorage
+      const key = `course_${courseId}_completed_lessons`;
+      const existing = JSON.parse(localStorage.getItem(key) || '{}');
+      existing[lessonId] = completionData;
+      localStorage.setItem(key, JSON.stringify(existing));
+
+      // Show completion message
+      setShowCompletionMessage(true);
+
+    } catch (error) {
+      console.error('Error submitting essay:', error);
+      showError('Lỗi khi nộp bài: ' + (error?.detail || error?.message || 'Vui lòng thử lại'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Reset exercise
+  const resetExercise = () => {
+    setUserEssay('');
+    setIsCompleted(false);
+    setTimeSpent(0);
+    setAiResult(null);
+  };
+
+  if (loading) {
+    return (
+      <div className="writing-exercise-page">
+        <div className="writing-header">
+          <div className="header-left">
+            <button className="writing-back-btn" onClick={() => navigate(-1)}>
+              <ArrowLeftIcon className="w-5 h-5" />
+              Quay lại
+            </button>
+          </div>
+        </div>
+        <div style={{ padding: '40px', textAlign: 'center' }}>
+          <p>Đang tải bài tập...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="writing-exercise-page">
+        <div className="writing-header">
+          <div className="header-left">
+            <button className="writing-back-btn" onClick={() => navigate(-1)}>
+              <ArrowLeftIcon className="w-5 h-5" />
+              Quay lại
+            </button>
+          </div>
+        </div>
+        <div style={{ padding: '40px', textAlign: 'center', color: '#ef4444' }}>
+          <ExclamationCircleIcon className="w-12 h-12 mx-auto mb-4" />
+          <p>{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!writingData || !writingData.question) {
+    return (
+      <div className="writing-exercise-page">
+        <div className="writing-header">
+          <div className="header-left">
+            <button className="writing-back-btn" onClick={() => navigate(-1)}>
+              <ArrowLeftIcon className="w-5 h-5" />
+              Quay lại
+            </button>
+          </div>
+        </div>
+        <div style={{ padding: '40px', textAlign: 'center' }}>
+          <p>Không có câu hỏi nào trong bài này</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="writing-exercise-page">
+      {/* Header */}
+      <div className="writing-header">
+        <div className="header-left">
+          <button
+            className="writing-back-btn"
+            onClick={() => navigate(-1)}
+          >
+            <ArrowLeftIcon className="w-5 h-5" />
+            Quay lại
+          </button>
+        </div>
+
+        <div className="course-info">
+          <h1 className="course-title">{writingData.courseTitle}</h1>
+          <p className="course-subtitle">{writingData.title}</p>
+        </div>
+
+        <div className="header-right">
+          <div className="timer-info">
+            <ClockIcon className="w-4 h-4" />
+            <span>{formatTime(timeSpent)}</span>
+          </div>
+          <div className="difficulty-badge">
+            {writingData.difficulty}
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="writing-content">
+        {/* Left Column - Question */}
+        <div className="question-panel">
+          <div className="question-header">
+            <h2 className="question-title">Bài chấm viết đoạn</h2>
+            <div className="question-controls">
+              <button
+                className="hint-btn"
+                onClick={() => setShowHint(!showHint)}
+              >
+                <HelpCircle size={16} />
+                Hint
+              </button>
+            </div>
+          </div>
+
+          <div className="question-content">
+
+            <div className="question-instruction">
+              <p>{writingData.question.instruction}</p>
+            </div>
+
+            <div className="question-prompt">
+              <p>{writingData.question.prompt}</p>
+            </div>
+
+            <div className="question-additional">
+              <p>{writingData.question.additionalInstruction}</p>
+            </div>
+
+            {showHint && (
+              <div className="hint-content">
+                <div className="hint-header">
+                  <QuestionMarkCircleIcon className="w-4 h-4" />
+                  <span>Gợi ý</span>
+                </div>
+                <div className="hint-tips">
+                  <h4>Tiêu chí chấm điểm:</h4>
+                  <ul>
+                    {writingData.question.gradingCriteria.map((criteria, index) => (
+                      <li key={index}>{criteria}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right Column - Essay Writing */}
+        <div className="essay-panel">
+          <div className="essay-header">
+            <h2 className="essay-title">Bài viết của bạn</h2>
+            <div className="essay-stats">
+              <span className="word-count">{wordCount} từ</span>
+              <span className="sentence-count">{sentenceCount} câu</span>
+              {isSaved && (
+                <div className="save-indicator">
+                  <SaveIcon className="w-3.5 h-3.5" />
+                  <span>Đã lưu</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="essay-content">
+            <textarea
+              className="essay-textarea"
+              placeholder="Nhập bài viết của bạn..."
+              value={userEssay}
+              onChange={handleEssayChange}
+              disabled={isCompleted}
+              rows={20}
+            />
+
+            <div className="word-limit-info">
+              <span>Giới hạn bài viết là <strong>{writingData.wordLimit} từ</strong></span>
+            </div>
+
+            <div className="disclaimer">
+              <p>
+                Để đánh giá chính xác kết quả học tập của học viên, hệ thống không hỗ trợ việc sử dụng trợ giúp từ AI hoặc đạo văn dưới bất kỳ hình thức nào.
+                Nếu phát hiện vi phạm, chúng tôi sẽ không chấm điểm cho bài nộp này.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="exercise-actions">
+        <div className="action-buttons">
+          <button
+            className="reset-btn"
+            onClick={resetExercise}
+            disabled={isCompleted}
+          >
+            <RotateCcw size={16} />
+            Reset
+          </button>
+
+          <button
+            className="submit-btn"
+            onClick={submitEssay}
+            disabled={wordCount < 50 || submitting}
+          >
+            <Target size={16} />
+            {submitting ? 'Đang nộp...' : (isCompleted ? 'Xem kết quả' : 'Nộp bài')}
+          </button>
+        </div>
+      </div>
+
+      {/* Completion Message */}
+      {showCompletionMessage && (
+        <div className="completion-message">
+          <div className="completion-content">
+            <button
+              className="completion-close-btn"
+              onClick={() => {
+                setShowCompletionMessage(false);
+                setIsCompleted(false); // Allow re-submission
+              }}
+            >
+              <XMarkIcon className="w-6 h-6" />
+            </button>
+
+            <CheckCircleIcon className="w-16 h-16 text-emerald-500" />
+            <h3>Hoàn thành bài tập!</h3>
+            <p>Bài viết của bạn đã được nộp thành công và chấm bởi AI.</p>
+
+            <div className="completion-stats">
+              <div className="stat-item">
+                <DocumentIcon className="w-4 h-4" />
+                <span>{wordCount} từ</span>
+              </div>
+              <div className="stat-item">
+                <ClockIcon className="w-4 h-4" />
+                <span>{formatTime(timeSpent)}</span>
+              </div>
+              <div className="stat-item">
+                <TrophyIcon className="w-4 h-4" />
+                <span>{aiResult?.score || calculateScore()} điểm</span>
+              </div>
+            </div>
+
+            {aiResult && (
+              <div className="ai-feedback-section">
+                <h4><DocumentTextIcon className="w-5 h-5 inline-block mr-1" /> Phản hồi từ AI</h4>
+                {aiResult.feedback && (
+                  <div className="ai-feedback-text">
+                    <p><strong>Nhận xét chung:</strong></p>
+                    <p>{aiResult.feedback}</p>
+                  </div>
+                )}
+                {aiResult.breakdown && (
+                  <div className="ai-breakdown">
+                    <p><strong>Chi tiết đánh giá:</strong></p>
+                    <ul>
+                      {Object.entries(aiResult.breakdown).map(([key, value]) => (
+                        <li key={key}>
+                          <strong>{key}:</strong> {value}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {aiResult.strengths && aiResult.strengths.length > 0 && (
+                  <div className="ai-strengths">
+                    <p><strong><CheckCircleIcon className="w-5 h-5 inline-block mr-1" /> Điểm mạnh:</strong></p>
+                    <ul>
+                      {aiResult.strengths.map((strength, idx) => (
+                        <li key={idx}>{strength}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {aiResult.improvements && aiResult.improvements.length > 0 && (
+                  <div className="ai-improvements">
+                    <p><strong><ArrowTrendingUpIcon className="w-5 h-5 inline-block mr-1" /> Cần cải thiện:</strong></p>
+                    <ul>
+                      {aiResult.improvements.map((improvement, idx) => (
+                        <li key={idx}>{improvement}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {aiResult.corrections && aiResult.corrections.length > 0 && (
+                  <div className="ai-corrections">
+                    <p><strong><PencilSquareIcon className="w-5 h-5 inline-block mr-1" /> Sửa lỗi:</strong></p>
+                    <ul>
+                      {aiResult.corrections.map((correction, idx) => (
+                        <li key={idx}>{correction}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="completion-actions">
+              <button
+                className="back-to-profile-btn"
+                onClick={() => navigate('/learning-profile')}
+              >
+                <ArrowLeftIcon className="w-4 h-4" />
+                Quay lại
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          duration={toast.duration}
+          onClose={hideToast}
+        />
+      )}
+
+    </div>
+  );
+};
+
+export default WritingExercise;

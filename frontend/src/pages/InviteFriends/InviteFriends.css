@@ -1,0 +1,160 @@
+.invite-friends-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.invite-header {
+  text-align: center;
+  margin-bottom: 3rem;
+  padding: 2rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 16px;
+  color: white;
+}
+
+.invite-header svg {
+  margin-bottom: 1rem;
+}
+
+.invite-header h1 {
+  font-size: 2.5rem;
+  margin: 0 0 0.5rem 0;
+}
+
+.invite-header p {
+  font-size: 1.1rem;
+  margin: 0;
+  opacity: 0.95;
+}
+
+.invite-content {
+  display: flex;
+  justify-content: center;
+}
+
+.invite-card {
+  background: white;
+  border-radius: 16px;
+  padding: 3rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  max-width: 600px;
+  width: 100%;
+  text-align: center;
+}
+
+.invite-icon {
+  color: #667eea;
+  margin-bottom: 1.5rem;
+}
+
+.invite-card h2 {
+  font-size: 1.75rem;
+  color: #212529;
+  margin: 0 0 1.5rem 0;
+}
+
+.invite-code-box {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+}
+
+.invite-code {
+  font-size: 2rem;
+  font-weight: 700;
+  color: white;
+  letter-spacing: 0.2em;
+  font-family: 'Courier New', monospace;
+}
+
+.invite-link-box {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.invite-link-input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-family: monospace;
+  background: #f8f9fa;
+  color: #495057;
+}
+
+.copy-btn {
+  padding: 0.75rem 1.25rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.copy-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.3);
+}
+
+.invite-benefits {
+  text-align: left;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  padding: 2rem;
+  border-radius: 12px;
+  border: 2px solid #e9ecef;
+}
+
+.invite-benefits h3 {
+  font-size: 1.25rem;
+  color: #212529;
+  margin: 0 0 1rem 0;
+  text-align: center;
+}
+
+.invite-benefits ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.invite-benefits li {
+  padding: 0.75rem 0;
+  font-size: 1rem;
+  color: #495057;
+  line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+  .invite-friends-page {
+    padding: 1rem;
+  }
+
+  .invite-header h1 {
+    font-size: 2rem;
+  }
+
+  .invite-card {
+    padding: 2rem 1.5rem;
+  }
+
+  .invite-code {
+    font-size: 1.5rem;
+  }
+
+  .invite-link-box {
+    flex-direction: column;
+  }
+
+  .copy-btn {
+    width: 100%;
+  }
+}
+

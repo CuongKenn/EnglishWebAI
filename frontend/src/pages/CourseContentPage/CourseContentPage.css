@@ -1,0 +1,336 @@
+/* CourseContentPage.css - Lấy cảm hứng từ giao diện OLM */
+
+.course-content-page {
+  display: grid;
+  grid-template-columns: 240px 1fr 300px;
+  gap: 24px;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 24px;
+  background-color: #f4f5f9;
+}
+
+/* --- Sidebar Trái --- */
+.course-sidebar-left {
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 16px;
+  height: fit-content;
+}
+.course-nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+}
+.course-nav a {
+  display: block;
+  padding: 12px 16px;
+  text-decoration: none;
+  color: #333;
+  font-weight: 500;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+}
+.course-nav a:hover {
+  background-color: #f8f9fa;
+}
+.course-nav a.active {
+  background-color: #e7f1ff;
+  color: #0d6efd;
+  font-weight: 700;
+}
+.course-meta-info .info-title {
+  font-weight: 600;
+  color: #555;
+  display: block;
+  margin-bottom: 12px;
+  text-align: center;
+}
+.course-meta-info .qr-code {
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  justify-content: center;
+}
+.course-meta-info .qr-code img {
+  max-width: 100px;
+}
+
+/* --- Nội dung chính --- */
+.course-main-content {
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 24px;
+}
+.course-page-title {
+  font-size: 24px;
+  margin: 0 0 24px 0;
+}
+.week-section {
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  padding: 16px;
+  border: 1px solid #e9ecef;
+}
+.week-title {
+  font-size: 18px;
+  margin: 0 0 16px 0;
+  color: #0d6efd;
+  font-weight: 700;
+}
+.lessons-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.lesson-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 12px;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.lesson-item:hover {
+  border-color: #0d6efd;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+.worksheet-item {
+  background-color: #f0f8ff;
+  border-style: dashed;
+}
+.lesson-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.lesson-icon { color: #555; }
+.lesson-title { font-weight: 500; }
+.lesson-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.action-icon {
+  color: #adb5bd;
+  transition: color 0.2s ease;
+}
+.action-icon:hover { color: #343a40; }
+.action-icon.completed { color: #28a745; }
+
+/* Start Lesson Button */
+.start-lesson-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.start-lesson-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.start-lesson-btn:active {
+  transform: translateY(0);
+}
+
+
+/* --- Sidebar Phải --- */
+.course-sidebar-right > div {
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+.related-courses-card h4 {
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.related-course-item { display: flex; gap: 12px; }
+.related-course-item img { width: 60px; height: 60px; border-radius: 8px; object-fit: cover; }
+.related-course-info h5 { margin: 0; font-size: 14px; }
+
+.leaderboard-card.redesigned { /* Tái sử dụng style từ JoinClass */
+  background-color: #4c5fdc; color: white; padding: 20px;
+}
+.leaderboard-card.redesigned .card-header { margin-bottom: 12px; }
+.leaderboard-card.redesigned .card-header h4 { font-weight: 600; font-size: 14px; }
+.leaderboard-card.redesigned .details-link { color: white; opacity: 0.8; font-size: 13px; }
+.leaderboard-card.redesigned .leaderboard-filters { background-color: rgba(0, 0, 0, 0.15); border-radius: 20px; padding: 4px; display: flex; margin-bottom: 8px; }
+.leaderboard-card.redesigned .filter-btn { flex: 1; background-color: transparent; color: rgba(255, 255, 255, 0.7); padding: 6px 0; border-radius: 16px; border: none; font-family: inherit; font-size: 14px; cursor: pointer; }
+.leaderboard-card.redesigned .filter-btn.active { background-color: #2e3b9a; color: #fff; font-weight: 600; }
+.leaderboard-card.redesigned .leaderboard-list li { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.2); }
+.leaderboard-card.redesigned .leaderboard-list li:last-child { border-bottom: none; }
+.leaderboard-user-info { display: flex; align-items: center; gap: 12px; }
+.leaderboard-list .rank-badge { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; background-color: rgba(255, 255, 255, 0.2); }
+.leaderboard-list .score-col { display: flex; align-items: center; gap: 4px; font-weight: 600; }
+.leaderboard-list .star-icon { color: #ffc107; }
+
+.user-profile-card.redesigned { background: #23272f; color: white; border-radius: 12px; padding: 16px; display: flex; justify-content: space-between; align-items: center; }
+.user-profile-card.redesigned .user-info { display: flex; align-items: center; gap: 12px; }
+.user-profile-card.redesigned .user-avatar { width: 40px; height: 40px; border-radius: 50%; background-color: #6c757d; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+.user-profile-card.redesigned .user-details { display: flex; flex-direction: column; }
+.user-profile-card.redesigned .user-name { font-weight: 600; }
+.user-profile-card.redesigned .user-score { display: flex; align-items: center; gap: 8px; font-weight: bold; font-size: 18px; color: #ffc107; }
+
+/* Coming Soon Modal */
+.coming-soon-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.coming-soon-modal {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 20px;
+  padding: 40px;
+  max-width: 500px;
+  width: 90%;
+  position: relative;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  animation: slideIn 0.4s ease-out;
+  text-align: center;
+  color: white;
+}
+
+.close-modal-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: white;
+  z-index: 9999;
+}
+
+.close-modal-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+.coming-soon-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.coming-soon-icon {
+  color: #ffd700;
+  animation: pulse 2s infinite;
+}
+
+.coming-soon-content h2 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.coming-soon-content p {
+  font-size: 1.1rem;
+  margin: 0;
+  opacity: 0.9;
+  line-height: 1.6;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+/* Exam Button */
+.exam-btn {
+  background: none;
+  border: none;
+  color: #333;
+  font-weight: 500;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+  cursor: pointer;
+  padding: 12px 16px;
+  width: 100%;
+  text-align: left;
+}
+
+.exam-btn:hover {
+  background-color: #f8f9fa;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .course-content-page { grid-template-columns: 200px 1fr; }
+  .course-sidebar-right { display: none; }
+}
+@media (max-width: 768px) {
+  .course-content-page { grid-template-columns: 1fr; }
+  .course-sidebar-left { display: none; }
+
+  .coming-soon-modal {
+    padding: 30px 20px;
+    margin: 20px;
+  }
+
+  .coming-soon-content h2 {
+    font-size: 2rem;
+  }
+
+  .coming-soon-content p {
+    font-size: 1rem;
+  }
+}

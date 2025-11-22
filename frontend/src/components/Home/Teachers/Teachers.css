@@ -1,0 +1,214 @@
+/* Teachers.css - Bright Theme */
+
+.teachers-section {
+  padding: 4rem 0;
+  background: var(--bg-secondary);
+}
+
+.badge-purple {
+  background: var(--bg-gradient-1) !important;
+}
+
+.teachers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.teacher-card {
+  background: var(--bg-primary);
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: var(--shadow-md);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 3px solid transparent;
+  text-align: center;
+}
+
+.teacher-card:hover {
+  transform: translateY(-10px);
+  box-shadow: var(--shadow-lg);
+}
+
+.teacher-card-blue {
+  border-color: var(--primary-blue);
+}
+
+.teacher-card-blue:hover {
+  box-shadow: 0 15px 40px rgba(74, 144, 226, 0.3);
+}
+
+.teacher-card-purple {
+  border-color: var(--primary-purple);
+}
+
+.teacher-card-purple:hover {
+  box-shadow: 0 15px 40px rgba(155, 89, 182, 0.3);
+}
+
+.teacher-card-pink {
+  border-color: var(--primary-pink);
+}
+
+.teacher-card-pink:hover {
+  box-shadow: 0 15px 40px rgba(255, 105, 180, 0.3);
+}
+
+.teacher-card-green {
+  border-color: var(--primary-green);
+}
+
+.teacher-card-green:hover {
+  box-shadow: 0 15px 40px rgba(46, 204, 113, 0.3);
+}
+
+.teacher-avatar {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 1.5rem;
+}
+
+.avatar-emoji {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, var(--card-blue), var(--card-purple));
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 4rem;
+  box-shadow: var(--shadow-md);
+  animation: bounce 3s ease-in-out infinite;
+}
+
+.teacher-card-blue .avatar-emoji {
+  background: linear-gradient(135deg, #E3F2FD, #BBDEFB);
+}
+
+.teacher-card-purple .avatar-emoji {
+  background: linear-gradient(135deg, #F3E5F5, #E1BEE7);
+}
+
+.teacher-card-pink .avatar-emoji {
+  background: linear-gradient(135deg, #FCE4EC, #F8BBD0);
+}
+
+.teacher-card-green .avatar-emoji {
+  background: linear-gradient(135deg, #E8F5E9, #C8E6C9);
+}
+
+.rating-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: var(--bg-gradient-5);
+  color: var(--text-white);
+  padding: 0.5rem 0.75rem;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.rating-badge i {
+  font-size: 0.85rem;
+}
+
+.teacher-info h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.teacher-title {
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-bottom: 1rem;
+}
+
+.teacher-specialization {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.teacher-specialization i {
+  color: var(--primary-purple);
+}
+
+.teacher-stats {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: var(--bg-secondary);
+  border-radius: 12px;
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.stat i {
+  color: var(--primary-blue);
+}
+
+.contact-teacher-btn {
+  width: 100%;
+  background: var(--bg-gradient-3);
+  color: var(--text-white);
+  border: none;
+  padding: 0.875rem;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.contact-teacher-btn:hover {
+  transform: scale(1.05);
+  box-shadow: var(--shadow-md);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .teachers-section {
+    padding: 3rem 0;
+  }
+  
+  .teachers-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .teacher-avatar {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .avatar-emoji {
+    font-size: 3rem;
+  }
+}
+

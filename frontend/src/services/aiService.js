@@ -1,0 +1,364 @@
+import axios from 'axios';
+
+// Dynamically determine the API base URL based on environment
+const getApiBaseUrl = () => {
+  // If VITE_API_BASE_URL is set, use it
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL;
+  }
+  
+  // In production, use relative path with /api prefix (handled by Nginx proxy)
+  if (import.meta.env.PROD) {
+    return '/api/v1';
+  }
+  
+  // In development, use localhost
+  return 'http://localhost:8000/api/v1';
+};
+
+const API_BASE_URL = getApiBaseUrl();
+
+// Tạo axios instance với config mặc định
+const aiApiClient = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Thêm token vào mỗi request
+aiApiClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// ============= READING AI =============
+
+/**
+ * Lấy bài đọc theo cấp độ
+ * @param {string} level - Cấp độ: beginner, intermediate, advanced
+ * @param {string} topic - Chủ đề (optional)
+ * @returns {Promise} - Bài đọc với câu hỏi
+ */
+export const getReadingPassage = async (level, topic = null) => {
+  try {
+    const params = { level };
+    if (topic) params.topic = topic;
+    
+    const response = await aiApiClient.get('/ai/reading/generate', { params });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching reading passage:', error);
+    // Fallback to mock data if API fails
+    return getMockReadingData(level);
+  }
+};
+
+/**
+ * Nộp bài đọc và nhận feedback
+ * @param {number} passageId - ID của bài đọc
+ * @param {Object} answers - Các câu trả lời
+ * @returns {Promise} - Kết quả và feedback
+ */
+export const submitReadingAnswers = async (passageId, answers) => {
+  try {
+    const response = await aiApiClient.post('/ai/reading/submit', {
+      passage_id: passageId,
+      answers,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error submitting reading answers:', error);
+    throw error;
+  }
+};
+
+// ============= LISTENING AI =============
+
+/**
+ * Lấy bài nghe theo cấp độ
+ * @param {string} level - Cấp độ: beginner, intermediate, advanced
+ * @returns {Promise} - Bài nghe với câu hỏi
+ */
+export const getListeningLesson = async (level) => {
+  try {
+    const response = await aiApiClient.get('/ai/listening/generate', {
+      params: { level },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching listening lesson:', error);
+    throw error;
+  }
+};
+
+/**
+ * Tổng hợp văn bản thành giọng nói
+ * @param {string} text - Văn bản cần đọc
+ * @param {string} voice - Giọng đọc (male/female)
+ * @param {number} speed - Tốc độ (0.5 - 2.0)
+ * @returns {Promise} - Audio URL
+ */
+export const textToSpeech = async (text, voice = 'female', speed = 1.0) => {
+  try {
+    const response = await aiApiClient.post('/ai/tts', {
+      text,
+      voice,
+      speed,
+    });
+    return response.data.audio_url;
+  } catch (error) {
+    console.error('Error generating speech:', error);
+    throw error;
+  }
+};
+
+/**
+ * Nộp bài nghe và nhận feedback
+ * @param {number} lessonId - ID của bài nghe
+ * @param {Object} answers - Các câu trả lời
+ * @returns {Promise} - Kết quả và feedback
+ */
+export const submitListeningAnswers = async (lessonId, answers) => {
+  try {
+    const response = await aiApiClient.post('/ai/listening/submit', {
+      lesson_id: lessonId,
+      answers,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error submitting listening answers:', error);
+    throw error;
+  }
+};
+
+// ============= FLASHCARD AI =============
+
+/**
+ * Lấy flashcards theo cấp độ
+ * @param {string} level - Cấp độ CEFR: A1, A2, B1, B2, C1, C2
+ * @param {number} limit - Số lượng flashcards (mặc định 20)
+ * @returns {Promise} - Danh sách flashcards
+ */
+export const getFlashcards = async (level, limit = 20) => {
+  try {
+    const response = await aiApiClient.get('/ai/flashcards', {
+      params: { level, limit },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching flashcards:', error);
+    throw error;
+  }
+};
+
+/**
+ * Tạo flashcards từ văn bản
+ * @param {string} text - Văn bản đầu vào
+ * @param {number} count - Số lượng flashcards cần tạo
+ * @returns {Promise} - Danh sách flashcards được tạo
+ */
+export const generateFlashcardsFromText = async (text, count = 10) => {
+  try {
+    const response = await aiApiClient.post('/ai/flashcards/generate', {
+      text,
+      count,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error generating flashcards:', error);
+    throw error;
+  }
+};
+
+/**
+ * Lưu tiến độ học flashcard
+ * @param {number} flashcardId - ID của flashcard
+ * @param {boolean} known - Đã biết hay chưa
+ * @returns {Promise}
+ */
+export const saveFlashcardProgress = async (flashcardId, known) => {
+  try {
+    const response = await aiApiClient.post('/ai/flashcards/progress', {
+      flashcard_id: flashcardId,
+      known,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error saving flashcard progress:', error);
+    // Don't throw error for progress saving - not critical
+    return { success: false, error: error.message };
+  }
+};
+
+// ============= WRITING AI =============
+
+/**
+ * Lấy đề bài viết
+ * @param {string} level - Cấp độ
+ * @param {string} type - Loại bài viết: essay, letter, story
+ * @returns {Promise} - Đề bài viết
+ */
+export const getWritingPrompt = async (level, type = 'essay') => {
+  try {
+    const response = await aiApiClient.get('/ai/writing/prompt', {
+      params: { level, type },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching writing prompt:', error);
+    throw error;
+  }
+};
+
+/**
+ * Chấm bài viết và nhận feedback
+ * @param {string} prompt - Đề bài
+ * @param {string} content - Nội dung bài viết
+ * @returns {Promise} - Điểm và feedback chi tiết
+ */
+export const submitWriting = async (prompt, content) => {
+  try {
+    const response = await aiApiClient.post('/ai/writing/evaluate', {
+      prompt,
+      content,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error submitting writing:', error);
+    throw error;
+  }
+};
+
+// ============= CONVERSATION AI =============
+
+/**
+ * Gửi tin nhắn đến AI và nhận phản hồi
+ * @param {string} message - Tin nhắn
+ * @param {Array} history - Lịch sử hội thoại
+ * @param {string} mode - Chế độ: casual, formal, practice
+ * @returns {Promise} - Phản hồi từ AI
+ */
+export const sendConversationMessage = async (message, history = [], mode = 'casual') => {
+  try {
+    const response = await aiApiClient.post('/ai/conversation', {
+      message,
+      history,
+      mode,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error sending conversation message:', error);
+    throw error;
+  }
+};
+
+// ============= TRANSLATE AI =============
+
+/**
+ * Dịch văn bản
+ * @param {string} text - Văn bản cần dịch
+ * @param {string} from - Ngôn ngữ nguồn (vi/en)
+ * @param {string} to - Ngôn ngữ đích (vi/en)
+ * @returns {Promise} - Văn bản đã dịch
+ */
+export const translateText = async (text, from = 'vi', to = 'en') => {
+  try {
+    const response = await aiApiClient.post('/ai/translate', {
+      text,
+      source_lang: from,
+      target_lang: to,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error translating text:', error);
+    throw error;
+  }
+};
+
+// ============= MOCK DATA (Fallback) =============
+
+const getMockReadingData = (level) => {
+  const passages = {
+    beginner: {
+      id: 1,
+      title: "My Daily Routine",
+      level: "Beginner",
+      content: "I wake up at 7 o'clock every morning. I brush my teeth and wash my face. Then I have breakfast with my family. I usually eat bread and drink milk. After breakfast, I go to school. My school starts at 8 o'clock.",
+      questions: [
+        {
+          question: "What time does the person wake up?",
+          options: ["6 o'clock", "7 o'clock", "8 o'clock", "9 o'clock"],
+          correct: 1,
+        },
+        {
+          question: "What does the person eat for breakfast?",
+          options: ["Rice", "Noodles", "Bread", "Soup"],
+          correct: 2,
+        },
+      ],
+    },
+    intermediate: {
+      id: 2,
+      title: "The Benefits of Exercise",
+      level: "Intermediate",
+      content: "Regular exercise is essential for maintaining good health. It helps strengthen muscles, improve cardiovascular health, and boost mental well-being. Studies show that people who exercise regularly have lower rates of depression and anxiety. Additionally, exercise can help control weight and reduce the risk of chronic diseases.",
+      questions: [
+        {
+          question: "What is the main idea of the passage?",
+          options: [
+            "Exercise is difficult",
+            "Exercise has many health benefits",
+            "Exercise is only for young people",
+            "Exercise is expensive",
+          ],
+          correct: 1,
+        },
+      ],
+    },
+    advanced: {
+      id: 3,
+      title: "The Future of Artificial Intelligence in Education",
+      level: "Advanced",
+      content: "Artificial Intelligence (AI) is revolutionizing the education sector in unprecedented ways. From personalized learning experiences to automated grading systems, AI is transforming how students learn and teachers teach. One of the most significant impacts of AI in education is the ability to provide personalized learning paths. Traditional classroom settings often struggle to cater to individual student needs, but AI-powered systems can analyze a student's learning style, pace, and preferences to create customized educational content.",
+      questions: [
+        {
+          question: "What is the main idea of the passage?",
+          options: [
+            "AI is replacing human teachers",
+            "AI is transforming education through personalization",
+            "Traditional education is better than AI",
+            "AI can only grade tests",
+          ],
+          correct: 1,
+        },
+      ],
+    },
+  };
+
+  return passages[level] || passages.beginner;
+};
+
+export default {
+  getReadingPassage,
+  submitReadingAnswers,
+  getListeningLesson,
+  textToSpeech,
+  submitListeningAnswers,
+  getFlashcards,
+  generateFlashcardsFromText,
+  saveFlashcardProgress,
+  getWritingPrompt,
+  submitWriting,
+  sendConversationMessage,
+  translateText,
+};
+

@@ -1,0 +1,84 @@
+
+import logging
+
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from sqlalchemy.orm import Session
+
+from app.core.database import get_db
+from app.core.security import decode_access_token
+from app.models.user import User, UserRole
+
+logger = logging.getLogger(__name__)
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/login", auto_error=False)
+
+async def get_current_user(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db)
+) -> User:
+    """Get current authenticated user"""
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    logger.info(f"Token received: {token[:20] if token else 'None'}...")
+
+    if not token:
+        logger.warning("No token provided")
+        raise credentials_exception
+
+    payload = decode_access_token(token)
+    logger.info(f"Decoded payload: {payload}")
+
+    if payload is None:
+        logger.warning("Token decode failed")
+        raise credentials_exception
+
+    user_id: int = payload.get("sub")
+    if user_id is None:
+        raise credentials_exception
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if user is None:
+        raise credentials_exception
+
+    return user
+
+async def get_current_user_optional(
+    token: str | None = Depends(oauth2_scheme),
+    db: Session = Depends(get_db)
+) -> User | None:
+    """Get current user if authenticated, None otherwise (for optional auth)"""
+    if not token:
+        return None
+
+    try:
+        payload = decode_access_token(token)
+        if payload is None:
+            return None
+
+        user_id: int = payload.get("sub")
+        if user_id is None:
+            return None
+
+        return db.query(User).filter(User.id == user_id).first()
+    except Exception:
+        return None
+
+async def get_current_active_user(
+    current_user: User = Depends(get_current_user)
+) -> User:
+    """Get current active user"""
+    if not current_user.is_active:
+        raise HTTPException(status_code=400, detail="Inactive user")
+    return current_user
+
+async def get_current_admin_user(
+    current_user: User = Depends(get_current_active_user)
+) -> User:
+    """Require admin or superadmin user"""
+    if current_user.role not in (UserRole.ADMIN, UserRole.SUPERADMIN):
+        raise HTTPException(status_code=403, detail="Admin privileges required")
+    return current_user

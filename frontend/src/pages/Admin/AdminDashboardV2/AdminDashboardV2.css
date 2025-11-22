@@ -1,0 +1,41 @@
+.admin-dashboard-v2 {
+  display: flex;
+  position: fixed;
+  top: 80px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #f9fafb;
+  overflow: visible;
+}
+
+/* Remove padding/margin from admin page containers */
+.admin-dashboard-v2 [class*="-container"],
+.admin-dashboard-v2 [class*="Container"] {
+  padding: 2rem !important;
+  margin: 0 !important;
+  max-width: 100% !important;
+}
+
+/* Content padding */
+.admin-dashboard-v2 .admin-main {
+  padding: 0;
+}
+
+.admin-main {
+  flex: 1;
+  overflow-y: auto;
+  background-color: #f9fafb;
+}
+
+/* Smooth scrolling */
+.admin-main {
+  scroll-behavior: smooth;
+}
+
+/* Card hover effects */
+.admin-main .card:hover {
+  transform: translateY(-2px);
+  transition: all 0.3s ease;
+}
+

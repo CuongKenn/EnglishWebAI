@@ -1,0 +1,121 @@
+[tool.ruff]
+# Exclude common directories
+exclude = [
+    ".git",
+    ".venv",
+    "venv",
+    "__pycache__",
+    "*.pyc",
+    "alembic/versions",
+    "build",
+    "dist",
+    "ml_models",
+]
+
+# Line length to match Black
+line-length = 120
+
+# Python version
+target-version = "py311"
+
+[tool.ruff.lint]
+# Enable pycodestyle (`E`), Pyflakes (`F`), and other rules
+select = [
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # Pyflakes
+    "I",     # isort
+    "N",     # pep8-naming
+    "UP",    # pyupgrade
+    "B",     # flake8-bugbear
+    "C4",    # flake8-comprehensions
+    "DTZ",   # flake8-datetimez
+    "PIE",   # flake8-pie
+    "T20",   # flake8-print
+    "SIM",   # flake8-simplify
+    "RET",   # flake8-return
+    "ARG",   # flake8-unused-arguments
+    "PTH",   # flake8-use-pathlib
+]
+
+# Ignore specific rules
+ignore = [
+    "E501",   # Line too long (handled by formatter)
+    "B008",   # Do not perform function calls in argument defaults (FastAPI Depends)
+    "ARG001", # Unused function argument (common in FastAPI endpoints)
+    "ARG002", # Unused method argument
+    "N805",   # First argument should be named `self` (pydantic validators)
+    "N812",   # Lowercase imported as non-lowercase (PyTorch F, T conventions)
+    "N815",   # mixedCase variable in class scope (common in pydantic models for API compatibility)
+    "DTZ001", # Datetime without timezone (allow for simplicity in internal use)
+    "DTZ003", # Datetime.utcnow() without timezone (allow for simplicity)
+    "DTZ005", # Datetime timezone (optional for internal use)
+    "DTZ901", # Datetime min/max without timezone
+    "E402",   # Module level import not at top (needed for conditional imports, logging setup)
+    "PTH",    # Use pathlib (os.path is acceptable for this codebase)
+    "T201",   # Print found (allow print statements)
+]
+
+# Allow autofix for all enabled rules
+fixable = ["ALL"]
+unfixable = []
+
+[tool.ruff.lint.per-file-ignores]
+# Ignore import errors in __init__.py files
+"__init__.py" = ["F401", "F403"]
+# Ignore unused imports in alembic env.py and wildcard imports
+"alembic/env.py" = ["F401", "F403"]
+# Ignore wildcard imports in main.py (needed for SQLAlchemy model registration)
+"main.py" = ["F403"]
+# Ignore invalid module name for class.py (Python keyword, but file must match model name)
+"app/models/class.py" = ["N999"]
+# Ignore file handle context manager where cleanup is in finally block
+"app/routers/ai_conversation.py" = ["SIM115"]
+# Test files can use assertions
+"tests/**/*.py" = ["S101"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]
+
+[tool.ruff.format]
+# Use double quotes for strings
+quote-style = "double"
+
+# Indent with spaces
+indent-style = "space"
+
+# Like Black, respect magic trailing commas
+skip-magic-trailing-comma = false
+
+# Like Black, automatically detect line endings
+line-ending = "auto"
+
+[tool.black]
+line-length = 120
+target-version = ['py311']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+  | alembic/versions
+)/
+'''
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+asyncio_mode = "auto"

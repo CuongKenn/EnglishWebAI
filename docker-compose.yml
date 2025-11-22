@@ -1,0 +1,111 @@
+services:
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: englishwebai_backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./backend:/app
+      - backend_data:/app/data
+      - backend_static:/app/static
+      - backend_media:/app/media
+      - backend_logs:/app/logs
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    networks:
+      - englishwebai_network
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    command: >
+      sh -c "
+        echo 'Starting EnglishWebAI Backend...' &&
+        echo 'Waiting for database...' &&
+        echo 'Running database migrations...' &&
+        alembic upgrade head &&
+        echo 'Cleaning up temporary users...' &&
+        python fix_roles.py || true &&
+        echo 'Starting server...' &&
+        uvicorn main:app --host 0.0.0.0 --port 8000
+      "
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: englishwebai_frontend
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./ssl:/etc/nginx/ssl:ro
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+      - "443:443"
+    networks:
+      - englishwebai_network
+    depends_on:
+      - backend
+
+  # Database service
+  db:
+    image: postgres:latest
+    container_name: englishwebai_db
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - db_data:/var/lib/postgresql
+    ports:
+      - "5432:5432"
+    networks:
+      - englishwebai_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-englishwebai_user} -d ${POSTGRES_DB:-englishwebai_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis cache service
+  redis:
+    image: redis:7-alpine
+    container_name: englishwebai_redis
+    restart: unless-stopped
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    networks:
+      - englishwebai_network
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  englishwebai_network:
+    driver: bridge
+    name: englishwebai_network
+
+volumes:
+  backend_data:
+    name: englishwebai_backend_data
+  backend_static:
+    name: englishwebai_backend_static
+  backend_media:
+    name: englishwebai_backend_media
+  backend_logs:
+    name: englishwebai_backend_logs
+  db_data:
+    name: englishwebai_db_data
+  redis_data:
+    name: englishwebai_redis_data

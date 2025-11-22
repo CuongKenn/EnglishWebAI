@@ -1,0 +1,166 @@
+/* Smooth animations for card hover */
+.exercise-card {
+  transition: all 0.3s ease;
+}
+
+.exercise-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+/* Type selector cards */
+.type-card {
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.type-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.type-card:hover::before {
+  left: 100%;
+}
+
+.type-card.selected {
+  animation: pulse 0.3s ease;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Skill radio buttons */
+.skill-option {
+  transition: all 0.2s ease;
+}
+
+.skill-option:hover {
+  transform: translateX(4px);
+}
+
+.skill-option input:checked ~ * {
+  font-weight: 600;
+}
+
+/* Duration quick buttons */
+.duration-btn {
+  transition: all 0.15s ease;
+}
+
+.duration-btn:hover {
+  transform: scale(1.1);
+}
+
+.duration-btn:active {
+  transform: scale(0.95);
+}
+
+/* Info box gradient animation */
+.info-gradient {
+  background: linear-gradient(135deg, #f0e7ff 0%, #e0f2ff 100%);
+  animation: gradientShift 3s ease infinite;
+  background-size: 200% 200%;
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Loading skeleton */
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s ease-in-out infinite;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Form input focus effects */
+.form-input:focus {
+  box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.1);
+  border-color: #9333ea;
+}
+
+/* Success modal entrance */
+.success-modal {
+  animation: slideInUp 0.3s ease;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Badge animations */
+.badge-animated {
+  animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Responsive grid improvements */
+@media (max-width: 768px) {
+  .exercise-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .type-cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .skill-cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .type-cards-grid,
+  .skill-cards-grid {
+    grid-template-columns: 1fr;
+  }
+}

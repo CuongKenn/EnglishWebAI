@@ -1,0 +1,348 @@
+# Cursor AI Rules for EnglishWebAI Project
+
+## Project Overview
+- **Stack**: FastAPI (backend) + React + Vite (frontend)
+- **Database**: SQLAlchemy + Alembic migrations, PostgreSQL in production
+- **AI Integration**: OpenAI API (ChatGPT) + Azure Speech SDK
+- **Purpose**: English learning platform with auto-grading exercises
+
+## Backend Rules (FastAPI)
+
+### File Structure & Conventions
+- Backend entry point: `backend/main.py`
+- Config: `backend/app/core/config.py` (uses pydantic-settings + .env)
+- Models: `backend/app/models/` (SQLAlchemy ORM)
+- Routers: `backend/app/routers/` (FastAPI endpoints)
+- Services: `backend/app/services/` (business logic)
+- Tests: `backend/tests/` and `backend/test_*.py`
+
+### API Development
+- **Always use `settings.API_PREFIX`** when adding new routers (default: `/api/v1`)
+- Example: `app.include_router(router, prefix=f"{settings.API_PREFIX}/feature", tags=["Feature"])`
+- Auth endpoint uses `/api/users` (without API_PREFIX for historical reasons)
+- Include descriptive tags for API documentation
+
+### Database & Models
+- **CRITICAL**: Import all models in `backend/main.py` with `from app.models import *` to register metadata
+- Use Alembic for migrations: `alembic revision --autogenerate -m "description"`
+- Place migrations in `backend/alembic/versions/`
+- Never drop tables without explicit migration plan
+- Use `checkfirst=True` when creating tables programmatically
+
+### Configuration
+- Add new config to `backend/app/core/config.py` Settings class
+- Use sensible defaults for dev environment
+- Never hardcode secrets (OPENAI_API_KEY, SECRET_KEY, SMTP credentials)
+- Access config via `from app.core.config import settings`
+
+### Grading Logic (IMPORTANT)
+- **Auto-grading service**: `backend/app/services/ai_grading_service.py`
+- **Always normalize inputs** before comparison:
+  - Multiple Choice: uppercase + trim + collapse spaces
+  - Fill Blank: lowercase + trim + fuzzy matching (90% threshold)
+  - Matching: lowercase + trim (case-insensitive)
+  - True/False: supports 12 formats (true/1/yes/đúng/t/y, etc.)
+
+#### Grading Features:
+- **Fuzzy matching**: Allow 1-2 typos with 90% similarity threshold
+- **Multiple answers**: Support `answer1|answer2` or `answer1/answer2` format
+- **Strip articles**: Remove "a", "an", "the" from Fill Blank
+- **Strip punctuation**: Ignore punctuation in Fill Blank
+- **Partial credit**: Matching questions award proportional points
+- **Duplicate detection**: Warn if student uses same answer multiple times in Matching
+
+#### When modifying grading logic:
+1. Update both `ai_grading_service.py` AND test files
+2. Run `python test_grading_improvements.py` to verify
+3. Document changes in markdown files
+4. Consider backward compatibility
+
+### Testing
+- Use pytest for backend tests: `pytest -q` from backend folder
+- Test files: `backend/tests/` or `backend/test_*.py`
+- Mock external APIs (OpenAI, Azure Speech) when possible
+- Include edge cases: None values, empty strings, invalid formats
+
+### Error Handling
+- Always handle None/empty values in grading functions
+- Return proper error responses with status codes
+- Log errors for debugging: `print(f"[SERVICE_NAME] Error: {error}")`
+- Use try-except blocks for external API calls (OpenAI, Azure)
+
+### OpenAI Integration
+- Check if client is initialized: `if not self.client: return error_response`
+- Use `response_format={"type": "json_object"}` to force JSON responses
+- Validate response content before parsing: `if not content or content.strip() == ""`
+- Strip markdown code blocks: Remove ```json``` wrapper
+- Handle JSONDecodeError separately from other exceptions
+- Set appropriate temperature (0.5 for grading, 0.7 for content generation)
+
+### Code Style
+- Use async/await for I/O operations
+- Type hints for function parameters: `def func(param: Type) -> ReturnType:`
+- Descriptive variable names (no single letters except loop counters)
+- Add docstrings to public functions
+- Comment complex logic or business rules
+
+## Frontend Rules (React + Vite)
+
+### File Structure
+- Entry point: `frontend/src/main.jsx`
+- Components: `frontend/src/components/`
+- Pages: `frontend/src/pages/`
+- Services: `frontend/src/services/` (API calls)
+- Assets: `frontend/src/assets/`
+
+### Development
+- Run dev server: `npm run dev` from frontend folder
+- Build: `npm run build`
+- Lint: `npm run lint` (ESLint configured)
+- Use Tailwind CSS for styling
+- Use Radix UI components when available
+
+### API Calls
+- Always use environment variables for API URLs
+- Handle loading states and errors
+- Use axios for HTTP requests
+- Match backend API paths exactly (including `/api/v1` prefix)
+
+## How to Run Locally
+
+### ⭐ Recommended: Docker Compose (Production-like)
+```bash
+# 1. Ensure .env file exists (copy from .env.example if needed)
+cp .env.example .env
+
+# 2. Start all services (backend + frontend + postgres)
+docker-compose up -d
+
+# 3. View logs
+docker-compose logs -f backend
+docker-compose logs -f frontend
+
+# 4. Stop all services
+docker-compose down
+
+# 5. Rebuild after code changes
+docker-compose up -d --build
+
+# 6. Access database
+docker-compose exec db psql -U englishwebai_user -d englishwebai_db
+```
+
+**Services:**
+- Backend API: `http://localhost:8000`
+- Frontend: `http://localhost:80` (or port in .env)
+- Database: PostgreSQL on `localhost:5432`
+- API Docs: `http://localhost:8000/api/v1/docs`
+
+**Docker automatically:**
+- ✅ Runs database migrations (`alembic upgrade head`)
+- ✅ Seeds sample data if DB is empty
+- ✅ Sets up PostgreSQL database
+- ✅ Handles networking between services
+- ✅ Mounts volumes for hot reload
+
+### Alternative: Manual Setup (Development only)
+
+#### Backend:
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+cp .env.example .env  # Configure your .env
+python main.py  # Runs on port 8000
+```
+
+#### Frontend:
+```bash
+cd frontend
+npm install
+npm run dev  # Runs on port 5173
+```
+
+#### Database:
+- Manual setup requires PostgreSQL installed locally
+- Or use SQLite for quick testing (change DATABASE_URL in .env)
+- Run migrations: `alembic upgrade head`
+
+**Note:** Docker Compose is strongly recommended for consistency with production environment.
+
+## Common Tasks
+
+### Add New API Endpoint
+1. Create router in `backend/app/routers/new_feature.py`
+2. Define router with APIRouter()
+3. Add endpoints with proper HTTP methods (@router.get, @router.post)
+4. Include router in `backend/main.py`:
+   ```python
+   from app.routers import new_feature
+   app.include_router(new_feature.router, prefix=f"{settings.API_PREFIX}/feature", tags=["Feature"])
+   ```
+5. Update frontend services to call new endpoint
+
+### Add Database Model
+1. Create model in `backend/app/models/new_model.py`
+2. Inherit from `Base` (from app.core.database)
+3. Add `__tablename__` attribute
+4. Define columns with proper types and constraints
+5. Import in `backend/app/models/__init__.py`
+6. Create migration: `alembic revision --autogenerate -m "add new_model"`
+7. Review and edit migration file
+8. Apply migration: `alembic upgrade head`
+
+### Add Seed Data
+1. Create function in `backend/app/utils/seed.py`
+2. Follow pattern: `def seed_feature(db: Session, force: bool = False):`
+3. Check if data exists before inserting (unless force=True)
+4. Call from `backend/main.py` startup event or standalone script
+
+## AI/ML Specifics
+
+### OpenAI Usage
+- Model: Use `settings.OPENAI_MODEL` (configurable)
+- Always check API key availability before making calls
+- Implement fallbacks for API failures
+- Cache responses when possible to reduce costs
+- Log all API calls for debugging and cost tracking
+
+### Azure Speech
+- Used for pronunciation assessment
+- Requires: `AZURE_SPEECH_KEY` and `AZURE_SPEECH_REGION`
+- Convert audio to 16kHz mono WAV before processing
+- Handle recognition failures gracefully
+- Return structured scores (pronunciation, accuracy, fluency, completeness)
+
+## Security & Best Practices
+
+### Environment Variables
+- Never commit `.env` file
+- Provide `.env.example` with placeholder values
+- Use `python-dotenv` to load environment variables
+- Access via `os.getenv()` or `settings.VARIABLE_NAME`
+
+### Authentication
+- JWT tokens with expiration
+- Access token: 30 minutes (default)
+- Refresh token: 7 days (default)
+- Hash passwords with bcrypt
+- Validate tokens on protected routes
+
+### Database Security
+- Use parameterized queries (SQLAlchemy handles this)
+- Validate user input before database operations
+- Implement proper role-based access control
+- Don't expose internal IDs in API responses if sensitive
+
+## Documentation
+
+### Code Comments
+- Explain WHY, not WHAT (code should be self-explanatory)
+- Document complex algorithms or business logic
+- Add TODO comments for future improvements
+- Mark deprecated code clearly
+
+### API Documentation
+- FastAPI auto-generates docs at `/api/v1/docs`
+- Add descriptions to endpoints and models
+- Document request/response examples
+- Note required vs optional fields
+
+### Commit Messages
+- Use conventional commits format:
+  - `feat:` for new features
+  - `fix:` for bug fixes
+  - `docs:` for documentation
+  - `refactor:` for code refactoring
+  - `test:` for test additions/changes
+  - `chore:` for maintenance tasks
+- Include detailed description for complex changes
+- Reference issue numbers when applicable
+
+## Common Pitfalls to Avoid
+
+❌ **DON'T**:
+- Remove `from app.models import *` from main.py
+- Hardcode API URLs or secrets
+- Skip input validation on API endpoints
+- Ignore None/empty values in grading functions
+- Create tables without migrations in production
+- Parse JSON without validation
+- Use exact string matching for user inputs (always normalize)
+- Forget to handle API failures (OpenAI, Azure)
+
+✅ **DO**:
+- Always normalize user inputs before comparison
+- Use fuzzy matching for text inputs (typo tolerance)
+- Validate all external API responses
+- Log important operations for debugging
+- Write tests for new features
+- Handle edge cases (None, empty, invalid formats)
+- Use proper HTTP status codes
+- Implement proper error messages in Vietnamese for students
+
+## Vietnamese Language Support
+
+- Error messages for students: Use Vietnamese
+- System logs: English is acceptable
+- API documentation: English
+- User-facing feedback: Vietnamese with friendly tone
+- Use "cô" (teacher) and "em" (student) in educational feedback
+
+## Performance Considerations
+
+- Database queries: Use indexes on frequently queried fields
+- API responses: Paginate large lists
+- File uploads: Limit size (50MB configured for main.py)
+- OpenAI API: Batch requests when possible
+- Caching: Consider Redis for frequently accessed data
+
+## Development Workflow
+
+1. **Before coding**: Read existing code patterns in similar features
+2. **During coding**: Follow project conventions strictly
+3. **Testing**: Run tests locally before committing
+4. **Committing**: Write clear commit messages
+5. **Documentation**: Update relevant .md files for major changes
+
+## Special Notes
+
+### Startup Sequence
+1. Create database tables (Base.metadata.create_all)
+2. Run lightweight schema migrations (ensure_schema)
+3. Auto-seed if database is empty
+4. Initialize system configurations
+5. Seed public courses if needed
+
+### CORS Configuration
+- Allows all origins (uses token auth, not cookies)
+- Allow all methods and headers
+- Safe for development and production with JWT
+
+### Media Files
+- Uploaded to `media/` directory
+- Served via StaticFiles mount at `/media`
+- Categories: audio/, documents/, images/
+
+## Questions to Ask User
+
+When implementing features, clarify:
+- Which roles can access this endpoint? (admin/teacher/student/parent)
+- Should this be auto-graded or teacher-graded?
+- What feedback should students see?
+- Is this for individual or class-wide use?
+- Should this be logged for analytics?
+
+## Reference Files
+
+Essential files to check:
+- `backend/main.py` - Application entry and router registration
+- `backend/app/core/config.py` - Configuration and environment variables
+- `backend/app/services/ai_grading_service.py` - Auto-grading logic
+- `backend/GRADING_LOGIC_ANALYSIS.md` - Grading system documentation
+- `.github/copilot-instructions.md` - Additional AI agent guidance
+- `.AI_RULES.md` - Rule for AI Agents
+---
+
+**Remember**: This project helps students learn English. Code quality affects education quality. Be thorough, test well, and handle errors gracefully.

@@ -1,0 +1,13 @@
+.teacher-dashboard-v3 {
+  display: flex;
+  height: calc(100vh - 80px); /* Subtract navbar height */
+  background-color: #f8fafc;
+}
+
+.dashboard-main {
+  flex: 1;
+  overflow-y: auto;
+  background: #f8fafc;
+  padding: 1rem 0;
+}
+

@@ -1,0 +1,262 @@
+/* FunEnglish.css - Bright Theme */
+
+.fun-english-section {
+  padding: 4rem 0;
+  background: var(--bg-primary);
+}
+
+.section-header {
+  text-align: center;
+  margin-bottom: 3rem;
+  animation: fadeInUp 0.8s ease-out;
+}
+
+.header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--bg-gradient-5);
+  color: var(--text-white);
+  padding: 0.5rem 1.5rem;
+  border-radius: 50px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  box-shadow: var(--shadow-md);
+}
+
+.badge-icon {
+  font-size: 1.2rem;
+}
+
+.section-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 0.75rem;
+  position: relative;
+  display: inline-block;
+}
+
+.section-title::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 4px;
+  background: var(--bg-gradient-2);
+  border-radius: 2px;
+}
+
+.section-subtitle {
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  max-width: 600px;
+  margin: 1.5rem auto 0;
+}
+
+/* Fun Lessons Grid */
+.fun-lessons-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+
+.fun-card {
+  background: var(--bg-primary);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 3px solid transparent;
+  cursor: pointer;
+}
+
+.fun-card:hover {
+  transform: translateY(-10px) scale(1.02);
+  box-shadow: var(--shadow-lg);
+}
+
+.fun-card-orange {
+  border-color: var(--primary-orange);
+}
+
+.fun-card-orange:hover {
+  box-shadow: 0 15px 40px rgba(255, 107, 53, 0.3);
+}
+
+.fun-card-blue {
+  border-color: var(--primary-blue);
+}
+
+.fun-card-blue:hover {
+  box-shadow: 0 15px 40px rgba(74, 144, 226, 0.3);
+}
+
+.fun-card-green {
+  border-color: var(--primary-green);
+}
+
+.fun-card-green:hover {
+  box-shadow: 0 15px 40px rgba(46, 204, 113, 0.3);
+}
+
+.fun-card-purple {
+  border-color: var(--primary-purple);
+}
+
+.fun-card-purple:hover {
+  box-shadow: 0 15px 40px rgba(155, 89, 182, 0.3);
+}
+
+.fun-card-image {
+  background: linear-gradient(135deg, var(--card-orange), var(--card-yellow));
+  padding: 2rem;
+  text-align: center;
+  min-height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fun-card-orange .fun-card-image {
+  background: linear-gradient(135deg, #FFF3E0, #FFE0B2);
+}
+
+.fun-card-blue .fun-card-image {
+  background: linear-gradient(135deg, #E3F2FD, #BBDEFB);
+}
+
+.fun-card-green .fun-card-image {
+  background: linear-gradient(135deg, #E8F5E9, #C8E6C9);
+}
+
+.fun-card-purple .fun-card-image {
+  background: linear-gradient(135deg, #F3E5F5, #E1BEE7);
+}
+
+.emoji-large {
+  font-size: 5rem;
+  animation: bounce 2s ease-in-out infinite;
+}
+
+.fun-card-content {
+  padding: 1.5rem;
+}
+
+.fun-card-content h3 {
+  font-size: 1.3rem;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+}
+
+.fun-card-content p {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+
+.fun-card-meta {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.difficulty-badge {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.lessons-count {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+}
+
+.play-btn {
+  width: 100%;
+  background: var(--bg-gradient-3);
+  color: var(--text-white);
+  border: none;
+  padding: 0.875rem;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.play-btn:hover {
+  transform: scale(1.05);
+  box-shadow: var(--shadow-md);
+}
+
+/* View All Button */
+.view-all-container {
+  text-align: center;
+}
+
+.view-all-large-btn {
+  background: var(--bg-gradient-1);
+  color: var(--text-white);
+  border: none;
+  padding: 1rem 3rem;
+  border-radius: 50px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 1rem;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-md);
+}
+
+.view-all-large-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.view-all-large-btn i {
+  transition: transform 0.3s ease;
+}
+
+.view-all-large-btn:hover i {
+  transform: translateX(5px);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .fun-english-section {
+    padding: 3rem 0;
+  }
+  
+  .section-title {
+    font-size: 2rem;
+  }
+  
+  .fun-lessons-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  .emoji-large {
+    font-size: 4rem;
+  }
+}
+
