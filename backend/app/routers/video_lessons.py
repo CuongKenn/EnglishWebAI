@@ -36,6 +36,7 @@ class VideoLessonResponse(BaseModel):
     voice_type: str | None
     language: str | None
     created_at: datetime
+    ppt_url: str | None = None
 
     class Config:
         from_attributes = True
@@ -239,7 +240,7 @@ async def generate_video_from_ppt(
     logger.info(f"Dispatched Celery task {task.id} for VideoLesson {video_lesson.id}")
 
     # Return response immediately
-    return VideoLessonResponse(
+    response = VideoLessonResponse(
         id=video_lesson.id,
         lesson_id=video_lesson.lesson_id,
         teacher_id=video_lesson.teacher_id,
@@ -252,6 +253,14 @@ async def generate_video_from_ppt(
         language=video_lesson.language,
         created_at=video_lesson.created_at
     )
+
+    if video_lesson.ppt_file_path:
+        # Convert file path to URL
+        # Path is like "media/video_lessons/uploads/filename.pptx"
+        # URL should be "/media/video_lessons/uploads/filename.pptx"
+        response.ppt_url = "/" + video_lesson.ppt_file_path.replace("\\", "/")
+
+    return response
 
 
 @router.get("/{video_id}", response_model=VideoLessonResponse)
@@ -276,7 +285,10 @@ async def get_video_lesson(
             detail="Not authorized to view this video lesson"
         )
 
-    return VideoLessonResponse.model_validate(video_lesson)
+    response = VideoLessonResponse.model_validate(video_lesson)
+    if video_lesson.ppt_file_path:
+        response.ppt_url = "/" + video_lesson.ppt_file_path.replace("\\", "/")
+    return response
 
 
 @router.get("/", response_model=list[VideoLessonResponse])
@@ -296,7 +308,14 @@ async def list_video_lessons(
 
     videos = query.order_by(VideoLesson.created_at.desc()).offset(skip).limit(limit).all()
 
-    return [VideoLessonResponse.model_validate(v) for v in videos]
+    results = []
+    for v in videos:
+        resp = VideoLessonResponse.model_validate(v)
+        if v.ppt_file_path:
+            resp.ppt_url = "/" + v.ppt_file_path.replace("\\", "/")
+        results.append(resp)
+
+    return results
 
 
 @router.put("/{video_id}", response_model=VideoLessonResponse)

@@ -548,6 +548,22 @@ export default function MyClasses() {
             <div style={{ padding: '15px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#1f2937', color: 'white' }}>
               <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>{playingVideo.title}</h3>
               <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                {playingVideo.ppt_url && (
+                  <a 
+                    href={playingVideo.ppt_url} 
+                    download
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      background: '#10b981', border: 'none', color: 'white', 
+                      padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', textDecoration: 'none',
+                      display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', fontWeight: '500'
+                    }}
+                  >
+                    <Download size={16} />
+                    Tải PPT
+                  </a>
+                )}
                 {playingVideo.slides_metadata && playingVideo.slides_metadata.length > 0 && (
                   <button 
                     onClick={() => {
@@ -575,6 +591,7 @@ export default function MyClasses() {
                 src={playingVideo.video_url} 
                 controls 
                 autoPlay 
+                playsInline
                 style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
               />
             </div>

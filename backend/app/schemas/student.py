@@ -120,6 +120,7 @@ class VideoLessonResponse(BaseModel):
     status: str
     progress: int = 0
     created_at: datetime
+    ppt_url: str | None = None
 
     class Config:
         from_attributes = True
