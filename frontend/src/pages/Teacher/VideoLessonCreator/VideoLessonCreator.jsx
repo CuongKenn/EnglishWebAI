@@ -6,10 +6,10 @@ import { videoLessonAPI } from '../../../api/videoLessons';
  * VideoLessonCreator Component
  * UI for teachers to upload PowerPoint and generate video lessons with AI narration
  */
-const VideoLessonCreator = () => {
+const VideoLessonCreator = ({ initialLessonId, onSuccess }) => {
   const [file, setFile] = useState(null);
   const [title, setTitle] = useState('');
-  const [lessonId, setLessonId] = useState('');
+  const [lessonId, setLessonId] = useState(initialLessonId || '');
   const [voiceType, setVoiceType] = useState('vi-VN-HoaiMyNeural');
   const [speechRate, setSpeechRate] = useState(0);
   const [speechPitch, setSpeechPitch] = useState(0);
@@ -126,6 +126,7 @@ const VideoLessonCreator = () => {
               setLessonId('');
               setProgress(0);
               alert(`Video đã tạo thành công! ID: ${response.id}`);
+              if (onSuccess) onSuccess(response);
             }, 1000);
           } else if (videoStatus.status === 'failed') {
             clearInterval(pollInterval);
