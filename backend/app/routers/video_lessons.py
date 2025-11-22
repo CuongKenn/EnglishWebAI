@@ -48,6 +48,11 @@ class VideoGenerationRequest(BaseModel):
     auto_generate_script: bool = True  # Generate script from content if no notes
 
 
+class VideoLessonUpdate(BaseModel):
+    title: str | None = None
+    lesson_id: int | None = None
+
+
 async def process_ppt_to_video_background(
     ppt_path: str,
     output_video_path: str,
@@ -289,3 +294,46 @@ async def list_video_lessons(
     videos = query.order_by(VideoLesson.created_at.desc()).offset(skip).limit(limit).all()
 
     return [VideoLessonResponse.model_validate(v) for v in videos]
+
+
+@router.put("/{video_id}", response_model=VideoLessonResponse)
+async def update_video_lesson(
+    video_id: int,
+    payload: VideoLessonUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Update video lesson details (title, lesson_id)"""
+    video_lesson = db.query(VideoLesson).filter(VideoLesson.id == video_id).first()
+
+    if not video_lesson:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Video lesson {video_id} not found"
+        )
+
+    # Check permissions
+    if video_lesson.teacher_id != current_user.id and current_user.role not in (UserRole.ADMIN, UserRole.SUPERADMIN):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to update this video lesson"
+        )
+
+    if payload.title is not None:
+        video_lesson.title = payload.title
+
+    if payload.lesson_id is not None:
+        # Verify lesson exists and belongs to a class the teacher manages?
+        # For now, just check if lesson exists
+        from app.models.lesson import Lesson
+        lesson = db.query(Lesson).filter(Lesson.id == payload.lesson_id).first()
+        if not lesson:
+             raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Lesson {payload.lesson_id} not found"
+            )
+        video_lesson.lesson_id = payload.lesson_id
+
+    db.commit()
+    db.refresh(video_lesson)
+    return VideoLessonResponse.model_validate(video_lesson)

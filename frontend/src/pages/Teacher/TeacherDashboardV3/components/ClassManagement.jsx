@@ -30,6 +30,11 @@ export default function ClassManagement() {
   const [lessons, setLessons] = useState([]);
   const [showVideoCreator, setShowVideoCreator] = useState(false);
   const [selectedLessonForVideo, setSelectedLessonForVideo] = useState(null);
+  
+  // Add Existing Video State
+  const [showAddVideoModal, setShowAddVideoModal] = useState(false);
+  const [availableVideos, setAvailableVideos] = useState([]);
+  const [selectedVideoToAdd, setSelectedVideoToAdd] = useState(null);
 
   // Import students state
   const [importFile, setImportFile] = useState(null);
@@ -151,6 +156,40 @@ export default function ClassManagement() {
     } catch (error) {
       console.error('Error fetching materials:', error);
       showError('Lỗi khi tải danh sách tài liệu!');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchAvailableVideos = async () => {
+    try {
+      const response = await apiV1.get('/video-lessons/');
+      // Filter videos that are not yet assigned to any lesson (optional, or just show all)
+      // For now, show all so they can re-assign if needed, or maybe filter by null lesson_id
+      // Let's show all for flexibility
+      setAvailableVideos(response.data || []);
+    } catch (error) {
+      console.error('Error fetching videos:', error);
+      showError('Lỗi khi tải danh sách video!');
+    }
+  };
+
+  const handleAddVideoToLesson = async () => {
+    if (!selectedVideoToAdd || !selectedLessonForVideo) return;
+
+    setLoading(true);
+    try {
+      await apiV1.put(`/video-lessons/${selectedVideoToAdd.id}`, {
+        lesson_id: selectedLessonForVideo.id
+      });
+      
+      showSuccess('Đã thêm video vào bài học!');
+      setShowAddVideoModal(false);
+      setSelectedVideoToAdd(null);
+      fetchLessons(selectedClass.id); // Refresh lessons to show new video
+    } catch (error) {
+      console.error('Error adding video to lesson:', error);
+      showError('Lỗi khi thêm video!');
     } finally {
       setLoading(false);
     }
@@ -958,6 +997,70 @@ export default function ClassManagement() {
     </div>
   );
 
+  const renderAddVideoModal = () => (
+    <div className="class-modal-overlay" onClick={() => setShowAddVideoModal(false)}>
+      <div className="class-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="class-modal-header">
+          <h2>Thêm Video có sẵn vào bài học</h2>
+          <button className="modal-close-btn" onClick={() => setShowAddVideoModal(false)}>×</button>
+        </div>
+        <div className="class-modal-body">
+          <p style={{ marginBottom: '15px', color: '#666' }}>
+            Chọn video từ thư viện để thêm vào bài: <strong>{selectedLessonForVideo?.title}</strong>
+          </p>
+          
+          {availableVideos.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '20px', color: '#999' }}>
+              Chưa có video nào trong thư viện.
+            </div>
+          ) : (
+            <div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid #eee', borderRadius: '8px' }}>
+              {availableVideos.map(video => (
+                <div 
+                  key={video.id}
+                  onClick={() => setSelectedVideoToAdd(video)}
+                  style={{
+                    padding: '10px',
+                    borderBottom: '1px solid #eee',
+                    cursor: 'pointer',
+                    background: selectedVideoToAdd?.id === video.id ? '#eff6ff' : 'white',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px'
+                  }}
+                >
+                  <div style={{ 
+                    width: '40px', height: '40px', background: '#eee', borderRadius: '4px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}>
+                    <PlayCircle size={20} color="#666" />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: '500', fontSize: '14px' }}>{video.title}</div>
+                    <div style={{ fontSize: '12px', color: '#888' }}>
+                      {new Date(video.created_at).toLocaleDateString('vi-VN')} • {video.status}
+                    </div>
+                  </div>
+                  {selectedVideoToAdd?.id === video.id && <CheckCircle size={18} color="#2563eb" />}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="class-modal-footer">
+          <button className="btn-cancel-class" onClick={() => setShowAddVideoModal(false)}>Hủy</button>
+          <button 
+            className="btn-add-class"
+            onClick={handleAddVideoToLesson}
+            disabled={!selectedVideoToAdd || loading}
+          >
+            {loading ? 'Đang thêm...' : 'Thêm Video'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   const renderVideoCreatorModal = () => (
     <div className="class-modal-overlay" onClick={() => setShowVideoCreator(false)}>
       <div className="class-modal large-modal" onClick={(e) => e.stopPropagation()} style={{maxWidth: '1000px'}}>
@@ -1164,6 +1267,17 @@ export default function ClassManagement() {
                                 className="btn-action-class secondary"
                                 onClick={() => {
                                   setSelectedLessonForVideo(lesson);
+                                  fetchAvailableVideos();
+                                  setShowAddVideoModal(true);
+                                }}
+                                title="Thêm video có sẵn"
+                              >
+                                <FolderOpen size={16} />
+                              </button>
+                              <button 
+                                className="btn-action-class secondary"
+                                onClick={() => {
+                                  setSelectedLessonForVideo(lesson);
                                   setShowVideoCreator(true);
                                 }}
                               >
@@ -1249,6 +1363,7 @@ export default function ClassManagement() {
       {showImportModal && renderImportModal()}
       {showMaterialsModal && renderMaterialsModal()}
       {showVideoCreator && renderVideoCreatorModal()}
+      {showAddVideoModal && renderAddVideoModal()}
 
       {/* Info Box */}
       <div className="info-box-class">
