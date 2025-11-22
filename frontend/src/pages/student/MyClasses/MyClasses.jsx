@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BookOpen, Users, Calendar, FileText, Video, ChevronRight, Download, Eye, PlayCircle, Star, Clock, Award, TrendingUp, CheckCircle2, Target, Bell, AlertCircle, HandRaisedIcon as HandRaised, PenLine, FileCheck, X } from 'lucide-react';
+import { BookOpen, Users, Calendar, FileText, Video, ChevronRight, Download, Eye, PlayCircle, Star, Clock, Award, TrendingUp, CheckCircle2, Target, Bell, AlertCircle, HandRaisedIcon as HandRaised, PenLine, FileCheck, X, FolderOpen } from 'lucide-react';
 import './MyClasses.css';
 import { apiV1 } from '../../../services/api';
 
@@ -201,6 +201,14 @@ export default function MyClasses() {
               <FileText size={18} />
               <span>Bài tập</span>
               <span className="tab-count-new">{exercises.length}</span>
+            </button>
+            <button
+              className={`tab-btn-new ${activeTab === 'materials' ? 'active' : ''}`}
+              onClick={() => setActiveTab('materials')}
+            >
+              <FolderOpen size={18} />
+              <span>Tài liệu</span>
+              <span className="tab-count-new">{materials.length}</span>
             </button>
           </div>
 
@@ -461,6 +469,60 @@ export default function MyClasses() {
                         </div>
                       );
                     })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'materials' && (
+              <div className="materials-new">
+                <div className="section-header-new">
+                  <h2>Tài liệu học tập</h2>
+                  <p>Tài liệu tham khảo và bài đọc thêm</p>
+                </div>
+                {materials.length === 0 ? (
+                  <div className="empty-section-new">
+                    <FolderOpen size={64} strokeWidth={1} />
+                    <p>Chưa có tài liệu nào</p>
+                  </div>
+                ) : (
+                  <div className="materials-grid-new" style={{ display: 'grid', gap: '12px' }}>
+                    {materials.map((material) => (
+                      <div key={material.id} className="material-item-new" style={{
+                        display: 'flex', alignItems: 'center', gap: '15px', padding: '15px',
+                        background: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px'
+                      }}>
+                        <div className="material-icon" style={{
+                          width: '40px', height: '40px', background: '#eff6ff', borderRadius: '8px',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563eb'
+                        }}>
+                          <FileText size={20} />
+                        </div>
+                        <div className="material-info" style={{ flex: 1 }}>
+                          <h3 style={{ fontSize: '15px', fontWeight: '600', marginBottom: '4px', color: '#1f2937' }}>{material.title}</h3>
+                          <p style={{ fontSize: '13px', color: '#6b7280', margin: 0 }}>{material.description || 'Không có mô tả'}</p>
+                          <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>
+                            {new Date(material.created_at).toLocaleDateString('vi-VN')}
+                          </div>
+                        </div>
+                        {material.url && (
+                          <a 
+                            href={material.url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="material-action-btn"
+                            style={{
+                              padding: '8px 16px', background: '#f3f4f6', color: '#374151',
+                              borderRadius: '6px', textDecoration: 'none', fontSize: '13px', fontWeight: '500',
+                              display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s'
+                            }}
+                          >
+                            <Download size={16} />
+                            Tải về
+                          </a>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
