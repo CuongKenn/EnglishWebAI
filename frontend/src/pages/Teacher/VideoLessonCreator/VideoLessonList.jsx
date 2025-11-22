@@ -166,7 +166,9 @@ const VideoLessonList = () => {
                     video.status === 'failed' ? 'bg-red-100 text-red-800' :
                     'bg-gray-100 text-gray-800'
                   }`}>
-                    {getStatusText(video.status)}
+                    {video.status === 'processing' && video.progress 
+                      ? `Đang xử lý ${video.progress}%` 
+                      : getStatusText(video.status)}
                   </span>
                 </div>
 

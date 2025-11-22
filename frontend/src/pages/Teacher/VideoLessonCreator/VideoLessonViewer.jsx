@@ -102,6 +102,22 @@ const VideoLessonViewer = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Voice mapping
+  const getVoiceLabel = (voiceType) => {
+    if (!voiceType) return '--';
+    
+    const voices = {
+      'vi-VN-HoaiMyNeural': 'Hoài My (Nữ - Tiếng Việt)',
+      'vi-VN-NamMinhNeural': 'Nam Minh (Nam - Tiếng Việt)',
+      'en-US-JennyNeural': 'Jenny (Female - English US)',
+      'en-US-GuyNeural': 'Guy (Male - English US)',
+      'en-GB-SoniaNeural': 'Sonia (Female - English UK)',
+      'en-GB-RyanNeural': 'Ryan (Male - English UK)',
+    };
+
+    return voices[voiceType] || voiceType;
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -179,6 +195,21 @@ const VideoLessonViewer = () => {
             <p className="text-gray-600 mb-4">
               Quá trình này có thể mất vài phút. Vui lòng không đóng trang.
             </p>
+            
+            {/* Progress Bar */}
+            <div className="max-w-md mx-auto mb-4">
+              <div className="flex items-center justify-between text-sm mb-1">
+                <span className="text-gray-700">Tiến độ</span>
+                <span className="font-medium text-blue-600">{video.progress || 0}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                <div
+                  className="bg-blue-600 h-full transition-all duration-300 ease-out"
+                  style={{ width: `${video.progress || 0}%` }}
+                />
+              </div>
+            </div>
+
             {video.slides_count && (
               <p className="text-sm text-gray-500">
                 Số slide: {video.slides_count}
@@ -227,9 +258,7 @@ const VideoLessonViewer = () => {
             <div className="bg-gray-50 p-4 rounded-lg">
               <p className="text-sm text-gray-600 mb-1">Giọng đọc</p>
               <p className="text-sm font-medium text-gray-800">
-                {video.voice_type?.includes('HoaiMy') ? 'Hoài My' :
-                 video.voice_type?.includes('NamMinh') ? 'Nam Minh' :
-                 video.voice_type || '--'}
+                {getVoiceLabel(video.voice_type)}
               </p>
             </div>
 

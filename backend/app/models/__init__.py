@@ -41,6 +41,7 @@ from app.models.system_config import SystemConfig
 from app.models.user import User
 from app.models.weekly_assessment import WeeklyAssessment, WeeklySubmission
 from app.models.worksheet import Worksheet
+from app.models.video_lesson import VideoLesson
 
 __all__ = [
     "User",
@@ -85,4 +86,5 @@ __all__ = [
     "ExamAssessment",
     "ExamSubmission",
     "StudentFaceData",
+    "VideoLesson",
 ]

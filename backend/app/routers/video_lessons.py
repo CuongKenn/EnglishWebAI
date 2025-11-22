@@ -29,8 +29,11 @@ class VideoLessonResponse(BaseModel):
     title: str
     video_url: str | None
     status: str  # pending, processing, completed, failed
+    progress: int | None = 0
     slides_count: int | None
     duration_seconds: int | None
+    voice_type: str | None
+    language: str | None
     created_at: datetime
 
     class Config:
@@ -237,6 +240,8 @@ async def generate_video_from_ppt(
         status=video_lesson.status,
         slides_count=video_lesson.slides_count,
         duration_seconds=video_lesson.duration_seconds,
+        voice_type=video_lesson.voice_type,
+        language=video_lesson.language,
         created_at=video_lesson.created_at
     )
 

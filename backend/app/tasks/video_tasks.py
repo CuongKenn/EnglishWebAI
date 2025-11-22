@@ -47,6 +47,7 @@ def process_ppt_to_video(
 
         video_lesson.status = "processing"
         video_lesson.error_message = None
+        video_lesson.progress = 0
         db.commit()
 
         logger.info(f"[Task {self.request.id}] Processing video {video_lesson_id}")
@@ -65,22 +66,29 @@ def process_ppt_to_video(
         slides_data = ppt_video_service.extract_slides(ppt_path, str(slides_dir))
 
         video_lesson.slides_count = len(slides_data)
+        video_lesson.progress = 5
         db.commit()
 
         # Step 2: Generate scripts and audio for each slide
         segment_paths = []
         total_duration = 0
+        total_slides = len(slides_data)
 
         for i, slide_data in enumerate(slides_data, 1):
-            logger.info(f"[Task {self.request.id}] Processing slide {i}/{len(slides_data)}")
+            logger.info(f"[Task {self.request.id}] Processing slide {i}/{total_slides}")
+
+            # Update progress (5% to 90%)
+            current_progress = 5 + int((i / total_slides) * 85)
+            video_lesson.progress = current_progress
+            db.commit()
 
             # Update progress
             self.update_state(
                 state='PROGRESS',
                 meta={
                     'current': i,
-                    'total': len(slides_data),
-                    'status': f'Processing slide {i}/{len(slides_data)}'
+                    'total': total_slides,
+                    'status': f'Processing slide {i}/{total_slides}'
                 }
             )
 
@@ -129,6 +137,9 @@ def process_ppt_to_video(
 
         # Step 3: Merge all segments
         logger.info(f"[Task {self.request.id}] Merging {len(segment_paths)} video segments")
+        
+        video_lesson.progress = 90
+        db.commit()
 
         final_video_path = str(base_dir / "final_video.mp4")
         success = ppt_video_service.merge_video_segments(segment_paths, final_video_path)
@@ -140,6 +151,7 @@ def process_ppt_to_video(
         video_lesson.video_url = f"/media/video_lessons/{video_lesson_id}/final_video.mp4"
         video_lesson.duration_seconds = int(total_duration)
         video_lesson.status = "completed"
+        video_lesson.progress = 100
         video_lesson.completed_at = datetime.utcnow()
         db.commit()
 

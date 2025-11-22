@@ -42,7 +42,7 @@ class VideoLesson(Base):
         default="pending",
         nullable=False
     )  # pending, processing, completed, failed
-
+    progress = Column(Integer, default=0)  # 0-100
     error_message = Column(Text, nullable=True)  # Error details if failed
 
     # Timestamps

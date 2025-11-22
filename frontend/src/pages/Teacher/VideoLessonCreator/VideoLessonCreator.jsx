@@ -99,26 +99,48 @@ const VideoLessonCreator = () => {
       formData.append('auto_generate_script', autoGenerateScript);
 
       // Simulate upload progress
-      const progressInterval = setInterval(() => {
-        setProgress((prev) => Math.min(prev + 10, 90));
-      }, 500);
+      // const progressInterval = setInterval(() => {
+      //   setProgress((prev) => Math.min(prev + 10, 90));
+      // }, 500);
 
       const response = await videoLessonAPI.generateFromPPT(formData);
+      
+      // Start polling for real progress
+      const pollInterval = setInterval(async () => {
+        try {
+          const videoStatus = await videoLessonAPI.getVideoLesson(response.id);
+          
+          if (videoStatus.progress) {
+            setProgress(videoStatus.progress);
+          }
 
-      clearInterval(progressInterval);
-      setProgress(100);
+          if (videoStatus.status === 'completed') {
+            clearInterval(pollInterval);
+            setProgress(100);
+            setUploading(false);
+            
+            // Reset form
+            setTimeout(() => {
+              setFile(null);
+              setTitle('');
+              setLessonId('');
+              setProgress(0);
+              alert(`Video đã tạo thành công! ID: ${response.id}`);
+            }, 1000);
+          } else if (videoStatus.status === 'failed') {
+            clearInterval(pollInterval);
+            setUploading(false);
+            setError(videoStatus.error_message || 'Tạo video thất bại');
+          }
+        } catch (err) {
+          console.error('Polling error:', err);
+          // Don't stop polling on transient network errors, but maybe count them?
+        }
+      }, 2000);
 
-      // Reset form
-      setTimeout(() => {
-        setFile(null);
-        setTitle('');
-        setLessonId('');
-        setProgress(0);
-        setUploading(false);
-        
-        // Navigate to video status page or show success
-        alert(`Video đang được tạo! ID: ${response.id}\nTrạng thái: ${response.status}`);
-      }, 1000);
+      // Store interval ID to clear it if component unmounts (useEffect cleanup would be better but this is inside handler)
+      // For now, we rely on the fact that user stays on page. 
+      // Ideally we should use a ref or useEffect for the poller.
 
     } catch (err) {
       console.error('Upload error:', err);
