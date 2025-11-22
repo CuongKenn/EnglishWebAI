@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Upload, Video, Loader2, Settings, FileText, Volume2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Upload, Video, Loader2, Settings, FileText, Volume2, BookOpen, School } from 'lucide-react';
 import { videoLessonAPI } from '../../../api/videoLessons';
+import { classesAPI, lessonsAPI } from '../../../services/api';
 
 /**
  * VideoLessonCreator Component
@@ -10,6 +11,14 @@ const VideoLessonCreator = ({ initialLessonId, onSuccess }) => {
   const [file, setFile] = useState(null);
   const [title, setTitle] = useState('');
   const [lessonId, setLessonId] = useState(initialLessonId || '');
+  
+  // Class selection state
+  const [classes, setClasses] = useState([]);
+  const [selectedClassId, setSelectedClassId] = useState('');
+  const [classLessons, setClassLessons] = useState([]);
+  const [loadingClasses, setLoadingClasses] = useState(false);
+  const [loadingLessons, setLoadingLessons] = useState(false);
+
   const [voiceType, setVoiceType] = useState('vi-VN-HoaiMyNeural');
   const [speechRate, setSpeechRate] = useState(0);
   const [speechPitch, setSpeechPitch] = useState(0);
@@ -28,6 +37,66 @@ const VideoLessonCreator = ({ initialLessonId, onSuccess }) => {
     { value: 'en-GB-SoniaNeural', label: 'Sonia (Female - English UK)', gender: 'female' },
     { value: 'en-GB-RyanNeural', label: 'Ryan (Male - English UK)', gender: 'male' },
   ];
+
+  // Fetch classes on mount
+  useEffect(() => {
+    const fetchClasses = async () => {
+      setLoadingClasses(true);
+      try {
+        const data = await classesAPI.getTeachingClasses();
+        setClasses(data);
+      } catch (err) {
+        console.error('Error fetching classes:', err);
+      } finally {
+        setLoadingClasses(false);
+      }
+    };
+
+    fetchClasses();
+  }, []);
+
+  // Handle initialLessonId if provided
+  useEffect(() => {
+    const resolveInitialLesson = async () => {
+      if (initialLessonId) {
+        try {
+          const lesson = await lessonsAPI.getLessonDetail(initialLessonId);
+          if (lesson && lesson.class_id) {
+            setSelectedClassId(lesson.class_id);
+          }
+        } catch (err) {
+          console.error('Error resolving initial lesson:', err);
+        }
+      }
+    };
+
+    if (initialLessonId) {
+      resolveInitialLesson();
+    }
+  }, [initialLessonId]);
+
+  // Fetch lessons when class changes
+  useEffect(() => {
+    const fetchLessons = async () => {
+      if (!selectedClassId) {
+        setClassLessons([]);
+        return;
+      }
+
+      setLoadingLessons(true);
+      try {
+        const data = await classesAPI.getClassLessons(selectedClassId);
+        setClassLessons(data);
+      } catch (err) {
+        console.error('Error fetching lessons:', err);
+        setClassLessons([]);
+      } finally {
+        setLoadingLessons(false);
+      }
+    };
+
+    fetchLessons();
+  }, [selectedClassId]);
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
@@ -227,7 +296,7 @@ const VideoLessonCreator = ({ initialLessonId, onSuccess }) => {
           )}
 
           {/* Basic Settings */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Tiêu đề video *
@@ -243,18 +312,49 @@ const VideoLessonCreator = ({ initialLessonId, onSuccess }) => {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                ID Bài học (tùy chọn)
-              </label>
-              <input
-                type="number"
-                value={lessonId}
-                onChange={(e) => setLessonId(e.target.value)}
-                placeholder="Liên kết với bài học"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                disabled={uploading}
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <School className="w-4 h-4 inline mr-1" />
+                  Lớp học
+                </label>
+                <select
+                  value={selectedClassId}
+                  onChange={(e) => {
+                    setSelectedClassId(e.target.value);
+                    setLessonId('');
+                  }}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  disabled={uploading || loadingClasses}
+                >
+                  <option value="">-- Chọn lớp học --</option>
+                  {classes.map((cls) => (
+                    <option key={cls.id} value={cls.id}>
+                      {cls.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <BookOpen className="w-4 h-4 inline mr-1" />
+                  Bài học (tùy chọn)
+                </label>
+                <select
+                  value={lessonId}
+                  onChange={(e) => setLessonId(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  disabled={uploading || !selectedClassId || loadingLessons}
+                >
+                  <option value="">-- Chọn bài học --</option>
+                  {classLessons.map((lesson) => (
+                    <option key={lesson.id} value={lesson.id}>
+                      {lesson.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 
