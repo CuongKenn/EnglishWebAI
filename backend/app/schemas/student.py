@@ -107,6 +107,23 @@ class AttendanceRecordOut(BaseModel):
     note: str | None = None
 
 
+# ============= Video Lesson Schemas =============
+
+class VideoLessonResponse(BaseModel):
+    id: int
+    title: str
+    description: str | None = None
+    video_url: str | None = None
+    thumbnail_url: str | None = None
+    duration_seconds: int | None = None
+    status: str
+    progress: int = 0
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
 # ============= Lesson Schemas =============
 
 class LessonBase(BaseModel):
@@ -128,6 +145,7 @@ class LessonResponse(LessonBase):
     published_at: datetime | None
     created_at: datetime
     updated_at: datetime | None
+    video_lessons: list[VideoLessonResponse] = []
 
     class Config:
         from_attributes = True
