@@ -17,7 +17,8 @@ import {
   UserGroupIcon,
   ClipboardDocumentListIcon,
   ChartBarSquareIcon,
-  TrophyIcon
+  TrophyIcon,
+  ShieldCheckIcon
 } from '@heroicons/react/24/outline';
 
 const Sidebar = ({ currentPage, onNavigate }) => {
@@ -44,7 +45,8 @@ const Sidebar = ({ currentPage, onNavigate }) => {
         { id: 'grading-feedback', label: 'Chấm điểm & Phản hồi', icon: PencilIcon },
         // { id: 'exam-grading', label: 'Chấm thi Giữa/Cuối kỳ', icon: TrophyIcon }, // Hidden
         { id: 'weekly-assessments', label: 'Phiếu đánh giá tuần', icon: ClipboardDocumentListIcon },
-        { id: 'error-analysis', label: 'Xuất phân tích lỗi', icon: ChartBarSquareIcon }
+        { id: 'error-analysis', label: 'Xuất phân tích lỗi', icon: ChartBarSquareIcon },
+        { id: 'exam-monitoring', label: 'Giám sát thi cử', icon: ShieldCheckIcon }
       ]
     },
     {

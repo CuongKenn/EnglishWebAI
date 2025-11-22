@@ -23,6 +23,7 @@ from app.models.discussion_like import DiscussionLike
 from app.models.enhanced_weekly_assessment import EnhancedWeeklyAssessment, EnhancedWeeklySubmission
 from app.models.enrollment import Enrollment
 from app.models.exam_assessment import ExamAssessment, ExamSubmission
+from app.models.exam_monitoring import ExamMonitoringAlert
 from app.models.exercise import Exercise
 from app.models.grading_queue import GradingQueue
 from app.models.lesson import Lesson
@@ -84,5 +85,6 @@ __all__ = [
     "EnhancedWeeklySubmission",
     "ExamAssessment",
     "ExamSubmission",
+    "ExamMonitoringAlert",
     "StudentFaceData",
 ]

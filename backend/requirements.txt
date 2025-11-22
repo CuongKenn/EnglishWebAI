@@ -69,3 +69,7 @@ langdetect==1.0.9
 torch==2.1.0
 torchvision==0.16.0
 opencv-python==4.8.1.78
+# RetinaFace for improved face detection (optional, falls back to CenterFace if not available)
+# Install with: pip install retinaface or pip install git+https://github.com/serengil/retinaface.git
+# Note: RetinaFace may require additional dependencies like onnxruntime or tensorflow
+# If installation fails, the system will automatically fall back to CenterFace
