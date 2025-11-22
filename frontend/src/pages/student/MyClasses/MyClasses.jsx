@@ -340,48 +340,48 @@ export default function MyClasses() {
                           
                           {/* Video Lessons List */}
                           {lesson.video_lessons && lesson.video_lessons.length > 0 && (
-                            <div className="lesson-videos-list" style={{ marginTop: '10px' }}>
+                            <div className="lesson-videos-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '10px', marginTop: '15px' }}>
                               {lesson.video_lessons.map(video => (
                                 <div key={video.id} 
-                                  className="video-item-chip" 
+                                  className="video-card-item"
                                   onClick={() => video.status === 'completed' && setPlayingVideo(video)}
                                   style={{ 
-                                    display: 'flex', alignItems: 'center', gap: '6px', 
-                                    padding: '6px 10px', background: '#eff6ff', 
-                                    borderRadius: '6px', cursor: video.status === 'completed' ? 'pointer' : 'default',
-                                    border: '1px solid #dbeafe', marginBottom: '5px'
+                                    cursor: video.status === 'completed' ? 'pointer' : 'default',
+                                    border: '1px solid #e5e7eb', borderRadius: '8px', overflow: 'hidden',
+                                    opacity: video.status === 'completed' ? 1 : 0.7,
+                                    backgroundColor: '#fff'
                                   }}
                                 >
-                                  <PlayCircle size={14} color={video.status === 'completed' ? "#2563eb" : "#9ca3af"} />
-                                  <span style={{ fontSize: '13px', color: '#1e40af' }}>{video.title}</span>
-                                  {video.status !== 'completed' && (
-                                    <span style={{ fontSize: '10px', color: '#6b7280' }}>({video.status})</span>
-                                  )}
+                                  <div className="video-thumbnail" style={{ position: 'relative', paddingTop: '56.25%', background: '#f3f4f6' }}>
+                                    {video.thumbnail_url ? (
+                                      <img src={video.thumbnail_url} alt={video.title} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    ) : (
+                                      <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>
+                                        <Video size={32} />
+                                      </div>
+                                    )}
+                                    {video.status === 'completed' && (
+                                      <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: 'rgba(0,0,0,0.5)', borderRadius: '50%', padding: '8px', display: 'flex' }}>
+                                        <PlayCircle size={24} color="white" />
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="video-info" style={{ padding: '8px' }}>
+                                    <h4 style={{ margin: 0, fontSize: '13px', fontWeight: '600', color: '#374151', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={video.title}>{video.title}</h4>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px', fontSize: '11px', color: '#6b7280' }}>
+                                       <span>{video.duration_seconds ? `${Math.floor(video.duration_seconds / 60)}:${(video.duration_seconds % 60).toString().padStart(2, '0')}` : '--:--'}</span>
+                                       <span style={{ textTransform: 'capitalize' }}>{video.status === 'completed' ? 'Sẵn sàng' : video.status}</span>
+                                    </div>
+                                  </div>
                                 </div>
                               ))}
                             </div>
                           )}
                         </div>
                         <div className="lesson-actions-new">
-                          {lesson.video_lessons && lesson.video_lessons.some(v => v.status === 'completed') ? (
-                            <button 
-                              className="lesson-btn-new primary"
-                              onClick={() => {
-                                const video = lesson.video_lessons.find(v => v.status === 'completed');
-                                if (video) setPlayingVideo(video);
-                              }}
-                            >
-                              <PlayCircle size={16} />
-                              <span>Xem Video</span>
-                            </button>
-                          ) : (
-                            <button className="lesson-btn-new primary" disabled style={{ opacity: 0.5, cursor: 'not-allowed' }}>
-                              <PlayCircle size={16} />
-                              <span>Chưa có Video</span>
-                            </button>
-                          )}
                           <button className="lesson-btn-new secondary">
                             <Download size={16} />
+                            <span>Tài liệu</span>
                           </button>
                         </div>
                       </div>

@@ -7,7 +7,7 @@ from fastapi.responses import StreamingResponse
 
 logger = logging.getLogger(__name__)
 from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
@@ -689,6 +689,11 @@ async def assign_ungrouped_to_lesson(
     return {"message": "Đã gán các mục chưa phân loại vào bài", "lesson_id": lesson_id}
 
 
+from datetime import datetime
+
+from app.models.video_lesson import VideoLesson
+
+
 @router.get("/{class_id}/lessons", response_model=list[LessonResponse])
 async def list_class_lessons(
     class_id: int,
@@ -697,12 +702,37 @@ async def list_class_lessons(
 ):
     """Danh sách bài học theo lớp (học sinh đã tham gia, giáo viên, hoặc admin)"""
     _ensure_can_view_class(db, current_user, class_id)
-    return (
+
+    lessons = (
         db.query(Lesson)
+        .options(joinedload(Lesson.video_lessons))
         .filter(Lesson.class_id == class_id)
         .order_by(Lesson.order_index.asc().nulls_last(), Lesson.id.asc())
         .all()
     )
+
+    # Check for orphaned videos (videos with class_id but no lesson_id)
+    orphaned_videos = (
+        db.query(VideoLesson)
+        .filter(VideoLesson.class_id == class_id, VideoLesson.lesson_id.is_(None))
+        .all()
+    )
+
+    if orphaned_videos:
+        # Create a virtual "General" lesson to hold these videos
+        general_lesson = Lesson(
+            id=0,  # Virtual ID
+            class_id=class_id,
+            title="Bài giảng chung",
+            content="Các video bài giảng chưa được phân loại",
+            order_index=-1,
+            created_at=datetime.utcnow(),
+            video_lessons=orphaned_videos
+        )
+        # Insert at the beginning
+        lessons.insert(0, general_lesson)
+
+    return lessons
 
 
 @router.post("/{class_id}/lessons", response_model=LessonResponse, status_code=201)

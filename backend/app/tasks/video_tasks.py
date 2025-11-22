@@ -137,7 +137,7 @@ def process_ppt_to_video(
 
         # Step 3: Merge all segments
         logger.info(f"[Task {self.request.id}] Merging {len(segment_paths)} video segments")
-        
+
         video_lesson.progress = 90
         db.commit()
 

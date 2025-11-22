@@ -161,6 +161,7 @@ const VideoLessonCreator = ({ initialLessonId, onSuccess }) => {
       formData.append('file', file);
       formData.append('title', title.trim());
       if (lessonId) formData.append('lesson_id', lessonId);
+      if (selectedClassId) formData.append('class_id', selectedClassId);
       formData.append('voice_type', voiceType);
       formData.append('speech_rate', `${speechRate}%`);
       formData.append('speech_pitch', `${speechPitch}%`);

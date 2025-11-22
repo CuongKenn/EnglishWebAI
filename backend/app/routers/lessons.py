@@ -1,6 +1,6 @@
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
@@ -63,7 +63,7 @@ async def get_lesson(
     """
     Lấy thông tin chi tiết của một bài học
     """
-    lesson = db.query(Lesson).filter(Lesson.id == lesson_id).first()
+    lesson = db.query(Lesson).options(joinedload(Lesson.video_lessons)).filter(Lesson.id == lesson_id).first()
 
     if not lesson:
         raise HTTPException(

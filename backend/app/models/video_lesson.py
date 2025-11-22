@@ -17,6 +17,7 @@ class VideoLesson(Base):
 
     # Relationships
     lesson_id = Column(Integer, ForeignKey("lessons.id"), nullable=True, index=True)
+    class_id = Column(Integer, ForeignKey("classes.id"), nullable=True, index=True)
     teacher_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
 
     # Content
@@ -52,6 +53,7 @@ class VideoLesson(Base):
 
     # Relationships
     lesson = relationship("Lesson", back_populates="video_lessons", foreign_keys=[lesson_id])
+    classroom = relationship("Classroom", backref="video_lessons", foreign_keys=[class_id])
     teacher = relationship("User", back_populates="video_lessons", foreign_keys=[teacher_id])
 
     def __repr__(self):

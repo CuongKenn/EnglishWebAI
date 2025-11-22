@@ -147,6 +147,7 @@ async def generate_video_from_ppt(
     file: UploadFile = File(..., description="PowerPoint file (.ppt or .pptx)"),
     title: str = Form(..., description="Video title"),
     lesson_id: int | None = Form(None, description="Associated lesson ID"),
+    class_id: int | None = Form(None, description="Associated class ID"),
     voice_type: str = Form("vi-VN-HoaiMyNeural", description="Azure TTS voice"),
     speech_rate: str = Form("0%", description="Speech rate (-50% to +100%)"),
     speech_pitch: str = Form("0%", description="Speech pitch (-50% to +50%)"),
@@ -211,6 +212,7 @@ async def generate_video_from_ppt(
     video_lesson = VideoLesson(
         title=title,
         lesson_id=lesson_id,
+        class_id=class_id,
         teacher_id=current_user.id,
         ppt_file_path=ppt_path,
         voice_type=voice_type,
@@ -333,6 +335,7 @@ async def update_video_lesson(
                 detail=f"Lesson {payload.lesson_id} not found"
             )
         video_lesson.lesson_id = payload.lesson_id
+        video_lesson.class_id = lesson.class_id  # Auto-update class_id from lesson
 
     db.commit()
     db.refresh(video_lesson)
