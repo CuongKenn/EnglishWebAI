@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BookOpen, Users, Calendar, FileText, Video, ChevronRight, Download, Eye, PlayCircle, Star, Clock, Award, TrendingUp, CheckCircle2, Target, Bell, AlertCircle, HandRaisedIcon as HandRaised, PenLine, FileCheck } from 'lucide-react';
+import { BookOpen, Users, Calendar, FileText, Video, ChevronRight, Download, Eye, PlayCircle, Star, Clock, Award, TrendingUp, CheckCircle2, Target, Bell, AlertCircle, HandRaisedIcon as HandRaised, PenLine, FileCheck, X } from 'lucide-react';
 import './MyClasses.css';
 import { apiV1 } from '../../../services/api';
 
@@ -11,6 +11,7 @@ export default function MyClasses() {
   const [materials, setMaterials] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const [playingVideo, setPlayingVideo] = useState(null);
 
   useEffect(() => {
     fetchMyClasses();
@@ -328,12 +329,49 @@ export default function MyClasses() {
                         <div className="lesson-body-new">
                           <h3>{lesson.title}</h3>
                           <p>{lesson.content || 'Không có nội dung'}</p>
+                          
+                          {/* Video Lessons List */}
+                          {lesson.video_lessons && lesson.video_lessons.length > 0 && (
+                            <div className="lesson-videos-list" style={{ marginTop: '10px' }}>
+                              {lesson.video_lessons.map(video => (
+                                <div key={video.id} 
+                                  className="video-item-chip" 
+                                  onClick={() => video.status === 'completed' && setPlayingVideo(video)}
+                                  style={{ 
+                                    display: 'flex', alignItems: 'center', gap: '6px', 
+                                    padding: '6px 10px', background: '#eff6ff', 
+                                    borderRadius: '6px', cursor: video.status === 'completed' ? 'pointer' : 'default',
+                                    border: '1px solid #dbeafe', marginBottom: '5px'
+                                  }}
+                                >
+                                  <PlayCircle size={14} color={video.status === 'completed' ? "#2563eb" : "#9ca3af"} />
+                                  <span style={{ fontSize: '13px', color: '#1e40af' }}>{video.title}</span>
+                                  {video.status !== 'completed' && (
+                                    <span style={{ fontSize: '10px', color: '#6b7280' }}>({video.status})</span>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                         <div className="lesson-actions-new">
-                          <button className="lesson-btn-new primary">
-                            <PlayCircle size={16} />
-                            <span>Xem bài giảng</span>
-                          </button>
+                          {lesson.video_lessons && lesson.video_lessons.some(v => v.status === 'completed') ? (
+                            <button 
+                              className="lesson-btn-new primary"
+                              onClick={() => {
+                                const video = lesson.video_lessons.find(v => v.status === 'completed');
+                                if (video) setPlayingVideo(video);
+                              }}
+                            >
+                              <PlayCircle size={16} />
+                              <span>Xem Video</span>
+                            </button>
+                          ) : (
+                            <button className="lesson-btn-new primary" disabled style={{ opacity: 0.5, cursor: 'not-allowed' }}>
+                              <PlayCircle size={16} />
+                              <span>Chưa có Video</span>
+                            </button>
+                          )}
                           <button className="lesson-btn-new secondary">
                             <Download size={16} />
                           </button>
@@ -429,6 +467,35 @@ export default function MyClasses() {
             )}
           </div>
         </>
+      )}
+
+      {/* Video Player Modal */}
+      {playingVideo && (
+        <div className="video-modal-overlay" style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)', zIndex: 1000,
+          display: 'flex', alignItems: 'center', justifyContent: 'center'
+        }} onClick={() => setPlayingVideo(null)}>
+          <div className="video-modal-content" style={{
+            width: '90%', maxWidth: '1000px', background: 'black',
+            borderRadius: '12px', overflow: 'hidden', position: 'relative'
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{ padding: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#1f2937', color: 'white' }}>
+              <h3 style={{ margin: 0, fontSize: '16px' }}>{playingVideo.title}</h3>
+              <button onClick={() => setPlayingVideo(null)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>
+                <X size={24} />
+              </button>
+            </div>
+            <div style={{ position: 'relative', paddingTop: '56.25%' /* 16:9 Aspect Ratio */ }}>
+              <video 
+                src={playingVideo.video_url} 
+                controls 
+                autoPlay 
+                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+              />
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
