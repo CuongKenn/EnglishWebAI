@@ -9,6 +9,7 @@ const GroupRoom = () => {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState(null);
+  const [joiningGroupId, setJoiningGroupId] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -91,7 +92,7 @@ const GroupRoom = () => {
       
       // Auto-join nếu là chat room
       if (!newGroup.is_quiz) {
-        setSelectedGroup(newGroup);
+        setSelectedGroup({ ...newGroup, is_quiz: false });
       } else {
         // Nếu là quiz, thông báo và refresh
         alert('Đã tạo phòng quiz! Vào tab "Chế độ Solo" để tham gia.');
@@ -101,6 +102,27 @@ const GroupRoom = () => {
       console.error('Error creating group:', error);
       const errorMsg = error.response?.data?.detail || error.detail || 'Không thể tạo nhóm. Vui lòng thử lại!';
       alert(errorMsg);
+    }
+  };
+
+  const handleSelectGroup = async (group) => {
+    if (group.is_quiz) {
+      alert('Quiz room! Vui lòng vào tab "Chế độ Solo" để tham gia quiz này.');
+      return;
+    }
+
+    if (joiningGroupId) return;
+
+    try {
+      setJoiningGroupId(group.id);
+      const joinedRoom = await chatRoomAPI.joinRoom(group.room_code);
+      setSelectedGroup({ ...joinedRoom, is_quiz: false });
+    } catch (error) {
+      console.error('Error joining group:', error);
+      const errorMsg = error.response?.data?.detail || error.detail || 'Không thể tham gia nhóm. Vui lòng thử lại!';
+      alert(errorMsg);
+    } finally {
+      setJoiningGroupId(null);
     }
   };
 
@@ -238,13 +260,7 @@ const GroupRoom = () => {
             <div 
               key={`${group.is_quiz ? 'quiz' : 'chat'}-${group.id}`} 
               className="group-card" 
-              onClick={() => {
-                if (group.is_quiz) {
-                  alert('Quiz room! Vui lòng vào tab "Chế độ Solo" để tham gia quiz này.');
-                } else {
-                  setSelectedGroup(group);
-                }
-              }}
+              onClick={() => handleSelectGroup(group)}
             >
               <div className="group-card-header">
                 <div className={`group-icon ${group.is_quiz ? 'quiz-icon' : ''}`}>
@@ -278,8 +294,15 @@ const GroupRoom = () => {
                     </>
                   )}
                 </div>
-                <button className="btn-join">
-                  {group.is_quiz ? 'Vào Quiz' : 'Tham gia'}
+                <button 
+                  className="btn-join"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSelectGroup(group);
+                  }}
+                  disabled={!group.is_quiz && joiningGroupId === group.id}
+                >
+                  {group.is_quiz ? 'Vào Quiz' : joiningGroupId === group.id ? 'Đang vào...' : 'Tham gia'}
                 </button>
               </div>
             </div>

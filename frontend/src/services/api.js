@@ -27,6 +27,9 @@ const BASE_URL = normalized || (isProduction ? '' : 'http://localhost:8000');
 const API_V1 = `${BASE_URL}/api/v1`;
 const API_USERS = `${BASE_URL}/api/users`;
 
+export const backendBaseUrl = BASE_URL;
+export const apiV1BaseUrl = API_V1;
+
 // Create axios instance with default config
 const apiClient = axios.create({
   baseURL: BASE_URL,

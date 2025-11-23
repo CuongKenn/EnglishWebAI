@@ -24,6 +24,7 @@ class ChatRoomResponse(ChatRoomBase):
     is_active: bool
     theme: str
     room_code: str
+    participant_count: Optional[int] = 0
 
     class Config:
         from_attributes = True

@@ -32,3 +32,19 @@ def decode_access_token(token: str) -> dict | None:
         return jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
     except JWTError:
         return None
+
+
+def verify_token(token: str) -> dict:
+    """Decode and validate token, raising if invalid"""
+    if not token:
+        raise JWTError("Token is missing")
+
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+    except JWTError as exc:
+        raise exc
+
+    if not payload.get("sub"):
+        raise JWTError("Token payload missing subject")
+
+    return payload

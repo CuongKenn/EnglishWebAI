@@ -27,22 +27,42 @@ from app.schemas.chat_room import (
 router = APIRouter()
 
 
+def get_online_participant_count(db: Session, room_id: int) -> int:
+    return (
+        db.query(func.count(ChatParticipant.id))
+        .filter(
+            ChatParticipant.room_id == room_id,
+            ChatParticipant.is_online == True  # noqa: E712
+        )
+        .scalar()
+    ) or 0
+
+
 # WebSocket connection manager
 class ConnectionManager:
     def __init__(self):
         self.active_connections: dict[int, List[WebSocket]] = {}  # room_id -> [websockets]
+        self.user_connections: dict[tuple[int, int], WebSocket] = {}  # (room_id, user_id) -> websocket
     
-    async def connect(self, websocket: WebSocket, room_id: int):
+    async def connect(self, websocket: WebSocket, room_id: int, user_id: int = None):
         await websocket.accept()
         if room_id not in self.active_connections:
             self.active_connections[room_id] = []
         self.active_connections[room_id].append(websocket)
+        
+        # Track user-specific connection
+        if user_id is not None:
+            self.user_connections[(room_id, user_id)] = websocket
     
-    def disconnect(self, websocket: WebSocket, room_id: int):
+    def disconnect(self, websocket: WebSocket, room_id: int, user_id: int = None):
         if room_id in self.active_connections:
             self.active_connections[room_id].remove(websocket)
             if not self.active_connections[room_id]:
                 del self.active_connections[room_id]
+        
+        # Remove user-specific connection
+        if user_id is not None and (room_id, user_id) in self.user_connections:
+            del self.user_connections[(room_id, user_id)]
     
     async def broadcast(self, message: dict, room_id: int):
         if room_id in self.active_connections:
@@ -56,6 +76,18 @@ class ConnectionManager:
             # Clean up dead connections
             for dead in dead_connections:
                 self.disconnect(dead, room_id)
+    
+    async def broadcast_to_user(self, message: dict, room_id: int, target_user_id: int):
+        """Send message only to a specific user in a room"""
+        connection = self.user_connections.get((room_id, target_user_id))
+        if connection:
+            try:
+                await connection.send_json(message)
+            except Exception as e:
+                print(f"Error sending to user {target_user_id}: {e}")
+                # Optionally remove dead connection here
+                if (room_id, target_user_id) in self.user_connections:
+                    del self.user_connections[(room_id, target_user_id)]
 
 
 manager = ConnectionManager()
@@ -97,6 +129,7 @@ def create_chat_room(
     db.add(participant)
     db.commit()
     
+    chat_room.participant_count = get_online_participant_count(db, chat_room.id)
     return chat_room
 
 
@@ -110,7 +143,25 @@ def get_chat_rooms(
     rooms = db.query(ChatRoom).filter(
         ChatRoom.is_active == is_active
     ).order_by(desc(ChatRoom.created_at)).all()
-    
+
+    if rooms:
+        room_ids = [room.id for room in rooms]
+        counts = (
+            db.query(
+                ChatParticipant.room_id,
+                func.count(ChatParticipant.id)
+            )
+            .filter(
+                ChatParticipant.room_id.in_(room_ids),
+                ChatParticipant.is_online == True  # noqa: E712
+            )
+            .group_by(ChatParticipant.room_id)
+            .all()
+        )
+        count_map = {room_id: count for room_id, count in counts}
+        for room in rooms:
+            room.participant_count = count_map.get(room.id, 0)
+
     return rooms
 
 
@@ -175,6 +226,7 @@ def join_chat_room(
     if existing:
         existing.is_online = True
         db.commit()
+        room.participant_count = get_online_participant_count(db, room.id)
         return room
     
     # Check participant limit
@@ -421,7 +473,10 @@ async def websocket_endpoint(
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
     
-    await manager.connect(websocket, room_id)
+    participant.is_online = True
+    db.commit()
+
+    await manager.connect(websocket, room_id, user_id)
     
     # Notify others that user joined
     await manager.broadcast({
@@ -439,28 +494,54 @@ async def websocket_endpoint(
             message = json.loads(data)
             
             # Handle different message types
-            if message["type"] == "message":
+            if message["type"] in {"message", "image"}:
+                message_type = message.get("message_type", "text")
+                if message["type"] == "image":
+                    message_type = "image"
+
                 # Save message to database
                 new_message = ChatMessage(
                     room_id=room_id,
                     sender_id=user_id,
-                    content=message["content"]
+                    message_type=message_type,
+                    content=message.get("content", ""),
+                    media_url=message.get("media_url") or message.get("filename")
                 )
                 db.add(new_message)
                 db.commit()
                 db.refresh(new_message)
-                
+
+                payload = {
+                    "id": new_message.id,
+                    "room_id": new_message.room_id,
+                    "sender_id": new_message.sender_id,
+                    "sender_name": user.username,
+                    "message_type": new_message.message_type,
+                    "content": new_message.content,
+                    "media_url": new_message.media_url,
+                    "created_at": new_message.created_at.isoformat(),
+                }
+
                 # Broadcast message with full user info
                 await manager.broadcast({
                     "type": "message",
-                    "user_id": user_id,
-                    "username": user.username,
-                    "content": message["content"]
+                    "data": payload
                 }, room_id)
-                
+
             elif message["type"] == "peer_signal":
-                # WebRTC signaling
-                await manager.broadcast(message, room_id)
+                # WebRTC signaling - send only to the target peer, NOT to all users
+                # The message should have from_id and to_id
+                from_id = message.get("from_id")
+                to_id = message.get("to_id")
+                
+                if from_id and to_id and from_id != to_id:
+                    # Only broadcast to specific recipient
+                    print(f"[DEBUG] Peer signal from {from_id} to {to_id}")
+                    await manager.broadcast_to_user(message, room_id, target_user_id=to_id)
+                else:
+                    # Fallback: broadcast to all (shouldn't happen)
+                    print(f"[DEBUG] Peer signal with missing IDs - broadcasting to all")
+                    await manager.broadcast(message, room_id)
             elif message["type"] == "video_toggle":
                 participant.is_video_on = message["is_on"]
                 db.commit()
@@ -477,12 +558,33 @@ async def websocket_endpoint(
                     "user_id": user_id,
                     "is_on": message["is_on"]
                 }, room_id)
+            elif message["type"] == "screen_share_toggle":
+                # Handle screen sharing toggle
+                await manager.broadcast({
+                    "type": "screen_share_toggle",
+                    "data": {
+                        "user_id": user_id,
+                        "is_on": message.get("is_on")
+                    }
+                }, room_id)
+            elif message["type"] == "user_left_manual":
+                participant.is_online = False
+                db.commit()
+                await manager.broadcast({
+                    "type": "user_left",
+                    "data": {
+                        "user_id": user_id,
+                        "username": user.username
+                    }
+                }, room_id)
+                await websocket.close()
+                break
             else:
-                # Broadcast other messages
+                # Broadcast other messages (peer_signal, etc.)
                 await manager.broadcast(message, room_id)
     
     except WebSocketDisconnect:
-        manager.disconnect(websocket, room_id)
+        manager.disconnect(websocket, room_id, user_id)
         participant.is_online = False
         db.commit()
         

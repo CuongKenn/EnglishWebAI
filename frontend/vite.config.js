@@ -6,7 +6,12 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api': 'http://localhost:8000', // Đảm bảo rằng mọi yêu cầu bắt đầu bằng /api sẽ được chuyển tiếp đến backend
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        ws: true,
+        rewrite: (path) => path
+      }
     }
   }
 });
